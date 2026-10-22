@@ -1,0 +1,3471 @@
+{
+  "human_acceptance": "HUMAN_PENDING",
+  "scope": "Archive load/seek and existing platform render only",
+  "python": "D:\\7_codespace\\terminal\\venv\\Scripts\\python.exe",
+  "bundles": [
+    {
+      "scene": "stress",
+      "method": "energy_slack",
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_opportunity_v6_stress_480s_20261022\\energy_slack\\replay_0480",
+      "queries": [
+        {
+          "requested_time": 0.0,
+          "controller_time": 0.0,
+          "record_sample_time": 0.0,
+          "counts": {
+            "record_aircraft": 39,
+            "controller_aircraft": 39,
+            "record_visible_aircraft": 39,
+            "snapshot_uavs": 39,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "record_completed": 0,
+            "snapshot_completed": 0
+          },
+          "checks": {
+            "controller_count_matches_record": true,
+            "visible_count_matches_record": true,
+            "service_count_matches_record": true,
+            "completed_count_matches_record": true,
+            "snapshot_time_matches_controller": true,
+            "record_time_not_after_query": true
+          },
+          "status_counts": {
+            "LANDED_SERVICE": 3,
+            "HOLD_INNER": 6,
+            "FINAL_NORMAL": 4,
+            "HOLD_MIDDLE": 4,
+            "TRANSFER_M_I": 8,
+            "TRANSFER_O_M": 14
+          },
+          "declared_aircraft_ids": [],
+          "active_rescue_ids": [],
+          "active_normal_ids": [
+            "initial_inner_02",
+            "initial_inner_05",
+            "initial_inner_06",
+            "initial_inner_09",
+            "initial_middle_01",
+            "initial_middle_02",
+            "initial_middle_03",
+            "initial_middle_04",
+            "initial_middle_06",
+            "initial_middle_08",
+            "initial_middle_09",
+            "initial_middle_11",
+            "initial_outer_00",
+            "initial_outer_01",
+            "initial_outer_02",
+            "initial_outer_03",
+            "initial_outer_04",
+            "initial_outer_05",
+            "initial_outer_06",
+            "initial_outer_07",
+            "initial_outer_08",
+            "initial_outer_09",
+            "initial_outer_10",
+            "initial_outer_11",
+            "initial_outer_12",
+            "initial_outer_13"
+          ],
+          "soft_rescue_rows": 0,
+          "soft_normal_rows": 0,
+          "physical_pad_occupants": [
+            {
+              "pad_id": 0,
+              "aircraft_id": "initial_ground_pad0",
+              "service_remaining": 15.0
+            },
+            {
+              "pad_id": 2,
+              "aircraft_id": "initial_ground_pad2",
+              "service_remaining": 30.0
+            },
+            {
+              "pad_id": 4,
+              "aircraft_id": "initial_ground_pad4",
+              "service_remaining": 45.0
+            }
+          ],
+          "future_pad_reservations": [
+            {
+              "pad_id": 0,
+              "owner_id": "initial_inner_02",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 0.0,
+              "interval_start": 35.0,
+              "interval_end": 168.5
+            },
+            {
+              "pad_id": 1,
+              "owner_id": "initial_inner_05",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 0.0,
+              "interval_start": 50.0,
+              "interval_end": 123.5
+            },
+            {
+              "pad_id": 2,
+              "owner_id": "initial_inner_06",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 0.0,
+              "interval_start": 55.0,
+              "interval_end": 128.5
+            },
+            {
+              "pad_id": 3,
+              "owner_id": "initial_inner_09",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 0.0,
+              "interval_start": 60.0,
+              "interval_end": 103.5
+            }
+          ],
+          "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+        },
+        {
+          "requested_time": 379.99999999999994,
+          "controller_time": 379.99999999999994,
+          "record_sample_time": 379.99999999999994,
+          "counts": {
+            "record_aircraft": 66,
+            "controller_aircraft": 66,
+            "record_visible_aircraft": 48,
+            "snapshot_uavs": 48,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "record_completed": 18,
+            "snapshot_completed": 18
+          },
+          "checks": {
+            "controller_count_matches_record": true,
+            "visible_count_matches_record": true,
+            "service_count_matches_record": true,
+            "completed_count_matches_record": true,
+            "snapshot_time_matches_controller": true,
+            "record_time_not_after_query": true
+          },
+          "status_counts": {
+            "CLEARED": 18,
+            "HOLD_INNER": 15,
+            "FINAL_NORMAL": 4,
+            "TRANSFER_M_I": 3,
+            "LANDED_SERVICE": 4,
+            "HOLD_MIDDLE": 13,
+            "HOLD_OUTER": 3,
+            "TRANSFER_O_M": 4,
+            "INBOUND": 2
+          },
+          "declared_aircraft_ids": [
+            "initial_inner_08"
+          ],
+          "active_rescue_ids": [],
+          "active_normal_ids": [
+            "initial_inner_04",
+            "initial_middle_05",
+            "initial_outer_03",
+            "initial_outer_07",
+            "req_000003",
+            "req_000009",
+            "req_000011",
+            "req_000013",
+            "req_000019",
+            "req_000021",
+            "req_000024",
+            "req_000025",
+            "req_000026"
+          ],
+          "soft_rescue_rows": 2,
+          "soft_normal_rows": 0,
+          "physical_pad_occupants": [
+            {
+              "pad_id": 1,
+              "aircraft_id": "initial_outer_12",
+              "service_remaining": 15.331483566483655
+            },
+            {
+              "pad_id": 2,
+              "aircraft_id": "initial_middle_09",
+              "service_remaining": 16.430234062684292
+            },
+            {
+              "pad_id": 4,
+              "aircraft_id": "initial_middle_06",
+              "service_remaining": 100.00802775593678
+            },
+            {
+              "pad_id": 5,
+              "aircraft_id": "initial_outer_11",
+              "service_remaining": 48.50000000000006
+            }
+          ],
+          "future_pad_reservations": [
+            {
+              "pad_id": 0,
+              "owner_id": "req_000003",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 324.9999999999999,
+              "interval_start": 404.9999999999999,
+              "interval_end": 478.4999999999999
+            },
+            {
+              "pad_id": 1,
+              "owner_id": "initial_inner_04",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 349.99999999999994,
+              "interval_start": 429.99999999999994,
+              "interval_end": 503.49999999999994
+            },
+            {
+              "pad_id": 2,
+              "owner_id": "req_000009",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 360.0,
+              "interval_start": 425.0,
+              "interval_end": 468.5
+            },
+            {
+              "pad_id": 3,
+              "owner_id": "initial_outer_07",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 312.2356228087126,
+              "interval_start": 392.2356228087126,
+              "interval_end": 465.7356228087126
+            },
+            {
+              "pad_id": 4,
+              "owner_id": "initial_inner_08",
+              "commitment": "SOFT_UNSTARTED_REMOVABLE",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 480.0080277559367,
+              "interval_start": 610.0080277559367,
+              "interval_end": 683.5080277559367
+            }
+          ],
+          "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+        },
+        {
+          "requested_time": 420.0,
+          "controller_time": 420.0,
+          "record_sample_time": 420.0,
+          "counts": {
+            "record_aircraft": 67,
+            "controller_aircraft": 67,
+            "record_visible_aircraft": 47,
+            "snapshot_uavs": 47,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "record_completed": 20,
+            "snapshot_completed": 20
+          },
+          "checks": {
+            "controller_count_matches_record": true,
+            "visible_count_matches_record": true,
+            "service_count_matches_record": true,
+            "completed_count_matches_record": true,
+            "snapshot_time_matches_controller": true,
+            "record_time_not_after_query": true
+          },
+          "status_counts": {
+            "CLEARED": 20,
+            "HOLD_INNER": 16,
+            "FINAL_NORMAL": 3,
+            "LANDED_SERVICE": 4,
+            "HOLD_MIDDLE": 16,
+            "HOLD_OUTER": 3,
+            "TRANSFER_M_I": 2,
+            "TRANSFER_O_M": 3
+          },
+          "declared_aircraft_ids": [
+            "initial_inner_08",
+            "initial_middle_03",
+            "initial_middle_04",
+            "initial_outer_03",
+            "req_000001"
+          ],
+          "active_rescue_ids": [],
+          "active_normal_ids": [
+            "initial_inner_04",
+            "initial_middle_05",
+            "req_000009",
+            "req_000011",
+            "req_000013",
+            "req_000023",
+            "req_000025",
+            "req_000026"
+          ],
+          "soft_rescue_rows": 10,
+          "soft_normal_rows": 0,
+          "physical_pad_occupants": [
+            {
+              "pad_id": 0,
+              "aircraft_id": "req_000003",
+              "service_remaining": 58.499999999999886
+            },
+            {
+              "pad_id": 3,
+              "aircraft_id": "initial_outer_07",
+              "service_remaining": 45.735622808712606
+            },
+            {
+              "pad_id": 4,
+              "aircraft_id": "initial_middle_06",
+              "service_remaining": 60.00802775593672
+            },
+            {
+              "pad_id": 5,
+              "aircraft_id": "initial_outer_11",
+              "service_remaining": 8.5
+            }
+          ],
+          "future_pad_reservations": [
+            {
+              "pad_id": 0,
+              "owner_id": "initial_outer_03",
+              "commitment": "SOFT_UNSTARTED_REMOVABLE",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 478.4999999999999,
+              "interval_start": 608.4999999999999,
+              "interval_end": 681.9999999999999
+            },
+            {
+              "pad_id": 1,
+              "owner_id": "initial_inner_04",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 349.99999999999994,
+              "interval_start": 429.99999999999994,
+              "interval_end": 503.49999999999994
+            },
+            {
+              "pad_id": 1,
+              "owner_id": "req_000001",
+              "commitment": "SOFT_UNSTARTED_REMOVABLE",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 503.49999999999994,
+              "interval_start": 633.5,
+              "interval_end": 677.0
+            },
+            {
+              "pad_id": 2,
+              "owner_id": "req_000009",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 360.0,
+              "interval_start": 425.0,
+              "interval_end": 468.5
+            },
+            {
+              "pad_id": 2,
+              "owner_id": "initial_middle_03",
+              "commitment": "SOFT_UNSTARTED_REMOVABLE",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 468.5,
+              "interval_start": 558.5,
+              "interval_end": 632.0
+            },
+            {
+              "pad_id": 3,
+              "owner_id": "initial_middle_04",
+              "commitment": "SOFT_UNSTARTED_REMOVABLE",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 465.7356228087126,
+              "interval_start": 550.7356228087126,
+              "interval_end": 624.2356228087126
+            },
+            {
+              "pad_id": 4,
+              "owner_id": "initial_inner_08",
+              "commitment": "SOFT_UNSTARTED_REMOVABLE",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 480.0080277559367,
+              "interval_start": 610.0080277559367,
+              "interval_end": 683.5080277559367
+            },
+            {
+              "pad_id": 5,
+              "owner_id": "initial_middle_05",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 418.3440371027798,
+              "interval_start": 463.3440371027798,
+              "interval_end": 536.8440371027798
+            }
+          ],
+          "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+        },
+        {
+          "requested_time": 480.0,
+          "controller_time": 480.0,
+          "record_sample_time": 480.0,
+          "counts": {
+            "record_aircraft": 70,
+            "controller_aircraft": 70,
+            "record_visible_aircraft": 46,
+            "snapshot_uavs": 46,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "record_completed": 24,
+            "snapshot_completed": 24
+          },
+          "checks": {
+            "controller_count_matches_record": true,
+            "visible_count_matches_record": true,
+            "service_count_matches_record": true,
+            "completed_count_matches_record": true,
+            "snapshot_time_matches_controller": true,
+            "record_time_not_after_query": true
+          },
+          "status_counts": {
+            "CLEARED": 24,
+            "HOLD_INNER": 13,
+            "LANDED_SERVICE": 3,
+            "FINAL_EMERGENCY": 4,
+            "HOLD_MIDDLE": 16,
+            "HOLD_OUTER": 4,
+            "TRANSFER_M_I": 3,
+            "FINAL_NORMAL": 1,
+            "TRANSFER_O_M": 2
+          },
+          "declared_aircraft_ids": [
+            "initial_inner_08",
+            "initial_middle_03",
+            "initial_middle_04",
+            "initial_outer_03",
+            "req_000000",
+            "req_000001"
+          ],
+          "active_rescue_ids": [
+            "initial_middle_03",
+            "initial_middle_04",
+            "initial_outer_03",
+            "req_000000"
+          ],
+          "active_normal_ids": [
+            "req_000010",
+            "req_000011",
+            "req_000017",
+            "req_000023",
+            "req_000028",
+            "req_000030"
+          ],
+          "soft_rescue_rows": 4,
+          "soft_normal_rows": 0,
+          "physical_pad_occupants": [
+            {
+              "pad_id": 1,
+              "aircraft_id": "initial_inner_04",
+              "service_remaining": 23.499999999999943
+            },
+            {
+              "pad_id": 4,
+              "aircraft_id": "initial_middle_06",
+              "service_remaining": 0.008027755936723224
+            },
+            {
+              "pad_id": 5,
+              "aircraft_id": "initial_middle_05",
+              "service_remaining": 56.844037102779794
+            }
+          ],
+          "future_pad_reservations": [
+            {
+              "pad_id": 0,
+              "owner_id": "initial_outer_03",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 478.4999999999999,
+              "interval_start": 608.4999999999999,
+              "interval_end": 681.9999999999999
+            },
+            {
+              "pad_id": 1,
+              "owner_id": "req_000000",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 476.2506103515624,
+              "interval_start": 536.2506103515624,
+              "interval_end": 579.7506103515624
+            },
+            {
+              "pad_id": 1,
+              "owner_id": "req_000001",
+              "commitment": "SOFT_UNSTARTED_REMOVABLE",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 503.49999999999994,
+              "interval_start": 633.5,
+              "interval_end": 677.0
+            },
+            {
+              "pad_id": 2,
+              "owner_id": "initial_middle_03",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 468.5,
+              "interval_start": 558.5,
+              "interval_end": 632.0
+            },
+            {
+              "pad_id": 3,
+              "owner_id": "initial_middle_04",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 465.7356228087126,
+              "interval_start": 550.7356228087126,
+              "interval_end": 624.2356228087126
+            },
+            {
+              "pad_id": 4,
+              "owner_id": "req_000011",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 458.4999999999999,
+              "interval_start": 498.4999999999999,
+              "interval_end": 541.9999999999999
+            },
+            {
+              "pad_id": 4,
+              "owner_id": "initial_inner_08",
+              "commitment": "SOFT_UNSTARTED_REMOVABLE",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 480.0080277559367,
+              "interval_start": 610.0080277559367,
+              "interval_end": 683.5080277559367
+            }
+          ],
+          "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+        }
+      ],
+      "screenshots": [
+        {
+          "label": "first_declaration_plus1",
+          "path": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261022\\v6_replay_checks\\stress_energy_slack_first_declaration_plus1.png",
+          "time": 380.99999999999994,
+          "selected_event": {
+            "aircraft_id": "initial_inner_08",
+            "details": {
+              "reason": "LAST_RESCUE_START",
+              "ring": "inner",
+              "trajectory_hash": "fa1cb6e4618ea883d9a1d45dbc14d730dff0962987ab43b75ccda27a946d3626"
+            },
+            "time": 379.99999999999994,
+            "type": "emergency_declared"
+          },
+          "camera_api": "set_view(\"3d\", vertical_exaggeration=1.)",
+          "camera_position": [
+            [
+              2847.9214733113504,
+              2849.3045604695535,
+              2904.3045604695535
+            ],
+            [
+              -1.383087158203125,
+              0.0,
+              55.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "image_load": "PASS",
+          "size": [
+            1280,
+            860
+          ],
+          "mode": "RGB",
+          "observation": {
+            "requested_time": 380.99999999999994,
+            "controller_time": 380.99999999999994,
+            "record_sample_time": 380.9999999999999,
+            "counts": {
+              "record_aircraft": 66,
+              "controller_aircraft": 66,
+              "record_visible_aircraft": 48,
+              "snapshot_uavs": 48,
+              "record_service": 4,
+              "snapshot_service": 4,
+              "record_completed": 18,
+              "snapshot_completed": 18
+            },
+            "checks": {
+              "controller_count_matches_record": true,
+              "visible_count_matches_record": true,
+              "service_count_matches_record": true,
+              "completed_count_matches_record": true,
+              "snapshot_time_matches_controller": true,
+              "record_time_not_after_query": true
+            },
+            "status_counts": {
+              "CLEARED": 18,
+              "HOLD_INNER": 15,
+              "FINAL_NORMAL": 4,
+              "TRANSFER_M_I": 3,
+              "LANDED_SERVICE": 4,
+              "HOLD_MIDDLE": 13,
+              "HOLD_OUTER": 3,
+              "TRANSFER_O_M": 4,
+              "INBOUND": 2
+            },
+            "declared_aircraft_ids": [
+              "initial_inner_08"
+            ],
+            "active_rescue_ids": [],
+            "active_normal_ids": [
+              "initial_inner_04",
+              "initial_middle_05",
+              "initial_outer_03",
+              "initial_outer_07",
+              "req_000003",
+              "req_000009",
+              "req_000011",
+              "req_000013",
+              "req_000019",
+              "req_000021",
+              "req_000024",
+              "req_000025",
+              "req_000026"
+            ],
+            "soft_rescue_rows": 2,
+            "soft_normal_rows": 0,
+            "physical_pad_occupants": [
+              {
+                "pad_id": 1,
+                "aircraft_id": "initial_outer_12",
+                "service_remaining": 14.331483566483655
+              },
+              {
+                "pad_id": 2,
+                "aircraft_id": "initial_middle_09",
+                "service_remaining": 15.430234062684292
+              },
+              {
+                "pad_id": 4,
+                "aircraft_id": "initial_middle_06",
+                "service_remaining": 99.00802775593678
+              },
+              {
+                "pad_id": 5,
+                "aircraft_id": "initial_outer_11",
+                "service_remaining": 47.50000000000006
+              }
+            ],
+            "future_pad_reservations": [
+              {
+                "pad_id": 0,
+                "owner_id": "req_000003",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 324.9999999999999,
+                "interval_start": 404.9999999999999,
+                "interval_end": 478.4999999999999
+              },
+              {
+                "pad_id": 1,
+                "owner_id": "initial_inner_04",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 349.99999999999994,
+                "interval_start": 429.99999999999994,
+                "interval_end": 503.49999999999994
+              },
+              {
+                "pad_id": 2,
+                "owner_id": "req_000009",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 360.0,
+                "interval_start": 425.0,
+                "interval_end": 468.5
+              },
+              {
+                "pad_id": 3,
+                "owner_id": "initial_outer_07",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 312.2356228087126,
+                "interval_start": 392.2356228087126,
+                "interval_end": 465.7356228087126
+              },
+              {
+                "pad_id": 4,
+                "owner_id": "initial_inner_08",
+                "commitment": "SOFT_UNSTARTED_REMOVABLE",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 480.0080277559367,
+                "interval_start": 610.0080277559367,
+                "interval_end": 683.5080277559367
+              }
+            ],
+            "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+          }
+        },
+        {
+          "label": "normal_after_declaration_plus1",
+          "path": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261022\\v6_replay_checks\\stress_energy_slack_normal_after_declaration_plus1.png",
+          "time": 419.3440371027798,
+          "selected_event": {
+            "aircraft_id": "initial_middle_05",
+            "details": {
+              "dependencies": [],
+              "maneuver_kind": "FINAL_NORMAL",
+              "predicted_touchdown_soc": 0.3957885548190986,
+              "required_soc": 0.32887115212991347,
+              "start_soc": 0.47465970694901205,
+              "trajectory_hash": "e635b44cf3db3bf8f10ee61127521478cab7c5ddebe99e42314a42feaae8cc61"
+            },
+            "time": 418.3440371027798,
+            "type": "maneuver_started"
+          },
+          "camera_api": "set_view(\"3d\", vertical_exaggeration=1.)",
+          "camera_position": [
+            [
+              2847.128159344639,
+              2847.128159344639,
+              2902.128159344639
+            ],
+            [
+              0.0,
+              0.0,
+              55.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "image_load": "PASS",
+          "size": [
+            1280,
+            860
+          ],
+          "mode": "RGB",
+          "observation": {
+            "requested_time": 419.3440371027798,
+            "controller_time": 419.3440371027798,
+            "record_sample_time": 419.0,
+            "counts": {
+              "record_aircraft": 67,
+              "controller_aircraft": 67,
+              "record_visible_aircraft": 47,
+              "snapshot_uavs": 47,
+              "record_service": 4,
+              "snapshot_service": 4,
+              "record_completed": 20,
+              "snapshot_completed": 20
+            },
+            "checks": {
+              "controller_count_matches_record": true,
+              "visible_count_matches_record": true,
+              "service_count_matches_record": true,
+              "completed_count_matches_record": true,
+              "snapshot_time_matches_controller": true,
+              "record_time_not_after_query": true
+            },
+            "status_counts": {
+              "CLEARED": 20,
+              "HOLD_INNER": 16,
+              "FINAL_NORMAL": 3,
+              "LANDED_SERVICE": 4,
+              "HOLD_MIDDLE": 16,
+              "HOLD_OUTER": 4,
+              "TRANSFER_M_I": 2,
+              "TRANSFER_O_M": 2
+            },
+            "declared_aircraft_ids": [
+              "initial_inner_08",
+              "initial_middle_03",
+              "initial_middle_04",
+              "initial_outer_03",
+              "req_000001"
+            ],
+            "active_rescue_ids": [],
+            "active_normal_ids": [
+              "initial_inner_04",
+              "initial_middle_05",
+              "req_000009",
+              "req_000011",
+              "req_000013",
+              "req_000025",
+              "req_000026"
+            ],
+            "soft_rescue_rows": 10,
+            "soft_normal_rows": 0,
+            "physical_pad_occupants": [
+              {
+                "pad_id": 0,
+                "aircraft_id": "req_000003",
+                "service_remaining": 59.15596289722009
+              },
+              {
+                "pad_id": 3,
+                "aircraft_id": "initial_outer_07",
+                "service_remaining": 46.39158570593281
+              },
+              {
+                "pad_id": 4,
+                "aircraft_id": "initial_middle_06",
+                "service_remaining": 60.66399065315693
+              },
+              {
+                "pad_id": 5,
+                "aircraft_id": "initial_outer_11",
+                "service_remaining": 9.155962897220206
+              }
+            ],
+            "future_pad_reservations": [
+              {
+                "pad_id": 0,
+                "owner_id": "initial_outer_03",
+                "commitment": "SOFT_UNSTARTED_REMOVABLE",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 478.4999999999999,
+                "interval_start": 608.4999999999999,
+                "interval_end": 681.9999999999999
+              },
+              {
+                "pad_id": 1,
+                "owner_id": "initial_inner_04",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 349.99999999999994,
+                "interval_start": 429.99999999999994,
+                "interval_end": 503.49999999999994
+              },
+              {
+                "pad_id": 1,
+                "owner_id": "req_000001",
+                "commitment": "SOFT_UNSTARTED_REMOVABLE",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 503.49999999999994,
+                "interval_start": 633.5,
+                "interval_end": 677.0
+              },
+              {
+                "pad_id": 2,
+                "owner_id": "req_000009",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 360.0,
+                "interval_start": 425.0,
+                "interval_end": 468.5
+              },
+              {
+                "pad_id": 2,
+                "owner_id": "initial_middle_03",
+                "commitment": "SOFT_UNSTARTED_REMOVABLE",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 468.5,
+                "interval_start": 558.5,
+                "interval_end": 632.0
+              },
+              {
+                "pad_id": 3,
+                "owner_id": "initial_middle_04",
+                "commitment": "SOFT_UNSTARTED_REMOVABLE",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 465.7356228087126,
+                "interval_start": 550.7356228087126,
+                "interval_end": 624.2356228087126
+              },
+              {
+                "pad_id": 4,
+                "owner_id": "initial_inner_08",
+                "commitment": "SOFT_UNSTARTED_REMOVABLE",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 480.0080277559367,
+                "interval_start": 610.0080277559367,
+                "interval_end": 683.5080277559367
+              },
+              {
+                "pad_id": 5,
+                "owner_id": "initial_middle_05",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 418.3440371027798,
+                "interval_start": 463.3440371027798,
+                "interval_end": 536.8440371027798
+              }
+            ],
+            "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+          }
+        },
+        {
+          "label": "end480",
+          "path": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261022\\v6_replay_checks\\stress_energy_slack_end480.png",
+          "time": 480.0,
+          "selected_event": null,
+          "camera_api": "set_view(\"3d\", vertical_exaggeration=1.)",
+          "camera_position": [
+            [
+              2847.128159344639,
+              2847.128159344639,
+              2902.128159344639
+            ],
+            [
+              0.0,
+              0.0,
+              55.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "image_load": "PASS",
+          "size": [
+            1280,
+            860
+          ],
+          "mode": "RGB",
+          "observation": {
+            "requested_time": 480.0,
+            "controller_time": 480.0,
+            "record_sample_time": 480.0,
+            "counts": {
+              "record_aircraft": 70,
+              "controller_aircraft": 70,
+              "record_visible_aircraft": 46,
+              "snapshot_uavs": 46,
+              "record_service": 3,
+              "snapshot_service": 3,
+              "record_completed": 24,
+              "snapshot_completed": 24
+            },
+            "checks": {
+              "controller_count_matches_record": true,
+              "visible_count_matches_record": true,
+              "service_count_matches_record": true,
+              "completed_count_matches_record": true,
+              "snapshot_time_matches_controller": true,
+              "record_time_not_after_query": true
+            },
+            "status_counts": {
+              "CLEARED": 24,
+              "HOLD_INNER": 13,
+              "LANDED_SERVICE": 3,
+              "FINAL_EMERGENCY": 4,
+              "HOLD_MIDDLE": 16,
+              "HOLD_OUTER": 4,
+              "TRANSFER_M_I": 3,
+              "FINAL_NORMAL": 1,
+              "TRANSFER_O_M": 2
+            },
+            "declared_aircraft_ids": [
+              "initial_inner_08",
+              "initial_middle_03",
+              "initial_middle_04",
+              "initial_outer_03",
+              "req_000000",
+              "req_000001"
+            ],
+            "active_rescue_ids": [
+              "initial_middle_03",
+              "initial_middle_04",
+              "initial_outer_03",
+              "req_000000"
+            ],
+            "active_normal_ids": [
+              "req_000010",
+              "req_000011",
+              "req_000017",
+              "req_000023",
+              "req_000028",
+              "req_000030"
+            ],
+            "soft_rescue_rows": 4,
+            "soft_normal_rows": 0,
+            "physical_pad_occupants": [
+              {
+                "pad_id": 1,
+                "aircraft_id": "initial_inner_04",
+                "service_remaining": 23.499999999999943
+              },
+              {
+                "pad_id": 4,
+                "aircraft_id": "initial_middle_06",
+                "service_remaining": 0.008027755936723224
+              },
+              {
+                "pad_id": 5,
+                "aircraft_id": "initial_middle_05",
+                "service_remaining": 56.844037102779794
+              }
+            ],
+            "future_pad_reservations": [
+              {
+                "pad_id": 0,
+                "owner_id": "initial_outer_03",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 478.4999999999999,
+                "interval_start": 608.4999999999999,
+                "interval_end": 681.9999999999999
+              },
+              {
+                "pad_id": 1,
+                "owner_id": "req_000000",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 476.2506103515624,
+                "interval_start": 536.2506103515624,
+                "interval_end": 579.7506103515624
+              },
+              {
+                "pad_id": 1,
+                "owner_id": "req_000001",
+                "commitment": "SOFT_UNSTARTED_REMOVABLE",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 503.49999999999994,
+                "interval_start": 633.5,
+                "interval_end": 677.0
+              },
+              {
+                "pad_id": 2,
+                "owner_id": "initial_middle_03",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 468.5,
+                "interval_start": 558.5,
+                "interval_end": 632.0
+              },
+              {
+                "pad_id": 3,
+                "owner_id": "initial_middle_04",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 465.7356228087126,
+                "interval_start": 550.7356228087126,
+                "interval_end": 624.2356228087126
+              },
+              {
+                "pad_id": 4,
+                "owner_id": "req_000011",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 458.4999999999999,
+                "interval_start": 498.4999999999999,
+                "interval_end": 541.9999999999999
+              },
+              {
+                "pad_id": 4,
+                "owner_id": "initial_inner_08",
+                "commitment": "SOFT_UNSTARTED_REMOVABLE",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 480.0080277559367,
+                "interval_start": 610.0080277559367,
+                "interval_end": 683.5080277559367
+              }
+            ],
+            "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+          }
+        }
+      ],
+      "load": "PASS",
+      "time_bounds": [
+        0.0,
+        480.0
+      ],
+      "states_count": 734,
+      "code_commit": "9cfb78149f9c986025ba8a08707162d56fb7b645",
+      "human_acceptance": "HUMAN_PENDING",
+      "first_declaration": {
+        "aircraft_id": "initial_inner_08",
+        "details": {
+          "reason": "LAST_RESCUE_START",
+          "ring": "inner",
+          "trajectory_hash": "fa1cb6e4618ea883d9a1d45dbc14d730dff0962987ab43b75ccda27a946d3626"
+        },
+        "time": 379.99999999999994,
+        "type": "emergency_declared"
+      },
+      "first_normal_start_after_declaration": {
+        "aircraft_id": "initial_middle_05",
+        "details": {
+          "dependencies": [],
+          "maneuver_kind": "FINAL_NORMAL",
+          "predicted_touchdown_soc": 0.3957885548190986,
+          "required_soc": 0.32887115212991347,
+          "start_soc": 0.47465970694901205,
+          "trajectory_hash": "e635b44cf3db3bf8f10ee61127521478cab7c5ddebe99e42314a42feaae8cc61"
+        },
+        "time": 418.3440371027798,
+        "type": "maneuver_started"
+      },
+      "render": "PASS"
+    },
+    {
+      "scene": "stress",
+      "method": "rh_cp_sat",
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_opportunity_v6_stress_480s_20261022\\rh_cp_sat\\replay_0480",
+      "queries": [
+        {
+          "requested_time": 0.0,
+          "controller_time": 0.0,
+          "record_sample_time": 0.0,
+          "counts": {
+            "record_aircraft": 39,
+            "controller_aircraft": 39,
+            "record_visible_aircraft": 39,
+            "snapshot_uavs": 39,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "record_completed": 0,
+            "snapshot_completed": 0
+          },
+          "checks": {
+            "controller_count_matches_record": true,
+            "visible_count_matches_record": true,
+            "service_count_matches_record": true,
+            "completed_count_matches_record": true,
+            "snapshot_time_matches_controller": true,
+            "record_time_not_after_query": true
+          },
+          "status_counts": {
+            "LANDED_SERVICE": 3,
+            "FINAL_NORMAL": 4,
+            "HOLD_INNER": 6,
+            "TRANSFER_M_I": 10,
+            "HOLD_MIDDLE": 2,
+            "TRANSFER_O_M": 14
+          },
+          "declared_aircraft_ids": [],
+          "active_rescue_ids": [],
+          "active_normal_ids": [
+            "initial_inner_00",
+            "initial_inner_02",
+            "initial_inner_03",
+            "initial_inner_07",
+            "initial_middle_00",
+            "initial_middle_01",
+            "initial_middle_02",
+            "initial_middle_03",
+            "initial_middle_05",
+            "initial_middle_06",
+            "initial_middle_07",
+            "initial_middle_08",
+            "initial_middle_09",
+            "initial_middle_11",
+            "initial_outer_00",
+            "initial_outer_01",
+            "initial_outer_02",
+            "initial_outer_03",
+            "initial_outer_04",
+            "initial_outer_05",
+            "initial_outer_06",
+            "initial_outer_07",
+            "initial_outer_08",
+            "initial_outer_09",
+            "initial_outer_10",
+            "initial_outer_11",
+            "initial_outer_12",
+            "initial_outer_13"
+          ],
+          "soft_rescue_rows": 0,
+          "soft_normal_rows": 0,
+          "physical_pad_occupants": [
+            {
+              "pad_id": 0,
+              "aircraft_id": "initial_ground_pad0",
+              "service_remaining": 15.0
+            },
+            {
+              "pad_id": 2,
+              "aircraft_id": "initial_ground_pad2",
+              "service_remaining": 30.0
+            },
+            {
+              "pad_id": 4,
+              "aircraft_id": "initial_ground_pad4",
+              "service_remaining": 45.0
+            }
+          ],
+          "future_pad_reservations": [
+            {
+              "pad_id": 0,
+              "owner_id": "initial_inner_02",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 0.0,
+              "interval_start": 35.0,
+              "interval_end": 168.5
+            },
+            {
+              "pad_id": 1,
+              "owner_id": "initial_inner_03",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 0.0,
+              "interval_start": 35.0,
+              "interval_end": 78.5
+            },
+            {
+              "pad_id": 3,
+              "owner_id": "initial_inner_07",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 0.0,
+              "interval_start": 35.0,
+              "interval_end": 168.5
+            },
+            {
+              "pad_id": 5,
+              "owner_id": "initial_inner_00",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 0.0,
+              "interval_start": 35.0,
+              "interval_end": 108.5
+            }
+          ],
+          "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+        },
+        {
+          "requested_time": 261.3310817930876,
+          "controller_time": 261.3310817930876,
+          "record_sample_time": 261.3310817930876,
+          "counts": {
+            "record_aircraft": 60,
+            "controller_aircraft": 60,
+            "record_visible_aircraft": 47,
+            "snapshot_uavs": 47,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "record_completed": 13,
+            "snapshot_completed": 13
+          },
+          "checks": {
+            "controller_count_matches_record": true,
+            "visible_count_matches_record": true,
+            "service_count_matches_record": true,
+            "completed_count_matches_record": true,
+            "snapshot_time_matches_controller": true,
+            "record_time_not_after_query": true
+          },
+          "status_counts": {
+            "CLEARED": 13,
+            "HOLD_INNER": 17,
+            "LANDED_SERVICE": 3,
+            "FINAL_NORMAL": 3,
+            "HOLD_MIDDLE": 14,
+            "VERTICAL_DESCENT": 1,
+            "TRANSFER_M_I": 1,
+            "TRANSFER_O_M": 3,
+            "INBOUND": 5
+          },
+          "declared_aircraft_ids": [
+            "initial_middle_09"
+          ],
+          "active_rescue_ids": [],
+          "active_normal_ids": [
+            "initial_middle_01",
+            "initial_outer_04",
+            "initial_outer_08",
+            "req_000003",
+            "req_000004",
+            "req_000013",
+            "req_000014",
+            "req_000015",
+            "req_000016",
+            "req_000017",
+            "req_000018",
+            "req_000019",
+            "req_000020"
+          ],
+          "soft_rescue_rows": 2,
+          "soft_normal_rows": 0,
+          "physical_pad_occupants": [
+            {
+              "pad_id": 0,
+              "aircraft_id": "initial_middle_00",
+              "service_remaining": 72.1689182069124
+            },
+            {
+              "pad_id": 2,
+              "aircraft_id": "initial_middle_06",
+              "service_remaining": 92.16891820691234
+            },
+            {
+              "pad_id": 3,
+              "aircraft_id": "initial_outer_07",
+              "service_remaining": 5.864398390511951
+            }
+          ],
+          "future_pad_reservations": [
+            {
+              "pad_id": 1,
+              "owner_id": "initial_outer_08",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 189.99999999999994,
+              "interval_start": 264.99999999999994,
+              "interval_end": 338.49999999999994
+            },
+            {
+              "pad_id": 2,
+              "owner_id": "initial_middle_09",
+              "commitment": "SOFT_UNSTARTED_REMOVABLE",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 353.49999999999994,
+              "interval_start": 473.49999999999994,
+              "interval_end": 607.0
+            },
+            {
+              "pad_id": 3,
+              "owner_id": "req_000003",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 233.03211684261242,
+              "interval_start": 293.0321168426124,
+              "interval_end": 366.5321168426124
+            },
+            {
+              "pad_id": 4,
+              "owner_id": "initial_middle_01",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 219.9999999999999,
+              "interval_start": 269.9999999999999,
+              "interval_end": 343.4999999999999
+            }
+          ],
+          "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+        },
+        {
+          "requested_time": 420.0,
+          "controller_time": 420.0,
+          "record_sample_time": 420.0,
+          "counts": {
+            "record_aircraft": 67,
+            "controller_aircraft": 67,
+            "record_visible_aircraft": 47,
+            "snapshot_uavs": 47,
+            "record_service": 5,
+            "snapshot_service": 5,
+            "record_completed": 20,
+            "snapshot_completed": 20
+          },
+          "checks": {
+            "controller_count_matches_record": true,
+            "visible_count_matches_record": true,
+            "service_count_matches_record": true,
+            "completed_count_matches_record": true,
+            "snapshot_time_matches_controller": true,
+            "record_time_not_after_query": true
+          },
+          "status_counts": {
+            "CLEARED": 20,
+            "FINAL_NORMAL": 1,
+            "HOLD_INNER": 15,
+            "HOLD_MIDDLE": 13,
+            "FINAL_EMERGENCY": 2,
+            "LANDED_SERVICE": 5,
+            "TRANSFER_M_I": 3,
+            "HOLD_OUTER": 4,
+            "TRANSFER_O_M": 3,
+            "VERTICAL_DESCENT": 1
+          },
+          "declared_aircraft_ids": [
+            "initial_inner_09",
+            "initial_middle_03",
+            "initial_middle_09",
+            "initial_middle_11",
+            "initial_outer_00"
+          ],
+          "active_rescue_ids": [
+            "initial_middle_09",
+            "initial_outer_00"
+          ],
+          "active_normal_ids": [
+            "initial_inner_04",
+            "req_000007",
+            "req_000011",
+            "req_000018",
+            "req_000019",
+            "req_000020",
+            "req_000024",
+            "req_000026"
+          ],
+          "soft_rescue_rows": 6,
+          "soft_normal_rows": 0,
+          "physical_pad_occupants": [
+            {
+              "pad_id": 0,
+              "aircraft_id": "initial_outer_13",
+              "service_remaining": 3.3882737210647065
+            },
+            {
+              "pad_id": 1,
+              "aircraft_id": "initial_outer_02",
+              "service_remaining": 12.468410894650106
+            },
+            {
+              "pad_id": 2,
+              "aircraft_id": "req_000001",
+              "service_remaining": 3.499999999999943
+            },
+            {
+              "pad_id": 3,
+              "aircraft_id": "req_000009",
+              "service_remaining": 11.999999999999886
+            },
+            {
+              "pad_id": 4,
+              "aircraft_id": "initial_outer_10",
+              "service_remaining": 17.468410894650106
+            }
+          ],
+          "future_pad_reservations": [
+            {
+              "pad_id": 0,
+              "owner_id": "initial_inner_04",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 395.0,
+              "interval_start": 445.0,
+              "interval_end": 518.5
+            },
+            {
+              "pad_id": 1,
+              "owner_id": "initial_inner_09",
+              "commitment": "SOFT_UNSTARTED_REMOVABLE",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 432.4684108946501,
+              "interval_start": 537.4684108946501,
+              "interval_end": 580.9684108946501
+            },
+            {
+              "pad_id": 2,
+              "owner_id": "initial_middle_09",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 353.49999999999994,
+              "interval_start": 473.49999999999994,
+              "interval_end": 607.0
+            },
+            {
+              "pad_id": 3,
+              "owner_id": "initial_outer_00",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 366.5321168426124,
+              "interval_start": 496.5321168426124,
+              "interval_end": 570.0321168426124
+            },
+            {
+              "pad_id": 4,
+              "owner_id": "initial_middle_03",
+              "commitment": "SOFT_UNSTARTED_REMOVABLE",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 437.4684108946501,
+              "interval_start": 502.4684108946501,
+              "interval_end": 575.9684108946501
+            },
+            {
+              "pad_id": 5,
+              "owner_id": "initial_middle_11",
+              "commitment": "SOFT_UNSTARTED_REMOVABLE",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 488.27539062499994,
+              "interval_start": 578.275390625,
+              "interval_end": 711.775390625
+            }
+          ],
+          "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+        },
+        {
+          "requested_time": 480.0,
+          "controller_time": 480.0,
+          "record_sample_time": 480.0,
+          "counts": {
+            "record_aircraft": 70,
+            "controller_aircraft": 70,
+            "record_visible_aircraft": 45,
+            "snapshot_uavs": 45,
+            "record_service": 2,
+            "snapshot_service": 2,
+            "record_completed": 25,
+            "snapshot_completed": 25
+          },
+          "checks": {
+            "controller_count_matches_record": true,
+            "visible_count_matches_record": true,
+            "service_count_matches_record": true,
+            "completed_count_matches_record": true,
+            "snapshot_time_matches_controller": true,
+            "record_time_not_after_query": true
+          },
+          "status_counts": {
+            "CLEARED": 25,
+            "LANDED_SERVICE": 2,
+            "HOLD_INNER": 16,
+            "FINAL_EMERGENCY": 3,
+            "HOLD_MIDDLE": 14,
+            "VERTICAL_DESCENT": 1,
+            "TRANSFER_M_I": 2,
+            "HOLD_OUTER": 3,
+            "TRANSFER_O_M": 4
+          },
+          "declared_aircraft_ids": [
+            "initial_inner_09",
+            "initial_middle_03",
+            "initial_middle_09",
+            "initial_middle_11",
+            "initial_outer_00"
+          ],
+          "active_rescue_ids": [
+            "initial_inner_09",
+            "initial_middle_03",
+            "initial_middle_09",
+            "initial_outer_00"
+          ],
+          "active_normal_ids": [
+            "initial_outer_12",
+            "req_000012",
+            "req_000022",
+            "req_000025",
+            "req_000028",
+            "req_000030"
+          ],
+          "soft_rescue_rows": 2,
+          "soft_normal_rows": 0,
+          "physical_pad_occupants": [
+            {
+              "pad_id": 0,
+              "aircraft_id": "initial_inner_04",
+              "service_remaining": 38.5
+            },
+            {
+              "pad_id": 5,
+              "aircraft_id": "req_000019",
+              "service_remaining": 8.275390624999943
+            }
+          ],
+          "future_pad_reservations": [
+            {
+              "pad_id": 1,
+              "owner_id": "initial_inner_09",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 432.4684108946501,
+              "interval_start": 537.4684108946501,
+              "interval_end": 580.9684108946501
+            },
+            {
+              "pad_id": 3,
+              "owner_id": "initial_outer_00",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 366.5321168426124,
+              "interval_start": 496.5321168426124,
+              "interval_end": 570.0321168426124
+            },
+            {
+              "pad_id": 4,
+              "owner_id": "initial_middle_03",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 437.4684108946501,
+              "interval_start": 502.4684108946501,
+              "interval_end": 575.9684108946501
+            },
+            {
+              "pad_id": 5,
+              "owner_id": "initial_middle_11",
+              "commitment": "SOFT_UNSTARTED_REMOVABLE",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 488.27539062499994,
+              "interval_start": 578.275390625,
+              "interval_end": 711.775390625
+            }
+          ],
+          "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+        }
+      ],
+      "screenshots": [
+        {
+          "label": "first_declaration_plus1",
+          "path": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261022\\v6_replay_checks\\stress_rh_cp_sat_first_declaration_plus1.png",
+          "time": 262.3310817930876,
+          "selected_event": {
+            "aircraft_id": "initial_middle_09",
+            "details": {
+              "reason": "LAST_RESCUE_START",
+              "ring": "inner",
+              "trajectory_hash": "a3b27b7e03d9fecc849fd985856073255591ff21c1ca97474f1d6cb31167bc2e"
+            },
+            "time": 261.3310817930876,
+            "type": "emergency_declared"
+          },
+          "camera_api": "set_view(\"3d\", vertical_exaggeration=1.)",
+          "camera_position": [
+            [
+              2854.378443471157,
+              2866.9125621235007,
+              2921.9125621235007
+            ],
+            [
+              -12.53411865234375,
+              0.0,
+              55.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "image_load": "PASS",
+          "size": [
+            1280,
+            860
+          ],
+          "mode": "RGB",
+          "observation": {
+            "requested_time": 262.3310817930876,
+            "controller_time": 262.3310817930876,
+            "record_sample_time": 262.0,
+            "counts": {
+              "record_aircraft": 60,
+              "controller_aircraft": 60,
+              "record_visible_aircraft": 47,
+              "snapshot_uavs": 47,
+              "record_service": 3,
+              "snapshot_service": 3,
+              "record_completed": 13,
+              "snapshot_completed": 13
+            },
+            "checks": {
+              "controller_count_matches_record": true,
+              "visible_count_matches_record": true,
+              "service_count_matches_record": true,
+              "completed_count_matches_record": true,
+              "snapshot_time_matches_controller": true,
+              "record_time_not_after_query": true
+            },
+            "status_counts": {
+              "CLEARED": 13,
+              "HOLD_INNER": 17,
+              "LANDED_SERVICE": 3,
+              "FINAL_NORMAL": 3,
+              "HOLD_MIDDLE": 14,
+              "VERTICAL_DESCENT": 1,
+              "TRANSFER_M_I": 1,
+              "TRANSFER_O_M": 3,
+              "INBOUND": 5
+            },
+            "declared_aircraft_ids": [
+              "initial_middle_09"
+            ],
+            "active_rescue_ids": [],
+            "active_normal_ids": [
+              "initial_middle_01",
+              "initial_outer_04",
+              "initial_outer_08",
+              "req_000003",
+              "req_000004",
+              "req_000013",
+              "req_000014",
+              "req_000015",
+              "req_000016",
+              "req_000017",
+              "req_000018",
+              "req_000019",
+              "req_000020"
+            ],
+            "soft_rescue_rows": 2,
+            "soft_normal_rows": 0,
+            "physical_pad_occupants": [
+              {
+                "pad_id": 0,
+                "aircraft_id": "initial_middle_00",
+                "service_remaining": 71.1689182069124
+              },
+              {
+                "pad_id": 2,
+                "aircraft_id": "initial_middle_06",
+                "service_remaining": 91.16891820691234
+              },
+              {
+                "pad_id": 3,
+                "aircraft_id": "initial_outer_07",
+                "service_remaining": 4.864398390511951
+              }
+            ],
+            "future_pad_reservations": [
+              {
+                "pad_id": 1,
+                "owner_id": "initial_outer_08",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 189.99999999999994,
+                "interval_start": 264.99999999999994,
+                "interval_end": 338.49999999999994
+              },
+              {
+                "pad_id": 2,
+                "owner_id": "initial_middle_09",
+                "commitment": "SOFT_UNSTARTED_REMOVABLE",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 353.49999999999994,
+                "interval_start": 473.49999999999994,
+                "interval_end": 607.0
+              },
+              {
+                "pad_id": 3,
+                "owner_id": "req_000003",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 233.03211684261242,
+                "interval_start": 293.0321168426124,
+                "interval_end": 366.5321168426124
+              },
+              {
+                "pad_id": 4,
+                "owner_id": "initial_middle_01",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 219.9999999999999,
+                "interval_start": 269.9999999999999,
+                "interval_end": 343.4999999999999
+              }
+            ],
+            "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+          }
+        },
+        {
+          "label": "normal_after_declaration_plus1",
+          "path": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261022\\v6_replay_checks\\stress_rh_cp_sat_normal_after_declaration_plus1.png",
+          "time": 310.8882737210647,
+          "selected_event": {
+            "aircraft_id": "initial_outer_13",
+            "details": {
+              "dependencies": [],
+              "maneuver_kind": "FINAL_NORMAL",
+              "predicted_touchdown_soc": 0.3840724042990434,
+              "required_soc": 0.3210931751573668,
+              "start_soc": 0.4551655794564102,
+              "trajectory_hash": "7e44337871807604c133ef347aef949dfb4136e6f22c62e6b9fd6019c68989bf"
+            },
+            "time": 309.8882737210647,
+            "type": "maneuver_started"
+          },
+          "camera_api": "set_view(\"3d\", vertical_exaggeration=1.)",
+          "camera_position": [
+            [
+              2847.128159344639,
+              2847.128159344639,
+              2902.128159344639
+            ],
+            [
+              0.0,
+              0.0,
+              55.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "image_load": "PASS",
+          "size": [
+            1280,
+            860
+          ],
+          "mode": "RGB",
+          "observation": {
+            "requested_time": 310.8882737210647,
+            "controller_time": 310.8882737210647,
+            "record_sample_time": 310.0,
+            "counts": {
+              "record_aircraft": 61,
+              "controller_aircraft": 61,
+              "record_visible_aircraft": 47,
+              "snapshot_uavs": 47,
+              "record_service": 6,
+              "snapshot_service": 6,
+              "record_completed": 14,
+              "snapshot_completed": 14
+            },
+            "checks": {
+              "controller_count_matches_record": true,
+              "visible_count_matches_record": true,
+              "service_count_matches_record": true,
+              "completed_count_matches_record": true,
+              "snapshot_time_matches_controller": true,
+              "record_time_not_after_query": true
+            },
+            "status_counts": {
+              "CLEARED": 14,
+              "HOLD_INNER": 17,
+              "LANDED_SERVICE": 6,
+              "HOLD_MIDDLE": 17,
+              "FINAL_NORMAL": 1,
+              "TRANSFER_O_M": 3,
+              "HOLD_OUTER": 2,
+              "INBOUND": 1
+            },
+            "declared_aircraft_ids": [
+              "initial_middle_09",
+              "initial_outer_00"
+            ],
+            "active_rescue_ids": [],
+            "active_normal_ids": [
+              "initial_outer_13",
+              "req_000016",
+              "req_000019",
+              "req_000020",
+              "req_000021"
+            ],
+            "soft_rescue_rows": 4,
+            "soft_normal_rows": 0,
+            "physical_pad_occupants": [
+              {
+                "pad_id": 0,
+                "aircraft_id": "initial_middle_00",
+                "service_remaining": 22.611726278935294
+              },
+              {
+                "pad_id": 1,
+                "aircraft_id": "initial_outer_08",
+                "service_remaining": 27.611726278935237
+              },
+              {
+                "pad_id": 2,
+                "aircraft_id": "initial_middle_06",
+                "service_remaining": 42.61172627893524
+              },
+              {
+                "pad_id": 3,
+                "aircraft_id": "req_000003",
+                "service_remaining": 55.64384312154772
+              },
+              {
+                "pad_id": 4,
+                "aircraft_id": "initial_middle_01",
+                "service_remaining": 32.61172627893518
+              },
+              {
+                "pad_id": 5,
+                "aircraft_id": "initial_outer_04",
+                "service_remaining": 79.72590518360812
+              }
+            ],
+            "future_pad_reservations": [
+              {
+                "pad_id": 0,
+                "owner_id": "initial_outer_13",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 309.8882737210647,
+                "interval_start": 349.8882737210647,
+                "interval_end": 423.3882737210647
+              },
+              {
+                "pad_id": 2,
+                "owner_id": "initial_middle_09",
+                "commitment": "SOFT_UNSTARTED_REMOVABLE",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 353.49999999999994,
+                "interval_start": 473.49999999999994,
+                "interval_end": 607.0
+              },
+              {
+                "pad_id": 3,
+                "owner_id": "initial_outer_00",
+                "commitment": "SOFT_UNSTARTED_REMOVABLE",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 366.5321168426124,
+                "interval_start": 496.5321168426124,
+                "interval_end": 570.0321168426124
+              }
+            ],
+            "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+          }
+        },
+        {
+          "label": "end480",
+          "path": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261022\\v6_replay_checks\\stress_rh_cp_sat_end480.png",
+          "time": 480.0,
+          "selected_event": null,
+          "camera_api": "set_view(\"3d\", vertical_exaggeration=1.)",
+          "camera_position": [
+            [
+              2847.128159344639,
+              2847.128159344639,
+              2902.128159344639
+            ],
+            [
+              0.0,
+              0.0,
+              55.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "image_load": "PASS",
+          "size": [
+            1280,
+            860
+          ],
+          "mode": "RGB",
+          "observation": {
+            "requested_time": 480.0,
+            "controller_time": 480.0,
+            "record_sample_time": 480.0,
+            "counts": {
+              "record_aircraft": 70,
+              "controller_aircraft": 70,
+              "record_visible_aircraft": 45,
+              "snapshot_uavs": 45,
+              "record_service": 2,
+              "snapshot_service": 2,
+              "record_completed": 25,
+              "snapshot_completed": 25
+            },
+            "checks": {
+              "controller_count_matches_record": true,
+              "visible_count_matches_record": true,
+              "service_count_matches_record": true,
+              "completed_count_matches_record": true,
+              "snapshot_time_matches_controller": true,
+              "record_time_not_after_query": true
+            },
+            "status_counts": {
+              "CLEARED": 25,
+              "LANDED_SERVICE": 2,
+              "HOLD_INNER": 16,
+              "FINAL_EMERGENCY": 3,
+              "HOLD_MIDDLE": 14,
+              "VERTICAL_DESCENT": 1,
+              "TRANSFER_M_I": 2,
+              "HOLD_OUTER": 3,
+              "TRANSFER_O_M": 4
+            },
+            "declared_aircraft_ids": [
+              "initial_inner_09",
+              "initial_middle_03",
+              "initial_middle_09",
+              "initial_middle_11",
+              "initial_outer_00"
+            ],
+            "active_rescue_ids": [
+              "initial_inner_09",
+              "initial_middle_03",
+              "initial_middle_09",
+              "initial_outer_00"
+            ],
+            "active_normal_ids": [
+              "initial_outer_12",
+              "req_000012",
+              "req_000022",
+              "req_000025",
+              "req_000028",
+              "req_000030"
+            ],
+            "soft_rescue_rows": 2,
+            "soft_normal_rows": 0,
+            "physical_pad_occupants": [
+              {
+                "pad_id": 0,
+                "aircraft_id": "initial_inner_04",
+                "service_remaining": 38.5
+              },
+              {
+                "pad_id": 5,
+                "aircraft_id": "req_000019",
+                "service_remaining": 8.275390624999943
+              }
+            ],
+            "future_pad_reservations": [
+              {
+                "pad_id": 1,
+                "owner_id": "initial_inner_09",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 432.4684108946501,
+                "interval_start": 537.4684108946501,
+                "interval_end": 580.9684108946501
+              },
+              {
+                "pad_id": 3,
+                "owner_id": "initial_outer_00",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 366.5321168426124,
+                "interval_start": 496.5321168426124,
+                "interval_end": 570.0321168426124
+              },
+              {
+                "pad_id": 4,
+                "owner_id": "initial_middle_03",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 437.4684108946501,
+                "interval_start": 502.4684108946501,
+                "interval_end": 575.9684108946501
+              },
+              {
+                "pad_id": 5,
+                "owner_id": "initial_middle_11",
+                "commitment": "SOFT_UNSTARTED_REMOVABLE",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 488.27539062499994,
+                "interval_start": 578.275390625,
+                "interval_end": 711.775390625
+              }
+            ],
+            "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+          }
+        }
+      ],
+      "load": "PASS",
+      "time_bounds": [
+        0.0,
+        480.0
+      ],
+      "states_count": 735,
+      "code_commit": "9cfb78149f9c986025ba8a08707162d56fb7b645",
+      "human_acceptance": "HUMAN_PENDING",
+      "first_declaration": {
+        "aircraft_id": "initial_middle_09",
+        "details": {
+          "reason": "LAST_RESCUE_START",
+          "ring": "inner",
+          "trajectory_hash": "a3b27b7e03d9fecc849fd985856073255591ff21c1ca97474f1d6cb31167bc2e"
+        },
+        "time": 261.3310817930876,
+        "type": "emergency_declared"
+      },
+      "first_normal_start_after_declaration": {
+        "aircraft_id": "initial_outer_13",
+        "details": {
+          "dependencies": [],
+          "maneuver_kind": "FINAL_NORMAL",
+          "predicted_touchdown_soc": 0.3840724042990434,
+          "required_soc": 0.3210931751573668,
+          "start_soc": 0.4551655794564102,
+          "trajectory_hash": "7e44337871807604c133ef347aef949dfb4136e6f22c62e6b9fd6019c68989bf"
+        },
+        "time": 309.8882737210647,
+        "type": "maneuver_started"
+      },
+      "render": "PASS"
+    },
+    {
+      "scene": "diagnostic",
+      "method": "energy_slack",
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_opportunity_v6_diagnostic_480s_20261022\\energy_slack\\replay_0480",
+      "queries": [
+        {
+          "requested_time": 0.0,
+          "controller_time": 0.0,
+          "record_sample_time": 0.0,
+          "counts": {
+            "record_aircraft": 21,
+            "controller_aircraft": 21,
+            "record_visible_aircraft": 21,
+            "snapshot_uavs": 21,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "record_completed": 0,
+            "snapshot_completed": 0
+          },
+          "checks": {
+            "controller_count_matches_record": true,
+            "visible_count_matches_record": true,
+            "service_count_matches_record": true,
+            "completed_count_matches_record": true,
+            "snapshot_time_matches_controller": true,
+            "record_time_not_after_query": true
+          },
+          "status_counts": {
+            "LANDED_SERVICE": 3,
+            "HOLD_INNER": 1,
+            "FINAL_NORMAL": 5,
+            "TRANSFER_M_I": 6,
+            "TRANSFER_O_M": 6
+          },
+          "declared_aircraft_ids": [],
+          "active_rescue_ids": [],
+          "active_normal_ids": [
+            "initial_inner_01",
+            "initial_inner_02",
+            "initial_inner_03",
+            "initial_inner_04",
+            "initial_inner_05",
+            "initial_middle_00",
+            "initial_middle_01",
+            "initial_middle_02",
+            "initial_middle_03",
+            "initial_middle_04",
+            "initial_middle_05",
+            "initial_outer_00",
+            "initial_outer_01",
+            "initial_outer_02",
+            "initial_outer_03",
+            "initial_outer_04",
+            "initial_outer_05"
+          ],
+          "soft_rescue_rows": 0,
+          "soft_normal_rows": 0,
+          "physical_pad_occupants": [
+            {
+              "pad_id": 0,
+              "aircraft_id": "initial_ground_pad0",
+              "service_remaining": 15.0
+            },
+            {
+              "pad_id": 2,
+              "aircraft_id": "initial_ground_pad2",
+              "service_remaining": 30.0
+            },
+            {
+              "pad_id": 4,
+              "aircraft_id": "initial_ground_pad4",
+              "service_remaining": 45.0
+            }
+          ],
+          "future_pad_reservations": [
+            {
+              "pad_id": 0,
+              "owner_id": "initial_inner_02",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 0.0,
+              "interval_start": 50.0,
+              "interval_end": 183.5
+            },
+            {
+              "pad_id": 1,
+              "owner_id": "initial_inner_03",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 0.0,
+              "interval_start": 50.0,
+              "interval_end": 123.5
+            },
+            {
+              "pad_id": 2,
+              "owner_id": "initial_inner_04",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 0.0,
+              "interval_start": 50.0,
+              "interval_end": 123.5
+            },
+            {
+              "pad_id": 3,
+              "owner_id": "initial_inner_05",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 0.0,
+              "interval_start": 50.0,
+              "interval_end": 123.5
+            },
+            {
+              "pad_id": 4,
+              "owner_id": "initial_inner_01",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 0.0,
+              "interval_start": 70.0,
+              "interval_end": 143.5
+            }
+          ],
+          "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+        },
+        {
+          "requested_time": 420.0,
+          "controller_time": 420.0,
+          "record_sample_time": 420.0,
+          "counts": {
+            "record_aircraft": 42,
+            "controller_aircraft": 42,
+            "record_visible_aircraft": 21,
+            "snapshot_uavs": 21,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "record_completed": 21,
+            "snapshot_completed": 21
+          },
+          "checks": {
+            "controller_count_matches_record": true,
+            "visible_count_matches_record": true,
+            "service_count_matches_record": true,
+            "completed_count_matches_record": true,
+            "snapshot_time_matches_controller": true,
+            "record_time_not_after_query": true
+          },
+          "status_counts": {
+            "CLEARED": 21,
+            "LANDED_SERVICE": 3,
+            "FINAL_NORMAL": 5,
+            "HOLD_INNER": 5,
+            "VERTICAL_DESCENT": 1,
+            "TRANSFER_M_I": 2,
+            "TRANSFER_O_M": 3,
+            "INBOUND": 2
+          },
+          "declared_aircraft_ids": [],
+          "active_rescue_ids": [],
+          "active_normal_ids": [
+            "initial_outer_04",
+            "req_000005",
+            "req_000007",
+            "req_000008",
+            "req_000010",
+            "req_000013",
+            "req_000014",
+            "req_000015",
+            "req_000016",
+            "req_000017",
+            "req_000018",
+            "req_000019",
+            "req_000020"
+          ],
+          "soft_rescue_rows": 0,
+          "soft_normal_rows": 2,
+          "physical_pad_occupants": [
+            {
+              "pad_id": 1,
+              "aircraft_id": "req_000004",
+              "service_remaining": 2.0
+            },
+            {
+              "pad_id": 3,
+              "aircraft_id": "req_000002",
+              "service_remaining": 108.5
+            },
+            {
+              "pad_id": 4,
+              "aircraft_id": "initial_middle_05",
+              "service_remaining": 51.484908867405636
+            }
+          ],
+          "future_pad_reservations": [
+            {
+              "pad_id": 0,
+              "owner_id": "req_000007",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 314.99999999999994,
+              "interval_start": 449.99999999999994,
+              "interval_end": 583.5
+            },
+            {
+              "pad_id": 1,
+              "owner_id": "req_000008",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 356.21081308031825,
+              "interval_start": 466.21081308031825,
+              "interval_end": 509.71081308031825
+            },
+            {
+              "pad_id": 1,
+              "owner_id": "req_000013",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 411.48490886740564,
+              "interval_start": 571.4849088674057,
+              "interval_end": 644.9849088674057
+            },
+            {
+              "pad_id": 2,
+              "owner_id": "initial_outer_04",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 319.99999999999994,
+              "interval_start": 434.99999999999994,
+              "interval_end": 568.5
+            },
+            {
+              "pad_id": 4,
+              "owner_id": "req_000010",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 362.0,
+              "interval_start": 542.0,
+              "interval_end": 615.5
+            }
+          ],
+          "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+        },
+        {
+          "requested_time": 480.0,
+          "controller_time": 480.0,
+          "record_sample_time": 480.0,
+          "counts": {
+            "record_aircraft": 44,
+            "controller_aircraft": 44,
+            "record_visible_aircraft": 21,
+            "snapshot_uavs": 21,
+            "record_service": 5,
+            "snapshot_service": 5,
+            "record_completed": 23,
+            "snapshot_completed": 23
+          },
+          "checks": {
+            "controller_count_matches_record": true,
+            "visible_count_matches_record": true,
+            "service_count_matches_record": true,
+            "completed_count_matches_record": true,
+            "snapshot_time_matches_controller": true,
+            "record_time_not_after_query": true
+          },
+          "status_counts": {
+            "CLEARED": 23,
+            "LANDED_SERVICE": 5,
+            "HOLD_INNER": 6,
+            "FINAL_NORMAL": 4,
+            "HOLD_MIDDLE": 1,
+            "TRANSFER_M_I": 2,
+            "TRANSFER_O_M": 1,
+            "INBOUND": 2
+          },
+          "declared_aircraft_ids": [],
+          "active_rescue_ids": [],
+          "active_normal_ids": [
+            "req_000010",
+            "req_000012",
+            "req_000013",
+            "req_000015",
+            "req_000018",
+            "req_000019",
+            "req_000020",
+            "req_000021",
+            "req_000022"
+          ],
+          "soft_rescue_rows": 0,
+          "soft_normal_rows": 1,
+          "physical_pad_occupants": [
+            {
+              "pad_id": 0,
+              "aircraft_id": "req_000007",
+              "service_remaining": 103.5
+            },
+            {
+              "pad_id": 1,
+              "aircraft_id": "req_000008",
+              "service_remaining": 29.710813080318246
+            },
+            {
+              "pad_id": 2,
+              "aircraft_id": "initial_outer_04",
+              "service_remaining": 88.5
+            },
+            {
+              "pad_id": 3,
+              "aircraft_id": "req_000002",
+              "service_remaining": 48.5
+            },
+            {
+              "pad_id": 5,
+              "aircraft_id": "req_000005",
+              "service_remaining": 66.99999999999966
+            }
+          ],
+          "future_pad_reservations": [
+            {
+              "pad_id": 1,
+              "owner_id": "req_000013",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 411.48490886740564,
+              "interval_start": 571.4849088674057,
+              "interval_end": 644.9849088674057
+            },
+            {
+              "pad_id": 3,
+              "owner_id": "req_000012",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 459.9999999999994,
+              "interval_start": 574.9999999999993,
+              "interval_end": 648.4999999999993
+            },
+            {
+              "pad_id": 4,
+              "owner_id": "req_000010",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 362.0,
+              "interval_start": 542.0,
+              "interval_end": 615.5
+            },
+            {
+              "pad_id": 5,
+              "owner_id": "req_000015",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 460.0789099847668,
+              "interval_start": 600.0789099847668,
+              "interval_end": 673.5789099847668
+            }
+          ],
+          "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+        }
+      ],
+      "screenshots": [
+        {
+          "label": "end480",
+          "path": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261022\\v6_replay_checks\\diagnostic_energy_slack_end480.png",
+          "time": 480.0,
+          "selected_event": null,
+          "camera_api": "set_view(\"3d\", vertical_exaggeration=1.)",
+          "camera_position": [
+            [
+              2851.0858053013026,
+              2857.9569295688807,
+              2912.9569295688807
+            ],
+            [
+              -6.871124267578125,
+              0.0,
+              55.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "image_load": "PASS",
+          "size": [
+            1280,
+            860
+          ],
+          "mode": "RGB",
+          "observation": {
+            "requested_time": 480.0,
+            "controller_time": 480.0,
+            "record_sample_time": 480.0,
+            "counts": {
+              "record_aircraft": 44,
+              "controller_aircraft": 44,
+              "record_visible_aircraft": 21,
+              "snapshot_uavs": 21,
+              "record_service": 5,
+              "snapshot_service": 5,
+              "record_completed": 23,
+              "snapshot_completed": 23
+            },
+            "checks": {
+              "controller_count_matches_record": true,
+              "visible_count_matches_record": true,
+              "service_count_matches_record": true,
+              "completed_count_matches_record": true,
+              "snapshot_time_matches_controller": true,
+              "record_time_not_after_query": true
+            },
+            "status_counts": {
+              "CLEARED": 23,
+              "LANDED_SERVICE": 5,
+              "HOLD_INNER": 6,
+              "FINAL_NORMAL": 4,
+              "HOLD_MIDDLE": 1,
+              "TRANSFER_M_I": 2,
+              "TRANSFER_O_M": 1,
+              "INBOUND": 2
+            },
+            "declared_aircraft_ids": [],
+            "active_rescue_ids": [],
+            "active_normal_ids": [
+              "req_000010",
+              "req_000012",
+              "req_000013",
+              "req_000015",
+              "req_000018",
+              "req_000019",
+              "req_000020",
+              "req_000021",
+              "req_000022"
+            ],
+            "soft_rescue_rows": 0,
+            "soft_normal_rows": 1,
+            "physical_pad_occupants": [
+              {
+                "pad_id": 0,
+                "aircraft_id": "req_000007",
+                "service_remaining": 103.5
+              },
+              {
+                "pad_id": 1,
+                "aircraft_id": "req_000008",
+                "service_remaining": 29.710813080318246
+              },
+              {
+                "pad_id": 2,
+                "aircraft_id": "initial_outer_04",
+                "service_remaining": 88.5
+              },
+              {
+                "pad_id": 3,
+                "aircraft_id": "req_000002",
+                "service_remaining": 48.5
+              },
+              {
+                "pad_id": 5,
+                "aircraft_id": "req_000005",
+                "service_remaining": 66.99999999999966
+              }
+            ],
+            "future_pad_reservations": [
+              {
+                "pad_id": 1,
+                "owner_id": "req_000013",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 411.48490886740564,
+                "interval_start": 571.4849088674057,
+                "interval_end": 644.9849088674057
+              },
+              {
+                "pad_id": 3,
+                "owner_id": "req_000012",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 459.9999999999994,
+                "interval_start": 574.9999999999993,
+                "interval_end": 648.4999999999993
+              },
+              {
+                "pad_id": 4,
+                "owner_id": "req_000010",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 362.0,
+                "interval_start": 542.0,
+                "interval_end": 615.5
+              },
+              {
+                "pad_id": 5,
+                "owner_id": "req_000015",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 460.0789099847668,
+                "interval_start": 600.0789099847668,
+                "interval_end": 673.5789099847668
+              }
+            ],
+            "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+          }
+        }
+      ],
+      "load": "PASS",
+      "time_bounds": [
+        0.0,
+        480.0
+      ],
+      "states_count": 692,
+      "code_commit": "9cfb78149f9c986025ba8a08707162d56fb7b645",
+      "human_acceptance": "HUMAN_PENDING",
+      "first_declaration": null,
+      "first_normal_start_after_declaration": null,
+      "render": "PASS"
+    },
+    {
+      "scene": "diagnostic",
+      "method": "rh_cp_sat",
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_opportunity_v6_diagnostic_480s_20261022\\rh_cp_sat\\replay_0480",
+      "queries": [
+        {
+          "requested_time": 0.0,
+          "controller_time": 0.0,
+          "record_sample_time": 0.0,
+          "counts": {
+            "record_aircraft": 21,
+            "controller_aircraft": 21,
+            "record_visible_aircraft": 21,
+            "snapshot_uavs": 21,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "record_completed": 0,
+            "snapshot_completed": 0
+          },
+          "checks": {
+            "controller_count_matches_record": true,
+            "visible_count_matches_record": true,
+            "service_count_matches_record": true,
+            "completed_count_matches_record": true,
+            "snapshot_time_matches_controller": true,
+            "record_time_not_after_query": true
+          },
+          "status_counts": {
+            "LANDED_SERVICE": 3,
+            "FINAL_NORMAL": 5,
+            "HOLD_INNER": 1,
+            "TRANSFER_M_I": 6,
+            "TRANSFER_O_M": 6
+          },
+          "declared_aircraft_ids": [],
+          "active_rescue_ids": [],
+          "active_normal_ids": [
+            "initial_inner_00",
+            "initial_inner_01",
+            "initial_inner_02",
+            "initial_inner_04",
+            "initial_inner_05",
+            "initial_middle_00",
+            "initial_middle_01",
+            "initial_middle_02",
+            "initial_middle_03",
+            "initial_middle_04",
+            "initial_middle_05",
+            "initial_outer_00",
+            "initial_outer_01",
+            "initial_outer_02",
+            "initial_outer_03",
+            "initial_outer_04",
+            "initial_outer_05"
+          ],
+          "soft_rescue_rows": 0,
+          "soft_normal_rows": 0,
+          "physical_pad_occupants": [
+            {
+              "pad_id": 0,
+              "aircraft_id": "initial_ground_pad0",
+              "service_remaining": 15.0
+            },
+            {
+              "pad_id": 2,
+              "aircraft_id": "initial_ground_pad2",
+              "service_remaining": 30.0
+            },
+            {
+              "pad_id": 4,
+              "aircraft_id": "initial_ground_pad4",
+              "service_remaining": 45.0
+            }
+          ],
+          "future_pad_reservations": [
+            {
+              "pad_id": 0,
+              "owner_id": "initial_inner_01",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 0.0,
+              "interval_start": 35.0,
+              "interval_end": 108.5
+            },
+            {
+              "pad_id": 1,
+              "owner_id": "initial_inner_02",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 0.0,
+              "interval_start": 35.0,
+              "interval_end": 168.5
+            },
+            {
+              "pad_id": 2,
+              "owner_id": "initial_inner_04",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 0.0,
+              "interval_start": 50.0,
+              "interval_end": 123.5
+            },
+            {
+              "pad_id": 3,
+              "owner_id": "initial_inner_05",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 0.0,
+              "interval_start": 50.0,
+              "interval_end": 123.5
+            },
+            {
+              "pad_id": 5,
+              "owner_id": "initial_inner_00",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 0.0,
+              "interval_start": 35.0,
+              "interval_end": 108.5
+            }
+          ],
+          "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+        },
+        {
+          "requested_time": 327.7449604690264,
+          "controller_time": 327.7449604690264,
+          "record_sample_time": 327.7449604690264,
+          "counts": {
+            "record_aircraft": 37,
+            "controller_aircraft": 37,
+            "record_visible_aircraft": 20,
+            "snapshot_uavs": 20,
+            "record_service": 2,
+            "snapshot_service": 2,
+            "record_completed": 17,
+            "snapshot_completed": 17
+          },
+          "checks": {
+            "controller_count_matches_record": true,
+            "visible_count_matches_record": true,
+            "service_count_matches_record": true,
+            "completed_count_matches_record": true,
+            "snapshot_time_matches_controller": true,
+            "record_time_not_after_query": true
+          },
+          "status_counts": {
+            "CLEARED": 17,
+            "FINAL_NORMAL": 4,
+            "HOLD_INNER": 5,
+            "LANDED_SERVICE": 2,
+            "VERTICAL_DESCENT": 1,
+            "TRANSFER_M_I": 3,
+            "HOLD_MIDDLE": 1,
+            "TRANSFER_O_M": 2,
+            "INBOUND": 2
+          },
+          "declared_aircraft_ids": [
+            "initial_outer_00"
+          ],
+          "active_rescue_ids": [],
+          "active_normal_ids": [
+            "initial_middle_00",
+            "initial_middle_04",
+            "req_000001",
+            "req_000002",
+            "req_000005",
+            "req_000008",
+            "req_000010",
+            "req_000011",
+            "req_000012",
+            "req_000013",
+            "req_000014",
+            "req_000015"
+          ],
+          "soft_rescue_rows": 2,
+          "soft_normal_rows": 0,
+          "physical_pad_occupants": [
+            {
+              "pad_id": 1,
+              "aircraft_id": "req_000006",
+              "service_remaining": 38.46585261129184
+            },
+            {
+              "pad_id": 3,
+              "aircraft_id": "initial_outer_04",
+              "service_remaining": 65.75503953097353
+            }
+          ],
+          "future_pad_reservations": [
+            {
+              "pad_id": 0,
+              "owner_id": "req_000005",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 269.2781635940264,
+              "interval_start": 329.2781635940264,
+              "interval_end": 462.7781635940264
+            },
+            {
+              "pad_id": 1,
+              "owner_id": "req_000002",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 259.9999999999999,
+              "interval_start": 409.9999999999999,
+              "interval_end": 543.4999999999999
+            },
+            {
+              "pad_id": 3,
+              "owner_id": "initial_outer_00",
+              "commitment": "SOFT_UNSTARTED_REMOVABLE",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 393.49999999999994,
+              "interval_start": 483.49999999999994,
+              "interval_end": 557.0
+            },
+            {
+              "pad_id": 4,
+              "owner_id": "initial_middle_00",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 304.242665334512,
+              "interval_start": 419.242665334512,
+              "interval_end": 492.742665334512
+            },
+            {
+              "pad_id": 5,
+              "owner_id": "initial_middle_04",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 243.5,
+              "interval_start": 358.5,
+              "interval_end": 432.0
+            }
+          ],
+          "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+        },
+        {
+          "requested_time": 420.0,
+          "controller_time": 420.0,
+          "record_sample_time": 420.0,
+          "counts": {
+            "record_aircraft": 42,
+            "controller_aircraft": 42,
+            "record_visible_aircraft": 22,
+            "snapshot_uavs": 22,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "record_completed": 20,
+            "snapshot_completed": 20
+          },
+          "checks": {
+            "controller_count_matches_record": true,
+            "visible_count_matches_record": true,
+            "service_count_matches_record": true,
+            "completed_count_matches_record": true,
+            "snapshot_time_matches_controller": true,
+            "record_time_not_after_query": true
+          },
+          "status_counts": {
+            "CLEARED": 20,
+            "VERTICAL_DESCENT": 2,
+            "LANDED_SERVICE": 3,
+            "FINAL_EMERGENCY": 1,
+            "FINAL_NORMAL": 4,
+            "HOLD_INNER": 5,
+            "HOLD_MIDDLE": 1,
+            "TRANSFER_M_I": 1,
+            "TRANSFER_O_M": 2,
+            "HOLD_OUTER": 1,
+            "INBOUND": 2
+          },
+          "declared_aircraft_ids": [
+            "initial_outer_00"
+          ],
+          "active_rescue_ids": [
+            "initial_outer_00"
+          ],
+          "active_normal_ids": [
+            "initial_middle_00",
+            "initial_outer_01",
+            "req_000002",
+            "req_000008",
+            "req_000011",
+            "req_000012",
+            "req_000013",
+            "req_000016",
+            "req_000018",
+            "req_000019",
+            "req_000020"
+          ],
+          "soft_rescue_rows": 0,
+          "soft_normal_rows": 2,
+          "physical_pad_occupants": [
+            {
+              "pad_id": 0,
+              "aircraft_id": "req_000005",
+              "service_remaining": 42.77816359402641
+            },
+            {
+              "pad_id": 2,
+              "aircraft_id": "req_000010",
+              "service_remaining": 37.77816359402641
+            },
+            {
+              "pad_id": 5,
+              "aircraft_id": "initial_middle_04",
+              "service_remaining": 12.0
+            }
+          ],
+          "future_pad_reservations": [
+            {
+              "pad_id": 0,
+              "owner_id": "req_000012",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 397.4779089820094,
+              "interval_start": 502.47790898200947,
+              "interval_end": 575.9779089820095
+            },
+            {
+              "pad_id": 2,
+              "owner_id": "req_000011",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 397.7781635940264,
+              "interval_start": 502.7781635940264,
+              "interval_end": 546.2781635940264
+            },
+            {
+              "pad_id": 3,
+              "owner_id": "initial_outer_00",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 393.49999999999994,
+              "interval_start": 483.49999999999994,
+              "interval_end": 557.0
+            },
+            {
+              "pad_id": 4,
+              "owner_id": "req_000008",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 412.4779089820094,
+              "interval_start": 562.4779089820095,
+              "interval_end": 605.9779089820095
+            },
+            {
+              "pad_id": 5,
+              "owner_id": "initial_outer_01",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 412.4779089820094,
+              "interval_start": 447.4779089820094,
+              "interval_end": 520.9779089820095
+            }
+          ],
+          "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+        },
+        {
+          "requested_time": 480.0,
+          "controller_time": 480.0,
+          "record_sample_time": 480.0,
+          "counts": {
+            "record_aircraft": 44,
+            "controller_aircraft": 44,
+            "record_visible_aircraft": 21,
+            "snapshot_uavs": 21,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "record_completed": 23,
+            "snapshot_completed": 23
+          },
+          "checks": {
+            "controller_count_matches_record": true,
+            "visible_count_matches_record": true,
+            "service_count_matches_record": true,
+            "completed_count_matches_record": true,
+            "snapshot_time_matches_controller": true,
+            "record_time_not_after_query": true
+          },
+          "status_counts": {
+            "CLEARED": 23,
+            "LANDED_SERVICE": 3,
+            "FINAL_EMERGENCY": 1,
+            "HOLD_INNER": 4,
+            "FINAL_NORMAL": 6,
+            "HOLD_MIDDLE": 2,
+            "TRANSFER_O_M": 2,
+            "TRANSFER_M_I": 1,
+            "INBOUND": 2
+          },
+          "declared_aircraft_ids": [
+            "initial_outer_00",
+            "req_000007"
+          ],
+          "active_rescue_ids": [
+            "initial_outer_00"
+          ],
+          "active_normal_ids": [
+            "req_000008",
+            "req_000011",
+            "req_000012",
+            "req_000014",
+            "req_000015",
+            "req_000016",
+            "req_000017",
+            "req_000019",
+            "req_000020",
+            "req_000021",
+            "req_000022"
+          ],
+          "soft_rescue_rows": 2,
+          "soft_normal_rows": 1,
+          "physical_pad_occupants": [
+            {
+              "pad_id": 1,
+              "aircraft_id": "req_000002",
+              "service_remaining": 63.499999999999886
+            },
+            {
+              "pad_id": 4,
+              "aircraft_id": "initial_middle_00",
+              "service_remaining": 12.742665334512026
+            },
+            {
+              "pad_id": 5,
+              "aircraft_id": "initial_outer_01",
+              "service_remaining": 40.97790898200947
+            }
+          ],
+          "future_pad_reservations": [
+            {
+              "pad_id": 0,
+              "owner_id": "req_000012",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 397.4779089820094,
+              "interval_start": 502.47790898200947,
+              "interval_end": 575.9779089820095
+            },
+            {
+              "pad_id": 1,
+              "owner_id": "req_000014",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 449.9999999999999,
+              "interval_start": 594.9999999999999,
+              "interval_end": 728.4999999999999
+            },
+            {
+              "pad_id": 2,
+              "owner_id": "req_000011",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 397.7781635940264,
+              "interval_start": 502.7781635940264,
+              "interval_end": 546.2781635940264
+            },
+            {
+              "pad_id": 2,
+              "owner_id": "req_000016",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 474.33436370659723,
+              "interval_start": 589.3343637065973,
+              "interval_end": 662.8343637065973
+            },
+            {
+              "pad_id": 3,
+              "owner_id": "initial_outer_00",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 393.49999999999994,
+              "interval_start": 483.49999999999994,
+              "interval_end": 557.0
+            },
+            {
+              "pad_id": 3,
+              "owner_id": "req_000007",
+              "commitment": "SOFT_UNSTARTED_REMOVABLE",
+              "maneuver_kind": "FINAL_EMERGENCY",
+              "maneuver_start": 557.0,
+              "interval_start": 682.0,
+              "interval_end": 815.5
+            },
+            {
+              "pad_id": 4,
+              "owner_id": "req_000008",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 412.4779089820094,
+              "interval_start": 562.4779089820095,
+              "interval_end": 605.9779089820095
+            },
+            {
+              "pad_id": 5,
+              "owner_id": "req_000015",
+              "commitment": "COMMITTED",
+              "maneuver_kind": "FINAL_NORMAL",
+              "maneuver_start": 444.99999999999994,
+              "interval_start": 585.0,
+              "interval_end": 658.5
+            }
+          ],
+          "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+        }
+      ],
+      "screenshots": [
+        {
+          "label": "first_declaration_plus1",
+          "path": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261022\\v6_replay_checks\\diagnostic_rh_cp_sat_first_declaration_plus1.png",
+          "time": 328.7449604690264,
+          "selected_event": {
+            "aircraft_id": "initial_outer_00",
+            "details": {
+              "reason": "NORMAL_RESERVE_IMPOSSIBLE",
+              "ring": "inner",
+              "trajectory_hash": "10ab393c8ec54eb01aa32ee46f3e51f092d9e91e2aed27c2bf085fe953b29429"
+            },
+            "time": 327.7449604690264,
+            "type": "emergency_declared"
+          },
+          "camera_api": "set_view(\"3d\", vertical_exaggeration=1.)",
+          "camera_position": [
+            [
+              2847.128159344639,
+              2847.128159344639,
+              2902.128159344639
+            ],
+            [
+              0.0,
+              0.0,
+              55.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "image_load": "PASS",
+          "size": [
+            1280,
+            860
+          ],
+          "mode": "RGB",
+          "observation": {
+            "requested_time": 328.7449604690264,
+            "controller_time": 328.7449604690264,
+            "record_sample_time": 328.30986861456387,
+            "counts": {
+              "record_aircraft": 37,
+              "controller_aircraft": 37,
+              "record_visible_aircraft": 20,
+              "snapshot_uavs": 20,
+              "record_service": 2,
+              "snapshot_service": 2,
+              "record_completed": 17,
+              "snapshot_completed": 17
+            },
+            "checks": {
+              "controller_count_matches_record": true,
+              "visible_count_matches_record": true,
+              "service_count_matches_record": true,
+              "completed_count_matches_record": true,
+              "snapshot_time_matches_controller": true,
+              "record_time_not_after_query": true
+            },
+            "status_counts": {
+              "CLEARED": 17,
+              "FINAL_NORMAL": 4,
+              "HOLD_INNER": 5,
+              "LANDED_SERVICE": 2,
+              "VERTICAL_DESCENT": 1,
+              "TRANSFER_M_I": 3,
+              "HOLD_MIDDLE": 1,
+              "TRANSFER_O_M": 2,
+              "INBOUND": 2
+            },
+            "declared_aircraft_ids": [
+              "initial_outer_00"
+            ],
+            "active_rescue_ids": [],
+            "active_normal_ids": [
+              "initial_middle_00",
+              "initial_middle_04",
+              "req_000001",
+              "req_000002",
+              "req_000005",
+              "req_000008",
+              "req_000010",
+              "req_000011",
+              "req_000012",
+              "req_000013",
+              "req_000014",
+              "req_000015"
+            ],
+            "soft_rescue_rows": 2,
+            "soft_normal_rows": 0,
+            "physical_pad_occupants": [
+              {
+                "pad_id": 1,
+                "aircraft_id": "req_000006",
+                "service_remaining": 37.46585261129184
+              },
+              {
+                "pad_id": 3,
+                "aircraft_id": "initial_outer_04",
+                "service_remaining": 64.75503953097353
+              }
+            ],
+            "future_pad_reservations": [
+              {
+                "pad_id": 0,
+                "owner_id": "req_000005",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 269.2781635940264,
+                "interval_start": 329.2781635940264,
+                "interval_end": 462.7781635940264
+              },
+              {
+                "pad_id": 1,
+                "owner_id": "req_000002",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 259.9999999999999,
+                "interval_start": 409.9999999999999,
+                "interval_end": 543.4999999999999
+              },
+              {
+                "pad_id": 3,
+                "owner_id": "initial_outer_00",
+                "commitment": "SOFT_UNSTARTED_REMOVABLE",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 393.49999999999994,
+                "interval_start": 483.49999999999994,
+                "interval_end": 557.0
+              },
+              {
+                "pad_id": 4,
+                "owner_id": "initial_middle_00",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 304.242665334512,
+                "interval_start": 419.242665334512,
+                "interval_end": 492.742665334512
+              },
+              {
+                "pad_id": 5,
+                "owner_id": "initial_middle_04",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 243.5,
+                "interval_start": 358.5,
+                "interval_end": 432.0
+              }
+            ],
+            "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+          }
+        },
+        {
+          "label": "end480",
+          "path": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261022\\v6_replay_checks\\diagnostic_rh_cp_sat_end480.png",
+          "time": 480.0,
+          "selected_event": null,
+          "camera_api": "set_view(\"3d\", vertical_exaggeration=1.)",
+          "camera_position": [
+            [
+              2851.0858053013026,
+              2857.9569295688807,
+              2912.9569295688807
+            ],
+            [
+              -6.871124267578125,
+              0.0,
+              55.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "image_load": "PASS",
+          "size": [
+            1280,
+            860
+          ],
+          "mode": "RGB",
+          "observation": {
+            "requested_time": 480.0,
+            "controller_time": 480.0,
+            "record_sample_time": 480.0,
+            "counts": {
+              "record_aircraft": 44,
+              "controller_aircraft": 44,
+              "record_visible_aircraft": 21,
+              "snapshot_uavs": 21,
+              "record_service": 3,
+              "snapshot_service": 3,
+              "record_completed": 23,
+              "snapshot_completed": 23
+            },
+            "checks": {
+              "controller_count_matches_record": true,
+              "visible_count_matches_record": true,
+              "service_count_matches_record": true,
+              "completed_count_matches_record": true,
+              "snapshot_time_matches_controller": true,
+              "record_time_not_after_query": true
+            },
+            "status_counts": {
+              "CLEARED": 23,
+              "LANDED_SERVICE": 3,
+              "FINAL_EMERGENCY": 1,
+              "HOLD_INNER": 4,
+              "FINAL_NORMAL": 6,
+              "HOLD_MIDDLE": 2,
+              "TRANSFER_O_M": 2,
+              "TRANSFER_M_I": 1,
+              "INBOUND": 2
+            },
+            "declared_aircraft_ids": [
+              "initial_outer_00",
+              "req_000007"
+            ],
+            "active_rescue_ids": [
+              "initial_outer_00"
+            ],
+            "active_normal_ids": [
+              "req_000008",
+              "req_000011",
+              "req_000012",
+              "req_000014",
+              "req_000015",
+              "req_000016",
+              "req_000017",
+              "req_000019",
+              "req_000020",
+              "req_000021",
+              "req_000022"
+            ],
+            "soft_rescue_rows": 2,
+            "soft_normal_rows": 1,
+            "physical_pad_occupants": [
+              {
+                "pad_id": 1,
+                "aircraft_id": "req_000002",
+                "service_remaining": 63.499999999999886
+              },
+              {
+                "pad_id": 4,
+                "aircraft_id": "initial_middle_00",
+                "service_remaining": 12.742665334512026
+              },
+              {
+                "pad_id": 5,
+                "aircraft_id": "initial_outer_01",
+                "service_remaining": 40.97790898200947
+              }
+            ],
+            "future_pad_reservations": [
+              {
+                "pad_id": 0,
+                "owner_id": "req_000012",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 397.4779089820094,
+                "interval_start": 502.47790898200947,
+                "interval_end": 575.9779089820095
+              },
+              {
+                "pad_id": 1,
+                "owner_id": "req_000014",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 449.9999999999999,
+                "interval_start": 594.9999999999999,
+                "interval_end": 728.4999999999999
+              },
+              {
+                "pad_id": 2,
+                "owner_id": "req_000011",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 397.7781635940264,
+                "interval_start": 502.7781635940264,
+                "interval_end": 546.2781635940264
+              },
+              {
+                "pad_id": 2,
+                "owner_id": "req_000016",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 474.33436370659723,
+                "interval_start": 589.3343637065973,
+                "interval_end": 662.8343637065973
+              },
+              {
+                "pad_id": 3,
+                "owner_id": "initial_outer_00",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 393.49999999999994,
+                "interval_start": 483.49999999999994,
+                "interval_end": 557.0
+              },
+              {
+                "pad_id": 3,
+                "owner_id": "req_000007",
+                "commitment": "SOFT_UNSTARTED_REMOVABLE",
+                "maneuver_kind": "FINAL_EMERGENCY",
+                "maneuver_start": 557.0,
+                "interval_start": 682.0,
+                "interval_end": 815.5
+              },
+              {
+                "pad_id": 4,
+                "owner_id": "req_000008",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 412.4779089820094,
+                "interval_start": 562.4779089820095,
+                "interval_end": 605.9779089820095
+              },
+              {
+                "pad_id": 5,
+                "owner_id": "req_000015",
+                "commitment": "COMMITTED",
+                "maneuver_kind": "FINAL_NORMAL",
+                "maneuver_start": 444.99999999999994,
+                "interval_start": 585.0,
+                "interval_end": 658.5
+              }
+            ],
+            "soft_classification": "rescue means owner currently emergency.declared; rows are resource dependencies, not unique maneuvers"
+          }
+        }
+      ],
+      "load": "PASS",
+      "time_bounds": [
+        0.0,
+        480.0
+      ],
+      "states_count": 684,
+      "code_commit": "9cfb78149f9c986025ba8a08707162d56fb7b645",
+      "human_acceptance": "HUMAN_PENDING",
+      "first_declaration": {
+        "aircraft_id": "initial_outer_00",
+        "details": {
+          "reason": "NORMAL_RESERVE_IMPOSSIBLE",
+          "ring": "inner",
+          "trajectory_hash": "10ab393c8ec54eb01aa32ee46f3e51f092d9e91e2aed27c2bf085fe953b29429"
+        },
+        "time": 327.7449604690264,
+        "type": "emergency_declared"
+      },
+      "first_normal_start_after_declaration": {
+        "aircraft_id": "req_000010",
+        "details": {
+          "dependencies": [],
+          "maneuver_kind": "FINAL_NORMAL",
+          "predicted_touchdown_soc": 0.5499623774166905,
+          "required_soc": 0.31710569204603556,
+          "start_soc": 0.6170680694627261,
+          "trajectory_hash": "a504d2851593f4627f0784cff4da91481575c69b08b8e7c3ea9c960e102c4594"
+        },
+        "time": 349.2781635940264,
+        "type": "maneuver_started"
+      },
+      "render": "PASS"
+    }
+  ],
+  "visual_review": "HUMAN_PENDING",
+  "viewer_api": "ReplayController(ReplayBundle.load(path)); seek(t); RotatingSlotsReplayViewer(controller, off_screen=True); set_view(\"3d\"); draw(); _plotter.screenshot(path)",
+  "head": "50e669721563eb0ee0b4d5b2b25d248ad118a3fe",
+  "viewer_diff_from_archive_commit": "",
+  "normal_event_definition": "type=maneuver_started, details.maneuver_kind=FINAL_NORMAL, time strictly after first emergency_declared",
+  "launch_commands": [
+    "& .\\venv\\Scripts\\python.exe -c \"from terminal_marl.visualization.rotating_slots_replay import ReplayController, RotatingSlotsReplayViewer; v=RotatingSlotsReplayViewer(ReplayController(r'D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_opportunity_v6_stress_480s_20261022\\energy_slack\\replay_0480')); v.run()\"",
+    "& .\\venv\\Scripts\\python.exe -c \"from terminal_marl.visualization.rotating_slots_replay import ReplayController, RotatingSlotsReplayViewer; v=RotatingSlotsReplayViewer(ReplayController(r'D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_opportunity_v6_stress_480s_20261022\\rh_cp_sat\\replay_0480')); v.run()\"",
+    "& .\\venv\\Scripts\\python.exe -c \"from terminal_marl.visualization.rotating_slots_replay import ReplayController, RotatingSlotsReplayViewer; v=RotatingSlotsReplayViewer(ReplayController(r'D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_opportunity_v6_diagnostic_480s_20261022\\energy_slack\\replay_0480')); v.run()\"",
+    "& .\\venv\\Scripts\\python.exe -c \"from terminal_marl.visualization.rotating_slots_replay import ReplayController, RotatingSlotsReplayViewer; v=RotatingSlotsReplayViewer(ReplayController(r'D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_opportunity_v6_diagnostic_480s_20261022\\rh_cp_sat\\replay_0480')); v.run()\""
+  ],
+  "all_query_checks_pass": true,
+  "image_count": 9
+}

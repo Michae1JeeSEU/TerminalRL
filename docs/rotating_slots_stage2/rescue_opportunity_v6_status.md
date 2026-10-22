@@ -1,6 +1,97 @@
 # Rescue opportunity v6 bounded two-scenario protocol
 
-Status: **RUNNING — startup verified**. Both formal scenario pairs started on the server at **2026-10-22 12:01:26 UTC**. Initial checkpoints and advancing state streams were verified; no complete 60 s boundary summary had been observed at the final startup check. Formal 480 s results remain null and `HUMAN_PENDING`.
+Status: **FOUR RUNS COMPLETED TO 480 s**. Both scenario pairs have a common completed boundary of 480 s and status `PARTIAL_REQUESTED_WINDOW`. All four replay audits passed. Numerical and representative-frame evidence is recorded below; human acceptance remains `HUMAN_PENDING`. The startup observations and initial estimates retained later in this document are historical.
+
+**Final 480 s observations and limits.** The rule implementation and the bounded two-scenario experiment are complete. The quality outcome is not fully successful: below-reserve aircraft with repeated `UNKNOWN` rescue searches remain waiting. Zero failures and zero emergency touchdowns do not establish emergency success. The numerical source is `artifacts/rotating_slots_stage2_20261022/v6_final_0480_facts.json`; original per-step records remain in the frozen campaign roots.
+
+| Scenario / method | Offered | Normal | Emergency | Total | F | Airborne / upstream | Declared / started |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Stress / Slack | 67 | 24 | 0 | 24 | 0 | 43 / 0 | 6 / 4 |
+| Stress / CP | 67 | 24 | 0 | 24 | 0 | 43 / 0 | 5 / 4 |
+| Diagnostic / Slack | 41 | 25 | 0 | 25 | 0 | 16 / 0 | 0 / 0 |
+| Diagnostic / CP | 41 | 23 | 0 | 23 | 0 | 18 / 0 | 2 / 1 |
+
+Stress produced 24 normal touchdowns for each method, compared with 17 each in v5. Total touchdowns were 24 each versus v5 totals of 23 (Slack) and 25 (CP), so the total-landing comparison is mixed. Stress airborne backlog increased from 36 to 43 for both methods. Diagnostic backlog changed from 18 to 16 / 18; this single 480 s window does not prove sustainability. Initial/new-cohort successes were stress 22/2 (Slack), 19/5 (CP), and diagnostic 17/8 (Slack), 17/6 (CP).
+
+No declared rescue had landed by 480 s. All 13 declared rescue outcomes are censored at that boundary: 9 had actually started, and 4 remained soft reserved. The wait statistics below end at actual rescue **start**, not landing. Protected rescue end times extend beyond the observation window; complete per-aircraft trigger SOC, slack, future wait, protected start/end and final ACTIVE/SOFT_RESERVED state are retained in the final-facts JSON.
+
+| Scenario / method | Started waits N / mean / max s | Not-started waits N / mean s | Minimum SOC, declared and unlanded |
+| --- | --- | --- | --- |
+| Stress / Slack | 4 / 58.547 / 88.599 | 2 / 85.000 | 0.138 |
+| Stress / CP | 4 / 82.534 / 96.532 | 1 / 65.099 | 0.017 |
+| Diagnostic / Slack | 0 / — / — | 0 / — | — |
+| Diagnostic / CP | 1 / 65.755 / 65.755 | 1 / 5.666 | 0.032 |
+
+An unresolved 2/3/1/1 airborne aircraft (stress Slack / stress CP / diagnostic Slack / diagnostic CP) had SOC below .25 and no declaration. Their recorded normal status was `INFEASIBLE`; every last rescue-search result was `UNKNOWN` with reason `bounded_search_exhausted_no_infeasibility_proof`. These observations do not prove rescue physically impossible and prevent a claim that every last rescue opportunity was handled.
+
+| Scenario / method | Aircraft | Ring | SOC | Exhaustion events | Last search s |
+| --- | --- | --- | --- | --- | --- |
+| Stress / Slack | initial_middle_00 | inner | 0.211756 | 72 | 478.500 |
+| Stress / Slack | initial_inner_03 | inner | 0.204185 | 53 | 478.500 |
+| Stress / CP | initial_outer_03 | middle | 0.232597 | 97 | 476.418 |
+| Stress / CP | initial_middle_04 | middle | 0.248377 | 86 | 476.418 |
+| Stress / CP | initial_inner_08 | inner | 0.218512 | 60 | 476.418 |
+| Diagnostic / Slack | initial_outer_05 | inner | 0.202768 | 75 | 479.873 |
+| Diagnostic / CP | req_000000 | inner | 0.173918 | 78 | 478.237 |
+
+All timing values below are wall seconds, rounded to three decimals. Final cumulative call distributions are used once; repeated 60 s summaries are not added together. Candidate construction and safety validation dominate observed normal-planning time. Every logged normal call exceeded the 5 s reference (1251/1251); the normal soft budget remains 30 s and CP solver budget 8 s. Dispatch timing includes accumulated monitor/rescue work and is not a strict contiguous response latency.
+
+| Scenario / method | N | Normal mean / P95 / max | Dispatch mean / P95 / max |
+| --- | --- | --- | --- |
+| Stress / Slack | 335 | 18.544 / 21.964 / 27.018 | 24.605 / 50.844 / 56.890 |
+| Stress / CP | 332 | 20.083 / 23.615 / 34.924 | 25.914 / 50.698 / 56.325 |
+| Diagnostic / Slack | 297 | 13.363 / 14.059 / 17.339 | 14.053 / 16.246 / 17.339 |
+| Diagnostic / CP | 287 | 14.931 / 16.804 / 30.362 | 16.493 / 21.435 / 30.363 |
+
+| Scenario / method | Candidate mean / P95 | Safety validation mean / P95 | Selected-validation overhead mean | Solver mean / P95 |
+| --- | --- | --- | --- | --- |
+| Stress / Slack | 11.208 / 12.286 | 7.047 / 11.504 | 0.001 | 0.000 / 0.000 |
+| Stress / CP | 11.043 / 12.093 | 8.638 / 12.471 | 0.127 | 0.036 / 0.103 |
+| Diagnostic / Slack | 9.898 / 10.770 | 3.381 / 5.126 | 0.000 | 0.000 / 0.000 |
+| Diagnostic / CP | 9.864 / 10.646 | 4.911 / 8.935 | 0.021 | 0.028 / 0.183 |
+
+CP entered on 332/332 move-eligible stress calls and 287/287 diagnostic calls. Its recorded strict improvement over its own hint was 296/332 (one UNKNOWN) and 116/287, respectively. These are within-call comparisons; they do not establish realized superiority or global optimality.
+
+Pad observations are dispatch samples. `ground_idle` means no aircraft in ground service; many such pads have an active approach. It is neither a usable-idle count nor time utilization. Flags overlap, while the reason code records the existing classification order.
+
+| Scenario / method | Samples | Ground service | Ground idle | Approach reserved | Future calendar | Rescue protected | Idle without active approach, offered |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Stress / Slack | 2010 | 1188 | 822 | 1344 | 1325 | 269 | 10 / 2010 |
+| Stress / CP | 1992 | 1184 | 808 | 1299 | 1349 | 480 | 5 / 1992 |
+| Diagnostic / Slack | 1782 | 906 | 876 | 1430 | 1275 | 0 | 42 / 1782 |
+| Diagnostic / CP | 1722 | 941 | 781 | 1297 | 1223 | 94 | 36 / 1722 |
+
+| Scenario / method | Ground reason | Approach reason | Future reason | Not submitted | Submitted |
+| --- | --- | --- | --- | --- | --- |
+| Stress / Slack | 1188 | 812 | 6 | 1 | 3 |
+| Stress / CP | 1184 | 803 | 2 | 0 | 3 |
+| Diagnostic / Slack | 906 | 834 | 2 | 37 | 3 |
+| Diagnostic / CP | 941 | 745 | 4 | 28 | 4 |
+
+The explicit-conflict, candidate-not-found, emergency-protected and UNKNOWN **reason-code** counts were zero in these samples; rescue-protected flags were nevertheless 269/480/0/94. Future/rescue flag overlaps were 269/476/0/94. Absence of a reason code does not prove absence of that constraint. After the first declaration, offered idle-without-active-approach samples were 3/378, 2/846, not applicable (no declaration), and 16/558. `PLANNING_NOT_SUBMITTED` samples with positive `certified_single_count` were 1/1, 0/0, 37/37 and 28/28. These are observed catalog/dispatch combinations, not a causal account or a counterfactual feasibility proof.
+
+The primary agent viewed 9 representative PyVista PNG frames and both comparison curves. Actual normal-final starts after the first declaration were 2 / 7 / not applicable / 8. No large blanket pad idling was apparent in those representative frames; this is not proof that all opportunities were exploited. Visual status is `AGENT_REPRESENTATIVE_FRAME_REVIEWED`, with human acceptance still `HUMAN_PENDING`.
+
+Replay evidence is in `artifacts/rotating_slots_stage2_20261022/v6_replay_checks/check.json`: four load/render passes, 15 seek checks with all recorded checks true, and 9 PNGs. The viewer code diff from the archive commit is empty. Seek and representative-frame times in seconds are:
+
+| Scenario / method | Seek times | Rendered PNG times |
+| --- | --- | --- |
+| Stress / Slack | 0.000, 380.000, 420.000, 480.000 | 381.000, 419.344, 480.000 |
+| Stress / CP | 0.000, 261.331, 420.000, 480.000 | 262.331, 310.888, 480.000 |
+| Diagnostic / Slack | 0.000, 420.000, 480.000 | 480.000 |
+| Diagnostic / CP | 0.000, 327.745, 420.000, 480.000 | 328.745, 480.000 |
+
+Recorded PowerShell viewer commands from `check.json`:
+
+```powershell
+Set-Location 'D:\7_codespace\terminal'
+& .\venv\Scripts\python.exe -c "from terminal_marl.visualization.rotating_slots_replay import ReplayController, RotatingSlotsReplayViewer; v=RotatingSlotsReplayViewer(ReplayController(r'D:\7_codespace\training_outputs\terminal\stage2_rescue_opportunity_v6_stress_480s_20261022\energy_slack\replay_0480')); v.run()"
+& .\venv\Scripts\python.exe -c "from terminal_marl.visualization.rotating_slots_replay import ReplayController, RotatingSlotsReplayViewer; v=RotatingSlotsReplayViewer(ReplayController(r'D:\7_codespace\training_outputs\terminal\stage2_rescue_opportunity_v6_stress_480s_20261022\rh_cp_sat\replay_0480')); v.run()"
+& .\venv\Scripts\python.exe -c "from terminal_marl.visualization.rotating_slots_replay import ReplayController, RotatingSlotsReplayViewer; v=RotatingSlotsReplayViewer(ReplayController(r'D:\7_codespace\training_outputs\terminal\stage2_rescue_opportunity_v6_diagnostic_480s_20261022\energy_slack\replay_0480')); v.run()"
+& .\venv\Scripts\python.exe -c "from terminal_marl.visualization.rotating_slots_replay import ReplayController, RotatingSlotsReplayViewer; v=RotatingSlotsReplayViewer(ReplayController(r'D:\7_codespace\training_outputs\terminal\stage2_rescue_opportunity_v6_diagnostic_480s_20261022\rh_cp_sat\replay_0480')); v.run()"
+```
+
+Both wrapper logs contain reliable run/wrapper exit codes 0, while raw exit files remain malformed `0n`. Stress ended at 2026-10-22 14:33:59 UTC with wrapper run elapsed 9153 s; diagnostic ended at 13:23:09 UTC with elapsed 4903 s. Terminal campaign wall values are 9815.156 s / 5555.479 s, including preparation credit; stored terminal budget floors are 9815.154 s / 5555.478 s. These terminal values are used instead of subtracting the budget epoch from a post-completion clock. All four checkpoint/summary/state streams reach 480 s, all four audits pass, and all eight method error/invalid paths are absent. Heartbeat `stage2-v6-480` has been deleted; no further run was launched.
 
 The frozen comparison is exactly two named scenarios, each with `energy_slack` and `rh_cp_sat`, run once to the common 480 s boundary. These are synthetic initial backlogs and a diagnostic load comparison; neither is labelled sustainable or normal traffic.
 
@@ -69,6 +160,6 @@ At server **12:04:02 UTC**, each method had a nonempty initial checkpoint and an
 
 The shared environment-lock hash is `b15a7e9c1debc9e91cffa8029e48706f7fd917382d7be05b873f64a61348eba2`, matching v5. The stress manifest hash is `10b97225bde7992af59c79857b0c387bde69ec3b1153e36867a9d42406ad4bc6` (172 requests); diagnostic is `b827cae3e8d961a3e94102378c6a9c552bf20f1b12fd30d0445b5fce8cb52743` (118 requests). Both retain seed 71 and a 3600 s arrival window, with rates 180/120 respectively. Fixtures were verified as 14/12/10 plus three ground aircraft and 6/6/6 plus three ground aircraft.
 
-A minor wrapper formatting deviation left the start file with literal bytes `2026-10-22T12:01:26Zn`; the wrapper log records a valid `run_start_utc`. Exit-code and campaign-timing writes use independent in-memory variables. No output file was changed to correct this formatting.
+A minor wrapper formatting deviation left the start file with literal bytes `2026-10-22T12:01:26Zn` and the raw exit file with `0n`. Both complete wrapper logs independently contain exact `run_exit_code=0` and `wrapper_exit_code=0` lines. The raw `0n` file is not a valid integer exit-code file. Original output files are preserved.
 
-Initial runtime estimates are **12600 s (3.5 h)** for the stress pair and **10800 s (3 h)** for the diagnostic pair. The stress estimate uses approximately 365 dispatch calls at the observed 26–32 s t=0 planning scale, with allowance for emergency work and archival processing. The diagnostic estimate is conservative because later workloads differ from the initial dispatch. At the historical estimate anchor (local 2026-10-22 12:04:49.3638422 UTC; server 12:05:41 UTC), observed process elapsed time was 255 s, giving remaining estimates of 12345 s / 10545 s at that anchor. These values are not current remaining-time readings or completion guarantees. No reliable completed-boundary throughput was available, so startup state times were not extrapolated. Automatic follow-up is being arranged; formal 480 s tables and interpretation remain **PENDING**.
+Historical initial runtime estimates were **12600 s (3.5 h)** for the stress pair and **10800 s (3 h)** for the diagnostic pair. The stress estimate used approximately 365 dispatch calls at the observed 26–32 s t=0 planning scale, with allowance for emergency work and archival processing. The diagnostic estimate was conservative because later workloads differ from the initial dispatch. At the historical estimate anchor (local 2026-10-22 12:04:49.3638422 UTC; server 12:05:41 UTC), observed process elapsed time was 255 s, giving then-remaining estimates of 12345 s / 10545 s. Startup state times were not extrapolated. Both runs have since ended; heartbeat `stage2-v6-480` was successfully deleted by the primary agent. No new run was started.

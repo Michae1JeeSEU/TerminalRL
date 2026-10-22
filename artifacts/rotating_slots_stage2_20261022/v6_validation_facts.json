@@ -1,8 +1,103 @@
 {
   "schema": "stage2_rescue_v6_validation_facts_v1",
-  "formal_run_status": "RUNNING",
-  "formal_startup_verification": "VERIFIED",
-  "formal_results": null,
+  "formal_run_status": "FOUR_COMPLETED_480S",
+  "formal_startup_verification": "VERIFIED_HISTORICAL",
+  "formal_results": {
+    "evidence_type": "preexisting_artifact",
+    "final_facts_path": "artifacts\\rotating_slots_stage2_20261022\\v6_final_0480_facts.json",
+    "requested_window_s": 480,
+    "common_completed_window_s": 480,
+    "status": "PARTIAL_REQUESTED_WINDOW",
+    "all_four_audits": "PASS",
+    "human_review": "HUMAN_PENDING",
+    "methods": [
+      {
+        "scenario": "stress",
+        "method": "energy_slack",
+        "L_normal": 24,
+        "L_emergency": 0,
+        "L_success": 24,
+        "F_energy_total": 0,
+        "N_airborne_pending": 43,
+        "N_upstream_pending": 0,
+        "declared": 6,
+        "started": 4,
+        "undeclared_airborne_below_025": 2
+      },
+      {
+        "scenario": "stress",
+        "method": "rh_cp_sat",
+        "L_normal": 24,
+        "L_emergency": 0,
+        "L_success": 24,
+        "F_energy_total": 0,
+        "N_airborne_pending": 43,
+        "N_upstream_pending": 0,
+        "declared": 5,
+        "started": 4,
+        "undeclared_airborne_below_025": 3
+      },
+      {
+        "scenario": "diagnostic",
+        "method": "energy_slack",
+        "L_normal": 25,
+        "L_emergency": 0,
+        "L_success": 25,
+        "F_energy_total": 0,
+        "N_airborne_pending": 16,
+        "N_upstream_pending": 0,
+        "declared": 0,
+        "started": 0,
+        "undeclared_airborne_below_025": 1
+      },
+      {
+        "scenario": "diagnostic",
+        "method": "rh_cp_sat",
+        "L_normal": 23,
+        "L_emergency": 0,
+        "L_success": 23,
+        "F_energy_total": 0,
+        "N_airborne_pending": 18,
+        "N_upstream_pending": 0,
+        "declared": 2,
+        "started": 1,
+        "undeclared_airborne_below_025": 1
+      }
+    ],
+    "primary_conclusions": [
+      "Stress normal landings 24 each versus v5 17 each; totals 24 each versus 23/25 are mixed.",
+      "Stress airborne backlog 36 to 43; diagnostic 18 to 16/18 does not prove sustainability.",
+      "All emergency landings zero at 480; declared/started rescues remain unlanded and censored. Wait completion means rescue start, not landing.",
+      "Undeclared below-reserve aircraft and repeated UNKNOWN searches remain; not all last-rescue opportunities can be claimed handled.",
+      "Candidate construction and safety validation dominate observed planning cost; per-decision budgets are unchanged."
+    ],
+    "quality_acceptance": "NOT_FULLY_SUCCESSFUL_UNRESOLVED_BELOW_RESERVE_UNKNOWN_WAITING",
+    "wrapper_exit_verification": {
+      "stress": {
+        "run_exit_code": "0",
+        "wrapper_exit_code": "0",
+        "run_end_utc": "2026-10-22T14:33:59Z",
+        "run_elapsed_seconds": "9153"
+      },
+      "diagnostic": {
+        "run_exit_code": "0",
+        "wrapper_exit_code": "0",
+        "run_end_utc": "2026-10-22T13:23:09Z",
+        "run_elapsed_seconds": "4903"
+      }
+    },
+    "raw_exit_files_preserved": "0n",
+    "terminal_costs": {
+      "stress": {
+        "campaign_wall_s": 9815.155856017256,
+        "stored_elapsed_floor_s": 9815.154355049133
+      },
+      "diagnostic": {
+        "campaign_wall_s": 5555.479161521187,
+        "stored_elapsed_floor_s": 5555.4777950751595
+      }
+    }
+  },
   "frozen": {
     "code_revision": "9cfb78149f9c986025ba8a08707162d56fb7b645",
     "source_hash": "a0bfbc06e428a7826700c1dc898234b5122d716b5596a4d44f3252a82bd8b9dc",
@@ -366,6 +461,73 @@
       "forecast_guaranteed": false,
       "startup_state_times_extrapolated": false
     },
-    "automatic_followup_status": "BEING_ARRANGED"
+    "automatic_followup_status": "BEING_ARRANGED",
+    "historical": true,
+    "scope": "Historical startup verification at server 2026-10-22T12:07:25Z; RUNNING statuses and missing-boundary observations apply only to that time."
+  },
+  "visual_review": {
+    "status": "AGENT_REPRESENTATIVE_FRAME_REVIEWED",
+    "reviewed_by": "primary_agent",
+    "human_review": "HUMAN_PENDING",
+    "replay_check_path": "artifacts\\rotating_slots_stage2_20261022\\v6_replay_checks\\check.json",
+    "load_render_passes": 4,
+    "seek_checks": 15,
+    "all_query_checks_pass": true,
+    "png_count": 9,
+    "comparison_curves_viewed": 2,
+    "normal_final_starts_after_first_declaration": [
+      2,
+      7,
+      "NOT_APPLICABLE_NO_DECLARATION",
+      8
+    ],
+    "observation": "No large blanket pad idling apparent in the representative frames; not proof all opportunities exploited.",
+    "viewer_commands": [
+      "& .\\venv\\Scripts\\python.exe -c \"from terminal_marl.visualization.rotating_slots_replay import ReplayController, RotatingSlotsReplayViewer; v=RotatingSlotsReplayViewer(ReplayController(r'D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_opportunity_v6_stress_480s_20261022\\energy_slack\\replay_0480')); v.run()\"",
+      "& .\\venv\\Scripts\\python.exe -c \"from terminal_marl.visualization.rotating_slots_replay import ReplayController, RotatingSlotsReplayViewer; v=RotatingSlotsReplayViewer(ReplayController(r'D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_opportunity_v6_stress_480s_20261022\\rh_cp_sat\\replay_0480')); v.run()\"",
+      "& .\\venv\\Scripts\\python.exe -c \"from terminal_marl.visualization.rotating_slots_replay import ReplayController, RotatingSlotsReplayViewer; v=RotatingSlotsReplayViewer(ReplayController(r'D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_opportunity_v6_diagnostic_480s_20261022\\energy_slack\\replay_0480')); v.run()\"",
+      "& .\\venv\\Scripts\\python.exe -c \"from terminal_marl.visualization.rotating_slots_replay import ReplayController, RotatingSlotsReplayViewer; v=RotatingSlotsReplayViewer(ReplayController(r'D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_opportunity_v6_diagnostic_480s_20261022\\rh_cp_sat\\replay_0480')); v.run()\""
+    ],
+    "frame_times": [
+      {
+        "scene": "stress",
+        "method": "energy_slack",
+        "times": [
+          380.99999999999994,
+          419.3440371027798,
+          480.0
+        ]
+      },
+      {
+        "scene": "stress",
+        "method": "rh_cp_sat",
+        "times": [
+          262.3310817930876,
+          310.8882737210647,
+          480.0
+        ]
+      },
+      {
+        "scene": "diagnostic",
+        "method": "energy_slack",
+        "times": [
+          480.0
+        ]
+      },
+      {
+        "scene": "diagnostic",
+        "method": "rh_cp_sat",
+        "times": [
+          328.7449604690264,
+          480.0
+        ]
+      }
+    ]
+  },
+  "automatic_followup": {
+    "heartbeat_id": "stage2-v6-480",
+    "status": "DELETED_SUCCESSFULLY",
+    "confirmed_by": "primary_agent",
+    "new_run_started": false
   }
 }
