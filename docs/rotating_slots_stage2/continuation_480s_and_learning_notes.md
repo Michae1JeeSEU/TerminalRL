@@ -1,6 +1,6 @@
 # 360→480 秒接续与学习加速说明
 
-记录日期：2026-10-22。用户已观看两份 0360 回放，确认总体调度合理，记录为 `HUMAN_CONFIRMED_GENERAL_SCHEDULING`；这项确认不表示所有性能目标均已达到。用户要求再接续 120 秒观察应急处置；两次接续均已结束，成对 480 秒目标尚未完成，0480 人工验收仍为 `HUMAN_PENDING`。本记录说明接续边界、0360 实际计划及耗时证据，以及后续学习方向；不新增实验或修改算法。
+记录日期：2026-10-22。用户已观看两份 0360 回放，确认总体调度合理，记录为 `HUMAN_CONFIRMED_GENERAL_SCHEDULING`；这项确认不表示所有性能目标均已达到。此前两次接续因预算截止停止后，用户新增授权仅补 EnergySlack 420→480 秒，保留 CP 已完成结果。本轮已退出 0，双方 480 秒 summary/checkpoint/audit/replay 齐全，审计均 PASS；0480 人工验收仍为 `HUMAN_PENDING`。本记录保留前两次停止历史，不修改算法。
 
 ## 同检查点接续（含预算截尾与补齐）
 
@@ -36,7 +36,7 @@
 
 0420 应急已声明 / 未落地数量分别为 Slack 11/11、CP 8/8，并非 0。追踪原 0360 各方法的两架应急目标：Slack 的 `initial_inner_09` 在 299 秒声明，392.4 秒已实际开始 FINAL_EMERGENCY，计划结束 445.9 秒；`initial_middle_04` 在 309.6 秒声明，到 420 秒仍 HOLD。CP 的 `initial_middle_01` 在 310.16496 秒声明，410.28568 秒已实际开始 FINAL_EMERGENCY，计划结束 458.78568 秒；`initial_middle_11` 在 331.53108 秒声明，到 420 秒仍 HOLD。两架已启动目标从声明到启动分别等待 93.4 / 100.1207 秒；420 秒内均尚无应急 touchdown，不能将计划结束时间写成实测落地。
 
-在 `360<t≤420` 窗口，这些目标存在已经尝试、但因 HARD_SEPARATION 或 RESOURCE_CONFLICT 未通过安全/资源核验的动作；这不能证明不存在其他安全且更优的救援方案。应急响应整体是否合理仍待 480 秒结果及人工回放，不能写成已经全面解决。证据见 [0420 应急事实 JSON](../../artifacts/rotating_slots_stage2_20261022/v4_emergency_0420_facts.json)。
+在 `360<t≤420` 窗口，这些目标存在已经尝试、但因 HARD_SEPARATION 或 RESOURCE_CONFLICT 未通过安全/资源核验的动作；这不能证明不存在其他安全且更优的救援方案。420 秒观察不足以判断应急响应已经全面解决，最终 480 秒记录见下文，人工回放仍待用户确认。证据见 [0420 应急事实 JSON](../../artifacts/rotating_slots_stage2_20261022/v4_emergency_0420_facts.json)。
 
 为完成同一授权目标的剩余 60 秒，主对话已启动唯一一次补齐。接续前将 17 个文件（包括被预算截断的未完成 states）备份到 `continuation_0480_finish_pre_run/`。源文件、环境锁及 identity 均核对为 MATCH；0420 摘要和检查点 hash 与 finish 备份一致，0360 hash 与原备份核对一致，finish 备份不含 0360 文件。不重新 prepare、不从 t=0 重跑、不修改算法；恢复 420 检查点后，被截断的未完成片段不作为结果拼接。
 
@@ -55,13 +55,13 @@
 
 补齐启动时 T0 取 550 秒，依据上一段 60 秒约 470 秒加归档估计；当时观察剩余约 517 秒。主对话当时将同一个 `stage2-480` heartbeat 更新为约 8 分钟，扣除已经过时间，历史状态为 ACTIVE，未保留睡眠 worker。终态确认后，该 heartbeat 已通过工具成功删除。
 
-## 补齐终态：成对 480 秒目标未完成
+## 上次补齐停止快照：当时成对 480 秒目标未完成
 
 补齐真实结束于 UTC `2026-10-22T02:37:21.429377+00:00`，runner 墙钟 587.9892094135284 秒，退出码 0。campaign 为 `BUDGET_LIMITED`，共同完成边界仍为 420 秒。累计预算下界为 4057.2937846183777 秒，compute stop 为 4033.926305055618 秒、total 为 4333.926305055618 秒；补齐耗时估计仍不足，由主对话负责。
 
-CP 有完整 `summary_0480.json` 与 `checkpoint_0480.json`；Slack states 已到 480 秒，但最后完整 summary/checkpoint 仍为 420 秒，`checkpoint_0480.json.partial` 为 0 字节。两方法均无 `audit_0480` 或 `replay_0480`。未见 error/invalid，0360/0420 摘要与检查点 hash 未变，现有 PASS 审计属于 0420，不能标为 0480 PASS。
+该次停止时，CP 有完整 `summary_0480.json` 与 `checkpoint_0480.json`；Slack states 已到 480 秒，但最后完整 summary/checkpoint 仍为 420 秒，`checkpoint_0480.json.partial` 为 0 字节。当时两方法均无 `audit_0480` 或 `replay_0480`。未见 error/invalid，0360/0420 摘要与检查点 hash 未变，该停止快照的 PASS 审计属于 0420，不能标为 0480 PASS。
 
-主对话阅读 `run_campaign` 的截止 terminate 逻辑及 `save_checkpoint` 的 atomic_json 持久化流程后，确认是预算截止打断 Slack 检查点写入，不是算法异常。真实退出 0 不代表请求的成对窗口完成；不得把未持久化的 Slack 片段与 CP 单侧完整结果拼成成对 480 结论。此后不自动第三次增加预算或 resume，也未修改源码或启动新实验。
+主对话阅读 `run_campaign` 的截止 terminate 逻辑及 `save_checkpoint` 的 atomic_json 持久化流程后，确认是预算截止打断 Slack 检查点写入，不是算法异常。真实退出 0 不代表请求的成对窗口完成；不得把未持久化的 Slack 片段与 CP 单侧完整结果拼成成对 480 结论。当时停止自动增加预算或 resume，未修改源码；后续仅补 Slack 的本轮执行依据用户新增明确授权，不再处于等待授权状态。
 
 | CP 单侧 480 秒记录，未经独立 0480 audit | 数量 |
 |---|---:|
@@ -80,7 +80,69 @@ CP 检查点中的三次实际应急 touchdown 如下，按事件时间记录，
 
 其中 `initial_middle_01` 是唯一 below_reserve 落地。另一原应急目标 `initial_middle_11` 在 331.53108 秒声明，450 秒实际开始 FINAL_EMERGENCY，等待约 118.4689 秒；480 秒仍为 FINAL_EMERGENCY，没有 touchdown，不能将其计划结束写成已落地。
 
-这些来自 [补齐停止事实 JSON](../../artifacts/rotating_slots_stage2_20261022/v4_0480_finish_stop_facts.json)，是 CP 单侧 480 秒记录，不构成最终安全验收，也不能与 Slack 420 秒指标跨窗口比较。CP 单侧尚无独立 0480 audit，对应 0480 回放未生成；不以缺失值猜测 Slack 的最终应急结局。
+这些来自 [补齐停止事实 JSON](../../artifacts/rotating_slots_stage2_20261022/v4_0480_finish_stop_facts.json)，是 CP 单侧 480 秒记录，不构成最终安全验收，也不能与 Slack 420 秒指标跨窗口比较。在该停止快照中，CP 单侧尚无独立 0480 audit，对应 0480 回放未生成；不以缺失值猜测 Slack 的最终应急结局。
+
+## 新授权已完成：仅补 Slack，CP 不重算
+
+本轮仍使用原 root 与冻结 source/env，仅恢复 Slack 的完整 420 检查点到 480 秒，保留 CP 已完成结果。备份目录为 `continuation_0480_slack_only_pre_run/`，对应记账文件沿用 slack_only 前缀；独立日志、计时及终态退出码采用 `resume_0480_slack_only.*`。
+
+同步 timing 实际记录启动 UTC `2026-10-22T02:53:18.636280+00:00`。wrapper PID 132064、runner PID 132074，worker PID 132077/132078，CPU 0/2、线程数及数值库线程环境均为 1。启动检查时经过 37.512 秒，Slack state 到 422 秒、CP state 保持 480 秒；CP 的 480 summary/checkpoint/decisions/dispatch timings SHA 与新备份不变，source/env 匹配，无 error/invalid。该观察仅确认启动与 CP 产物保留，不宣称 Slack 已完成。
+
+主对话将新预算设为前期 credit 60 秒、计算 1800 秒、归档 600 秒，旧累计账目继续保留：
+
+| Slack 补齐记账项 | 秒 |
+|---|---:|
+| 沿用累计预算 | 4057.2937846183777 |
+| 本轮前期开销 credit | 60 |
+| 新 live floor | 4117.293784618378 |
+| 新累计 compute stop | 5917.293784618378 |
+| 新累计 total 上限 | 6517.293784618378 |
+| 归档保留 | 600 |
+
+本轮 T0 由主对话取 750 秒，仅为估计。本轮未创建新 heartbeat，由 Luna 短期监控；上次 `stage2-480` 已删除的记录不改为 ACTIVE。实际结束于 UTC `2026-10-22T03:03:20.936613+00:00`（北京时间 11:03:20），墙钟 602.3002648353577 秒，退出码 0。累计预算下界为 4729.817350625992 秒，compute stop / total 仍为 5917.293784618378 / 6517.293784618378 秒。
+
+campaign 的 `PARTIAL_REQUESTED_WINDOW` 是非 3600 秒请求窗口标签，不是失败；共同完成边界为 480 秒。双方 0480 summary/checkpoint/audit/replay 均完整，独立 audit 为 PASS、`issues=[]`。CP 的 summary/checkpoint/decisions/dispatch timings 四文件 SHA 与本轮 pre_run 备份一致，原冻结代码未改。
+
+| 最终 480 秒指标 | Slack | CP |
+|---|---:|---:|
+| 正常 / 应急落地 | 26 / 1 | 25 / 3 |
+| 总落地 / 能量失败 | 27 / 0 | 28 / 0 |
+| 应急已声明 / 未解决 | 17 / 16 | 16 / 13 |
+| 空中待完成 / 上游待完成 | 40 / 0 | 39 / 0 |
+| offered / below_reserve 落地 | 67 / 1 | 67 / 1 |
+| 相对 360 秒新增正常 / 应急落地 | 6 / 1 | 5 / 3 |
+| normal P95（秒） | 5.5487 | 5.5454 |
+| dispatch 工作量 P95（秒） | 11.4578 | 10.2355 |
+
+主对话已查看延伸到 480 秒的 [comparison_curves.png](../../../training_outputs/terminal/stage2_progress_service_360s_v4_20261022/comparison_curves.png)，图中落地 27/28、空中 40/39、失败 0 与记录一致。normal P95 仍超过 5 秒；dispatch 是累计调度工作量，不能当作严格连续端到端延迟。
+
+应急链路确实执行并产生实际落地，但零失败不等于应急压力解决。仍有 16/13 架应急未解决，已有等待及低于保留电量落地表现出局限。共享应急处理器按 ID 排序、逐 pad 即时尝试，不是联合救援优化；本次单 seed 结果也不能证明 CP 严格增益或全局最优。
+
+原 0360 四个应急目标的最终事件如下。表中等待为声明到实际应急启动；未启动者只报告到 480 秒的截尾等待，不能记为零等待。
+
+| 方法 / 目标 | 声明（秒） | 应急启动（秒） | 等待（秒） | 实际 touchdown（秒） | 480 秒状态 / SOC |
+|---|---:|---:|---:|---:|---|
+| Slack / initial_inner_09 | 299 | 392.4 | 93.4 | 445.9 | CLEARED / 16.5893% |
+| Slack / initial_middle_04 | 309.6 | 未启动 | 已等 170.4 | 无 | HOLD_INNER / 14.4758% |
+| CP / initial_middle_01 | 310.16496 | 410.285684 | 100.1207 | 458.785684 | LANDED_SERVICE / 16.4173% |
+| CP / initial_middle_11 | 331.53108 | 450 | 118.4689 | 无 | FINAL_EMERGENCY / 17.4065% |
+
+Slack `initial_inner_09` 与 CP `initial_middle_01` 的 touchdown 均实际记录 emergency=true、below_reserve=true。Slack `initial_middle_04` 声明后到 480 秒没有新的应急 start；CP `initial_middle_11` 已启动，但计划结束 503.5 秒超出观察窗口，不能计为已落地。
+
+在 `360<t≤480` 的四目标尝试中，inner_09、CP middle_01/middle_11 均有 HARD_SEPARATION 与 RESOURCE_CONFLICT 拒绝；Slack middle_04 另有 15 次 SOC_INSUFFICIENT 拒绝。这些是具体尝试的拒绝记录，不证明不存在其他更优安全方案。最终未解决应急按状态拆分为：
+
+| 方法 | HOLD | FINAL_EMERGENCY | VERTICAL_DESCENT | 未解决合计 |
+|---|---:|---:|---:|---:|
+| Slack | 15 | 0 | 1 | 16 |
+| CP | 11 | 2 | 0 | 13 |
+
+两份实际 ReplayController 均成功加载 0–480 秒回放，分别 seek 360、392.4、410.2857、432、445.9、458.7857、468.5、480 秒，共 16 次检查的 controller 时间均匹配请求、数值帧有限且实体可用。该检查不替代人工观看；两份 visual acceptance 仍为 HUMAN_PENDING。事件、状态分类、CP 四文件 SHA 对照及 controller 检查见 [最终 0480 应急事实 JSON](../../artifacts/rotating_slots_stage2_20261022/v4_emergency_0480_facts.json)。
+
+## 应急机制解释与验收边界
+
+主对话已复核代码：`world.emergency_threshold` 的触发条件为 `SOC<=0.35` 或 `soc-q_e-qhold<=0.25`。`handle_emergencies` 在 normal 之前调用，但按 aircraft ID 顺序、逐 pad 0..5 尝试即时应急轨迹，所有 submit 都要接受安全及资源核验；该机制不是联合救援优化，也不是按最低 SOC 排序。
+
+normal 落地要求保留 25% reserve，应急允许低于 25% 但不能能源耗尽。因此 CP 的 16.42% SOC 应急落地被记录为 below_reserve，而不是能量失败 F。已有拒绝记录只说明那些尝试没有通过安全/资源核验，不能证明不存在更优的安全方案。成对终态已完成，整体应急响应的人工回放评价仍待确认；本轮不实施新救援策略，也不改变冻结源码。
 
 ## 为什么 CP 只在 24/266 次决策中求解
 
@@ -140,9 +202,9 @@ CP 的 122 个 solver phase 合计仅 0.0647187 秒，约 0.530 毫秒/phase，�
 
 ## 证据与验收边界
 
-0360 事实来源为 [计划与耗时比较 JSON](../../artifacts/rotating_slots_stage2_20261022/v4_plan_timing_comparison.json) 与 [360 秒状态文档](progress_service_360s_status.md)。接续账目见 [continuation_0480_accounting.json](../../../training_outputs/terminal/stage2_progress_service_360s_v4_20261022/continuation_0480_accounting.json)。
+0360 事实来源为 [计划与耗时比较 JSON](../../artifacts/rotating_slots_stage2_20261022/v4_plan_timing_comparison.json) 与 [360 秒状态文档](progress_service_360s_status.md)。接续账目见 [continuation_0480_accounting.json](../../../training_outputs/terminal/stage2_progress_service_360s_v4_20261022/continuation_0480_accounting.json)，最终成对应急、审计及回放检查见 [0480 事实 JSON](../../artifacts/rotating_slots_stage2_20261022/v4_emergency_0480_facts.json)。
 
-两次接续终态已确认，但成对 0480 结果、独立 audit 与 replay 不完整；0480 人工验收：`HUMAN_PENDING`。0360 的一般调度人工确认不代替该窗口验收。
+前两次停止历史保留；本轮 Slack 补齐退出 0，成对 0480 结果、独立 audit 与 replay 已完整。0480 人工验收：`HUMAN_PENDING`。0360 的一般调度人工确认不代替该窗口验收。
 
 现有两份 `replay_0420` 可供回放。先切换目录，再任选一条独立运行：
 
@@ -152,10 +214,10 @@ Set-Location "D:/7_codespace/terminal"
 .\venv\Scripts\python.exe -c "from terminal_marl.visualization.rotating_slots_replay import ReplayController,RotatingSlotsReplayViewer; RotatingSlotsReplayViewer(ReplayController(r'D:\7_codespace\training_outputs\terminal\stage2_progress_service_360s_v4_20261022\rh_cp_sat\replay_0420')).run()"
 ```
 
-以下为仅供将来产物完整时使用的 0480 命令；当前两份 `replay_0480` 均未生成，这两条现在不可运行，也不表示已安排再次续跑。
+两份 0480 回放已生成。下面默认 seek 到 360 秒再打开 viewer，按 Space 开始/暂停；完整 0–480 秒均可通过滑杆查看。两条命令可任选一条独立执行。
 
 ```powershell
 Set-Location "D:/7_codespace/terminal"
-.\venv\Scripts\python.exe -c "from terminal_marl.visualization.rotating_slots_replay import ReplayController,RotatingSlotsReplayViewer; RotatingSlotsReplayViewer(ReplayController(r'D:\7_codespace\training_outputs\terminal\stage2_progress_service_360s_v4_20261022\energy_slack\replay_0480')).run()"
-.\venv\Scripts\python.exe -c "from terminal_marl.visualization.rotating_slots_replay import ReplayController,RotatingSlotsReplayViewer; RotatingSlotsReplayViewer(ReplayController(r'D:\7_codespace\training_outputs\terminal\stage2_progress_service_360s_v4_20261022\rh_cp_sat\replay_0480')).run()"
+.\venv\Scripts\python.exe -c "from terminal_marl.visualization.rotating_slots_replay import ReplayController,RotatingSlotsReplayViewer; c=ReplayController(r'D:\7_codespace\training_outputs\terminal\stage2_progress_service_360s_v4_20261022\energy_slack\replay_0480'); c.seek(360); RotatingSlotsReplayViewer(c).run()"
+.\venv\Scripts\python.exe -c "from terminal_marl.visualization.rotating_slots_replay import ReplayController,RotatingSlotsReplayViewer; c=ReplayController(r'D:\7_codespace\training_outputs\terminal\stage2_progress_service_360s_v4_20261022\rh_cp_sat\replay_0480'); c.seek(360); RotatingSlotsReplayViewer(c).run()"
 ```
