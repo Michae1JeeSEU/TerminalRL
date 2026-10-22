@@ -194,6 +194,7 @@ def environment_lock():
 
 def source_provenance(service_profile="baseline"):
     """Local-only freeze operation; campaign execution never runs Git."""
+    from .stage2_planning import CANDIDATE_POLICY_ID, QUALITY_BUDGET_PROFILE, PlanningBudget
     files = sorted((ROOT/"terminal_marl/core/rotating_slots").glob("*.py"))
     files += [ROOT/"terminal_marl/core/rotating_slots/performance/checkpoint.py"]
     files += [ROOT/"scripts/server/run_rotating_slots_stage2.py",ROOT/"terminal_marl/visualization/rotating_slots_replay.py"]
@@ -213,7 +214,9 @@ def source_provenance(service_profile="baseline"):
         service_profile=config.service_profile,effective_config_path=Path(config.path).relative_to(ROOT).as_posix(),
         original_config_hash=original.config_hash,original_config_bytes_sha256=original.raw_hash,
         numeric_backend_hash=digest({k:v for k,v in source.items() if k.endswith(("energy.py","safety.py","trajectory.py"))}),
-        candidate_policy_id="shared_multistep_columns_v4_safe_progress",objective_id="reliability_throughput_progress_tail_v2")
+        candidate_policy_id=CANDIDATE_POLICY_ID,planning_budget_profile=QUALITY_BUDGET_PROFILE,
+        planning_budget=PlanningBudget.for_profile(QUALITY_BUDGET_PROFILE).settings(),emergency_policy_id="energy_urgency_yield_v5",
+        objective_id="reliability_throughput_progress_tail_v2")
 
 
 def freeze_provenance(path, service_profile="baseline"):

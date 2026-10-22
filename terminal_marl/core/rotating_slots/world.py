@@ -37,6 +37,53 @@ def emergency_threshold(soc, q_e, qhold):
     return soc <= .35 or (q_e is not None and soc-q_e-qhold <= .25)
 
 
+def emergency_priority(aircraft, config):
+    """Pure urgency estimate from the revealed rescue cost and holding power.
+
+    Missing rescue cost deliberately falls back to time until SOC depletion;
+    neither estimate certifies that a rescue trajectory is currently feasible.
+    """
+    power = stable_power(aircraft.ring, config)
+    rate = power.current_a / (config.energy.reference_capacity_Ah * 3600.)
+    q = aircraft.emergency.q_e
+    known = q is not None and math.isfinite(q) and q >= 0.
+    seconds = (aircraft.soc - (q if known else 0.)) / rate
+    declared = aircraft.emergency.declaration_time
+    key = (seconds, aircraft.soc, declared is None, 0. if declared is None else declared, aircraft.id)
+    return dict(key=key, holding_seconds=seconds, holding_soc_per_second=rate,
+                q_e=q if known else None, q_e_unknown=not known,
+                fallback=None if known else "soc_over_holding_rate", soc=aircraft.soc,
+                declaration_time=declared)
+
+
+def emergency_waiting_queue(aircraft, active, config):
+    """Pure queue, including revealed thresholds before monitor flag refresh."""
+    candidates = []
+    for a in aircraft.values():
+        if a.status not in HOLD.values() or a.id in active:
+            continue
+        priority = emergency_priority(a, config)
+        if (a.emergency.eligible or a.emergency.declared
+                or emergency_threshold(a.soc, priority["q_e"],
+                                       10.*priority["holding_soc_per_second"])):
+            candidates.append((priority["key"], a))
+    return [a for _, a in sorted(candidates, key=lambda item: item[0])]
+
+
+def emergency_priority_blocker(aircraft, active, config, candidate_id):
+    """Pure normal-final priority guard for world or immutable planning inputs."""
+    waiting = emergency_waiting_queue(aircraft, active, config)
+    if not waiting:
+        return None
+    a, first = aircraft[candidate_id], waiting[0]
+    if (a.id == first.id and a.ring == "inner"
+            and not a.emergency.declared and not a.emergency.pending):
+        return None
+    return dict(blocked_by=first.id, priority=emergency_priority(a, config)
+                if a.status in HOLD.values() else None,
+                blocking_priority=emergency_priority(first, config))
+
+
 @dataclass(frozen=True)
 class PlanningSnapshot:
     """Revealed immutable planning input; deliberately contains no manifest/world."""
@@ -78,6 +125,7 @@ def evaluate_planning_snapshot(snapshot, plans, *, cancel=()):
     """
     context = object.__new__(RotatingSlotWorld)
     context.config, context.time = snapshot.config, snapshot.time
+    context.experiment_policy_id = (snapshot.emergency_monitor or {}).get("experiment_policy_id")
     context.aircraft = dict(snapshot.aircraft)
     context.active, context.soft = dict(snapshot.active), dict(snapshot.soft)
     context.dependencies, context._source_clear = dict(snapshot.dependencies), dict(snapshot.source_clear)
@@ -677,6 +725,7 @@ class RotatingSlotWorld:
         ledger = freeze(self._energy_state())
         runtime=getattr(self,"_practical_runtime",{})
         emergency_monitor=freeze(dict(enabled=bool(runtime.get("enabled",False)),
+            experiment_policy_id=getattr(self,"experiment_policy_id",None),
             soc_threshold=runtime.get("soc_threshold",.35),
             imminent=dict(runtime.get("imminent",{})),monitor=dict(runtime.get("monitor",{}))))
         needed = {a.trajectory_hash for a in self.aircraft.values() if a.status in AIRBORNE}
@@ -696,6 +745,44 @@ class RotatingSlotWorld:
 
     def evaluate_submission(self, plans, *, cancel=(), snapshot=None):
         return evaluate_planning_snapshot(snapshot or self.build_planning_snapshot(), plans, cancel=cancel)
+
+    def _emergency_waiting_queue(self):
+        """Read-only revealed waiting queue, shared by dispatch and evaluation."""
+        return emergency_waiting_queue(self.aircraft, self.active, self.config)
+
+    def _emergency_priority_wait(self, plan_or_aircraft_id):
+        """Return a normal-final blocker without mutating scheduling state."""
+        if not self._stage2_enabled():
+            return None
+        if not isinstance(plan_or_aircraft_id, str) and plan_or_aircraft_id.kind != "FINAL_NORMAL":
+            return None
+        key = (plan_or_aircraft_id if isinstance(plan_or_aircraft_id, str)
+               else plan_or_aircraft_id.aircraft_id)
+        # Only an urgent, undeclared inner-ring aircraft may use the existing
+        # reserve-certified normal exception, and only ahead of other waiters.
+        return emergency_priority_blocker(self.aircraft, self.active, self.config, key)
+
+    def _yield_normal_finals(self):
+        """Attempt ordinary soft cancellations through the existing transaction."""
+        if not self._stage2_enabled():
+            return
+        for key, plan in sorted(tuple(self.soft.items())):
+            blocked = self._emergency_priority_wait(plan)
+            if blocked is None:
+                continue
+            result = self.cancel(key)
+            protected_by = sorted(h for h, deps in self.dependencies.items()
+                                  if plan.trajectory_hash in deps)
+            self._event("emergency_priority_yielded" if result.accepted else "emergency_priority_yield_blocked",
+                        key, trajectory_hash=plan.trajectory_hash,
+                        reason="EMERGENCY_PRIORITY_WAIT" if result.accepted else result.reason,
+                        dependent_started_plans=protected_by, **blocked)
+        if self._emergency_waiting_queue():
+            for key, plan in sorted(self.active.items()):
+                if plan.kind == "FINAL_NORMAL":
+                    self._event("emergency_priority_yield_blocked", key,
+                                trajectory_hash=plan.trajectory_hash, reason="MANEUVER_ALREADY_STARTED",
+                                **self._emergency_priority_wait(plan))
 
     def refine_planning_boundary(self):
         """One uniform executed-ledger refinement per decision timestamp."""
@@ -1003,6 +1090,9 @@ class RotatingSlotWorld:
                 return self._reject("EMERGENCY_DECLARED", a.id)
             normal_exception = (p.kind == "FINAL_NORMAL" and source_ring == "inner" and
                                 current is None and p.start_time == self.time and not a.emergency.declared)
+            priority_wait = self._emergency_priority_wait(p)
+            if priority_wait is not None:
+                return self._reject("EMERGENCY_PRIORITY_WAIT", a.id, **priority_wait)
             if (a.emergency.eligible or a.emergency.pending) and not emergency and not normal_exception:
                 return self._reject("EMERGENCY_DISPOSITION_REQUIRED", a.id)
             if p.kind == "FINAL_NORMAL" and source_ring != "inner":
@@ -1114,7 +1204,24 @@ class RotatingSlotWorld:
                 continue
             if p.start_time > self.time:
                 continue
+            # A nested cancellation/submit may have changed this finite copy.
+            if self.soft.get(aircraft_id) != p:
+                continue
             a = self.aircraft[aircraft_id]
+            priority_wait = self._emergency_priority_wait(p)
+            if priority_wait is not None:
+                result = self.cancel(a.id)
+                protected_by = sorted(h for h, deps in self.dependencies.items()
+                                      if p.trajectory_hash in deps)
+                self._event("emergency_priority_yielded" if result.accepted else "emergency_priority_yield_blocked",
+                            a.id, trajectory_hash=p.trajectory_hash,
+                            reason="EMERGENCY_PRIORITY_WAIT" if result.accepted else result.reason,
+                            dependent_started_plans=protected_by, **priority_wait)
+                if result.accepted:
+                    continue
+                # A failed cancellation does not certify safe holding. Keep
+                # the original certified departure, including geometric
+                # commitments not represented by an explicit slot dependency.
             normal_exception = (p.kind == "FINAL_NORMAL" and a.ring == "inner" and
                                 not a.emergency.declared and not a.emergency.pending)
             if p.kind != "FINAL_EMERGENCY" and (a.emergency.declared or
@@ -1642,10 +1749,28 @@ class RotatingSlotWorld:
 
     def handle_emergencies(self):
         """Test-only deterministic rescue interface; all attempts pass submit()."""
-        for key in sorted(self.aircraft):
+        if self._stage2_enabled():
+            queue = self._emergency_waiting_queue()
+            if queue:
+                self._event("emergency_priority_queue", queue=[dict(aircraft_id=a.id,
+                            **emergency_priority(a, self.config)) for a in queue])
+                self._yield_normal_finals()
+            keys = [a.id for a in queue]
+        else:
+            keys = sorted(self.aircraft)
+        for key in keys:
             a = self.aircraft[key]
-            if not a.emergency.eligible or key in self.active or a.status not in HOLD.values():
+            if (self._stage2_enabled() and a.status in HOLD.values() and key not in self.active
+                    and not a.emergency.eligible):
+                a = replace(a, emergency=replace(a.emergency, eligible=True))
+                self.aircraft[key] = a
+                if not a.emergency.declared:
+                    self._event("emergency_triggered", key, pending=False, q_e=a.emergency.q_e,
+                                trigger="revealed_threshold_priority")
+            if not (a.emergency.eligible or (self._stage2_enabled() and a.emergency.declared)) or key in self.active or a.status not in HOLD.values():
                 continue
+            if self._stage2_enabled():
+                self._event("emergency_priority_selected", key, **emergency_priority(a, self.config))
             if a.ring == "inner" and not a.emergency.declared:
                 if self._try_final(a, emergency=False):
                     continue

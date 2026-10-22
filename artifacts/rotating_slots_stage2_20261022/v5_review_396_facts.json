@@ -1,0 +1,1506 @@
+{
+  "contract_budget": {
+    "config": {
+      "lines": {
+        "159": "  normal_planning_soft_budget_s: 5.0",
+        "160": "  normal_planning_watchdog_s: 30.0",
+        "161": "  real_time_reference_deadline_s: 5.0"
+      },
+      "path": "new10.16/rotating_slots_stage2_baseline_v1_0/stage2_baseline_config_v1_0.yaml"
+    },
+    "contract_12_4": {
+      "lines": {
+        "489": "5秒为正常规划软预算：在安全的中断点停止新增候选或搜索，保留最佳已认证结果。最终验证与提交可继续但同回合最多30秒；看门狗中断只能丢弃只读工作，不得打断半次真实资源事务。没有新可执行解则保留已验证旧计划，并记录deadline miss。",
+        "491": "某个不可中断数值调用越过目标时，保留真实超时值，不截成5或30；超过30秒的规划进程可以终止，父进程保留世界状态。公共准入/应急有独立计时和campaign总预算，不能因正常规划预算到期跳过必要应急。",
+        "493": "本版不以5秒达标或CP优胜作为阶段完成的硬门槛；真实慢点是需要报告的结果。"
+      },
+      "path": "new10.16/rotating_slots_stage2_baseline_v1_0/rotating_slots_stage2_baseline_contract_v1_0.md"
+    },
+    "shared_blame_commit": "6d7d20d8be060b3cf405190cfdf3b087dd1f3e79",
+    "shared_blame_date": "2026-10-21T01:31:09+08:00",
+    "stage2_planning": {
+      "lines": {
+        "35": "class PlanningBudget:",
+        "36": "    soft_seconds: float = 5.",
+        "37": "    watchdog_seconds: float = 30.",
+        "38": "    candidate_seconds: float = 3.",
+        "65": "    def search_available(self):",
+        "66": "        if self.elapsed<self.soft_seconds: return True",
+        "67": "        self.truncations.add(\"SOFT_BUDGET\"); return False"
+      },
+      "path": "terminal_marl/core/rotating_slots/stage2_planning.py"
+    }
+  },
+  "replay": {
+    "bounds": [
+      0.0,
+      480.0
+    ],
+    "decision_rows_near_key_times": [
+      {
+        "attempts_uid15": 1,
+        "commit_status": "ACCEPTED",
+        "cpu_s": 5.015377874000009,
+        "fallback": false,
+        "keep": 33,
+        "method": "rh_cp_sat",
+        "noop": true,
+        "objective": [
+          0.0,
+          -2.0,
+          99.0,
+          32454.47847239404,
+          657240185.7154771
+        ],
+        "refinement_rounds": 0,
+        "selected_key": [
+          0.0,
+          -2.0,
+          99.0,
+          32454.47847239404,
+          657240185.7154771
+        ],
+        "solver": [],
+        "status": "LEX_LIMITED",
+        "submitted": 0,
+        "time": 380.5756241914836,
+        "timings": {
+          "candidate_generation_and_single_vehicle": [
+            0.48981734906556085,
+            0.4898167529999853
+          ],
+          "commit": [
+            0.011723204981535673,
+            0.01172361300001512
+          ],
+          "geometry_template_screen": [
+            0.10029408684931695,
+            0.10029122500002075
+          ],
+          "hint_construction": [
+            1.8833247909788042,
+            1.8833246990000134
+          ],
+          "reference_seed_generation": [
+            1.5873763160197996,
+            1.5873801449999974
+          ],
+          "resource_conflict_build": [
+            1.8440186977386475e-06,
+            1.8180000154188747e-06
+          ],
+          "safe_progress_generation": [
+            0.9343074680655263,
+            0.9343045469999964
+          ],
+          "selected_validation": [
+            0.005482796987053007,
+            0.0054828520000000935
+          ],
+          "selection": [
+            6.265100091695786e-05,
+            6.260599995755456e-05
+          ],
+          "snapshot_and_uniform_refinement": [
+            0.00265629799105227,
+            0.0026565440000041463
+          ]
+        },
+        "trajectory_recomputes": 46,
+        "trigger_reason": "UNSPECIFIED_EXECUTOR_TRIGGER",
+        "truncations": [
+          "CANDIDATE_WORK_CUTOFF",
+          "SOFT_BUDGET"
+        ],
+        "wait": 0,
+        "wall_s": 5.015380970027763
+      },
+      {
+        "attempts_uid15": 1,
+        "commit_status": "ACCEPTED",
+        "cpu_s": 5.198740831999999,
+        "fallback": false,
+        "keep": 32,
+        "method": "rh_cp_sat",
+        "noop": false,
+        "objective": [
+          0.0,
+          -3.0,
+          96.0,
+          31514.629720777008,
+          643453980.1673228
+        ],
+        "refinement_rounds": 0,
+        "selected_key": [
+          0.0,
+          -3.0,
+          96.0,
+          31514.629720777008,
+          643453980.1673228
+        ],
+        "solver": [],
+        "status": "LEX_LIMITED",
+        "submitted": 1,
+        "time": 384.99999999999994,
+        "timings": {
+          "candidate_generation_and_single_vehicle": [
+            0.47506599297048524,
+            0.47506592100003786
+          ],
+          "commit": [
+            0.06537721998756751,
+            0.06537845799999786
+          ],
+          "geometry_template_screen": [
+            0.04943600407568738,
+            0.04943430599993803
+          ],
+          "hint_construction": [
+            1.8049181109527126,
+            1.8049043229999882
+          ],
+          "reference_seed_generation": [
+            1.5373081300058402,
+            1.5373003909999738
+          ],
+          "resource_conflict_build": [
+            2.163986209779978e-06,
+            2.128000005541253e-06
+          ],
+          "safe_progress_generation": [
+            1.162453401950188,
+            1.1624443230000736
+          ],
+          "selected_validation": [
+            0.10105140699306503,
+            0.10105148900001382
+          ],
+          "selection": [
+            6.176705937832594e-05,
+            6.174600000008468e-05
+          ],
+          "snapshot_and_uniform_refinement": [
+            0.002757241018116474,
+            0.002757540999994035
+          ]
+        },
+        "trajectory_recomputes": 53,
+        "trigger_reason": "UNSPECIFIED_EXECUTOR_TRIGGER",
+        "truncations": [
+          "CANDIDATE_WORK_CUTOFF",
+          "SOFT_BUDGET"
+        ],
+        "wait": 0,
+        "wall_s": 5.1987735239672475
+      },
+      {
+        "attempts_uid15": null,
+        "commit_status": "ACCEPTED",
+        "cpu_s": 5.029443678000007,
+        "fallback": false,
+        "keep": 32,
+        "method": "rh_cp_sat",
+        "noop": true,
+        "objective": [
+          0.0,
+          -2.0,
+          96.0,
+          31481.129720777008,
+          635374500.8523306
+        ],
+        "refinement_rounds": 0,
+        "selected_key": [
+          0.0,
+          -2.0,
+          96.0,
+          31481.129720777008,
+          635374500.8523306
+        ],
+        "solver": [],
+        "status": "LEX_LIMITED",
+        "submitted": 0,
+        "time": 394.99999999999994,
+        "timings": {
+          "candidate_generation_and_single_vehicle": [
+            0.48934800212737173,
+            0.4893475869999975
+          ],
+          "commit": [
+            0.014134202036075294,
+            0.01413479699999698
+          ],
+          "geometry_template_screen": [
+            0.04435128212207928,
+            0.04434658800005309
+          ],
+          "hint_construction": [
+            1.8690878950292245,
+            1.8690784240000085
+          ],
+          "reference_seed_generation": [
+            1.5950014338595793,
+            1.5950053130000015
+          ],
+          "resource_conflict_build": [
+            1.8079881556332111e-06,
+            1.8020000140950287e-06
+          ],
+          "safe_progress_generation": [
+            1.0077966409153305,
+            1.0077883959999667
+          ],
+          "selected_validation": [
+            0.006547646946273744,
+            0.00654728699998941
+          ],
+          "selection": [
+            6.085506174713373e-05,
+            6.0870999988082986e-05
+          ],
+          "snapshot_and_uniform_refinement": [
+            0.002787842007819563,
+            0.0027883879999990313
+          ]
+        },
+        "trajectory_recomputes": 49,
+        "trigger_reason": "UNSPECIFIED_EXECUTOR_TRIGGER",
+        "truncations": [
+          "CANDIDATE_WORK_CUTOFF",
+          "SOFT_BUDGET"
+        ],
+        "wait": 0,
+        "wall_s": 5.029463477025274
+      },
+      {
+        "attempts_uid15": null,
+        "commit_status": "ACCEPTED",
+        "cpu_s": 5.263771587999997,
+        "fallback": false,
+        "keep": 32,
+        "method": "rh_cp_sat",
+        "noop": true,
+        "objective": [
+          0.0,
+          -2.0,
+          96.0,
+          31471.129720777008,
+          635026657.8562573
+        ],
+        "refinement_rounds": 0,
+        "selected_key": [
+          0.0,
+          -2.0,
+          96.0,
+          31471.129720777008,
+          635026657.8562573
+        ],
+        "solver": [],
+        "status": "LEX_LIMITED",
+        "submitted": 0,
+        "time": 400.0,
+        "timings": {
+          "candidate_generation_and_single_vehicle": [
+            0.5439857059391215,
+            0.54398593800002
+          ],
+          "commit": [
+            0.012839514994993806,
+            0.01284005799999477
+          ],
+          "geometry_template_screen": [
+            0.04747953073820099,
+            0.0474765590000743
+          ],
+          "hint_construction": [
+            1.8696031319559552,
+            1.8695973899999956
+          ],
+          "model_build": [
+            0.35406477097421885,
+            0.35406606500001203
+          ],
+          "reference_seed_generation": [
+            1.4813589820987545,
+            1.481357868999936
+          ],
+          "resource_conflict_build": [
+            0.001164935005363077,
+            0.0011649230000045918
+          ],
+          "safe_progress_generation": [
+            0.9418644431862049,
+            0.9418548479999913
+          ],
+          "selected_validation": [
+            0.008046167029533535,
+            0.008045793999997386
+          ],
+          "selection": [
+            0.00010868103709071875,
+            0.00010734399998568733
+          ],
+          "snapshot_and_uniform_refinement": [
+            0.002917194040492177,
+            0.002917569000004505
+          ]
+        },
+        "trajectory_recomputes": 43,
+        "trigger_reason": "UNSPECIFIED_EXECUTOR_TRIGGER",
+        "truncations": [
+          "CANDIDATE_WORK_CUTOFF",
+          "SOFT_BUDGET"
+        ],
+        "wait": 0,
+        "wall_s": 5.263791427016258
+      },
+      {
+        "attempts_uid15": null,
+        "commit_status": "ACCEPTED",
+        "cpu_s": 5.503555973999994,
+        "fallback": false,
+        "keep": 32,
+        "method": "rh_cp_sat",
+        "noop": false,
+        "objective": [
+          0.0,
+          -2.0,
+          96.0,
+          31455.777521164324,
+          634439143.8999885
+        ],
+        "refinement_rounds": 0,
+        "selected_key": [
+          0.0,
+          -2.0,
+          96.0,
+          31455.777521164324,
+          634439143.8999885
+        ],
+        "solver": [],
+        "status": "LEX_LIMITED",
+        "submitted": 1,
+        "time": 407.67609980634126,
+        "timings": {
+          "candidate_generation_and_single_vehicle": [
+            0.48335267492802814,
+            0.48335202100003016
+          ],
+          "commit": [
+            0.26521562098059803,
+            0.26521671699998706
+          ],
+          "geometry_template_screen": [
+            0.05207838292699307,
+            0.05207258499973477
+          ],
+          "hint_construction": [
+            1.7094104010611773,
+            1.709405006000054
+          ],
+          "model_build": [
+            0.25102766195777804,
+            0.25102857500002074
+          ],
+          "reference_seed_generation": [
+            1.4668272020644508,
+            1.4668272049999587
+          ],
+          "resource_conflict_build": [
+            0.001115575956646353,
+            0.0011155830000006972
+          ],
+          "safe_progress_generation": [
+            1.0096051380387507,
+            1.0095976280002787
+          ],
+          "selected_validation": [
+            0.261642902973108,
+            0.2616428709999923
+          ],
+          "selection": [
+            0.00010231405030936003,
+            0.00010132299991028049
+          ],
+          "snapshot_and_uniform_refinement": [
+            0.0028701999690383673,
+            0.0028709549999916817
+          ]
+        },
+        "trajectory_recomputes": 53,
+        "trigger_reason": "UNSPECIFIED_EXECUTOR_TRIGGER",
+        "truncations": [
+          "CANDIDATE_WORK_CUTOFF",
+          "SOFT_BUDGET"
+        ],
+        "wait": 0,
+        "wall_s": 5.503575922979508
+      },
+      {
+        "attempts_uid15": null,
+        "commit_status": "ACCEPTED",
+        "cpu_s": 5.024757794999971,
+        "fallback": false,
+        "keep": 31,
+        "method": "rh_cp_sat",
+        "noop": true,
+        "objective": [
+          0.0,
+          -2.0,
+          93.0,
+          30466.629720777008,
+          616289604.8845763
+        ],
+        "refinement_rounds": 2,
+        "selected_key": [
+          0.0,
+          -2.0,
+          93.0,
+          30466.629720777008,
+          616289604.8845763
+        ],
+        "solver": [
+          {
+            "bound": 0.0,
+            "branches": 0,
+            "conflicts": 0,
+            "objective": 0.0,
+            "phase": 0,
+            "prefix_status": "ACCEPTED",
+            "round": 1,
+            "status": "OPTIMAL",
+            "validation_status": "SAFE",
+            "wall_s": 0.0004982270183973014
+          },
+          {
+            "bound": -3.0,
+            "branches": 0,
+            "conflicts": 0,
+            "objective": -3.0,
+            "phase": 1,
+            "prefix_status": "NOT_CHECKED",
+            "round": 1,
+            "status": "OPTIMAL",
+            "validation_status": "UNSAFE",
+            "wall_s": 0.00042612600373104215
+          },
+          {
+            "bound": 0.0,
+            "branches": 0,
+            "conflicts": 0,
+            "objective": 0.0,
+            "phase": 0,
+            "prefix_status": "ACCEPTED",
+            "round": 2,
+            "status": "OPTIMAL",
+            "validation_status": "SAFE",
+            "wall_s": 0.00033676798921078444
+          }
+        ],
+        "status": "LEX_LIMITED",
+        "submitted": 0,
+        "time": 409.9999999999999,
+        "timings": {
+          "candidate_generation_and_single_vehicle": [
+            0.3328317780396901,
+            0.33279866599997376
+          ],
+          "commit": [
+            0.01269161095842719,
+            0.012691965000044547
+          ],
+          "cp_solve": [
+            0.0012657810002565384,
+            0.001266449000013381
+          ],
+          "geometry_template_screen": [
+            0.05653576331678778,
+            0.05653386199992383
+          ],
+          "hint_construction": [
+            1.623601911996957,
+            1.6235976209999308
+          ],
+          "model_build": [
+            0.2890843960340135,
+            0.2890857320000464
+          ],
+          "reference_seed_generation": [
+            1.50017340289196,
+            1.5001711780001301
+          ],
+          "resource_conflict_build": [
+            0.0010050470009446144,
+            0.001005031999966377
+          ],
+          "safe_progress_generation": [
+            1.1458997607696801,
+            1.1458961499999418
+          ],
+          "selected_validation": [
+            0.057795314001850784,
+            0.05779628500005174
+          ],
+          "selection": [
+            0.0007794109405949712,
+            0.0007758840000064993
+          ],
+          "snapshot_and_uniform_refinement": [
+            0.002807458979077637,
+            0.002807834999998704
+          ]
+        },
+        "trajectory_recomputes": 54,
+        "trigger_reason": "UNSPECIFIED_EXECUTOR_TRIGGER",
+        "truncations": [
+          "CANDIDATE_WORK_CUTOFF",
+          "SOFT_BUDGET"
+        ],
+        "wait": 0,
+        "wall_s": 5.024804107029922
+      }
+    ],
+    "dispatch_rows_380_410": [
+      {
+        "admission_cpu_s": 0.00016968900000335907,
+        "admission_wall_s": 0.00016957800835371017,
+        "dispatch_cpu_s": 7.252731155999996,
+        "dispatch_wall_s": 7.252780747017823,
+        "emergency_cpu_s": 2.236241196999984,
+        "emergency_wall_s": 2.236285662977025,
+        "normal_cpu_s": 5.016313914999984,
+        "normal_wall_s": 5.016316675988492,
+        "time": 380.5756241914836
+      },
+      {
+        "admission_cpu_s": 0.00016022900001644302,
+        "admission_wall_s": 0.0001600630348548293,
+        "dispatch_cpu_s": 7.19331591400001,
+        "dispatch_wall_s": 7.193337023141794,
+        "emergency_cpu_s": 2.067152940999989,
+        "emergency_wall_s": 2.067169242131058,
+        "normal_cpu_s": 5.125999674000013,
+        "normal_wall_s": 5.126002528995741,
+        "time": 383.5
+      },
+      {
+        "admission_cpu_s": 0.00017141000000719941,
+        "admission_wall_s": 0.0001713130041025579,
+        "dispatch_cpu_s": 6.714942558999979,
+        "dispatch_wall_s": 6.714980226999614,
+        "emergency_cpu_s": 1.5914644779999776,
+        "emergency_wall_s": 1.591469737002626,
+        "normal_cpu_s": 5.1233032899999955,
+        "normal_wall_s": 5.123333461000584,
+        "time": 383.79515010771615
+      },
+      {
+        "admission_cpu_s": 0.00017033999998261606,
+        "admission_wall_s": 0.00017013098113238811,
+        "dispatch_cpu_s": 6.843343049000083,
+        "dispatch_wall_s": 6.843394665920641,
+        "emergency_cpu_s": 1.6432570590000637,
+        "emergency_wall_s": 1.6432739139418118,
+        "normal_cpu_s": 5.199912184999988,
+        "normal_wall_s": 5.199944649008103,
+        "time": 384.99999999999994
+      },
+      {
+        "admission_cpu_s": 0.00017047800000113966,
+        "admission_wall_s": 0.0001704040332697332,
+        "dispatch_cpu_s": 6.856282658000026,
+        "dispatch_wall_s": 6.856402714038268,
+        "emergency_cpu_s": 1.587400353000021,
+        "emergency_wall_s": 1.5874904680531472,
+        "normal_cpu_s": 5.268707922999994,
+        "normal_wall_s": 5.268735440040473,
+        "time": 388.76984980634126
+      },
+      {
+        "admission_cpu_s": 0.00017096499999524895,
+        "admission_wall_s": 0.00017080199904739857,
+        "dispatch_cpu_s": 7.916430835999961,
+        "dispatch_wall_s": 7.916483332985081,
+        "emergency_cpu_s": 2.869123923999979,
+        "emergency_wall_s": 2.8691501260036603,
+        "normal_cpu_s": 5.047132016000006,
+        "normal_wall_s": 5.0471558310091496,
+        "time": 388.96984980634124
+      },
+      {
+        "admission_cpu_s": 0.0001690809999956855,
+        "admission_wall_s": 0.00016898498870432377,
+        "dispatch_cpu_s": 7.191882149999998,
+        "dispatch_wall_s": 7.191931153007317,
+        "emergency_cpu_s": 2.1376345980000053,
+        "emergency_wall_s": 2.1376521509955637,
+        "normal_cpu_s": 5.054074902999986,
+        "normal_wall_s": 5.054103614995256,
+        "time": 389.99999999999994
+      },
+      {
+        "admission_cpu_s": 0.0001796409999883508,
+        "admission_wall_s": 0.00017949903849512339,
+        "dispatch_cpu_s": 7.183140889000015,
+        "dispatch_wall_s": 7.183191209973302,
+        "emergency_cpu_s": 2.0762756379999985,
+        "emergency_wall_s": 2.076293876976706,
+        "normal_cpu_s": 5.106681910999981,
+        "normal_wall_s": 5.1067119049839675,
+        "time": 391.71927332317773
+      },
+      {
+        "admission_cpu_s": 0.5299776649999899,
+        "admission_wall_s": 0.5300582220079377,
+        "dispatch_cpu_s": 7.955364803000009,
+        "dispatch_wall_s": 7.956146293960046,
+        "emergency_cpu_s": 2.0819008020000354,
+        "emergency_wall_s": 2.082314974977635,
+        "normal_cpu_s": 5.3434824109999965,
+        "normal_wall_s": 5.343764967983589,
+        "time": 393.64800124614607
+      },
+      {
+        "admission_cpu_s": 0.00017305499997632978,
+        "admission_wall_s": 0.00017296004807576537,
+        "dispatch_cpu_s": 7.060106533999971,
+        "dispatch_wall_s": 7.060174502956215,
+        "emergency_cpu_s": 2.029478981999972,
+        "emergency_wall_s": 2.0295252359937876,
+        "normal_cpu_s": 5.03045101699999,
+        "normal_wall_s": 5.030470569967292,
+        "time": 394.99999999999994
+      },
+      {
+        "admission_cpu_s": 0.00017236800002251584,
+        "admission_wall_s": 0.00017233798280358315,
+        "dispatch_cpu_s": 7.010435253999987,
+        "dispatch_wall_s": 7.010476679948624,
+        "emergency_cpu_s": 1.9903570069999716,
+        "emergency_wall_s": 1.9903772049583495,
+        "normal_cpu_s": 5.019902599000005,
+        "normal_wall_s": 5.019922059960663,
+        "time": 398.5491152277798
+      },
+      {
+        "admission_cpu_s": 0.00017497999999704916,
+        "admission_wall_s": 0.00017488800222054124,
+        "dispatch_cpu_s": 7.049099224000031,
+        "dispatch_wall_s": 7.049164696945809,
+        "emergency_cpu_s": 1.9948050110000395,
+        "emergency_wall_s": 1.9948156799655408,
+        "normal_cpu_s": 5.054115539999998,
+        "normal_wall_s": 5.054168026021216,
+        "time": 399.08843994140625
+      },
+      {
+        "admission_cpu_s": 0.0001715869999827646,
+        "admission_wall_s": 0.00017143995501101017,
+        "dispatch_cpu_s": 7.361006248000024,
+        "dispatch_wall_s": 7.361040276009589,
+        "emergency_cpu_s": 2.0956416679999847,
+        "emergency_wall_s": 2.095653727010358,
+        "normal_cpu_s": 5.265189244999988,
+        "normal_wall_s": 5.265209234028589,
+        "time": 400.0
+      },
+      {
+        "admission_cpu_s": 0.00017561399999976857,
+        "admission_wall_s": 0.00017544400179758668,
+        "dispatch_cpu_s": 7.160771056999977,
+        "dispatch_wall_s": 7.160842047131155,
+        "emergency_cpu_s": 2.048321050999988,
+        "emergency_wall_s": 2.0483398141223006,
+        "normal_cpu_s": 5.112270453000008,
+        "normal_wall_s": 5.112320642976556,
+        "time": 401.673828125
+      },
+      {
+        "admission_cpu_s": 0.00016849200000024211,
+        "admission_wall_s": 0.0001683580339886248,
+        "dispatch_cpu_s": 7.216527863000039,
+        "dispatch_wall_s": 7.216569256037474,
+        "emergency_cpu_s": 2.1524119090000227,
+        "emergency_wall_s": 2.1524321310571395,
+        "normal_cpu_s": 5.063942908999991,
+        "normal_wall_s": 5.063962095009629,
+        "time": 402.42407226562494
+      },
+      {
+        "admission_cpu_s": 0.000172034000001986,
+        "admission_wall_s": 0.00017193896928802133,
+        "dispatch_cpu_s": 7.202442700000034,
+        "dispatch_wall_s": 7.202715639024973,
+        "emergency_cpu_s": 2.0814472120000005,
+        "emergency_wall_s": 2.0814652929548174,
+        "normal_cpu_s": 5.1208200389999945,
+        "normal_wall_s": 5.121073128015269,
+        "time": 403.5
+      },
+      {
+        "admission_cpu_s": 0.00017701900000588466,
+        "admission_wall_s": 0.00017691199900582433,
+        "dispatch_cpu_s": 7.407460692000001,
+        "dispatch_wall_s": 7.407533504010644,
+        "emergency_cpu_s": 2.196970969000006,
+        "emergency_wall_s": 2.196989512012806,
+        "normal_cpu_s": 5.2103091740000025,
+        "normal_wall_s": 5.21036067296518,
+        "time": 403.5509626095995
+      },
+      {
+        "admission_cpu_s": 0.00017543900000305257,
+        "admission_wall_s": 0.0001753329997882247,
+        "dispatch_cpu_s": 7.070749293999995,
+        "dispatch_wall_s": 7.070898498001043,
+        "emergency_cpu_s": 2.0117429309999864,
+        "emergency_wall_s": 2.011782845016569,
+        "normal_cpu_s": 5.058827388999987,
+        "normal_wall_s": 5.058934506028891,
+        "time": 403.82444698271615
+      },
+      {
+        "admission_cpu_s": 0.00017582500004209578,
+        "admission_wall_s": 0.00017574999947100878,
+        "dispatch_cpu_s": 7.05905882400009,
+        "dispatch_wall_s": 7.059177706891205,
+        "emergency_cpu_s": 2.029318579000062,
+        "emergency_wall_s": 2.029364886926487,
+        "normal_cpu_s": 5.029560179999976,
+        "normal_wall_s": 5.029630597040523,
+        "time": 404.99999999999994
+      },
+      {
+        "admission_cpu_s": 0.00016692700000930927,
+        "admission_wall_s": 0.00016683503054082394,
+        "dispatch_cpu_s": 7.050669760999938,
+        "dispatch_wall_s": 7.050762792001478,
+        "emergency_cpu_s": 2.0150590489999445,
+        "emergency_wall_s": 2.0151275230455212,
+        "normal_cpu_s": 5.035440234999953,
+        "normal_wall_s": 5.035461961000692,
+        "time": 405.77180293134126
+      },
+      {
+        "admission_cpu_s": 0.00017005900002686758,
+        "admission_wall_s": 0.0001699870335869491,
+        "dispatch_cpu_s": 7.564152495999906,
+        "dispatch_wall_s": 7.564196709019598,
+        "emergency_cpu_s": 2.059077570999932,
+        "emergency_wall_s": 2.0591002390137874,
+        "normal_cpu_s": 5.50490126599999,
+        "normal_wall_s": 5.504920890962239,
+        "time": 407.67609980634126
+      },
+      {
+        "admission_cpu_s": 0.0001716149999992922,
+        "admission_wall_s": 0.00017149001359939575,
+        "dispatch_cpu_s": 8.193233694000014,
+        "dispatch_wall_s": 8.193304563988931,
+        "emergency_cpu_s": 3.1367002129999833,
+        "emergency_wall_s": 3.136725846969057,
+        "normal_cpu_s": 5.056358422000017,
+        "normal_wall_s": 5.056401598965749,
+        "time": 409.3999999999999
+      },
+      {
+        "admission_cpu_s": 0.00017599099999188184,
+        "admission_wall_s": 0.0001758940052241087,
+        "dispatch_cpu_s": 7.914474106,
+        "dispatch_wall_s": 7.914609599974938,
+        "emergency_cpu_s": 2.8883240399999863,
+        "emergency_wall_s": 2.8884107010089792,
+        "normal_cpu_s": 5.025970059000031,
+        "normal_wall_s": 5.026016242976766,
+        "time": 409.9999999999999
+      }
+    ],
+    "human_acceptance": "HUMAN_PENDING",
+    "pad5_reservations_380_410": [
+      {
+        "aircraft_id": "initial_outer_10",
+        "committed": true,
+        "current": true,
+        "end": 407.67609980634126,
+        "frame_time": 380.5756241914836,
+        "future": false,
+        "kind": "service",
+        "plan_hash": null,
+        "resource": 5,
+        "start": 347.67609980634126
+      },
+      {
+        "aircraft_id": "initial_middle_02",
+        "committed": true,
+        "current": false,
+        "end": 498.49999999999994,
+        "frame_time": 384.99999999999994,
+        "future": true,
+        "kind": "final",
+        "plan_hash": "2eb1bae1dc50c4e5e2215ac3f3287f49e276a6480a7ccc3eb7309300645bb1a7",
+        "resource": 5,
+        "start": 424.99999999999994
+      }
+    ],
+    "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\replay_0480",
+    "snapshots_395_396_400": [
+      {
+        "controller_time": 395.0,
+        "declared_or_soc_le_035": [
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": null,
+              "declaration_time": null,
+              "declared": false,
+              "start_ring": null,
+              "start_time": null,
+              "state": "NONE"
+            },
+            "id": "initial_inner_04",
+            "pad_id": 2,
+            "ring": null,
+            "slot": null,
+            "soc": 0.3408532869102705,
+            "status": "LANDED_SERVICE",
+            "touchdown_time": 388.76984980634126,
+            "trajectory_hash": "9febf8567977e27f0ed7ee55115088f1e06ca3fa67d75050b445eee7af4159cb"
+          },
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": "inner",
+              "declaration_time": 364.2,
+              "declared": true,
+              "start_ring": null,
+              "start_time": null,
+              "state": "EMERGENCY_WAITING"
+            },
+            "id": "initial_middle_00",
+            "pad_id": null,
+            "ring": "inner",
+            "slot": 17,
+            "soc": 0.31285457978621967,
+            "status": "HOLD_INNER",
+            "touchdown_time": null,
+            "trajectory_hash": "43363bb04afdb7fb55f41d68663d8116da0bb381c269228b3b100c57c735c3e2"
+          },
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": "inner",
+              "declaration_time": 310.1649601546728,
+              "declared": true,
+              "start_ring": null,
+              "start_time": null,
+              "state": "EMERGENCY_WAITING"
+            },
+            "id": "initial_middle_01",
+            "pad_id": null,
+            "ring": "inner",
+            "slot": 2,
+            "soc": 0.24789325761418676,
+            "status": "HOLD_INNER",
+            "touchdown_time": null,
+            "trajectory_hash": "562b038edac35a22470eaa784c93a3f341393a187dac7278876b4d749111a3f6"
+          },
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": null,
+              "declaration_time": null,
+              "declared": false,
+              "start_ring": null,
+              "start_time": null,
+              "state": "NONE"
+            },
+            "id": "initial_middle_04",
+            "pad_id": 3,
+            "ring": null,
+            "slot": null,
+            "soc": 0.30224013308456926,
+            "status": "LANDED_SERVICE",
+            "touchdown_time": 343.5,
+            "trajectory_hash": "788867e038916b7b03e9bf48de35ca4c042115361af7d7bf88928f6d87c00a98"
+          },
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": "inner",
+              "declaration_time": 331.5310817930876,
+              "declared": true,
+              "start_ring": null,
+              "start_time": null,
+              "state": "EMERGENCY_WAITING"
+            },
+            "id": "initial_middle_11",
+            "pad_id": null,
+            "ring": "inner",
+            "slot": 16,
+            "soc": 0.2735498005932429,
+            "status": "HOLD_INNER",
+            "touchdown_time": null,
+            "trajectory_hash": "4298cbd69f22a36463da830a8f0b27e8c7f275705498fbaf9f994acb5ccdd82e"
+          },
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": null,
+              "declaration_time": null,
+              "declared": false,
+              "start_ring": null,
+              "start_time": null,
+              "state": "NONE"
+            },
+            "id": "initial_outer_10",
+            "pad_id": 5,
+            "ring": null,
+            "slot": null,
+            "soc": 0.34409947962334364,
+            "status": "LANDED_SERVICE",
+            "touchdown_time": 347.67609980634126,
+            "trajectory_hash": "27bd3b0c8aeb52bc20db9f4b9530a944338db2fce3f2f4fbbe5fcdfb0333227f"
+          },
+          {
+            "emergency": {
+              "charged": true,
+              "declaration_ring": "inner",
+              "declaration_time": 360.3124999999998,
+              "declared": true,
+              "start_ring": "inner",
+              "start_time": 383.5,
+              "state": "FINAL_EMERGENCY"
+            },
+            "id": "initial_outer_12",
+            "pad_id": null,
+            "ring": "inner",
+            "slot": 14,
+            "soc": 0.308680402621743,
+            "status": "FINAL_EMERGENCY",
+            "touchdown_time": null,
+            "trajectory_hash": "f3a88a9662a71a0b09a82faee00f04b81e735bdbb2c9441e57f2dfc36d15fd50"
+          },
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": "inner",
+              "declaration_time": 388.96984980634124,
+              "declared": true,
+              "start_ring": null,
+              "start_time": null,
+              "state": "EMERGENCY_WAITING"
+            },
+            "id": "req_000001",
+            "pad_id": null,
+            "ring": "inner",
+            "slot": 9,
+            "soc": 0.3426640102423664,
+            "status": "HOLD_INNER",
+            "touchdown_time": null,
+            "trajectory_hash": "581307f3d19491bd1f640489ee6cb212f140a558dcf727b74d63393d6fbd5abd"
+          }
+        ],
+        "pad5": [
+          {
+            "aircraft_id": "initial_outer_10",
+            "committed": true,
+            "current": true,
+            "end": 407.67609980634126,
+            "frame_time": 394.99999999999994,
+            "future": false,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 5,
+            "start": 347.67609980634126
+          },
+          {
+            "aircraft_id": "initial_middle_02",
+            "committed": true,
+            "current": false,
+            "end": 498.49999999999994,
+            "frame_time": 394.99999999999994,
+            "future": true,
+            "kind": "final",
+            "plan_hash": "2eb1bae1dc50c4e5e2215ac3f3287f49e276a6480a7ccc3eb7309300645bb1a7",
+            "resource": 5,
+            "start": 424.99999999999994
+          }
+        ],
+        "requested": 395.0,
+        "sampled_frame_time": 394.99999999999994,
+        "uid15": {
+          "emergency": {
+            "charged": false,
+            "declaration_ring": null,
+            "declaration_time": null,
+            "declared": false,
+            "start_ring": null,
+            "start_time": null,
+            "state": "NONE"
+          },
+          "id": "initial_middle_02",
+          "pad_id": null,
+          "ring": "inner",
+          "slot": 3,
+          "soc": 0.46759962910124364,
+          "status": "FINAL_NORMAL",
+          "touchdown_time": null,
+          "trajectory_hash": "2eb1bae1dc50c4e5e2215ac3f3287f49e276a6480a7ccc3eb7309300645bb1a7"
+        }
+      },
+      {
+        "controller_time": 396.0,
+        "declared_or_soc_le_035": [
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": null,
+              "declaration_time": null,
+              "declared": false,
+              "start_ring": null,
+              "start_time": null,
+              "state": "NONE"
+            },
+            "id": "initial_inner_04",
+            "pad_id": 2,
+            "ring": null,
+            "slot": null,
+            "soc": 0.3408532869102705,
+            "status": "LANDED_SERVICE",
+            "touchdown_time": 388.76984980634126,
+            "trajectory_hash": "9febf8567977e27f0ed7ee55115088f1e06ca3fa67d75050b445eee7af4159cb"
+          },
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": "inner",
+              "declaration_time": 364.2,
+              "declared": true,
+              "start_ring": null,
+              "start_time": null,
+              "state": "EMERGENCY_WAITING"
+            },
+            "id": "initial_middle_00",
+            "pad_id": null,
+            "ring": "inner",
+            "slot": 17,
+            "soc": 0.3116514839195507,
+            "status": "HOLD_INNER",
+            "touchdown_time": null,
+            "trajectory_hash": "43363bb04afdb7fb55f41d68663d8116da0bb381c269228b3b100c57c735c3e2"
+          },
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": "inner",
+              "declaration_time": 310.1649601546728,
+              "declared": true,
+              "start_ring": null,
+              "start_time": null,
+              "state": "EMERGENCY_WAITING"
+            },
+            "id": "initial_middle_01",
+            "pad_id": null,
+            "ring": "inner",
+            "slot": 2,
+            "soc": 0.24669016174751782,
+            "status": "HOLD_INNER",
+            "touchdown_time": null,
+            "trajectory_hash": "562b038edac35a22470eaa784c93a3f341393a187dac7278876b4d749111a3f6"
+          },
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": null,
+              "declaration_time": null,
+              "declared": false,
+              "start_ring": null,
+              "start_time": null,
+              "state": "NONE"
+            },
+            "id": "initial_middle_04",
+            "pad_id": 3,
+            "ring": null,
+            "slot": null,
+            "soc": 0.30224013308456926,
+            "status": "LANDED_SERVICE",
+            "touchdown_time": 343.5,
+            "trajectory_hash": "788867e038916b7b03e9bf48de35ca4c042115361af7d7bf88928f6d87c00a98"
+          },
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": "inner",
+              "declaration_time": 331.5310817930876,
+              "declared": true,
+              "start_ring": null,
+              "start_time": null,
+              "state": "EMERGENCY_WAITING"
+            },
+            "id": "initial_middle_11",
+            "pad_id": null,
+            "ring": "inner",
+            "slot": 16,
+            "soc": 0.27234670472657396,
+            "status": "HOLD_INNER",
+            "touchdown_time": null,
+            "trajectory_hash": "4298cbd69f22a36463da830a8f0b27e8c7f275705498fbaf9f994acb5ccdd82e"
+          },
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": null,
+              "declaration_time": null,
+              "declared": false,
+              "start_ring": null,
+              "start_time": null,
+              "state": "NONE"
+            },
+            "id": "initial_outer_10",
+            "pad_id": 5,
+            "ring": null,
+            "slot": null,
+            "soc": 0.34409947962334364,
+            "status": "LANDED_SERVICE",
+            "touchdown_time": 347.67609980634126,
+            "trajectory_hash": "27bd3b0c8aeb52bc20db9f4b9530a944338db2fce3f2f4fbbe5fcdfb0333227f"
+          },
+          {
+            "emergency": {
+              "charged": true,
+              "declaration_ring": "inner",
+              "declaration_time": 360.3124999999998,
+              "declared": true,
+              "start_ring": "inner",
+              "start_time": 383.5,
+              "state": "FINAL_EMERGENCY"
+            },
+            "id": "initial_outer_12",
+            "pad_id": null,
+            "ring": "inner",
+            "slot": 14,
+            "soc": 0.3076086121679063,
+            "status": "FINAL_EMERGENCY",
+            "touchdown_time": null,
+            "trajectory_hash": "f3a88a9662a71a0b09a82faee00f04b81e735bdbb2c9441e57f2dfc36d15fd50"
+          },
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": "inner",
+              "declaration_time": 388.96984980634124,
+              "declared": true,
+              "start_ring": null,
+              "start_time": null,
+              "state": "EMERGENCY_WAITING"
+            },
+            "id": "req_000001",
+            "pad_id": null,
+            "ring": "inner",
+            "slot": 9,
+            "soc": 0.3414609143756975,
+            "status": "HOLD_INNER",
+            "touchdown_time": null,
+            "trajectory_hash": "581307f3d19491bd1f640489ee6cb212f140a558dcf727b74d63393d6fbd5abd"
+          }
+        ],
+        "pad5": [
+          {
+            "aircraft_id": "initial_outer_10",
+            "committed": true,
+            "current": true,
+            "end": 407.67609980634126,
+            "frame_time": 395.9999999999999,
+            "future": false,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 5,
+            "start": 347.67609980634126
+          },
+          {
+            "aircraft_id": "initial_middle_02",
+            "committed": true,
+            "current": false,
+            "end": 498.49999999999994,
+            "frame_time": 395.9999999999999,
+            "future": true,
+            "kind": "final",
+            "plan_hash": "2eb1bae1dc50c4e5e2215ac3f3287f49e276a6480a7ccc3eb7309300645bb1a7",
+            "resource": 5,
+            "start": 424.99999999999994
+          }
+        ],
+        "requested": 396.0,
+        "sampled_frame_time": 395.9999999999999,
+        "uid15": {
+          "emergency": {
+            "charged": false,
+            "declaration_ring": null,
+            "declaration_time": null,
+            "declared": false,
+            "start_ring": null,
+            "start_time": null,
+            "state": "NONE"
+          },
+          "id": "initial_middle_02",
+          "pad_id": null,
+          "ring": "inner",
+          "slot": 3,
+          "soc": 0.4665133065192446,
+          "status": "FINAL_NORMAL",
+          "touchdown_time": null,
+          "trajectory_hash": "2eb1bae1dc50c4e5e2215ac3f3287f49e276a6480a7ccc3eb7309300645bb1a7"
+        }
+      },
+      {
+        "controller_time": 400.0,
+        "declared_or_soc_le_035": [
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": null,
+              "declaration_time": null,
+              "declared": false,
+              "start_ring": null,
+              "start_time": null,
+              "state": "NONE"
+            },
+            "id": "initial_inner_04",
+            "pad_id": 2,
+            "ring": null,
+            "slot": null,
+            "soc": 0.3408532869102705,
+            "status": "LANDED_SERVICE",
+            "touchdown_time": 388.76984980634126,
+            "trajectory_hash": "9febf8567977e27f0ed7ee55115088f1e06ca3fa67d75050b445eee7af4159cb"
+          },
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": "inner",
+              "declaration_time": 364.2,
+              "declared": true,
+              "start_ring": null,
+              "start_time": null,
+              "state": "EMERGENCY_WAITING"
+            },
+            "id": "initial_middle_00",
+            "pad_id": null,
+            "ring": "inner",
+            "slot": 17,
+            "soc": 0.30683910045287455,
+            "status": "HOLD_INNER",
+            "touchdown_time": null,
+            "trajectory_hash": "43363bb04afdb7fb55f41d68663d8116da0bb381c269228b3b100c57c735c3e2"
+          },
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": "inner",
+              "declaration_time": 310.1649601546728,
+              "declared": true,
+              "start_ring": null,
+              "start_time": null,
+              "state": "EMERGENCY_WAITING"
+            },
+            "id": "initial_middle_01",
+            "pad_id": null,
+            "ring": "inner",
+            "slot": 2,
+            "soc": 0.24187777828084162,
+            "status": "HOLD_INNER",
+            "touchdown_time": null,
+            "trajectory_hash": "562b038edac35a22470eaa784c93a3f341393a187dac7278876b4d749111a3f6"
+          },
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": null,
+              "declaration_time": null,
+              "declared": false,
+              "start_ring": null,
+              "start_time": null,
+              "state": "NONE"
+            },
+            "id": "initial_middle_04",
+            "pad_id": 3,
+            "ring": null,
+            "slot": null,
+            "soc": 0.30224013308456926,
+            "status": "LANDED_SERVICE",
+            "touchdown_time": 343.5,
+            "trajectory_hash": "788867e038916b7b03e9bf48de35ca4c042115361af7d7bf88928f6d87c00a98"
+          },
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": "inner",
+              "declaration_time": 331.5310817930876,
+              "declared": true,
+              "start_ring": null,
+              "start_time": null,
+              "state": "EMERGENCY_WAITING"
+            },
+            "id": "initial_middle_11",
+            "pad_id": null,
+            "ring": "inner",
+            "slot": 16,
+            "soc": 0.2675343212598978,
+            "status": "HOLD_INNER",
+            "touchdown_time": null,
+            "trajectory_hash": "4298cbd69f22a36463da830a8f0b27e8c7f275705498fbaf9f994acb5ccdd82e"
+          },
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": null,
+              "declaration_time": null,
+              "declared": false,
+              "start_ring": null,
+              "start_time": null,
+              "state": "NONE"
+            },
+            "id": "initial_outer_10",
+            "pad_id": 5,
+            "ring": null,
+            "slot": null,
+            "soc": 0.34409947962334364,
+            "status": "LANDED_SERVICE",
+            "touchdown_time": 347.67609980634126,
+            "trajectory_hash": "27bd3b0c8aeb52bc20db9f4b9530a944338db2fce3f2f4fbbe5fcdfb0333227f"
+          },
+          {
+            "emergency": {
+              "charged": true,
+              "declaration_ring": "inner",
+              "declaration_time": 360.3124999999998,
+              "declared": true,
+              "start_ring": "inner",
+              "start_time": 383.5,
+              "state": "FINAL_EMERGENCY"
+            },
+            "id": "initial_outer_12",
+            "pad_id": null,
+            "ring": "inner",
+            "slot": 14,
+            "soc": 0.3034405944302225,
+            "status": "FINAL_EMERGENCY",
+            "touchdown_time": null,
+            "trajectory_hash": "f3a88a9662a71a0b09a82faee00f04b81e735bdbb2c9441e57f2dfc36d15fd50"
+          },
+          {
+            "emergency": {
+              "charged": false,
+              "declaration_ring": "inner",
+              "declaration_time": 388.96984980634124,
+              "declared": true,
+              "start_ring": null,
+              "start_time": null,
+              "state": "EMERGENCY_WAITING"
+            },
+            "id": "req_000001",
+            "pad_id": null,
+            "ring": "inner",
+            "slot": 9,
+            "soc": 0.3366485309090213,
+            "status": "HOLD_INNER",
+            "touchdown_time": null,
+            "trajectory_hash": "581307f3d19491bd1f640489ee6cb212f140a558dcf727b74d63393d6fbd5abd"
+          }
+        ],
+        "pad5": [
+          {
+            "aircraft_id": "initial_outer_10",
+            "committed": true,
+            "current": true,
+            "end": 407.67609980634126,
+            "frame_time": 400.0,
+            "future": false,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 5,
+            "start": 347.67609980634126
+          },
+          {
+            "aircraft_id": "initial_middle_02",
+            "committed": true,
+            "current": false,
+            "end": 498.49999999999994,
+            "frame_time": 400.0,
+            "future": true,
+            "kind": "final",
+            "plan_hash": "2eb1bae1dc50c4e5e2215ac3f3287f49e276a6480a7ccc3eb7309300645bb1a7",
+            "resource": 5,
+            "start": 424.99999999999994
+          }
+        ],
+        "requested": 400.0,
+        "sampled_frame_time": 400.0,
+        "uid15": {
+          "emergency": {
+            "charged": false,
+            "declaration_ring": null,
+            "declaration_time": null,
+            "declared": false,
+            "start_ring": null,
+            "start_time": null,
+            "state": "NONE"
+          },
+          "id": "initial_middle_02",
+          "pad_id": null,
+          "ring": "inner",
+          "slot": 3,
+          "soc": 0.4623167085218937,
+          "status": "FINAL_NORMAL",
+          "touchdown_time": null,
+          "trajectory_hash": "2eb1bae1dc50c4e5e2215ac3f3287f49e276a6480a7ccc3eb7309300645bb1a7"
+        }
+      }
+    ],
+    "soft_plan_reserved_380_410": [
+      {
+        "aircraft_id": "req_000025",
+        "end_time": 451.78568367422645,
+        "start_time": 411.78568367422645,
+        "time": 407.67609980634126,
+        "trajectory_hash": "89515314e3451cd41b437843e82c30406b1474946ae40185ffc135477b1f9193"
+      }
+    ],
+    "uid15": 15,
+    "uid15_aircraft_id": "initial_middle_02",
+    "uid15_events_380_410": [
+      {
+        "aircraft_id": "initial_middle_02",
+        "end_time": 438.49999999999994,
+        "start_time": 384.99999999999994,
+        "time": 384.99999999999994,
+        "trajectory_hash": "2eb1bae1dc50c4e5e2215ac3f3287f49e276a6480a7ccc3eb7309300645bb1a7",
+        "type": "plan_committed"
+      },
+      {
+        "aircraft_id": "initial_middle_02",
+        "time": 384.99999999999994,
+        "trajectory_hash": "2eb1bae1dc50c4e5e2215ac3f3287f49e276a6480a7ccc3eb7309300645bb1a7",
+        "type": "maneuver_started"
+      }
+    ],
+    "uid15_final_attempt_rejected_380_410": {
+      "count": 0,
+      "types": {}
+    },
+    "uid_count": 70,
+    "visual_acceptance": {
+      "observations": [],
+      "observed_at": null,
+      "observer": null,
+      "researcher_visual_acceptance": "HUMAN_PENDING",
+      "visualization_integration_status": "NOT_OBSERVED"
+    }
+  },
+  "schema": "stage2_v5_review_396_facts_v1",
+  "scope": {
+    "git_modified": false,
+    "read_only": true,
+    "server_access": false,
+    "simulation_started": false
+  }
+}

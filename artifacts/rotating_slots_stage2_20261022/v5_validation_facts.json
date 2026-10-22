@@ -1,0 +1,379 @@
+{
+  "schema": "stage2_v5_validation_facts_v1",
+  "recorded_utc": "2026-10-22T04:30:01.249820+00:00",
+  "formal_pair_status": "NOT_LAUNCHED",
+  "implementation_status": "VERIFIED_FOR_LAUNCH",
+  "human_visual_acceptance": "HUMAN_PENDING",
+  "source": {
+    "branch": "codex/arrival-restructure",
+    "commit": null,
+    "commit_status": "PENDING_COMMIT",
+    "hash_algorithm": "SHA-256",
+    "hash_scope": "Current local bytes; not an assertion that every preceding test used these exact bytes.",
+    "files": [
+      {
+        "path": "terminal_marl/core/rotating_slots/world.py",
+        "sha256": "6833fc3ab624b5cf5ab5906aa2c9f8db20349bf07df9c8bd4687572f38f94c7b",
+        "bytes": 125428
+      },
+      {
+        "path": "terminal_marl/core/rotating_slots/stage2_planning.py",
+        "sha256": "764f014b64b7398a11a89f162fdd42f158ae2514f3803a4da350ecefb8577b72",
+        "bytes": 79175
+      },
+      {
+        "path": "terminal_marl/core/rotating_slots/stage2_campaign.py",
+        "sha256": "e161c8b2d9eff3e50a816f79d8e88cfc961393d96d86eb036f237e0ae7ef4fec",
+        "bytes": 43068
+      },
+      {
+        "path": "tests/test_stage2_quality_budget.py",
+        "sha256": "93505ae1fd22631de9850ec3803fb86ebd73dd77e024240ac05473215980810f",
+        "bytes": 19486
+      },
+      {
+        "path": "tests/test_stage2_emergency_priority_v5.py",
+        "sha256": "97254b28d29f34feab579465468cdbdd539bf8e791f972c7b91d852d4872533c",
+        "bytes": 9833
+      },
+      {
+        "path": "tests/test_stage2_service_profile.py",
+        "sha256": "a2c70ec429d67b85f547df3e4852c31794d77d62216d6023445952371672adf1",
+        "bytes": 10151
+      },
+      {
+        "path": "tests/test_rotating_slots_stage2_audit.py",
+        "sha256": "ff89a7f5721110a20094e46a7086da0cfd6081ac9e6031ee0f9669bcb9366bec",
+        "bytes": 7835
+      }
+    ]
+  },
+  "validation_runs": [
+    {
+      "name": "local_emergency_and_world",
+      "evidence_type": "newly_run",
+      "passed": 84,
+      "wall_s": 45.73,
+      "evidence_path": null,
+      "evidence_note": "Worker execution session 49254; result reported to primary agent.",
+      "test_paths": [
+        "tests/test_stage2_emergency_priority_v5.py",
+        "tests/test_rotating_slots_stage2_world.py",
+        "tests/test_rotating_slots_world.py"
+      ]
+    },
+    {
+      "name": "server_integration_before_refinement",
+      "evidence_type": "newly_run",
+      "passed": 210,
+      "skipped": 1,
+      "deselected": 8,
+      "pytest_wall_s": 54.81,
+      "evidence_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_quality_rescue_v5_validation_20261022\\pytest_server_final2.log",
+      "command_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_quality_rescue_v5_validation_20261022\\pytest_server_final2.command.txt",
+      "command": "/home/user/envs/terminal_stage2_v1/bin/python -m pytest -x -q -ra --tb=long -p no:cacheprovider -k not test_checkpoint_probe_decodes_without_sink_or_execution_or_future_requests and not test_checkpoint_probe_rejects_corrupt_inputs and not test_prepare_checkpoint_and_export_roundtrip_exact_config and not test_prepare_rejects_profile_provenance_mismatch tests/test_rotating_slots_stage2_audit.py tests/test_rotating_slots_stage2_campaign.py tests/test_rotating_slots_stage2_cli.py tests/test_rotating_slots_stage2_planning.py tests/test_rotating_slots_stage2_world.py tests/test_rotating_slots_world.py tests/test_stage2_candidate_coverage.py tests/test_stage2_emergency_priority_v5.py tests/test_stage2_normal_action_probe.py tests/test_stage2_quality_budget.py tests/test_stage2_safe_progress.py tests/test_stage2_service_profile.py",
+      "test_paths": [
+        "tests/test_rotating_slots_stage2_audit.py",
+        "tests/test_rotating_slots_stage2_campaign.py",
+        "tests/test_rotating_slots_stage2_cli.py",
+        "tests/test_rotating_slots_stage2_planning.py",
+        "tests/test_rotating_slots_stage2_world.py",
+        "tests/test_rotating_slots_world.py",
+        "tests/test_stage2_candidate_coverage.py",
+        "tests/test_stage2_emergency_priority_v5.py",
+        "tests/test_stage2_normal_action_probe.py",
+        "tests/test_stage2_quality_budget.py",
+        "tests/test_stage2_safe_progress.py",
+        "tests/test_stage2_service_profile.py"
+      ],
+      "skip_reason": "Negative OR-Tools-unavailable test skipped because OR-Tools is available."
+    },
+    {
+      "name": "local_git_dependent_cases",
+      "evidence_type": "newly_run",
+      "passed": 8,
+      "skipped": 0,
+      "reported_wall_s": 4.51,
+      "junit_suite_wall_s": 4.505,
+      "evidence_path": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261022\\quality_v5_local_git_cases_results.xml",
+      "test_cases": [
+        {
+          "path": "tests/test_stage2_normal_action_probe.py",
+          "name": "test_checkpoint_probe_decodes_without_sink_or_execution_or_future_requests"
+        },
+        {
+          "path": "tests/test_stage2_normal_action_probe.py",
+          "name": "test_checkpoint_probe_rejects_corrupt_inputs[schema]"
+        },
+        {
+          "path": "tests/test_stage2_normal_action_probe.py",
+          "name": "test_checkpoint_probe_rejects_corrupt_inputs[digest]"
+        },
+        {
+          "path": "tests/test_stage2_normal_action_probe.py",
+          "name": "test_checkpoint_probe_rejects_corrupt_inputs[identity]"
+        },
+        {
+          "path": "tests/test_stage2_normal_action_probe.py",
+          "name": "test_checkpoint_probe_rejects_corrupt_inputs[config]"
+        },
+        {
+          "path": "tests/test_stage2_normal_action_probe.py",
+          "name": "test_checkpoint_probe_rejects_corrupt_inputs[manifest]"
+        },
+        {
+          "path": "tests/test_stage2_service_profile.py",
+          "name": "test_prepare_checkpoint_and_export_roundtrip_exact_config"
+        },
+        {
+          "path": "tests/test_stage2_service_profile.py",
+          "name": "test_prepare_rejects_profile_provenance_mismatch"
+        }
+      ]
+    },
+    {
+      "name": "server_refinement_targeted",
+      "evidence_type": "newly_run",
+      "passed": 39,
+      "skipped": 1,
+      "pytest_wall_s": 9.38,
+      "process_wall_s": 9.549171447753906,
+      "exit_code": 0,
+      "started_utc": "2026-10-22T04:25:15.534648+00:00",
+      "ended_utc": "2026-10-22T04:25:25.083819+00:00",
+      "evidence_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_quality_rescue_v5_validation_20261022\\pytest_refinement.log",
+      "timing_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_quality_rescue_v5_validation_20261022\\pytest_refinement.timing.txt",
+      "command_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_quality_rescue_v5_validation_20261022\\pytest_refinement.command.txt",
+      "command": "/home/user/envs/terminal_stage2_v1/bin/python -m pytest -x -q -ra --tb=long -p no:cacheprovider tests/test_stage2_quality_budget.py tests/test_rotating_slots_stage2_planning.py",
+      "test_paths": [
+        "tests/test_stage2_quality_budget.py",
+        "tests/test_rotating_slots_stage2_planning.py"
+      ],
+      "skip_reason": "Negative OR-Tools-unavailable test skipped because OR-Tools is available."
+    }
+  ],
+  "test_count_note": "Groups overlap and represent different implementation stages; do not sum as unique test counts.",
+  "callback_smokes": {
+    "original_failed_quality_preflight": {
+      "evidence_type": "newly_run",
+      "evidence_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_quality_rescue_v5_validation_20261022\\callback_smoke.json",
+      "started_utc": "2026-10-22T04:15:35.383385+00:00",
+      "ended_utc": "2026-10-22T04:16:16.938426+00:00",
+      "service_profile": "service_half_v1",
+      "manifest_seed": 71,
+      "methods": {
+        "energy_slack": {
+          "callback_wall_s": 25.568578828999307,
+          "outer_wall_s": 25.6346595287323,
+          "submitted": 26,
+          "certified": true,
+          "commit_status": "ACCEPTED",
+          "hint_certified": null,
+          "hint_objective": null,
+          "final_objective": [
+            0.0,
+            -6.0,
+            90.0,
+            29486.0,
+            627712698.9694461
+          ],
+          "strict_improvement_over_hint": null,
+          "refinement_rounds": 0,
+          "phase_calls": 0,
+          "solver_wall_s": 0.0,
+          "unsafe_phase_1_rounds": [],
+          "planning_budget": {
+            "candidate_seconds": 12.0,
+            "hint_seconds": 3.0,
+            "max_attempts": 2048,
+            "max_per_aircraft": 64,
+            "soft_seconds": 30.0,
+            "solver_reserve_seconds": 8.0,
+            "solver_seconds": 8.0,
+            "watchdog_seconds": 60.0
+          }
+        },
+        "rh_cp_sat": {
+          "callback_wall_s": 15.861074841988739,
+          "outer_wall_s": 15.920360565185547,
+          "submitted": 0,
+          "certified": true,
+          "commit_status": "ACCEPTED",
+          "hint_certified": false,
+          "hint_objective": null,
+          "final_objective": [
+            0.0,
+            0.0,
+            108.0,
+            35602.0,
+            666858683.8236885
+          ],
+          "strict_improvement_over_hint": null,
+          "refinement_rounds": 3,
+          "phase_calls": 6,
+          "solver_wall_s": 0.008354094112291932,
+          "unsafe_phase_1_rounds": [
+            1,
+            2,
+            3
+          ],
+          "planning_budget": {
+            "candidate_seconds": 12.0,
+            "hint_seconds": 3.0,
+            "max_attempts": 2048,
+            "max_per_aircraft": 64,
+            "soft_seconds": 30.0,
+            "solver_reserve_seconds": 8.0,
+            "solver_seconds": 8.0,
+            "watchdog_seconds": 60.0
+          }
+        }
+      }
+    },
+    "after_refinement_fix": {
+      "evidence_type": "newly_run",
+      "evidence_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_quality_rescue_v5_validation_20261022\\callback_smoke_refinement.json",
+      "started_utc": "2026-10-22T04:26:11.089043+00:00",
+      "ended_utc": "2026-10-22T04:27:09.329736+00:00",
+      "service_profile": "service_half_v1",
+      "manifest_seed": 71,
+      "methods": {
+        "energy_slack": {
+          "callback_wall_s": 26.532589759968687,
+          "outer_wall_s": 26.59890842437744,
+          "submitted": 26,
+          "certified": true,
+          "commit_status": "ACCEPTED",
+          "hint_certified": null,
+          "hint_objective": null,
+          "final_objective": [
+            0.0,
+            -6.0,
+            90.0,
+            29486.0,
+            627712698.9694461
+          ],
+          "strict_improvement_over_hint": null,
+          "refinement_rounds": 0,
+          "phase_calls": 0,
+          "solver_wall_s": 0.0,
+          "unsafe_phase_1_rounds": [],
+          "planning_budget": {
+            "candidate_seconds": 12.0,
+            "hint_seconds": 3.0,
+            "hint_validation_reserve_seconds": 0.5,
+            "max_attempts": 2048,
+            "max_per_aircraft": 64,
+            "max_refinement_rounds": 64,
+            "soft_seconds": 30.0,
+            "solver_reserve_seconds": 8.0,
+            "solver_seconds": 8.0,
+            "watchdog_seconds": 60.0
+          }
+        },
+        "rh_cp_sat": {
+          "callback_wall_s": 31.57558558898745,
+          "outer_wall_s": 31.63667392730713,
+          "submitted": 11,
+          "certified": true,
+          "commit_status": "ACCEPTED",
+          "hint_certified": true,
+          "hint_objective": [
+            0.0,
+            -5.0,
+            93.0,
+            30822.0,
+            618430825.2220923
+          ],
+          "final_objective": [
+            0.0,
+            -7.0,
+            87.0,
+            29195.0,
+            588758213.9691724
+          ],
+          "strict_improvement_over_hint": true,
+          "refinement_rounds": 17,
+          "phase_calls": 40,
+          "solver_wall_s": 0.0825833270791918,
+          "unsafe_phase_1_rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "planning_budget": {
+            "candidate_seconds": 12.0,
+            "hint_seconds": 3.0,
+            "hint_validation_reserve_seconds": 0.5,
+            "max_attempts": 2048,
+            "max_per_aircraft": 64,
+            "max_refinement_rounds": 64,
+            "soft_seconds": 30.0,
+            "solver_reserve_seconds": 8.0,
+            "solver_seconds": 8.0,
+            "watchdog_seconds": 60.0
+          }
+        }
+      }
+    }
+  },
+  "quality_settings_semantics": {
+    "profile": "quality_v5",
+    "max_refinement_rounds": 64,
+    "hint_validation_reserve_seconds": 0.5,
+    "soft_seconds": 30.0,
+    "solver_seconds": 8.0,
+    "refinement_resets_soft_clock": false,
+    "refinement_resets_solver_wall_used": false,
+    "unknown_validation_creates_candidate_cut": false,
+    "provenance_includes_actual_settings": true
+  },
+  "paired_480_protocol": {
+    "methods": [
+      "energy_slack",
+      "rh_cp_sat"
+    ],
+    "simulation_seconds_per_method": 480,
+    "fixture_manifest": "Same frozen input as preceding paired study; final hash check pending.",
+    "service_profile": "service_half_v1",
+    "service_seconds": {
+      "short": 30,
+      "standard": 60,
+      "long": 120
+    },
+    "planned_output_root": "$HOME/training_outputs/terminal/stage2_quality_rescue_480s_v5_20261022",
+    "total_budget_s": 21600,
+    "compute_budget_s": 19800,
+    "archive_reserve_s": 1800,
+    "planned_preflight_credit_s": 900,
+    "preflight_credit_actual_final_check": "PENDING",
+    "initial_T0_estimate_s": 10800,
+    "initial_T0_basis": "Roughly 365 prior decisions * 25-30 seconds plus monitor overhead; density, event count and per-decision costs may differ.",
+    "old_run_and_cost_accounting": "Retained separately; not added to or overwritten by the new run."
+  },
+  "diagnostic_evidence": [
+    {
+      "evidence_type": "preexisting_artifact",
+      "path": "artifacts/rotating_slots_stage2_20261022/v5_review_396_facts.json"
+    },
+    {
+      "evidence_type": "preexisting_artifact",
+      "path": "artifacts/rotating_slots_stage2_20261022/v5_outer_low_soc_facts.json"
+    }
+  ],
+  "claim_limits": [
+    "Final and hint objectives are predictions inside one callback, including predicted landing counts; submitted actions are not observed touchdowns.",
+    "The final CP smoke improves lexicographically over its certified hint; it does not establish cross-method superiority or 480-second outcomes.",
+    "Strong emergency priority may leave normal pad capacity idle when urgent rescue is not yet feasible; urgency is an estimate, not a feasibility certificate.",
+    "Budget and rescue policy change together; this paired design does not isolate their independent causal contributions."
+  ]
+}

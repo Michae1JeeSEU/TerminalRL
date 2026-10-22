@@ -1,0 +1,2635 @@
+{
+  "schema": "stage2_v5_outer_middle_low_soc_facts_v1",
+  "source_root": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022",
+  "analysis_time_s": 480.0,
+  "methods": {
+    "energy_slack": {
+      "source_replay": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\replay_0480",
+      "state_time_bounds_observed": [
+        0.0,
+        480.0
+      ],
+      "state_frame_count": 766,
+      "selection_rule": {
+        "time": 480.0,
+        "ring_in": [
+          "outer",
+          "middle"
+        ],
+        "touchdown_time": "null",
+        "soc_le": 0.35,
+        "airborne_schema_note": "No literal AIRBORNE status was serialized; selected frames have touchdown_time=null and airborne_time>0."
+      },
+      "candidate_count": 4,
+      "candidate_counts_by_ring": {
+        "middle": 4
+      },
+      "aircraft": [
+        {
+          "id": "initial_middle_11",
+          "classification": "initial",
+          "fixture": true,
+          "entry_time_first_state": 0.0,
+          "release_time": 0.0,
+          "admission_time": null,
+          "initial_soc_manifest": null,
+          "initial_soc_first_observed": 0.7277961708774346,
+          "initial_soc_reported": 0.7277961708774346,
+          "initial_soc_source": "states.jsonl first observed frame",
+          "ring_480": "middle",
+          "slot_480": 25,
+          "status_480": "HOLD_MIDDLE",
+          "soc_480": 0.2621075949646076,
+          "airborne_time_480": 480.0,
+          "touchdown_time_480": null,
+          "active_field_present_in_state": false,
+          "active_480_observed_by_replay_status": true,
+          "active_status_rule": "status excluded only for ReplayController invisible/frozen/energy-failure statuses; no literal active field was serialized",
+          "first_soc_le_035": {
+            "time": 389.59999999999997,
+            "id": "initial_middle_11",
+            "fixture": true,
+            "admission_time": null,
+            "release_time": 0.0,
+            "airborne_time": 389.59999999999997,
+            "ring": "middle",
+            "slot": 25,
+            "status": "HOLD_MIDDLE",
+            "soc": 0.3498122767615246,
+            "touchdown_time": null,
+            "trajectory_hash": "2ba93503ff07201c33d682728b78b52cd4de960fae6c08d1c45f04593093f5e8",
+            "service_class": "long",
+            "pad_id": null
+          },
+          "emergency_trigger_events": [
+            {
+              "type": "emergency_triggered",
+              "time": 389.59999999999997,
+              "pending": false,
+              "q_e": 0.08254296650957596
+            }
+          ],
+          "emergency_declare_events": [
+            {
+              "type": "emergency_declared",
+              "time": 389.59999999999997,
+              "ring": "middle"
+            }
+          ],
+          "transfer_plans": [],
+          "last_transfer": null,
+          "normal_decisions_360_480": {
+            "window_s": [
+              360.0,
+              480.0
+            ],
+            "rows_in_window": 100,
+            "per_aircraft_items": {
+              "catalog_incomplete": "present as row-level list of aircraft IDs",
+              "attempts": "present as row-level mapping aircraft ID -> count",
+              "solver": "no candidate-specific item observed; serialized as row-level field"
+            },
+            "catalog_incomplete_candidate_rows": [
+              360.0,
+              361.3999999999999,
+              361.78568367422645,
+              363.5,
+              363.82444698271615,
+              364.2,
+              364.99999999999994,
+              369.1141789046728,
+              369.9141789046728,
+              370.0,
+              371.42630457317773,
+              374.1292057876737,
+              375.0,
+              377.93599677208886,
+              378.3440371027798,
+              378.5509626095995,
+              378.90257198271615,
+              379.99999999999994,
+              381.99999999999983,
+              383.31658935546875,
+              383.79515010771615,
+              384.99999999999994,
+              388.4999999999999
+            ],
+            "attempts_candidate_rows": [
+              {
+                "time": 360.0,
+                "attempts": 5
+              },
+              {
+                "time": 361.3999999999999,
+                "attempts": 5
+              },
+              {
+                "time": 361.78568367422645,
+                "attempts": 5
+              },
+              {
+                "time": 363.5,
+                "attempts": 5
+              },
+              {
+                "time": 363.82444698271615,
+                "attempts": 7
+              },
+              {
+                "time": 364.2,
+                "attempts": 5
+              },
+              {
+                "time": 364.99999999999994,
+                "attempts": 7
+              },
+              {
+                "time": 369.1141789046728,
+                "attempts": 5
+              },
+              {
+                "time": 369.9141789046728,
+                "attempts": 5
+              },
+              {
+                "time": 370.0,
+                "attempts": 5
+              },
+              {
+                "time": 371.42630457317773,
+                "attempts": 5
+              },
+              {
+                "time": 374.1292057876737,
+                "attempts": 5
+              },
+              {
+                "time": 375.0,
+                "attempts": 5
+              },
+              {
+                "time": 377.93599677208886,
+                "attempts": 5
+              },
+              {
+                "time": 378.3440371027798,
+                "attempts": 5
+              },
+              {
+                "time": 378.5509626095995,
+                "attempts": 6
+              },
+              {
+                "time": 378.90257198271615,
+                "attempts": 6
+              },
+              {
+                "time": 379.99999999999994,
+                "attempts": 6
+              },
+              {
+                "time": 381.99999999999983,
+                "attempts": 6
+              },
+              {
+                "time": 383.31658935546875,
+                "attempts": 6
+              },
+              {
+                "time": 383.79515010771615,
+                "attempts": 6
+              },
+              {
+                "time": 384.99999999999994,
+                "attempts": 6
+              },
+              {
+                "time": 388.4999999999999,
+                "attempts": 6
+              }
+            ],
+            "solver_field_types": {
+              "array": 100
+            },
+            "solver_candidate_specific_item_observed": false,
+            "candidate_specific_solver_outcome": "not recorded"
+          }
+        },
+        {
+          "id": "req_000001",
+          "classification": "new",
+          "fixture": false,
+          "entry_time_first_state": 36.090051063557326,
+          "release_time": 36.090051063557326,
+          "admission_time": 36.090051063557326,
+          "initial_soc_manifest": 0.702833778735036,
+          "initial_soc_first_observed": 0.702833778735036,
+          "initial_soc_reported": 0.702833778735036,
+          "initial_soc_source": "manifest.requests.initial_soc",
+          "ring_480": "middle",
+          "slot_480": 15,
+          "status_480": "HOLD_MIDDLE",
+          "soc_480": 0.2836847056594976,
+          "airborne_time_480": 443.9099489364427,
+          "touchdown_time_480": null,
+          "active_field_present_in_state": false,
+          "active_480_observed_by_replay_status": true,
+          "active_status_rule": "status excluded only for ReplayController invisible/frozen/energy-failure statuses; no literal active field was serialized",
+          "first_soc_le_035": {
+            "time": 411.78568367422645,
+            "id": "req_000001",
+            "fixture": false,
+            "admission_time": 36.090051063557326,
+            "release_time": 36.090051063557326,
+            "airborne_time": 375.6956326106691,
+            "ring": "middle",
+            "slot": 15,
+            "status": "HOLD_MIDDLE",
+            "soc": 0.34986518029828306,
+            "touchdown_time": null,
+            "trajectory_hash": "dd1b1841640ecf61eee7ebbd5bbb04302d12e8342179f3e6b51661a46bc939ce",
+            "service_class": "short",
+            "pad_id": null
+          },
+          "emergency_trigger_events": [
+            {
+              "type": "emergency_triggered",
+              "time": 411.78568367422645,
+              "pending": false,
+              "q_e": 0.0818550785533805
+            }
+          ],
+          "emergency_declare_events": [
+            {
+              "type": "emergency_declared",
+              "time": 411.78568367422645,
+              "ring": "middle"
+            }
+          ],
+          "transfer_plans": [
+            {
+              "trajectory_hash": "4ac39f5c6807154f0f1dc1614edea54671f0b81c6abeaa7eb3dd7fc82f0dfd22",
+              "kind": "TRANSFER",
+              "start_time": 129.98429205354546,
+              "end_time": 169.98429205354546,
+              "source_ring": "outer",
+              "target_ring": "middle",
+              "source_slot": 20,
+              "target_slot": 15
+            }
+          ],
+          "last_transfer": {
+            "trajectory_hash": "4ac39f5c6807154f0f1dc1614edea54671f0b81c6abeaa7eb3dd7fc82f0dfd22",
+            "kind": "TRANSFER",
+            "start_time": 129.98429205354546,
+            "end_time": 169.98429205354546,
+            "source_ring": "outer",
+            "target_ring": "middle",
+            "source_slot": 20,
+            "target_slot": 15
+          },
+          "normal_decisions_360_480": {
+            "window_s": [
+              360.0,
+              480.0
+            ],
+            "rows_in_window": 100,
+            "per_aircraft_items": {
+              "catalog_incomplete": "present as row-level list of aircraft IDs",
+              "attempts": "present as row-level mapping aircraft ID -> count",
+              "solver": "no candidate-specific item observed; serialized as row-level field"
+            },
+            "catalog_incomplete_candidate_rows": [
+              360.0,
+              361.3999999999999,
+              361.78568367422645,
+              363.5,
+              363.82444698271615,
+              364.2,
+              364.99999999999994,
+              369.1141789046728,
+              369.9141789046728,
+              370.0,
+              371.42630457317773,
+              374.1292057876737,
+              375.0,
+              377.93599677208886,
+              378.3440371027798,
+              378.5509626095995,
+              378.90257198271615,
+              379.99999999999994,
+              381.99999999999983,
+              383.31658935546875,
+              383.79515010771615,
+              384.99999999999994,
+              388.4999999999999,
+              389.59999999999997,
+              389.99999999999994,
+              391.71927332317773,
+              392.4,
+              393.64800124614607,
+              394.9006901626737,
+              395.0,
+              395.6441517909111,
+              397.4393740168423,
+              398.5491152277798,
+              399.99999999999994,
+              400.3999999999999,
+              403.5509626095995,
+              403.82444698271615,
+              404.8310817930876,
+              405.0,
+              409.24236159770857,
+              409.48447265625,
+              410.0,
+              411.44296875
+            ],
+            "attempts_candidate_rows": [
+              {
+                "time": 360.0,
+                "attempts": 4
+              },
+              {
+                "time": 361.3999999999999,
+                "attempts": 4
+              },
+              {
+                "time": 361.78568367422645,
+                "attempts": 4
+              },
+              {
+                "time": 363.5,
+                "attempts": 4
+              },
+              {
+                "time": 363.82444698271615,
+                "attempts": 4
+              },
+              {
+                "time": 364.2,
+                "attempts": 4
+              },
+              {
+                "time": 364.99999999999994,
+                "attempts": 6
+              },
+              {
+                "time": 369.1141789046728,
+                "attempts": 4
+              },
+              {
+                "time": 369.9141789046728,
+                "attempts": 4
+              },
+              {
+                "time": 370.0,
+                "attempts": 4
+              },
+              {
+                "time": 371.42630457317773,
+                "attempts": 4
+              },
+              {
+                "time": 374.1292057876737,
+                "attempts": 4
+              },
+              {
+                "time": 375.0,
+                "attempts": 4
+              },
+              {
+                "time": 377.93599677208886,
+                "attempts": 4
+              },
+              {
+                "time": 378.3440371027798,
+                "attempts": 4
+              },
+              {
+                "time": 378.5509626095995,
+                "attempts": 5
+              },
+              {
+                "time": 378.90257198271615,
+                "attempts": 5
+              },
+              {
+                "time": 379.99999999999994,
+                "attempts": 5
+              },
+              {
+                "time": 381.99999999999983,
+                "attempts": 5
+              },
+              {
+                "time": 383.31658935546875,
+                "attempts": 5
+              },
+              {
+                "time": 383.79515010771615,
+                "attempts": 5
+              },
+              {
+                "time": 384.99999999999994,
+                "attempts": 5
+              },
+              {
+                "time": 388.4999999999999,
+                "attempts": 5
+              },
+              {
+                "time": 389.59999999999997,
+                "attempts": 5
+              },
+              {
+                "time": 389.99999999999994,
+                "attempts": 5
+              },
+              {
+                "time": 391.71927332317773,
+                "attempts": 5
+              },
+              {
+                "time": 392.4,
+                "attempts": 5
+              },
+              {
+                "time": 393.64800124614607,
+                "attempts": 5
+              },
+              {
+                "time": 394.9006901626737,
+                "attempts": 6
+              },
+              {
+                "time": 395.0,
+                "attempts": 7
+              },
+              {
+                "time": 395.6441517909111,
+                "attempts": 6
+              },
+              {
+                "time": 397.4393740168423,
+                "attempts": 5
+              },
+              {
+                "time": 398.5491152277798,
+                "attempts": 5
+              },
+              {
+                "time": 399.99999999999994,
+                "attempts": 6
+              },
+              {
+                "time": 400.3999999999999,
+                "attempts": 6
+              },
+              {
+                "time": 403.5509626095995,
+                "attempts": 6
+              },
+              {
+                "time": 403.82444698271615,
+                "attempts": 4
+              },
+              {
+                "time": 404.8310817930876,
+                "attempts": 4
+              },
+              {
+                "time": 405.0,
+                "attempts": 4
+              },
+              {
+                "time": 409.24236159770857,
+                "attempts": 4
+              },
+              {
+                "time": 409.48447265625,
+                "attempts": 4
+              },
+              {
+                "time": 410.0,
+                "attempts": 4
+              },
+              {
+                "time": 411.44296875,
+                "attempts": 4
+              }
+            ],
+            "solver_field_types": {
+              "array": 100
+            },
+            "solver_candidate_specific_item_observed": false,
+            "candidate_specific_solver_outcome": "not recorded"
+          }
+        },
+        {
+          "id": "req_000005",
+          "classification": "new",
+          "fixture": false,
+          "entry_time_first_state": 73.3316517909111,
+          "release_time": 73.3316517909111,
+          "admission_time": 73.3316517909111,
+          "initial_soc_manifest": 0.7152826285347864,
+          "initial_soc_first_observed": 0.7152826285347864,
+          "initial_soc_reported": 0.7152826285347864,
+          "initial_soc_source": "manifest.requests.initial_soc",
+          "ring_480": "middle",
+          "slot_480": 19,
+          "status_480": "HOLD_MIDDLE",
+          "soc_480": 0.33149797201869374,
+          "airborne_time_480": 406.6683482090889,
+          "touchdown_time_480": null,
+          "active_field_present_in_state": false,
+          "active_480_observed_by_replay_status": true,
+          "active_status_rule": "status excluded only for ReplayController invisible/frozen/energy-failure statuses; no literal active field was serialized",
+          "first_soc_le_035": {
+            "time": 460.99999999999994,
+            "id": "req_000005",
+            "fixture": false,
+            "admission_time": 73.3316517909111,
+            "release_time": 73.3316517909111,
+            "airborne_time": 387.66834820908883,
+            "ring": "middle",
+            "slot": 19,
+            "status": "HOLD_MIDDLE",
+            "soc": 0.3499314781485767,
+            "touchdown_time": null,
+            "trajectory_hash": "bf3f11ac11e8a38460d6644c101f7e300127757dc99ff343e5be511e2ebb4dba",
+            "service_class": "long",
+            "pad_id": null
+          },
+          "emergency_trigger_events": [
+            {
+              "type": "emergency_triggered",
+              "time": 460.99999999999994,
+              "pending": false,
+              "q_e": 0.08803456461309928
+            }
+          ],
+          "emergency_declare_events": [
+            {
+              "type": "emergency_declared",
+              "time": 460.99999999999994,
+              "ring": "middle"
+            }
+          ],
+          "transfer_plans": [
+            {
+              "trajectory_hash": "fe63aef43e1e868181d1306b7ce6a069b9561c6bc9f3db5c187841447a374351",
+              "kind": "TRANSFER",
+              "start_time": 128.3316517909111,
+              "end_time": 168.3316517909111,
+              "source_ring": "outer",
+              "target_ring": "middle",
+              "source_slot": 25,
+              "target_slot": 19
+            }
+          ],
+          "last_transfer": {
+            "trajectory_hash": "fe63aef43e1e868181d1306b7ce6a069b9561c6bc9f3db5c187841447a374351",
+            "kind": "TRANSFER",
+            "start_time": 128.3316517909111,
+            "end_time": 168.3316517909111,
+            "source_ring": "outer",
+            "target_ring": "middle",
+            "source_slot": 25,
+            "target_slot": 19
+          },
+          "normal_decisions_360_480": {
+            "window_s": [
+              360.0,
+              480.0
+            ],
+            "rows_in_window": 100,
+            "per_aircraft_items": {
+              "catalog_incomplete": "present as row-level list of aircraft IDs",
+              "attempts": "present as row-level mapping aircraft ID -> count",
+              "solver": "no candidate-specific item observed; serialized as row-level field"
+            },
+            "catalog_incomplete_candidate_rows": [
+              360.0,
+              361.3999999999999,
+              361.78568367422645,
+              363.5,
+              363.82444698271615,
+              364.2,
+              364.99999999999994,
+              369.1141789046728,
+              369.9141789046728,
+              370.0,
+              371.42630457317773,
+              374.1292057876737,
+              375.0,
+              377.93599677208886,
+              378.3440371027798,
+              378.5509626095995,
+              378.90257198271615,
+              379.99999999999994,
+              381.99999999999983,
+              383.31658935546875,
+              383.79515010771615,
+              384.99999999999994,
+              388.4999999999999,
+              389.59999999999997,
+              389.99999999999994,
+              391.71927332317773,
+              392.4,
+              393.64800124614607,
+              394.9006901626737,
+              395.0,
+              395.6441517909111,
+              397.4393740168423,
+              398.5491152277798,
+              399.99999999999994,
+              400.3999999999999,
+              403.5509626095995,
+              403.82444698271615,
+              404.8310817930876,
+              405.0,
+              409.24236159770857,
+              409.48447265625,
+              410.0,
+              411.44296875,
+              411.78568367422645,
+              412.99999999999994,
+              413.5,
+              413.6604557876737,
+              414.99999999999994,
+              415.4301540441621,
+              416.23020653637354,
+              418.3440371027798,
+              418.64800124614607,
+              420.0,
+              420.5269531249999,
+              421.2,
+              422.0,
+              423.7853376095995,
+              424.99999999999994,
+              429.05446115295194,
+              429.1141789046728,
+              429.40287117422645,
+              430.0,
+              432.4,
+              434.8786297009246,
+              434.9006901626737,
+              435.0,
+              436.4298590226346,
+              436.6298590226346,
+              436.8440371027798,
+              439.99999999999983,
+              440.3999999999999,
+              442.14800124614607,
+              443.5509626095995,
+              444.99999999999994,
+              445.9,
+              449.5040649414062,
+              450.0,
+              451.78568367422645,
+              452.2,
+              452.7125,
+              454.9999999999999,
+              455.6441517909111,
+              455.8441517909111,
+              456.4179363415496,
+              459.8786297009246,
+              460.0,
+              460.4
+            ],
+            "attempts_candidate_rows": [
+              {
+                "time": 363.82444698271615,
+                "attempts": 1
+              },
+              {
+                "time": 370.0,
+                "attempts": 1
+              },
+              {
+                "time": 374.1292057876737,
+                "attempts": 5
+              },
+              {
+                "time": 375.0,
+                "attempts": 5
+              },
+              {
+                "time": 377.93599677208886,
+                "attempts": 5
+              },
+              {
+                "time": 378.3440371027798,
+                "attempts": 5
+              },
+              {
+                "time": 378.90257198271615,
+                "attempts": 5
+              },
+              {
+                "time": 383.31658935546875,
+                "attempts": 5
+              },
+              {
+                "time": 383.79515010771615,
+                "attempts": 5
+              },
+              {
+                "time": 384.99999999999994,
+                "attempts": 7
+              },
+              {
+                "time": 388.4999999999999,
+                "attempts": 5
+              },
+              {
+                "time": 389.59999999999997,
+                "attempts": 5
+              },
+              {
+                "time": 389.99999999999994,
+                "attempts": 5
+              },
+              {
+                "time": 391.71927332317773,
+                "attempts": 5
+              },
+              {
+                "time": 392.4,
+                "attempts": 6
+              },
+              {
+                "time": 393.64800124614607,
+                "attempts": 5
+              },
+              {
+                "time": 394.9006901626737,
+                "attempts": 7
+              },
+              {
+                "time": 395.0,
+                "attempts": 5
+              },
+              {
+                "time": 395.6441517909111,
+                "attempts": 5
+              },
+              {
+                "time": 397.4393740168423,
+                "attempts": 5
+              },
+              {
+                "time": 398.5491152277798,
+                "attempts": 5
+              },
+              {
+                "time": 399.99999999999994,
+                "attempts": 5
+              },
+              {
+                "time": 400.3999999999999,
+                "attempts": 5
+              },
+              {
+                "time": 403.5509626095995,
+                "attempts": 5
+              },
+              {
+                "time": 403.82444698271615,
+                "attempts": 5
+              },
+              {
+                "time": 404.8310817930876,
+                "attempts": 5
+              },
+              {
+                "time": 405.0,
+                "attempts": 5
+              },
+              {
+                "time": 409.24236159770857,
+                "attempts": 5
+              },
+              {
+                "time": 409.48447265625,
+                "attempts": 5
+              },
+              {
+                "time": 410.0,
+                "attempts": 5
+              },
+              {
+                "time": 411.44296875,
+                "attempts": 5
+              },
+              {
+                "time": 411.78568367422645,
+                "attempts": 5
+              },
+              {
+                "time": 412.99999999999994,
+                "attempts": 5
+              },
+              {
+                "time": 413.5,
+                "attempts": 5
+              },
+              {
+                "time": 413.6604557876737,
+                "attempts": 5
+              },
+              {
+                "time": 414.99999999999994,
+                "attempts": 7
+              },
+              {
+                "time": 415.4301540441621,
+                "attempts": 6
+              },
+              {
+                "time": 416.23020653637354,
+                "attempts": 6
+              },
+              {
+                "time": 418.3440371027798,
+                "attempts": 5
+              },
+              {
+                "time": 418.64800124614607,
+                "attempts": 5
+              },
+              {
+                "time": 420.0,
+                "attempts": 5
+              },
+              {
+                "time": 420.5269531249999,
+                "attempts": 5
+              },
+              {
+                "time": 421.2,
+                "attempts": 5
+              },
+              {
+                "time": 422.0,
+                "attempts": 5
+              },
+              {
+                "time": 423.7853376095995,
+                "attempts": 5
+              },
+              {
+                "time": 424.99999999999994,
+                "attempts": 5
+              },
+              {
+                "time": 429.05446115295194,
+                "attempts": 5
+              },
+              {
+                "time": 429.1141789046728,
+                "attempts": 5
+              },
+              {
+                "time": 429.40287117422645,
+                "attempts": 5
+              },
+              {
+                "time": 430.0,
+                "attempts": 5
+              },
+              {
+                "time": 432.4,
+                "attempts": 5
+              },
+              {
+                "time": 434.8786297009246,
+                "attempts": 5
+              },
+              {
+                "time": 434.9006901626737,
+                "attempts": 5
+              },
+              {
+                "time": 435.0,
+                "attempts": 5
+              },
+              {
+                "time": 436.4298590226346,
+                "attempts": 5
+              },
+              {
+                "time": 436.6298590226346,
+                "attempts": 5
+              },
+              {
+                "time": 436.8440371027798,
+                "attempts": 5
+              },
+              {
+                "time": 439.99999999999983,
+                "attempts": 5
+              },
+              {
+                "time": 440.3999999999999,
+                "attempts": 5
+              },
+              {
+                "time": 442.14800124614607,
+                "attempts": 5
+              },
+              {
+                "time": 443.5509626095995,
+                "attempts": 5
+              },
+              {
+                "time": 444.99999999999994,
+                "attempts": 7
+              },
+              {
+                "time": 445.9,
+                "attempts": 6
+              },
+              {
+                "time": 449.5040649414062,
+                "attempts": 5
+              },
+              {
+                "time": 450.0,
+                "attempts": 5
+              },
+              {
+                "time": 451.78568367422645,
+                "attempts": 5
+              },
+              {
+                "time": 452.2,
+                "attempts": 5
+              },
+              {
+                "time": 452.7125,
+                "attempts": 6
+              },
+              {
+                "time": 454.9999999999999,
+                "attempts": 6
+              },
+              {
+                "time": 455.6441517909111,
+                "attempts": 5
+              },
+              {
+                "time": 455.8441517909111,
+                "attempts": 5
+              },
+              {
+                "time": 456.4179363415496,
+                "attempts": 5
+              },
+              {
+                "time": 459.8786297009246,
+                "attempts": 5
+              },
+              {
+                "time": 460.0,
+                "attempts": 5
+              },
+              {
+                "time": 460.4,
+                "attempts": 5
+              }
+            ],
+            "solver_field_types": {
+              "array": 100
+            },
+            "solver_candidate_specific_item_observed": false,
+            "candidate_specific_solver_outcome": "not recorded"
+          }
+        },
+        {
+          "id": "req_000007",
+          "classification": "new",
+          "fixture": false,
+          "entry_time_first_state": 90.8868702778268,
+          "release_time": 90.8868702778268,
+          "admission_time": 90.8868702778268,
+          "initial_soc_manifest": 0.6758183467025572,
+          "initial_soc_first_observed": 0.6758183467025572,
+          "initial_soc_reported": 0.6758183467025572,
+          "initial_soc_source": "manifest.requests.initial_soc",
+          "ring_480": "middle",
+          "slot_480": 22,
+          "status_480": "HOLD_MIDDLE",
+          "soc_480": 0.30791192059234873,
+          "airborne_time_480": 389.1131297221732,
+          "touchdown_time_480": null,
+          "active_field_present_in_state": false,
+          "active_480_observed_by_replay_status": true,
+          "active_status_rule": "status excluded only for ReplayController invisible/frozen/energy-failure statuses; no literal active field was serialized",
+          "first_soc_le_035": {
+            "time": 436.6298590226346,
+            "id": "req_000007",
+            "fixture": false,
+            "admission_time": 90.8868702778268,
+            "release_time": 90.8868702778268,
+            "airborne_time": 345.7429887448078,
+            "ring": "middle",
+            "slot": 22,
+            "status": "HOLD_MIDDLE",
+            "soc": 0.3499889605691989,
+            "touchdown_time": null,
+            "trajectory_hash": "b3e3ee6ca62d39509f0581c7e7afa3a75fc50f85a879cfaaa5424cd1d86405e1",
+            "service_class": "long",
+            "pad_id": null
+          },
+          "emergency_trigger_events": [
+            {
+              "type": "emergency_triggered",
+              "time": 436.6298590226346,
+              "pending": false,
+              "q_e": 0.0762524306056327
+            }
+          ],
+          "emergency_declare_events": [
+            {
+              "type": "emergency_declared",
+              "time": 436.6298590226346,
+              "ring": "middle"
+            }
+          ],
+          "transfer_plans": [
+            {
+              "trajectory_hash": "9d530cd4ac92c189bfd2ab9d528bef9c67ca8d1d92386284262c61141d786575",
+              "kind": "TRANSFER",
+              "start_time": 130.0,
+              "end_time": 170.0,
+              "source_ring": "outer",
+              "target_ring": "middle",
+              "source_slot": 29,
+              "target_slot": 22
+            }
+          ],
+          "last_transfer": {
+            "trajectory_hash": "9d530cd4ac92c189bfd2ab9d528bef9c67ca8d1d92386284262c61141d786575",
+            "kind": "TRANSFER",
+            "start_time": 130.0,
+            "end_time": 170.0,
+            "source_ring": "outer",
+            "target_ring": "middle",
+            "source_slot": 29,
+            "target_slot": 22
+          },
+          "normal_decisions_360_480": {
+            "window_s": [
+              360.0,
+              480.0
+            ],
+            "rows_in_window": 100,
+            "per_aircraft_items": {
+              "catalog_incomplete": "present as row-level list of aircraft IDs",
+              "attempts": "present as row-level mapping aircraft ID -> count",
+              "solver": "no candidate-specific item observed; serialized as row-level field"
+            },
+            "catalog_incomplete_candidate_rows": [
+              360.0,
+              361.3999999999999,
+              361.78568367422645,
+              363.5,
+              363.82444698271615,
+              364.2,
+              364.99999999999994,
+              369.1141789046728,
+              369.9141789046728,
+              370.0,
+              371.42630457317773,
+              374.1292057876737,
+              375.0,
+              377.93599677208886,
+              378.3440371027798,
+              378.5509626095995,
+              378.90257198271615,
+              379.99999999999994,
+              381.99999999999983,
+              383.31658935546875,
+              383.79515010771615,
+              384.99999999999994,
+              388.4999999999999,
+              389.59999999999997,
+              389.99999999999994,
+              391.71927332317773,
+              392.4,
+              393.64800124614607,
+              394.9006901626737,
+              395.0,
+              395.6441517909111,
+              397.4393740168423,
+              398.5491152277798,
+              399.99999999999994,
+              400.3999999999999,
+              403.5509626095995,
+              403.82444698271615,
+              404.8310817930876,
+              405.0,
+              409.24236159770857,
+              409.48447265625,
+              410.0,
+              411.44296875,
+              411.78568367422645,
+              412.99999999999994,
+              413.5,
+              413.6604557876737,
+              414.99999999999994,
+              415.4301540441621,
+              416.23020653637354,
+              418.3440371027798,
+              418.64800124614607,
+              420.0,
+              420.5269531249999,
+              421.2,
+              422.0,
+              423.7853376095995,
+              424.99999999999994,
+              429.05446115295194,
+              429.1141789046728,
+              429.40287117422645,
+              430.0,
+              432.4,
+              434.8786297009246,
+              434.9006901626737,
+              435.0,
+              436.4298590226346
+            ],
+            "attempts_candidate_rows": [
+              {
+                "time": 363.82444698271615,
+                "attempts": 2
+              },
+              {
+                "time": 378.5509626095995,
+                "attempts": 1
+              },
+              {
+                "time": 378.90257198271615,
+                "attempts": 1
+              },
+              {
+                "time": 379.99999999999994,
+                "attempts": 1
+              },
+              {
+                "time": 381.99999999999983,
+                "attempts": 1
+              },
+              {
+                "time": 383.31658935546875,
+                "attempts": 1
+              },
+              {
+                "time": 383.79515010771615,
+                "attempts": 1
+              },
+              {
+                "time": 384.99999999999994,
+                "attempts": 1
+              },
+              {
+                "time": 388.4999999999999,
+                "attempts": 1
+              },
+              {
+                "time": 389.59999999999997,
+                "attempts": 1
+              },
+              {
+                "time": 389.99999999999994,
+                "attempts": 1
+              },
+              {
+                "time": 391.71927332317773,
+                "attempts": 1
+              },
+              {
+                "time": 392.4,
+                "attempts": 1
+              },
+              {
+                "time": 393.64800124614607,
+                "attempts": 1
+              },
+              {
+                "time": 394.9006901626737,
+                "attempts": 1
+              },
+              {
+                "time": 395.0,
+                "attempts": 1
+              },
+              {
+                "time": 395.6441517909111,
+                "attempts": 1
+              },
+              {
+                "time": 397.4393740168423,
+                "attempts": 1
+              },
+              {
+                "time": 398.5491152277798,
+                "attempts": 1
+              },
+              {
+                "time": 399.99999999999994,
+                "attempts": 1
+              },
+              {
+                "time": 400.3999999999999,
+                "attempts": 1
+              },
+              {
+                "time": 403.5509626095995,
+                "attempts": 1
+              },
+              {
+                "time": 411.78568367422645,
+                "attempts": 4
+              },
+              {
+                "time": 412.99999999999994,
+                "attempts": 5
+              },
+              {
+                "time": 413.5,
+                "attempts": 5
+              },
+              {
+                "time": 413.6604557876737,
+                "attempts": 5
+              },
+              {
+                "time": 414.99999999999994,
+                "attempts": 5
+              },
+              {
+                "time": 416.23020653637354,
+                "attempts": 5
+              },
+              {
+                "time": 420.5269531249999,
+                "attempts": 4
+              },
+              {
+                "time": 421.2,
+                "attempts": 5
+              },
+              {
+                "time": 422.0,
+                "attempts": 5
+              },
+              {
+                "time": 423.7853376095995,
+                "attempts": 5
+              },
+              {
+                "time": 424.99999999999994,
+                "attempts": 5
+              },
+              {
+                "time": 429.05446115295194,
+                "attempts": 5
+              },
+              {
+                "time": 429.1141789046728,
+                "attempts": 5
+              },
+              {
+                "time": 429.40287117422645,
+                "attempts": 5
+              },
+              {
+                "time": 430.0,
+                "attempts": 5
+              },
+              {
+                "time": 432.4,
+                "attempts": 6
+              },
+              {
+                "time": 434.8786297009246,
+                "attempts": 7
+              },
+              {
+                "time": 435.0,
+                "attempts": 7
+              }
+            ],
+            "solver_field_types": {
+              "array": 100
+            },
+            "solver_candidate_specific_item_observed": false,
+            "candidate_specific_solver_outcome": "not recorded"
+          }
+        }
+      ]
+    },
+    "rh_cp_sat": {
+      "source_replay": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\replay_0480",
+      "state_time_bounds_observed": [
+        0.0,
+        480.0
+      ],
+      "state_frame_count": 773,
+      "selection_rule": {
+        "time": 480.0,
+        "ring_in": [
+          "outer",
+          "middle"
+        ],
+        "touchdown_time": "null",
+        "soc_le": 0.35,
+        "airborne_schema_note": "No literal AIRBORNE status was serialized; selected frames have touchdown_time=null and airborne_time>0."
+      },
+      "candidate_count": 3,
+      "candidate_counts_by_ring": {
+        "middle": 2,
+        "outer": 1
+      },
+      "aircraft": [
+        {
+          "id": "initial_middle_08",
+          "classification": "initial",
+          "fixture": true,
+          "entry_time_first_state": 0.0,
+          "release_time": 0.0,
+          "admission_time": null,
+          "initial_soc_manifest": null,
+          "initial_soc_first_observed": 0.7470212641623719,
+          "initial_soc_reported": 0.7470212641623719,
+          "initial_soc_source": "states.jsonl first observed frame",
+          "ring_480": "middle",
+          "slot_480": 18,
+          "status_480": "HOLD_MIDDLE",
+          "soc_480": 0.2813326882495446,
+          "airborne_time_480": 480.0,
+          "touchdown_time_480": null,
+          "active_field_present_in_state": false,
+          "active_480_observed_by_replay_status": true,
+          "active_status_rule": "status excluded only for ReplayController invisible/frozen/energy-failure statuses; no literal active field was serialized",
+          "first_soc_le_035": {
+            "time": 409.3999999999999,
+            "id": "initial_middle_08",
+            "fixture": true,
+            "admission_time": null,
+            "release_time": 0.0,
+            "airborne_time": 409.3999999999999,
+            "ring": "middle",
+            "slot": 18,
+            "status": "HOLD_MIDDLE",
+            "soc": 0.3498277162900577,
+            "touchdown_time": null,
+            "trajectory_hash": "d451b5d576575f2e3d17f5f60ce232a7e21a20a7e6ceeef0faeadabd6813a2e3",
+            "service_class": "long",
+            "pad_id": null
+          },
+          "emergency_trigger_events": [
+            {
+              "type": "emergency_triggered",
+              "time": 409.3999999999999,
+              "pending": false,
+              "q_e": 0.07595591713158227
+            }
+          ],
+          "emergency_declare_events": [
+            {
+              "type": "emergency_declared",
+              "time": 409.3999999999999,
+              "ring": "middle"
+            }
+          ],
+          "transfer_plans": [],
+          "last_transfer": null,
+          "normal_decisions_360_480": {
+            "window_s": [
+              360.0,
+              480.0
+            ],
+            "rows_in_window": 100,
+            "per_aircraft_items": {
+              "catalog_incomplete": "present as row-level list of aircraft IDs",
+              "attempts": "present as row-level mapping aircraft ID -> count",
+              "solver": "no candidate-specific item observed; serialized as row-level field"
+            },
+            "catalog_incomplete_candidate_rows": [
+              360.0,
+              360.3124999999998,
+              361.78568367422645,
+              363.412109375,
+              363.82444698271615,
+              364.2,
+              364.99999999999994,
+              369.9999999999998,
+              370.4301540441621,
+              371.42630457317773,
+              374.99999999999983,
+              377.29715828360145,
+              378.3440371027798,
+              378.5509626095995,
+              379.1141789046728,
+              379.9999999999998,
+              380.5756241914836,
+              383.5,
+              383.79515010771615,
+              384.99999999999994,
+              388.76984980634126,
+              388.96984980634124,
+              389.99999999999994,
+              391.71927332317773,
+              393.64800124614607,
+              394.99999999999994,
+              398.5491152277798,
+              399.08843994140625,
+              400.0,
+              401.673828125,
+              402.42407226562494,
+              403.5,
+              403.5509626095995,
+              403.82444698271615,
+              404.99999999999994,
+              405.77180293134126,
+              407.67609980634126
+            ],
+            "attempts_candidate_rows": [
+              {
+                "time": 360.0,
+                "attempts": 4
+              },
+              {
+                "time": 360.3124999999998,
+                "attempts": 4
+              },
+              {
+                "time": 361.78568367422645,
+                "attempts": 4
+              },
+              {
+                "time": 363.412109375,
+                "attempts": 4
+              },
+              {
+                "time": 363.82444698271615,
+                "attempts": 4
+              },
+              {
+                "time": 364.2,
+                "attempts": 4
+              },
+              {
+                "time": 364.99999999999994,
+                "attempts": 4
+              },
+              {
+                "time": 369.9999999999998,
+                "attempts": 4
+              },
+              {
+                "time": 370.4301540441621,
+                "attempts": 4
+              },
+              {
+                "time": 371.42630457317773,
+                "attempts": 4
+              },
+              {
+                "time": 374.99999999999983,
+                "attempts": 4
+              },
+              {
+                "time": 377.29715828360145,
+                "attempts": 4
+              },
+              {
+                "time": 378.3440371027798,
+                "attempts": 4
+              },
+              {
+                "time": 378.5509626095995,
+                "attempts": 4
+              },
+              {
+                "time": 379.1141789046728,
+                "attempts": 4
+              },
+              {
+                "time": 379.9999999999998,
+                "attempts": 4
+              },
+              {
+                "time": 380.5756241914836,
+                "attempts": 4
+              },
+              {
+                "time": 383.5,
+                "attempts": 4
+              },
+              {
+                "time": 383.79515010771615,
+                "attempts": 4
+              },
+              {
+                "time": 384.99999999999994,
+                "attempts": 6
+              },
+              {
+                "time": 388.76984980634126,
+                "attempts": 4
+              },
+              {
+                "time": 388.96984980634124,
+                "attempts": 4
+              },
+              {
+                "time": 389.99999999999994,
+                "attempts": 4
+              },
+              {
+                "time": 391.71927332317773,
+                "attempts": 4
+              },
+              {
+                "time": 393.64800124614607,
+                "attempts": 4
+              },
+              {
+                "time": 394.99999999999994,
+                "attempts": 4
+              },
+              {
+                "time": 398.5491152277798,
+                "attempts": 4
+              },
+              {
+                "time": 399.08843994140625,
+                "attempts": 4
+              },
+              {
+                "time": 400.0,
+                "attempts": 4
+              },
+              {
+                "time": 401.673828125,
+                "attempts": 4
+              },
+              {
+                "time": 402.42407226562494,
+                "attempts": 4
+              },
+              {
+                "time": 403.5,
+                "attempts": 4
+              },
+              {
+                "time": 403.5509626095995,
+                "attempts": 4
+              },
+              {
+                "time": 403.82444698271615,
+                "attempts": 4
+              },
+              {
+                "time": 404.99999999999994,
+                "attempts": 4
+              },
+              {
+                "time": 405.77180293134126,
+                "attempts": 4
+              },
+              {
+                "time": 407.67609980634126,
+                "attempts": 4
+              }
+            ],
+            "solver_field_types": {
+              "array": 100
+            },
+            "solver_candidate_specific_item_observed": false,
+            "candidate_specific_solver_outcome": "not recorded"
+          }
+        },
+        {
+          "id": "req_000002",
+          "classification": "new",
+          "fixture": false,
+          "entry_time_first_state": 44.90234375,
+          "release_time": 37.215913352202485,
+          "admission_time": 44.90234375,
+          "initial_soc_manifest": 0.750895265227511,
+          "initial_soc_first_observed": 0.750895265227511,
+          "initial_soc_reported": 0.750895265227511,
+          "initial_soc_source": "manifest.requests.initial_soc",
+          "ring_480": "middle",
+          "slot_480": 16,
+          "status_480": "HOLD_MIDDLE",
+          "soc_480": 0.3370167186660293,
+          "airborne_time_480": 435.09765625,
+          "touchdown_time_480": null,
+          "active_field_present_in_state": false,
+          "active_480_observed_by_replay_status": true,
+          "active_status_rule": "status excluded only for ReplayController invisible/frozen/energy-failure statuses; no literal active field was serialized",
+          "first_soc_le_035": {
+            "time": 466.6298590226346,
+            "id": "req_000002",
+            "fixture": false,
+            "admission_time": 44.90234375,
+            "release_time": 37.215913352202485,
+            "airborne_time": 421.7275152726346,
+            "ring": "middle",
+            "slot": 16,
+            "status": "HOLD_MIDDLE",
+            "soc": 0.34998822264832746,
+            "touchdown_time": null,
+            "trajectory_hash": "39a8d1e461351db9da19ac42fb2f359217847dcd2a8d76ad0c681325185d64ff",
+            "service_class": "long",
+            "pad_id": null
+          },
+          "emergency_trigger_events": [
+            {
+              "type": "emergency_triggered",
+              "time": 466.6298590226346,
+              "pending": false,
+              "q_e": 0.0780048936449567
+            }
+          ],
+          "emergency_declare_events": [
+            {
+              "type": "emergency_declared",
+              "time": 466.6298590226346,
+              "ring": "middle"
+            }
+          ],
+          "transfer_plans": [
+            {
+              "trajectory_hash": "0cc531e79957ab4cb82174648bee4b97ad746fdbf63a52e7a258dd81134898e3",
+              "kind": "TRANSFER",
+              "start_time": 80.0,
+              "end_time": 120.0,
+              "source_ring": "outer",
+              "target_ring": "middle",
+              "source_slot": 21,
+              "target_slot": 16
+            }
+          ],
+          "last_transfer": {
+            "trajectory_hash": "0cc531e79957ab4cb82174648bee4b97ad746fdbf63a52e7a258dd81134898e3",
+            "kind": "TRANSFER",
+            "start_time": 80.0,
+            "end_time": 120.0,
+            "source_ring": "outer",
+            "target_ring": "middle",
+            "source_slot": 21,
+            "target_slot": 16
+          },
+          "normal_decisions_360_480": {
+            "window_s": [
+              360.0,
+              480.0
+            ],
+            "rows_in_window": 100,
+            "per_aircraft_items": {
+              "catalog_incomplete": "present as row-level list of aircraft IDs",
+              "attempts": "present as row-level mapping aircraft ID -> count",
+              "solver": "no candidate-specific item observed; serialized as row-level field"
+            },
+            "catalog_incomplete_candidate_rows": [
+              360.0,
+              360.3124999999998,
+              361.78568367422645,
+              363.412109375,
+              363.82444698271615,
+              364.2,
+              364.99999999999994,
+              369.9999999999998,
+              370.4301540441621,
+              371.42630457317773,
+              374.99999999999983,
+              377.29715828360145,
+              378.3440371027798,
+              378.5509626095995,
+              379.1141789046728,
+              379.9999999999998,
+              380.5756241914836,
+              383.5,
+              383.79515010771615,
+              384.99999999999994,
+              388.76984980634126,
+              388.96984980634124,
+              389.99999999999994,
+              391.71927332317773,
+              393.64800124614607,
+              394.99999999999994,
+              398.5491152277798,
+              399.08843994140625,
+              400.0,
+              401.673828125,
+              402.42407226562494,
+              403.5,
+              403.5509626095995,
+              403.82444698271615,
+              404.99999999999994,
+              405.77180293134126,
+              407.67609980634126,
+              409.3999999999999,
+              409.9999999999999,
+              410.28568367422645,
+              411.78568367422645,
+              413.9999999999999,
+              414.99999999999983,
+              418.3440371027798,
+              418.5,
+              418.64800124614607,
+              420.0,
+              423.5,
+              424.99999999999994,
+              425.7083521312577,
+              428.75248054922645,
+              428.76984980634126,
+              429.05446115295194,
+              430.0,
+              430.4301540441621,
+              432.0,
+              432.10794929922645,
+              434.8786297009246,
+              435.0,
+              435.4,
+              435.4522705078125,
+              436.4298590226346,
+              437.4,
+              437.6506777277798,
+              438.49999999999994,
+              439.1141789046728,
+              439.31640625,
+              439.970703125,
+              440.0,
+              442.5816650390625,
+              443.83203125,
+              444.55078124999994,
+              445.0,
+              445.4837427562577,
+              447.98099617422645,
+              448.76984980634126,
+              449.99999999999994,
+              450.28568367422645,
+              451.4,
+              451.78568367422645,
+              454.99999999999983,
+              458.3440371027798,
+              458.78568367422645,
+              459.8786297009246,
+              460.0,
+              462.79999999999984,
+              463.5,
+              464.99999999999994,
+              465.7083521312577,
+              466.4298590226346
+            ],
+            "attempts_candidate_rows": [
+              {
+                "time": 360.0,
+                "attempts": 1
+              },
+              {
+                "time": 360.3124999999998,
+                "attempts": 5
+              },
+              {
+                "time": 361.78568367422645,
+                "attempts": 1
+              },
+              {
+                "time": 363.412109375,
+                "attempts": 5
+              },
+              {
+                "time": 363.82444698271615,
+                "attempts": 5
+              },
+              {
+                "time": 364.2,
+                "attempts": 5
+              },
+              {
+                "time": 364.99999999999994,
+                "attempts": 5
+              },
+              {
+                "time": 369.9999999999998,
+                "attempts": 5
+              },
+              {
+                "time": 370.4301540441621,
+                "attempts": 5
+              },
+              {
+                "time": 371.42630457317773,
+                "attempts": 5
+              },
+              {
+                "time": 374.99999999999983,
+                "attempts": 7
+              },
+              {
+                "time": 377.29715828360145,
+                "attempts": 5
+              },
+              {
+                "time": 378.3440371027798,
+                "attempts": 5
+              },
+              {
+                "time": 378.5509626095995,
+                "attempts": 5
+              },
+              {
+                "time": 379.1141789046728,
+                "attempts": 5
+              },
+              {
+                "time": 379.9999999999998,
+                "attempts": 5
+              },
+              {
+                "time": 380.5756241914836,
+                "attempts": 5
+              },
+              {
+                "time": 383.5,
+                "attempts": 5
+              },
+              {
+                "time": 383.79515010771615,
+                "attempts": 5
+              },
+              {
+                "time": 384.99999999999994,
+                "attempts": 5
+              },
+              {
+                "time": 388.76984980634126,
+                "attempts": 5
+              },
+              {
+                "time": 388.96984980634124,
+                "attempts": 5
+              },
+              {
+                "time": 389.99999999999994,
+                "attempts": 5
+              },
+              {
+                "time": 391.71927332317773,
+                "attempts": 5
+              },
+              {
+                "time": 393.64800124614607,
+                "attempts": 5
+              },
+              {
+                "time": 394.99999999999994,
+                "attempts": 5
+              },
+              {
+                "time": 398.5491152277798,
+                "attempts": 5
+              },
+              {
+                "time": 399.08843994140625,
+                "attempts": 5
+              },
+              {
+                "time": 400.0,
+                "attempts": 5
+              },
+              {
+                "time": 401.673828125,
+                "attempts": 5
+              },
+              {
+                "time": 402.42407226562494,
+                "attempts": 5
+              },
+              {
+                "time": 403.5,
+                "attempts": 5
+              },
+              {
+                "time": 403.5509626095995,
+                "attempts": 5
+              },
+              {
+                "time": 403.82444698271615,
+                "attempts": 5
+              },
+              {
+                "time": 404.99999999999994,
+                "attempts": 7
+              },
+              {
+                "time": 405.77180293134126,
+                "attempts": 6
+              },
+              {
+                "time": 407.67609980634126,
+                "attempts": 5
+              },
+              {
+                "time": 409.3999999999999,
+                "attempts": 5
+              },
+              {
+                "time": 409.9999999999999,
+                "attempts": 5
+              },
+              {
+                "time": 410.28568367422645,
+                "attempts": 5
+              },
+              {
+                "time": 411.78568367422645,
+                "attempts": 5
+              },
+              {
+                "time": 413.9999999999999,
+                "attempts": 5
+              },
+              {
+                "time": 414.99999999999983,
+                "attempts": 5
+              },
+              {
+                "time": 418.3440371027798,
+                "attempts": 5
+              },
+              {
+                "time": 418.5,
+                "attempts": 5
+              },
+              {
+                "time": 418.64800124614607,
+                "attempts": 5
+              },
+              {
+                "time": 420.0,
+                "attempts": 5
+              },
+              {
+                "time": 423.5,
+                "attempts": 5
+              },
+              {
+                "time": 424.99999999999994,
+                "attempts": 5
+              },
+              {
+                "time": 425.7083521312577,
+                "attempts": 4
+              },
+              {
+                "time": 428.75248054922645,
+                "attempts": 4
+              },
+              {
+                "time": 428.76984980634126,
+                "attempts": 4
+              },
+              {
+                "time": 429.05446115295194,
+                "attempts": 4
+              },
+              {
+                "time": 430.0,
+                "attempts": 4
+              },
+              {
+                "time": 430.4301540441621,
+                "attempts": 4
+              },
+              {
+                "time": 432.0,
+                "attempts": 4
+              },
+              {
+                "time": 432.10794929922645,
+                "attempts": 4
+              },
+              {
+                "time": 434.8786297009246,
+                "attempts": 6
+              },
+              {
+                "time": 435.0,
+                "attempts": 6
+              },
+              {
+                "time": 435.4,
+                "attempts": 5
+              },
+              {
+                "time": 435.4522705078125,
+                "attempts": 5
+              },
+              {
+                "time": 436.4298590226346,
+                "attempts": 4
+              },
+              {
+                "time": 437.4,
+                "attempts": 4
+              },
+              {
+                "time": 437.6506777277798,
+                "attempts": 4
+              },
+              {
+                "time": 438.49999999999994,
+                "attempts": 4
+              },
+              {
+                "time": 439.1141789046728,
+                "attempts": 4
+              },
+              {
+                "time": 439.31640625,
+                "attempts": 4
+              },
+              {
+                "time": 439.970703125,
+                "attempts": 4
+              },
+              {
+                "time": 440.0,
+                "attempts": 4
+              },
+              {
+                "time": 442.5816650390625,
+                "attempts": 4
+              },
+              {
+                "time": 443.83203125,
+                "attempts": 4
+              },
+              {
+                "time": 444.55078124999994,
+                "attempts": 4
+              },
+              {
+                "time": 445.0,
+                "attempts": 4
+              },
+              {
+                "time": 445.4837427562577,
+                "attempts": 4
+              },
+              {
+                "time": 447.98099617422645,
+                "attempts": 4
+              },
+              {
+                "time": 448.76984980634126,
+                "attempts": 4
+              },
+              {
+                "time": 449.99999999999994,
+                "attempts": 5
+              },
+              {
+                "time": 450.28568367422645,
+                "attempts": 5
+              },
+              {
+                "time": 451.4,
+                "attempts": 6
+              },
+              {
+                "time": 451.78568367422645,
+                "attempts": 6
+              },
+              {
+                "time": 454.99999999999983,
+                "attempts": 5
+              },
+              {
+                "time": 458.3440371027798,
+                "attempts": 5
+              },
+              {
+                "time": 458.78568367422645,
+                "attempts": 5
+              },
+              {
+                "time": 459.8786297009246,
+                "attempts": 5
+              },
+              {
+                "time": 460.0,
+                "attempts": 5
+              },
+              {
+                "time": 462.79999999999984,
+                "attempts": 5
+              },
+              {
+                "time": 463.5,
+                "attempts": 5
+              },
+              {
+                "time": 464.99999999999994,
+                "attempts": 7
+              },
+              {
+                "time": 465.7083521312577,
+                "attempts": 6
+              },
+              {
+                "time": 466.4298590226346,
+                "attempts": 5
+              }
+            ],
+            "solver_field_types": {
+              "array": 100
+            },
+            "solver_candidate_specific_item_observed": false,
+            "candidate_specific_solver_outcome": "not recorded"
+          }
+        },
+        {
+          "id": "req_000009",
+          "classification": "new",
+          "fixture": false,
+          "entry_time_first_state": 140.78480238948742,
+          "release_time": 140.78480238948742,
+          "admission_time": 140.78480238948742,
+          "initial_soc_manifest": 0.6241774049532104,
+          "initial_soc_first_observed": 0.6241774049532104,
+          "initial_soc_reported": 0.6241774049532104,
+          "initial_soc_source": "manifest.requests.initial_soc",
+          "ring_480": "outer",
+          "slot_480": 21,
+          "status_480": "HOLD_OUTER",
+          "soc_480": 0.3247107754817056,
+          "airborne_time_480": 339.2151976105126,
+          "touchdown_time_480": null,
+          "active_field_present_in_state": false,
+          "active_480_observed_by_replay_status": true,
+          "active_status_rule": "status excluded only for ReplayController invisible/frozen/energy-failure statuses; no literal active field was serialized",
+          "first_soc_le_035": {
+            "time": 451.4,
+            "id": "req_000009",
+            "fixture": false,
+            "admission_time": 140.78480238948742,
+            "release_time": 140.78480238948742,
+            "airborne_time": 310.61519761051255,
+            "ring": "outer",
+            "slot": 21,
+            "status": "HOLD_OUTER",
+            "soc": 0.3499601667737397,
+            "touchdown_time": null,
+            "trajectory_hash": "2181bbcc1dfdc22b83b720525be4168510e2094f3ee1545ff1cf7305f5fb0dd9",
+            "service_class": "short",
+            "pad_id": null
+          },
+          "emergency_trigger_events": [
+            {
+              "type": "emergency_triggered",
+              "time": 451.4,
+              "pending": false,
+              "q_e": 0.11080503230784942
+            }
+          ],
+          "emergency_declare_events": [
+            {
+              "type": "emergency_declared",
+              "time": 451.4,
+              "ring": "outer"
+            }
+          ],
+          "transfer_plans": [],
+          "last_transfer": null,
+          "normal_decisions_360_480": {
+            "window_s": [
+              360.0,
+              480.0
+            ],
+            "rows_in_window": 100,
+            "per_aircraft_items": {
+              "catalog_incomplete": "present as row-level list of aircraft IDs",
+              "attempts": "present as row-level mapping aircraft ID -> count",
+              "solver": "no candidate-specific item observed; serialized as row-level field"
+            },
+            "catalog_incomplete_candidate_rows": [
+              360.0,
+              360.3124999999998,
+              361.78568367422645,
+              363.412109375,
+              363.82444698271615,
+              364.2,
+              364.99999999999994,
+              369.9999999999998,
+              370.4301540441621,
+              371.42630457317773,
+              374.99999999999983,
+              377.29715828360145,
+              378.3440371027798,
+              378.5509626095995,
+              379.1141789046728,
+              379.9999999999998,
+              380.5756241914836,
+              383.5,
+              383.79515010771615,
+              384.99999999999994,
+              388.76984980634126,
+              388.96984980634124,
+              389.99999999999994,
+              391.71927332317773,
+              393.64800124614607,
+              394.99999999999994,
+              398.5491152277798,
+              399.08843994140625,
+              400.0,
+              401.673828125,
+              402.42407226562494,
+              403.5,
+              403.5509626095995,
+              403.82444698271615,
+              404.99999999999994,
+              405.77180293134126,
+              407.67609980634126,
+              409.3999999999999,
+              409.9999999999999,
+              410.28568367422645,
+              411.78568367422645,
+              413.9999999999999,
+              414.99999999999983,
+              418.3440371027798,
+              418.5,
+              418.64800124614607,
+              420.0,
+              423.5,
+              424.99999999999994,
+              425.7083521312577,
+              428.75248054922645,
+              428.76984980634126,
+              429.05446115295194,
+              430.0,
+              430.4301540441621,
+              432.0,
+              432.10794929922645,
+              434.8786297009246,
+              435.0,
+              435.4,
+              435.4522705078125,
+              436.4298590226346,
+              437.4,
+              437.6506777277798,
+              438.49999999999994,
+              439.1141789046728,
+              439.31640625,
+              439.970703125,
+              440.0,
+              442.5816650390625,
+              443.83203125,
+              444.55078124999994,
+              445.0,
+              445.4837427562577,
+              447.98099617422645,
+              448.76984980634126,
+              449.99999999999994,
+              450.28568367422645
+            ],
+            "attempts_candidate_rows": [
+              {
+                "time": 360.0,
+                "attempts": 9
+              },
+              {
+                "time": 360.3124999999998,
+                "attempts": 9
+              },
+              {
+                "time": 361.78568367422645,
+                "attempts": 9
+              },
+              {
+                "time": 363.412109375,
+                "attempts": 9
+              },
+              {
+                "time": 363.82444698271615,
+                "attempts": 9
+              },
+              {
+                "time": 364.2,
+                "attempts": 9
+              },
+              {
+                "time": 364.99999999999994,
+                "attempts": 9
+              },
+              {
+                "time": 369.9999999999998,
+                "attempts": 9
+              },
+              {
+                "time": 370.4301540441621,
+                "attempts": 9
+              },
+              {
+                "time": 371.42630457317773,
+                "attempts": 9
+              },
+              {
+                "time": 374.99999999999983,
+                "attempts": 9
+              },
+              {
+                "time": 377.29715828360145,
+                "attempts": 9
+              },
+              {
+                "time": 378.3440371027798,
+                "attempts": 9
+              },
+              {
+                "time": 378.5509626095995,
+                "attempts": 9
+              },
+              {
+                "time": 379.1141789046728,
+                "attempts": 9
+              },
+              {
+                "time": 379.9999999999998,
+                "attempts": 9
+              },
+              {
+                "time": 380.5756241914836,
+                "attempts": 9
+              },
+              {
+                "time": 383.5,
+                "attempts": 9
+              },
+              {
+                "time": 383.79515010771615,
+                "attempts": 9
+              },
+              {
+                "time": 384.99999999999994,
+                "attempts": 11
+              },
+              {
+                "time": 388.76984980634126,
+                "attempts": 9
+              },
+              {
+                "time": 388.96984980634124,
+                "attempts": 9
+              },
+              {
+                "time": 389.99999999999994,
+                "attempts": 9
+              },
+              {
+                "time": 391.71927332317773,
+                "attempts": 9
+              },
+              {
+                "time": 393.64800124614607,
+                "attempts": 9
+              },
+              {
+                "time": 394.99999999999994,
+                "attempts": 9
+              },
+              {
+                "time": 398.5491152277798,
+                "attempts": 9
+              },
+              {
+                "time": 399.08843994140625,
+                "attempts": 9
+              },
+              {
+                "time": 400.0,
+                "attempts": 9
+              },
+              {
+                "time": 401.673828125,
+                "attempts": 9
+              },
+              {
+                "time": 402.42407226562494,
+                "attempts": 9
+              },
+              {
+                "time": 403.5,
+                "attempts": 9
+              },
+              {
+                "time": 403.5509626095995,
+                "attempts": 9
+              },
+              {
+                "time": 403.82444698271615,
+                "attempts": 9
+              },
+              {
+                "time": 404.99999999999994,
+                "attempts": 9
+              },
+              {
+                "time": 405.77180293134126,
+                "attempts": 9
+              },
+              {
+                "time": 407.67609980634126,
+                "attempts": 9
+              },
+              {
+                "time": 409.3999999999999,
+                "attempts": 9
+              },
+              {
+                "time": 409.9999999999999,
+                "attempts": 9
+              },
+              {
+                "time": 410.28568367422645,
+                "attempts": 9
+              },
+              {
+                "time": 411.78568367422645,
+                "attempts": 9
+              },
+              {
+                "time": 413.9999999999999,
+                "attempts": 9
+              },
+              {
+                "time": 414.99999999999983,
+                "attempts": 11
+              },
+              {
+                "time": 418.3440371027798,
+                "attempts": 9
+              },
+              {
+                "time": 418.5,
+                "attempts": 9
+              },
+              {
+                "time": 418.64800124614607,
+                "attempts": 9
+              },
+              {
+                "time": 420.0,
+                "attempts": 9
+              },
+              {
+                "time": 423.5,
+                "attempts": 9
+              },
+              {
+                "time": 424.99999999999994,
+                "attempts": 9
+              },
+              {
+                "time": 425.7083521312577,
+                "attempts": 9
+              },
+              {
+                "time": 428.75248054922645,
+                "attempts": 9
+              },
+              {
+                "time": 428.76984980634126,
+                "attempts": 9
+              },
+              {
+                "time": 429.05446115295194,
+                "attempts": 9
+              },
+              {
+                "time": 430.0,
+                "attempts": 9
+              },
+              {
+                "time": 430.4301540441621,
+                "attempts": 9
+              },
+              {
+                "time": 432.0,
+                "attempts": 9
+              },
+              {
+                "time": 432.10794929922645,
+                "attempts": 9
+              },
+              {
+                "time": 434.8786297009246,
+                "attempts": 9
+              },
+              {
+                "time": 435.0,
+                "attempts": 9
+              },
+              {
+                "time": 435.4,
+                "attempts": 9
+              },
+              {
+                "time": 435.4522705078125,
+                "attempts": 9
+              },
+              {
+                "time": 436.4298590226346,
+                "attempts": 9
+              },
+              {
+                "time": 437.4,
+                "attempts": 9
+              },
+              {
+                "time": 437.6506777277798,
+                "attempts": 9
+              },
+              {
+                "time": 438.49999999999994,
+                "attempts": 9
+              },
+              {
+                "time": 439.1141789046728,
+                "attempts": 9
+              },
+              {
+                "time": 439.31640625,
+                "attempts": 9
+              },
+              {
+                "time": 439.970703125,
+                "attempts": 9
+              },
+              {
+                "time": 440.0,
+                "attempts": 9
+              },
+              {
+                "time": 442.5816650390625,
+                "attempts": 9
+              },
+              {
+                "time": 443.83203125,
+                "attempts": 9
+              },
+              {
+                "time": 444.55078124999994,
+                "attempts": 9
+              },
+              {
+                "time": 445.0,
+                "attempts": 11
+              },
+              {
+                "time": 445.4837427562577,
+                "attempts": 10
+              },
+              {
+                "time": 447.98099617422645,
+                "attempts": 9
+              },
+              {
+                "time": 448.76984980634126,
+                "attempts": 9
+              },
+              {
+                "time": 449.99999999999994,
+                "attempts": 9
+              },
+              {
+                "time": 450.28568367422645,
+                "attempts": 9
+              }
+            ],
+            "solver_field_types": {
+              "array": 100
+            },
+            "solver_candidate_specific_item_observed": false,
+            "candidate_specific_solver_outcome": "not recorded"
+          }
+        }
+      ]
+    }
+  },
+  "notes": [
+    "All times and SOC values are copied from replay manifest, states, events, trajectories, and decisions.",
+    "Per-aircraft catalog evidence is limited to candidate IDs in catalog_incomplete and attempts; solver is recorded at decision-row level and had no candidate-specific item in the inspected window.",
+    "No selection or non-selection cause is inferred from absent fields."
+  ]
+}

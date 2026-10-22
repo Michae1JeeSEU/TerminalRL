@@ -7,7 +7,7 @@ OR-Tools is an optional import, but is mandatory when selecting the CP method.
 from __future__ import annotations
 
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from collections import Counter
 from itertools import combinations
 from types import MappingProxyType
@@ -29,6 +29,14 @@ HORIZON = 240.0
 OFFSETS = (0., 5., 10., 15., 20., 30.)
 SERVICE_SECONDS = {"short": 60., "standard": 120., "long": 240.}
 PHASE_SHARES = (.3, .8, .3, .4, .2)
+QUALITY_BUDGET_PROFILE = "quality_v5"
+CANDIDATE_POLICY_ID = "shared_multistep_columns_v5_quality_budget"
+QUALITY_BUDGET_SETTINGS = MappingProxyType(dict(soft_seconds=30.,watchdog_seconds=60.,candidate_seconds=12.,
+    hint_seconds=3.,solver_seconds=8.,solver_reserve_seconds=8.))
+LEGACY_BUDGET_PROFILE = "legacy_v4"
+UNKNOWN_SLACK_SOURCE = "holding_margin_minus_remaining_time_lower_v5"
+QUALITY_MAX_REFINEMENT_ROUNDS = 64
+QUALITY_HINT_VALIDATION_RESERVE_SECONDS = .5
 
 
 @dataclass
@@ -38,6 +46,15 @@ class PlanningBudget:
     candidate_seconds: float = 3.
     max_per_aircraft: int = 64
     max_attempts: int = 2048
+    profile: str = LEGACY_BUDGET_PROFILE
+    hint_seconds: float | None = None
+    solver_seconds: float = 2.
+    solver_reserve_seconds: float = 0.
+    solver_wall_used: float = 0.
+    hint_wall_used: float = 0.
+    max_refinement_rounds: int = 3
+    refinement_rounds_used: int = 0
+    hint_validation_reserve_seconds: float = 0.
     wall_start: float = field(default_factory=time.perf_counter)
     cpu_start: float = field(default_factory=time.process_time)
     attempts: Counter = field(default_factory=Counter)
@@ -45,6 +62,20 @@ class PlanningBudget:
     timings: dict = field(default_factory=dict)
     truncations: set = field(default_factory=set)
     _timing_stack: list = field(default_factory=list, repr=False)
+    _stage_limits: list = field(default_factory=list, repr=False)
+
+    @classmethod
+    def for_profile(cls, profile):
+        if profile == LEGACY_BUDGET_PROFILE: return cls()
+        if profile == QUALITY_BUDGET_PROFILE:
+            return cls(profile=profile,**QUALITY_BUDGET_SETTINGS,max_refinement_rounds=QUALITY_MAX_REFINEMENT_ROUNDS,
+                hint_validation_reserve_seconds=QUALITY_HINT_VALIDATION_RESERVE_SECONDS)
+        raise ValueError("unknown Stage2 planning budget profile: "+str(profile))
+
+    def settings(self):
+        return {name:getattr(self,name) for name in ("soft_seconds","watchdog_seconds","candidate_seconds",
+            "hint_seconds","solver_seconds","solver_reserve_seconds","max_per_aircraft","max_attempts",
+            "max_refinement_rounds","hint_validation_reserve_seconds")}
 
     @property
     def elapsed(self): return time.perf_counter() - self.wall_start
@@ -62,9 +93,39 @@ class PlanningBudget:
         if self.elapsed < self.watchdog_seconds: return True
         self.truncations.add("WATCHDOG"); return False
 
-    def search_available(self):
+    def search_available(self, reserve_seconds=0.):
+        if not self.evaluation_available(): return False
+        if reserve_seconds and any(time.perf_counter()>=deadline-reserve_seconds for deadline,_ in self._stage_limits):
+            self.truncations.add("HINT_VALIDATION_RESERVE"); return False
         if self.elapsed<self.soft_seconds: return True
         self.truncations.add("SOFT_BUDGET"); return False
+
+    def evaluation_available(self):
+        if not self.watchdog_ok(): return False
+        for deadline,reason in self._stage_limits:
+            if time.perf_counter()>=deadline:
+                self.truncations.add(reason); return False
+        return True
+
+    def evaluation_stop_reason(self):
+        if self.elapsed>=self.watchdog_seconds: return "WATCHDOG"
+        for deadline,reason in self._stage_limits:
+            if time.perf_counter()>=deadline: return reason
+        return "EVALUATION_BUDGET"
+
+    @contextmanager
+    def stage_limit(self, seconds, reason, reserve_seconds=0.):
+        # An absolute deadline on the original clock, never a fresh budget.
+        deadline=self.wall_start+self.soft_seconds-reserve_seconds
+        if seconds is not None: deadline=min(deadline,time.perf_counter()+max(0.,seconds))
+        self._stage_limits.append((deadline,reason))
+        try: yield
+        finally: self._stage_limits.pop()
+
+    def preparation_available(self):
+        if not self.search_available(): return False
+        if self.elapsed<self.soft_seconds-self.solver_reserve_seconds: return True
+        self.truncations.add("CP_PREPARATION_CUTOFF"); return False
 
     @contextmanager
     def measure(self, name):
@@ -137,6 +198,7 @@ class CandidateCatalog:
     attempts: object
     incomplete: tuple
     cache_hits: int = 0
+    slack_reference_statuses: object = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -218,11 +280,39 @@ def _decision_aircraft(snapshot):
                  and _node(snapshot, a) is not None)
 
 
+def remaining_normal_time_lower(snapshot, ring):
+    """Queue heuristic from necessary canonical/grid times, not a certificate.
+
+    This strengthens the original geometric heuristic by summing the
+    necessary minimum duration of each remaining canonical maneuver.
+    """
+    original=ring_config(ring,snapshot.config)
+    geometric=max((original.radius_m-100)/25,(original.height_agl_m-15)/2)+13.5
+    remaining=13.5
+    while ring is not None:
+        source=ring_config(ring,snapshot.config)
+        next_ring={"outer":"middle","middle":"inner","inner":None}[ring]
+        target=ring_config(next_ring,snapshot.config) if next_ring else None
+        radius=target.radius_m if target else snapshot.config.pads.layout_radius_m
+        # The canonical radial quintic has r''(1/4)=-5.625*dr/T^2.
+        # Centripetal acceleration has the same sign at that point.
+        seconds=max(20.,math.sqrt(5.625*(source.radius_m-radius)/snapshot.config.vehicle.max_horizontal_acceleration_norm_mps2))
+        if target:
+            # The canonical transfer's midpoint vertical speed is
+            # -1.875*dz/T. Finals use their own existing height profile.
+            seconds=max(seconds,1.875*(source.height_agl_m-target.height_agl_m)/snapshot.config.vehicle.max_descent_speed_mps)
+        remaining+=5*math.ceil((seconds-1.e-10)/5.)
+        ring=next_ring
+    return max(geometric,remaining)
+
+
 def energy_slack(snapshot, a, reference):
     node = _node(snapshot, a)
-    if reference.status != "KNOWN": return (1, 0., a.release_time, a.id)
     power = stable_power(node.ring, snapshot.config)
     rate = power.current_a/(snapshot.config.energy.reference_capacity_Ah*3600.)
+    if reference.status != "KNOWN":
+        margin=(node.soc-.25)/rate-remaining_normal_time_lower(snapshot,node.ring)
+        return (1,margin,a.release_time,a.id)
     peak_rate = float(power.shaft_w > snapshot.config.vehicle.rotor_count*snapshot.config.energy.reference_motor_continuous_power_kW_each*1000)
     es = node.soc-.25-reference.soc_required
     ps = 120.-node.peak-reference.peak_required
@@ -345,8 +435,21 @@ class EvaluationContext:
         self.pairs = {}
         self.decisions = {a.id for a in _decision_aircraft(snapshot)}
         self.budget=budget
+        self.rejection_reasons=Counter()
+        self.rejections_by_aircraft={}
 
-    def _time_ok(self): return self.budget is None or self.budget.watchdog_ok()
+    def _time_ok(self): return self.budget is None or self.budget.evaluation_available()
+
+    def _time_rejection(self):
+        return ValidationResult(False,"UNKNOWN",self.budget.evaluation_stop_reason())
+
+    def _observe(self,result,columns):
+        if not result.accepted:
+            reason=getattr(result,"reason",None) or result.status
+            self.rejection_reasons[reason]+=1
+            for c in columns:
+                self.rejections_by_aircraft.setdefault(c.aircraft_id,Counter())[reason]+=1
+        return result
 
     def protect_times(self, p):
         if p.trajectory_hash in self.protection: return self.protection[p.trajectory_hash]
@@ -414,7 +517,7 @@ class EvaluationContext:
         return any(x.resource == y.resource and x.start < y.end and y.start < x.end for x in a.resources for y in b.resources)
 
     def check_pair(self, a, b):
-        if not self._time_ok(): return ValidationResult(False,"UNKNOWN","WATCHDOG")
+        if not self._time_ok(): return self._time_rejection()
         key = tuple(sorted((a.signature,b.signature)))
         if key in self.pairs: return self.pairs[key]
         if self.resource_conflict(a,b):
@@ -435,25 +538,36 @@ class EvaluationContext:
         return result
 
     def check_single(self, column):
+        # Only the first action that prefix() would actually submit is guarded;
+        # a future normal-final suffix cannot suppress an inward transfer.
+        if (column.kind=="MOVE" and column.plans and column.aircraft_id not in self.snapshot.soft
+            and column.plans[0].kind=="FINAL_NORMAL"
+            and column.plans[0].start_time<=self.snapshot.time+5.+1.e-8):
+            from .world import emergency_priority_blocker, STAGE2_POLICY_ID
+            if (self.snapshot.emergency_monitor or {}).get("experiment_policy_id")==STAGE2_POLICY_ID:
+                blocked=emergency_priority_blocker(self.snapshot.aircraft,self.snapshot.active,
+                    self.snapshot.config,column.aircraft_id)
+                if blocked:
+                    return self._observe(ValidationResult(False,"REJECTED","EMERGENCY_PRIORITY_WAIT",blocked),(column,))
         # Other decision aircraft are deliberately absent here. Joint checks
         # determine their departure or continued holding.
         for a in self.snapshot.aircraft.values():
-            if not self._time_ok(): return ValidationResult(False,"UNKNOWN","WATCHDOG")
+            if not self._time_ok(): return self._observe(self._time_rejection(),(column,))
             if a.id == column.aircraft_id or a.id in self.decisions: continue
             if a.status not in ("LANDED_SERVICE","FINAL_NORMAL","FINAL_EMERGENCY","VERTICAL_DESCENT") and not a.status.startswith(("HOLD_","TRANSFER_","INBOUND")): continue
             background = PredictionColumn(a.id,"BACKGROUND",(),self.resources(a,()) or (), (0,0,0,0,0))
             r = self.check_pair(column, background)
-            if not r.accepted: return r
+            if not r.accepted: return self._observe(r,(column,))
         return ValidationResult(True,"SAFE")
 
     def check_batch(self, columns):
         for c in columns:
-            if not self._time_ok(): return ValidationResult(False,"UNKNOWN","WATCHDOG"),()
+            if not self._time_ok(): return self._observe(self._time_rejection(),columns),()
             r = self.check_single(c)
             if not r.accepted: return r, (c,)
         for a,b in combinations(columns,2):
             r = self.check_pair(a,b)
-            if not r.accepted: return r, (a,b)
+            if not r.accepted: return self._observe(r,(a,b)), (a,b)
         return ValidationResult(True,"SAFE"), ()
 
     def prefix(self, columns):
@@ -466,11 +580,11 @@ class EvaluationContext:
         return tuple(out)
 
     def check_commit_prefix(self, columns):
-        if not self._time_ok(): return ValidationResult(False,"UNKNOWN","WATCHDOG")
+        if not self._time_ok(): return self._observe(self._time_rejection(),columns)
         prefix = self.prefix(columns)
-        if self.prefix_evaluator is not None: return self.prefix_evaluator(prefix)
+        if self.prefix_evaluator is not None: return self._observe(self.prefix_evaluator(prefix),columns)
         from .world import evaluate_planning_snapshot
-        return evaluate_planning_snapshot(self.snapshot,prefix)
+        return self._observe(evaluate_planning_snapshot(self.snapshot,prefix),columns)
 
 
 class CandidateProvider:
@@ -545,31 +659,7 @@ class CandidateProvider:
         if rows is None: return None
         return PredictionColumn(a.id,kind,tuple(plans),rows,(f,-l,u,tau,qh[0]),current,reference,emergency,energy,peak)
 
-    @staticmethod
-    def _remaining_lower(snapshot, ring):
-        """Queue heuristic from necessary canonical/grid times, not a certificate.
-
-        This strengthens the original geometric heuristic by summing the
-        necessary minimum duration of each remaining canonical maneuver.
-        """
-        original=ring_config(ring,snapshot.config)
-        geometric=max((original.radius_m-100)/25,(original.height_agl_m-15)/2)+13.5
-        remaining=13.5
-        while ring is not None:
-            source=ring_config(ring,snapshot.config)
-            next_ring={"outer":"middle","middle":"inner","inner":None}[ring]
-            target=ring_config(next_ring,snapshot.config) if next_ring else None
-            radius=target.radius_m if target else snapshot.config.pads.layout_radius_m
-            # The canonical radial quintic has r''(1/4)=-5.625*dr/T^2.
-            # Centripetal acceleration has the same sign at that point.
-            seconds=max(20.,math.sqrt(5.625*(source.radius_m-radius)/snapshot.config.vehicle.max_horizontal_acceleration_norm_mps2))
-            if target:
-                # The canonical transfer's midpoint vertical speed is
-                # -1.875*dz/T. Finals use their own existing height profile.
-                seconds=max(seconds,1.875*(source.height_agl_m-target.height_agl_m)/snapshot.config.vehicle.max_descent_speed_mps)
-            remaining+=5*math.ceil((seconds-1.e-10)/5.)
-            ring=next_ring
-        return max(geometric,remaining)
+    _remaining_lower = staticmethod(remaining_normal_time_lower)
 
     def _paths(self,snapshot,a,node,budget,context,prefix=(),accepted_counts=None):
         """Materialized chains and unconstructed all-target work share one heap."""
@@ -955,29 +1045,32 @@ class CandidateProvider:
             columns[a.id][:2]=[self._column(snapshot,a,(),k,context,refs[a.id],budget=budget) for k in ("KEEP","WAIT")]
             if len(columns[a.id])<3 or a.id in generators or budget.truncations: incomplete.append(a.id)
         return CandidateCatalog(MappingProxyType({k:tuple(v) for k,v in columns.items()}),MappingProxyType(slacks),
-                                MappingProxyType(dict(budget.attempts)),tuple(incomplete),self.references.hits-start_hits)
+                                MappingProxyType(dict(budget.attempts)),tuple(incomplete),self.references.hits-start_hits,
+                                MappingProxyType({aid:ref.status for aid,ref in refs.items()}))
 
 
 class EnergySlackScheduler:
     method="energy_slack"
-    def plan(self,snapshot,candidates,context,budget):
+    def plan(self,snapshot,candidates,context,budget,*,validation_reserve_seconds=0.):
         chosen={i:cols[0] for i,cols in candidates.columns.items()}
         for i in sorted(chosen,key=lambda i:candidates.slacks[i]):
-            if not budget.search_available(): break
+            if not budget.search_available(validation_reserve_seconds): break
             for c in sorted(candidates.columns[i],key=lambda c:(c.objective,c.signature)):
+                if not budget.search_available(validation_reserve_seconds): break
                 trial=dict(chosen); trial[i]=c
                 r,_=context.check_batch(tuple(trial.values()))
                 if r.accepted: chosen=trial; break
         selected=tuple(chosen.values())
         with budget.measure("selected_validation"):
-            r,_=context.check_batch(selected)
-            e=context.check_commit_prefix(selected) if r.accepted and budget.watchdog_ok() else None
+            r,_=(context.check_batch(selected) if budget.evaluation_available() else
+                 (ValidationResult(False,"UNKNOWN",budget.evaluation_stop_reason()),()))
+            e=context.check_commit_prefix(selected) if r.accepted and budget.evaluation_available() else None
         if e is not None and e.accepted:
             return PlanningResult(selected,context.prefix(selected),e,"FEASIBLE",_sum_key(selected),certified=True)
         # One local repair: rejected predictive release cannot authorize execution.
         with budget.measure("fallback"):
             keep=tuple(cols[0] for cols in candidates.columns.values())
-            e=context.check_commit_prefix(keep) if budget.watchdog_ok() else None
+            e=context.check_commit_prefix(keep) if budget.evaluation_available() else None
         return PlanningResult(keep,(),e,"PREFIX_NOT_EXECUTABLE",_sum_key(keep),certified=bool(e and e.accepted))
 
 
@@ -987,94 +1080,151 @@ class RollingHorizonCPSATScheduler:
         try: from ortools.sat.python import cp_model
         except ImportError as exc:
             raise RuntimeError("RH-CP-SAT requires OR-Tools; no replacement solver is used") from exc
-        # Own timed construction, on this method's snapshot and catalog.
-        with budget.measure("hint_construction"):
-            incumbent=EnergySlackScheduler().plan(snapshot,candidates,context,budget)
-        if not incumbent.certified: incumbent=None
-        exclusions=[]; nogoods=[]; records=[]; solve_used=0.; all_optimal=True;final_solver_key=None
+        # Bound the hint on the original normal-dispatch clock. EvaluationContext
+        # also observes this phase limit, including nested safety checks.
+        previous_budget=getattr(context,"budget",None)
+        if isinstance(context,EvaluationContext): context.budget=budget
+        hint_started=time.perf_counter()
+        try:
+            with budget.measure("hint_construction"), budget.stage_limit(
+                None if budget.hint_seconds is None else max(0.,budget.hint_seconds-budget.hint_wall_used),
+                "HINT_BUDGET",budget.solver_reserve_seconds):
+                hint=EnergySlackScheduler().plan(snapshot,candidates,context,budget,
+                    validation_reserve_seconds=budget.hint_validation_reserve_seconds)
+        finally:
+            budget.hint_wall_used+=time.perf_counter()-hint_started
+            if isinstance(context,EvaluationContext): context.budget=previous_budget
+        hint_key=hint.objective if hint.certified else None
+        incumbent=hint if hint.certified else None
+        exclusions=[]; nogoods=[]; records=[]; solve_used=0.; all_optimal=True; final_solver_key=None
         ids=tuple(candidates.columns)
-        with budget.measure("resource_conflict_build"):
-            for i,j in combinations(ids,2):
-                if not budget.search_available() or not budget.watchdog_ok(): break
-                for c in candidates.columns[i]:
-                    if not budget.search_available() or not budget.watchdog_ok(): break
-                    for d in candidates.columns[j]:
-                        if context.resource_conflict(c,d): exclusions.append((c.signature,d.signature))
-        for refinement in range(3):
-            if not budget.search_available() or solve_used>=2.: break
-            with budget.measure("model_build"):
-                model=cp_model.CpModel(); variables={}; lookup={}
-                for i in ids:
-                    vs=[]
-                    for n,c in enumerate(candidates.columns[i]):
-                        v=model.NewBoolVar(f"x_{i}_{n}"); variables[c.signature]=v; lookup[c.signature]=c; vs.append(v)
-                    model.AddExactlyOne(vs)
-                for a,b in exclusions: model.Add(variables[a]+variables[b]<=1)
-                for keys in nogoods: model.Add(sum(variables[k] for k in keys)<=len(keys)-1)
-                for c in lookup.values():
-                    if not budget.watchdog_ok(): break
-                    r=context.check_single(c)
-                    if not r.accepted: model.Add(variables[c.signature]==0)
-                if incumbent:
-                    chosen={c.signature for c in incumbent.selected}
-                    for key,v in variables.items(): model.AddHint(v,int(key in chosen))
-            invalid=False; carry=0.
-            for phase,share in enumerate(PHASE_SHARES):
-                if not budget.search_available() or solve_used>=2.: all_optimal=False; break
-                limit=min(share+carry,2.-solve_used,max(0.,budget.soft_seconds-budget.elapsed))
-                if limit<=0: all_optimal=False; break
-                expression=sum(solver_coefficients(c)[phase]*variables[key] for key,c in lookup.items())
-                model.Minimize(expression)
-                solver=cp_model.CpSolver(); solver.parameters.num_search_workers=1; solver.parameters.random_seed=71
-                solver.parameters.max_time_in_seconds=limit
-                with budget.measure("cp_solve"):
-                    started=time.perf_counter(); status=solver.Solve(model); used=time.perf_counter()-started
-                solve_used+=used; carry=max(0.,limit-used)
-                rec={"round":refinement+1,"phase":phase,"status":solver.StatusName(status),"wall_s":used,
-                     "bound":solver.BestObjectiveBound(),"branches":solver.NumBranches(),"conflicts":solver.NumConflicts(),"objective":None}
-                records.append(rec)
-                if status not in (cp_model.OPTIMAL,cp_model.FEASIBLE): all_optimal=False; break
-                selected=tuple(c for key,c in lookup.items() if solver.Value(variables[key]))
-                rec["objective"]=solver.ObjectiveValue()
-                with budget.measure("selected_validation"):
-                    r,conflict=context.check_batch(selected)
-                    evaluation=context.check_commit_prefix(selected) if r.accepted and budget.watchdog_ok() else None
-                rec["validation_status"]=r.status
-                rec["prefix_status"]=getattr(evaluation,"status","NOT_CHECKED")
-                if not r.accepted or evaluation is None or not evaluation.accepted:
-                    if len(conflict)==2 and r.status!="UNKNOWN": exclusions.append(tuple(c.signature for c in conflict))
-                    elif len(conflict)==1: nogoods.append(tuple(c.signature for c in selected))
-                    else: nogoods.append(tuple(c.signature for c in selected))
-                    invalid=True; all_optimal=False; break
-                key=_sum_key(selected)
-                proposal=PlanningResult(selected,context.prefix(selected),evaluation,"FEASIBLE",key,certified=True)
-                if phase==4:
-                    final_solver_key=tuple(sum(solver_coefficients(c)[k] for c in selected) for k in range(5))
-                if incumbent is None or proposal.objective<incumbent.objective: incumbent=proposal
-                if status!=cp_model.OPTIMAL: all_optimal=False
-                # Only a certified feasible value may constrain the next layer.
-                model.Add(expression==int(round(solver.ObjectiveValue())))
-            if not invalid: break
+        move_aircraft=sum(any(c.kind=="MOVE" and c.plans for c in columns) for columns in candidates.columns.values())
+        skip_reason="EMPTY_CATALOG" if not ids else "NO_MOVE_OPTIONS" if not move_aircraft else None
+        stop_reason=None; resource_complete=True; model_complete=True
+        if skip_reason is None:
+            with budget.measure("resource_conflict_build"):
+                for i,j in combinations(ids,2):
+                    if not budget.preparation_available(): resource_complete=False; break
+                    for c in candidates.columns[i]:
+                        if not budget.preparation_available(): resource_complete=False; break
+                        for d in candidates.columns[j]:
+                            if not budget.preparation_available(): resource_complete=False; break
+                            if context.resource_conflict(c,d): exclusions.append((c.signature,d.signature))
+                        if not resource_complete: break
+                    if not resource_complete: break
+            for _ in range(max(0,budget.max_refinement_rounds-budget.refinement_rounds_used)):
+                if not budget.search_available():
+                    stop_reason=budget.evaluation_stop_reason() if not budget.evaluation_available() else "SOFT_BUDGET"
+                    break
+                if budget.solver_wall_used>=budget.solver_seconds:
+                    stop_reason="SOLVER_ALLOCATION_EXHAUSTED"; break
+                budget.refinement_rounds_used+=1
+                refinement=budget.refinement_rounds_used
+                with budget.measure("model_build"):
+                    model=cp_model.CpModel(); variables={}; lookup={}
+                    # Keep exactly-one constraints for every aircraft even if the
+                    # optional model screening must stop to reserve solver time.
+                    for i in ids:
+                        vs=[]
+                        for n,c in enumerate(candidates.columns[i]):
+                            v=model.NewBoolVar(f"x_{i}_{n}"); variables[c.signature]=v; lookup[c.signature]=c; vs.append(v)
+                        model.AddExactlyOne(vs)
+                    for a,b in exclusions: model.Add(variables[a]+variables[b]<=1)
+                    for keys in nogoods: model.Add(sum(variables[k] for k in keys)<=len(keys)-1)
+                    for c in lookup.values():
+                        if not budget.preparation_available(): model_complete=False; break
+                        r=context.check_single(c)
+                        if not r.accepted:
+                            if r.status!="UNKNOWN": model.Add(variables[c.signature]==0)
+                            else: model_complete=False
+                    if incumbent:
+                        chosen={c.signature for c in incumbent.selected}
+                        for key,v in variables.items(): model.AddHint(v,int(key in chosen))
+                invalid=False; carry=0.
+                for phase,share in enumerate(PHASE_SHARES):
+                    if not budget.search_available():
+                        all_optimal=False
+                        stop_reason=budget.evaluation_stop_reason() if not budget.evaluation_available() else "SOFT_BUDGET"
+                        break
+                    if budget.solver_wall_used>=budget.solver_seconds:
+                        all_optimal=False; stop_reason="SOLVER_ALLOCATION_EXHAUSTED"; break
+                    limit=min(share*budget.solver_seconds/sum(PHASE_SHARES)+carry,
+                        budget.solver_seconds-budget.solver_wall_used,max(0.,budget.soft_seconds-budget.elapsed))
+                    if limit<=0:
+                        all_optimal=False; stop_reason="NO_SOLVER_TIME"; break
+                    expression=sum(solver_coefficients(c)[phase]*variables[key] for key,c in lookup.items())
+                    model.Minimize(expression)
+                    solver=cp_model.CpSolver(); solver.parameters.num_search_workers=1; solver.parameters.random_seed=71
+                    solver.parameters.max_time_in_seconds=limit
+                    with budget.measure("cp_solve"):
+                        started=time.perf_counter(); status=solver.Solve(model); used=time.perf_counter()-started
+                    solve_used+=used; budget.solver_wall_used+=used; carry=max(0.,limit-used)
+                    rec={"round":refinement,"phase":phase,"status":solver.StatusName(status),"wall_s":used,
+                         "allocated_seconds":limit,"bound":solver.BestObjectiveBound(),"branches":solver.NumBranches(),
+                         "conflicts":solver.NumConflicts(),"objective":None}
+                    records.append(rec)
+                    if status not in (cp_model.OPTIMAL,cp_model.FEASIBLE):
+                        all_optimal=False; stop_reason="SOLVER_"+solver.StatusName(status); break
+                    selected=tuple(c for key,c in lookup.items() if solver.Value(variables[key]))
+                    rec["objective"]=solver.ObjectiveValue()
+                    with budget.measure("selected_validation"):
+                        r,conflict=context.check_batch(selected)
+                        evaluation=context.check_commit_prefix(selected) if r.accepted and budget.watchdog_ok() else None
+                    rec["validation_status"]=r.status; rec["validation_reason"]=r.reason
+                    rec["prefix_status"]=getattr(evaluation,"status","NOT_CHECKED")
+                    rec["prefix_reason"]=getattr(evaluation,"reason",None)
+                    if not r.accepted or evaluation is None or not evaluation.accepted:
+                        if r.status=="UNKNOWN":
+                            stop_reason="VALIDATION_UNKNOWN"; all_optimal=False; break
+                        if r.accepted and (evaluation is None or evaluation.status=="UNKNOWN"):
+                            stop_reason="PREFIX_VALIDATION_UNKNOWN"; all_optimal=False; break
+                        if len(conflict)==2: exclusions.append(tuple(c.signature for c in conflict))
+                        else: nogoods.append(tuple(c.signature for c in selected))
+                        invalid=True; all_optimal=False; break
+                    key=_sum_key(selected)
+                    proposal=PlanningResult(selected,context.prefix(selected),evaluation,"FEASIBLE",key,certified=True)
+                    if phase==4:
+                        final_solver_key=tuple(sum(solver_coefficients(c)[k] for c in selected) for k in range(5))
+                    if incumbent is None or proposal.objective<incumbent.objective: incumbent=proposal
+                    if status!=cp_model.OPTIMAL: all_optimal=False
+                    # Only a freshly certified feasible value fixes the next layer.
+                    model.Add(expression==int(round(solver.ObjectiveValue())))
+                if not invalid: break
+            else:
+                stop_reason="REFINEMENT_LIMIT"; all_optimal=False
+                budget.truncations.add("REFINEMENT_LIMIT")
+        if not records and skip_reason is None: skip_reason=stop_reason or "NO_SOLVER_CALL"
         if incumbent is None:
             keep=tuple(cols[0] for cols in candidates.columns.values())
             with budget.measure("fallback"):
                 evaluation=context.check_commit_prefix(keep) if budget.watchdog_ok() else None
             incumbent=PlanningResult(keep,(),evaluation,"NO_VERIFIED_INCUMBENT",_sum_key(keep),certified=bool(evaluation and evaluation.accepted))
         incumbent_solver_key=tuple(sum(solver_coefficients(c)[k] for c in incumbent.selected) for k in range(5))
-        complete=all_optimal and len(records)>=5 and records[-1]["phase"]==4 and records[-1]["status"]=="OPTIMAL" and incumbent_solver_key==final_solver_key
+        complete=(all_optimal and resource_complete and model_complete and len(records)>=5
+            and records[-1]["phase"]==4 and records[-1]["status"]=="OPTIMAL" and incumbent_solver_key==final_solver_key)
         return PlanningResult(incumbent.selected,incumbent.prefix,incumbent.evaluation,
                               "CATALOG_LEX_OPTIMAL" if complete else "LEX_LIMITED",incumbent.objective,
                               tuple(records),max((r["round"] for r in records),default=0),incumbent.certified,
                               MappingProxyType({"solver_wall_s":solve_used,"catalog_incomplete":candidates.incomplete,
-                                                "fallback":incumbent.status=="NO_VERIFIED_INCUMBENT"}))
+                                  "resource_conflicts_complete":resource_complete,"model_screen_complete":model_complete,
+                                  "optimality_scope":"bounded_candidate_catalog_model","solver_entered":bool(records),
+                                  "skip_reason":skip_reason,"solver_stop_reason":stop_reason,
+                                  "stop_reason":stop_reason,"max_refinement_rounds":budget.max_refinement_rounds,
+                                  "refinement_rounds_used":budget.refinement_rounds_used,
+                                  "hint_objective":hint_key,"hint_certified":hint.certified,"final_objective":incumbent.objective,
+                                  "strict_improvement_over_hint":None if hint_key is None else incumbent.objective<hint_key,
+                                  "move_aircraft_count":move_aircraft,
+                                  "fallback":incumbent.status=="NO_VERIFIED_INCUMBENT"}))
 
 
 class NormalSchedulerCallback:
     """Callable SchedulerPort adapter; runner owns admission/emergency timing."""
-    def __init__(self,method="energy_slack",candidate_provider=None):
+    def __init__(self,method="energy_slack",candidate_provider=None,budget_profile=QUALITY_BUDGET_PROFILE):
         self.scheduler=EnergySlackScheduler() if method=="energy_slack" else RollingHorizonCPSATScheduler() if method=="rh_cp_sat" else None
         if self.scheduler is None: raise ValueError("unknown Stage2 baseline")
         self.provider=candidate_provider or CandidateProvider()
+        PlanningBudget.for_profile(budget_profile)  # fail closed on unknown names
+        self.budget_profile=budget_profile
         self.records=[]
         self.last_result=None
 
@@ -1084,7 +1234,7 @@ class NormalSchedulerCallback:
             return {"status":r.status,"plans":[p.to_dict() for p in r.plans],"soc_required":r.soc_required,
                     "peak_required":r.peak_required,"duration":r.duration,"energy_j":r.energy_j,
                     "identity":r.identity,"source":r.source}
-        state={"method":self.scheduler.method,"records":self.records,
+        state={"method":self.scheduler.method,"budget_profile":self.budget_profile,"records":self.records,
                 "previous":{k:[p.to_dict() for p in v] for k,v in self.provider.previous.items()},
                 "references":[(key,reference(r)) for key,r in self.provider.references.cache.items()],
                 "templates":[(key,p.to_dict() if p is not None else None) for key,p in self.provider.references.templates.items()],
@@ -1094,6 +1244,9 @@ class NormalSchedulerCallback:
     def load_state_dict(self,state):
         from .trajectory import TrajectoryPlan
         if state["method"]!=self.scheduler.method: raise ValueError("scheduler method mismatch")
+        profile=state.get("budget_profile",LEGACY_BUDGET_PROFILE)
+        PlanningBudget.for_profile(profile)
+        self.budget_profile=profile
         self.records=list(state["records"])
         self.provider.previous={k:tuple(TrajectoryPlan.from_dict(p) for p in v) for k,v in state["previous"].items()}
         self.provider.references.cache={}
@@ -1106,7 +1259,8 @@ class NormalSchedulerCallback:
 
     def __call__(self,port,*args):
         if args: port=args[-1]  # executor callback(snapshot, port) convention
-        budget=PlanningBudget()
+        budget=PlanningBudget.for_profile(self.budget_profile)
+        solver_history=[]
         for restart in range(2):
             with budget.measure("snapshot_and_uniform_refinement"):
                 snapshot=build_planning_snapshot(port)
@@ -1115,9 +1269,10 @@ class NormalSchedulerCallback:
                 catalog=self.provider.get_columns(snapshot,budget,context)
             with budget.measure("selection"):
                 result=self.scheduler.plan(snapshot,catalog,context,budget)
+            solver_history.extend(dict(r,uniform_refinement_restart=restart) for r in result.solver_records)
             if not getattr(result.evaluation,"refinement_required",False): break
             if restart or not budget.search_available():
-                result=PlanningResult(result.selected,(),None,"REFINEMENT_UNCERTAIN",result.objective)
+                result=replace(result,prefix=(),evaluation=None,status="REFINEMENT_UNCERTAIN",certified=False)
                 break
             with budget.measure("snapshot_and_uniform_refinement"):
                 port.refine_planning_boundary()
@@ -1128,7 +1283,42 @@ class NormalSchedulerCallback:
         self.last_result=result
         committed_prefix=result.prefix if commit is not None and commit.accepted else ()
         self.provider.previous={c.aircraft_id:tuple(p for p in c.plans if p not in committed_prefix) for c in result.selected if c.kind=="MOVE"}
+        selected_by_id={c.aircraft_id:c for c in result.selected}
+        aircraft_choices=[]
+        for aid,columns in catalog.columns.items():
+            a=snapshot.aircraft[aid]; selected=selected_by_id.get(aid)
+            reference=columns[0].reference if columns else None
+            source_status=catalog.slack_reference_statuses.get(aid)
+            emergency=getattr(a,"emergency",None)
+            aircraft_choices.append(dict(aircraft_id=aid,ring=a.ring,soc=a.soc,candidate_count=len(columns),
+                move_candidates=sum(c.kind=="MOVE" and bool(c.plans) for c in columns),
+                immediate_move_candidates=sum(c.kind=="MOVE" and bool(c.plans) and c.plans[0].start_time<=snapshot.time+5.+1.e-8
+                    and aid not in snapshot.soft for c in columns),
+                selected_kind=None if selected is None else selected.kind,
+                first_target=None if selected is None else selected.first_target,
+                emergency_declared=bool(getattr(emergency,"declared",False)),
+                emergency_eligible=bool(getattr(emergency,"eligible",False)),slack=catalog.slacks.get(aid),
+                source_reference_status=source_status,keep_tail_reference_status=getattr(reference,"status",None),
+                unknown_slack_source=UNKNOWN_SLACK_SOURCE if source_status is not None and source_status!="KNOWN" else None,
+                rejection_reasons=dict(context.rejections_by_aircraft.get(aid,{}))))
+        solver_entered=bool(solver_history)
         record={"time":snapshot.time,"method":self.scheduler.method,"status":result.status,
+                "candidate_policy_id":CANDIDATE_POLICY_ID,"budget_profile":self.budget_profile,"planning_budget":budget.settings(),
+                "deadline_reference_seconds":5.,"hint_wall_s":budget.hint_wall_used,"solver_wall_s":budget.solver_wall_used,
+                "hint_objective":result.details.get("hint_objective"),"final_objective":result.objective,
+                "hint_certified":result.details.get("hint_certified"),
+                "strict_improvement_over_hint":result.details.get("strict_improvement_over_hint"),
+                "solver_entered":solver_entered,"skip_reason":None if solver_entered else result.details.get("skip_reason",
+                    "METHOD_ENERGY_SLACK" if self.scheduler.method=="energy_slack" else "NO_SOLVER_CALL"),
+                "solver_stop_reason":result.details.get("solver_stop_reason"),
+                "stop_reason":result.details.get("stop_reason"),
+                "refinement_rounds_used":budget.refinement_rounds_used,
+                "resource_conflicts_complete":result.details.get("resource_conflicts_complete"),
+                "model_screen_complete":result.details.get("model_screen_complete"),
+                "solver_optimality_scope":result.details.get("optimality_scope"),
+                "move_aircraft_count":sum(row["move_candidates"]>0 for row in aircraft_choices),
+                "aircraft_choices":aircraft_choices,"candidate_rejection_reasons":dict(context.rejection_reasons),
+                "unknown_slack_source":UNKNOWN_SLACK_SOURCE,
                 "objective":result.objective,"columns":sum(map(len,catalog.columns.values())),
                 "aircraft":len(catalog.columns),"attempts":dict(catalog.attempts),"catalog_incomplete":catalog.incomplete,
                 "geometry_screening":dict(budget.screening),
@@ -1136,7 +1326,7 @@ class NormalSchedulerCallback:
                 "wall_s":budget.elapsed,"cpu_s":time.process_time()-budget.cpu_start,
                 "deadline_miss":budget.elapsed>5.,"submitted":len(result.prefix) if commit and commit.accepted else 0,
                 "commit_status":commit.status if commit is not None else "NOT_COMMITTED",
-                "solver":result.solver_records,"refinement_rounds":result.refinement_rounds,
+                "solver":tuple(solver_history),"refinement_rounds":result.refinement_rounds,
                 "uniform_refinement_restarts":restart,
                 "active_count":len(snapshot.active),"holding_count":sum(a.status.startswith("HOLD_") for a in snapshot.aircraft.values()),
                 "upstream_count":len(snapshot.requests),"trigger_reason":"UNSPECIFIED_EXECUTOR_TRIGGER",

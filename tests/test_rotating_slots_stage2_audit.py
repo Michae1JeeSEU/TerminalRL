@@ -78,10 +78,11 @@ def test_stage2_simultaneous_isolation_continues_with_independent_energy_checks(
 
 def test_stage2_success_after_loss_uses_touchdown_event_not_service_completion(tmp_path):
     w=stage2_world()
-    w.seed_hold("lost","outer",18,soc=1e-6)
     w.seed_hold("success","inner",0,soc=.8)
     plan=generate_final("success","inner",0,0,0.).plan
     assert plan and w.submit((plan,)).accepted
+    # The active commitment precedes the later failure-aircraft fixture.
+    w.seed_hold("lost","outer",18,soc=1e-6)
     w.advance(plan.end_time)
     path=ReplayBundle.write(tmp_path/"postloss",world=w,code_commit="stage2-audit-test").path
     report=audit_replay(path)
