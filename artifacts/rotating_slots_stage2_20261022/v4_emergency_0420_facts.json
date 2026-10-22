@@ -1,0 +1,2507 @@
+{
+  "audit_0420": {
+    "energy_slack": {
+      "issue_count": 0,
+      "issues": [],
+      "status": "PASS"
+    },
+    "rh_cp_sat": {
+      "issue_count": 0,
+      "issues": [],
+      "status": "PASS"
+    }
+  },
+  "checks": {
+    "current_future_pad_record_sets_disjoint": {
+      "energy_slack": {
+        "360": true,
+        "420": true
+      },
+      "rh_cp_sat": {
+        "360": true,
+        "420": true
+      }
+    },
+    "declared_unlanded_target_count_by_method": {
+      "energy_slack": 2,
+      "rh_cp_sat": 2
+    },
+    "fixed_replay_only": true,
+    "no_live_states_or_checkpoints_read": true,
+    "output_preexisted": false,
+    "state_times": {
+      "energy_slack": {
+        "replay_0360_last_time": 360.0,
+        "replay_0420_last_time": 420.0
+      },
+      "rh_cp_sat": {
+        "replay_0360_last_time": 360.0,
+        "replay_0420_last_time": 420.0
+      }
+    }
+  },
+  "declared_unlanded_at_0360": {
+    "energy_slack": [
+      "initial_inner_09",
+      "initial_middle_04"
+    ],
+    "rh_cp_sat": [
+      "initial_middle_01",
+      "initial_middle_11"
+    ]
+  },
+  "metrics": {
+    "energy_slack": {
+      "summary_0360": {
+        "F_battery": 0,
+        "F_energy_total": 0,
+        "F_peak": 0,
+        "N_airborne_pending": 41,
+        "N_offered": 61,
+        "N_upstream_pending": 0,
+        "admitted": 61,
+        "airborne_or_censored": 41,
+        "emergency_declared": 2,
+        "emergency_landed": 0,
+        "emergency_unresolved": 2,
+        "energy_failures": 0,
+        "normal_landed": 20,
+        "offered": 61,
+        "upstream_pending": null
+      },
+      "summary_0360_time": 360.0,
+      "summary_0420": {
+        "F_battery": 0,
+        "F_energy_total": 0,
+        "F_peak": 0,
+        "N_airborne_pending": 42,
+        "N_offered": 64,
+        "N_upstream_pending": 0,
+        "admitted": 64,
+        "airborne_or_censored": 42,
+        "emergency_declared": 11,
+        "emergency_landed": 0,
+        "emergency_unresolved": 11,
+        "energy_failures": 0,
+        "normal_landed": 22,
+        "offered": 64,
+        "upstream_pending": null
+      },
+      "summary_0420_time": 420.0
+    },
+    "rh_cp_sat": {
+      "summary_0360": {
+        "F_battery": 0,
+        "F_energy_total": 0,
+        "F_peak": 0,
+        "N_airborne_pending": 41,
+        "N_offered": 61,
+        "N_upstream_pending": 0,
+        "admitted": 61,
+        "airborne_or_censored": 41,
+        "emergency_declared": 2,
+        "emergency_landed": 0,
+        "emergency_unresolved": 2,
+        "energy_failures": 0,
+        "normal_landed": 20,
+        "offered": 61,
+        "upstream_pending": null
+      },
+      "summary_0360_time": 360.0,
+      "summary_0420": {
+        "F_battery": 0,
+        "F_energy_total": 0,
+        "F_peak": 0,
+        "N_airborne_pending": 40,
+        "N_offered": 64,
+        "N_upstream_pending": 0,
+        "admitted": 64,
+        "airborne_or_censored": 40,
+        "emergency_declared": 8,
+        "emergency_landed": 0,
+        "emergency_unresolved": 8,
+        "energy_failures": 0,
+        "normal_landed": 24,
+        "offered": 64,
+        "upstream_pending": null
+      },
+      "summary_0420_time": 420.0
+    }
+  },
+  "pad_frames": {
+    "energy_slack": {
+      "at_360": {
+        "classification": "current: start <= frame_time + eps and end > frame_time + eps; future_only: start > frame_time + eps",
+        "current_count": 6,
+        "current_landed_service": [
+          {
+            "aircraft_id": "initial_middle_07",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.49430972318772093,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 363.5,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 0,
+            "start": 303.5
+          },
+          {
+            "aircraft_id": "initial_outer_01",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.441686047566568,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 413.5,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 1,
+            "start": 353.5
+          },
+          {
+            "aircraft_id": "initial_outer_02",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.3009912760212832,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 388.4999999999999,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 2,
+            "start": 328.4999999999999
+          },
+          {
+            "aircraft_id": "initial_inner_04",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.3808412860189327,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 415.4301540441621,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 3,
+            "start": 355.4301540441621
+          },
+          {
+            "aircraft_id": "initial_outer_10",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.3481602084537875,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 404.8310817930876,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 5,
+            "start": 344.8310817930876
+          }
+        ],
+        "current_landed_service_count": 5,
+        "current_reservations": [
+          {
+            "aircraft_id": "initial_middle_07",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.49430972318772093,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 363.5,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 0,
+            "start": 303.5
+          },
+          {
+            "aircraft_id": "initial_outer_01",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.441686047566568,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 413.5,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 1,
+            "start": 353.5
+          },
+          {
+            "aircraft_id": "initial_outer_02",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.3009912760212832,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 388.4999999999999,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 2,
+            "start": 328.4999999999999
+          },
+          {
+            "aircraft_id": "initial_inner_04",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.3808412860189327,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 415.4301540441621,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 3,
+            "start": 355.4301540441621
+          },
+          {
+            "aircraft_id": "initial_outer_09",
+            "aircraft_ring_at_frame": "inner",
+            "aircraft_soc_at_frame": 0.46204156782626643,
+            "aircraft_status_at_frame": "VERTICAL_DESCENT",
+            "committed": true,
+            "dependencies": [],
+            "end": 429.1141789046728,
+            "kind": "final",
+            "plan_hash": "b7b244aa068a6fbb021816475b32e07d60fff0f8d1bd49bb833f8075d84291a8",
+            "resource": 4,
+            "start": 355.6141789046728
+          },
+          {
+            "aircraft_id": "initial_outer_10",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.3481602084537875,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 404.8310817930876,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 5,
+            "start": 344.8310817930876
+          }
+        ],
+        "current_resource_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "current_vertical_descent": [
+          {
+            "aircraft_id": "initial_outer_09",
+            "aircraft_ring_at_frame": "inner",
+            "aircraft_soc_at_frame": 0.46204156782626643,
+            "aircraft_status_at_frame": "VERTICAL_DESCENT",
+            "committed": true,
+            "dependencies": [],
+            "end": 429.1141789046728,
+            "kind": "final",
+            "plan_hash": "b7b244aa068a6fbb021816475b32e07d60fff0f8d1bd49bb833f8075d84291a8",
+            "resource": 4,
+            "start": 355.6141789046728
+          }
+        ],
+        "current_vertical_descent_count": 1,
+        "eps": 1e-09,
+        "frame_time": 360,
+        "future_only_count": 1,
+        "future_only_reservations": [
+          {
+            "aircraft_id": "initial_middle_02",
+            "aircraft_ring_at_frame": "inner",
+            "aircraft_soc_at_frame": 0.48794596231187537,
+            "aircraft_status_at_frame": "FINAL_NORMAL",
+            "committed": true,
+            "dependencies": [],
+            "end": 455.6441517909111,
+            "kind": "final",
+            "plan_hash": "729880dafd70bdef980e94b23463ef8d004ae7a7a7caec85b7579a630863b699",
+            "resource": 0,
+            "start": 382.1441517909111
+          }
+        ],
+        "truly_unreserved_pad_ids": []
+      },
+      "at_420": {
+        "classification": "current: start <= frame_time + eps and end > frame_time + eps; future_only: start > frame_time + eps",
+        "current_count": 3,
+        "current_landed_service": [
+          {
+            "aircraft_id": "initial_middle_02",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.43435345123030666,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 455.6441517909111,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 0,
+            "start": 395.6441517909111
+          },
+          {
+            "aircraft_id": "initial_outer_09",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.4468781358329707,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 429.1141789046728,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 4,
+            "start": 369.1141789046728
+          }
+        ],
+        "current_landed_service_count": 2,
+        "current_reservations": [
+          {
+            "aircraft_id": "initial_middle_02",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.43435345123030666,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 455.6441517909111,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 0,
+            "start": 395.6441517909111
+          },
+          {
+            "aircraft_id": "initial_outer_08",
+            "aircraft_ring_at_frame": "inner",
+            "aircraft_soc_at_frame": 0.39230575591628675,
+            "aircraft_status_at_frame": "VERTICAL_DESCENT",
+            "committed": true,
+            "dependencies": [],
+            "end": 482.0,
+            "kind": "final",
+            "plan_hash": "c9b26c01ae0cc488a4d611a5856903ef574648281fa03a4c2e1dd7ad6c210353",
+            "resource": 2,
+            "start": 408.5
+          },
+          {
+            "aircraft_id": "initial_outer_09",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.4468781358329707,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 429.1141789046728,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 4,
+            "start": 369.1141789046728
+          }
+        ],
+        "current_resource_ids": [
+          0,
+          2,
+          4
+        ],
+        "current_vertical_descent": [
+          {
+            "aircraft_id": "initial_outer_08",
+            "aircraft_ring_at_frame": "inner",
+            "aircraft_soc_at_frame": 0.39230575591628675,
+            "aircraft_status_at_frame": "VERTICAL_DESCENT",
+            "committed": true,
+            "dependencies": [],
+            "end": 482.0,
+            "kind": "final",
+            "plan_hash": "c9b26c01ae0cc488a4d611a5856903ef574648281fa03a4c2e1dd7ad6c210353",
+            "resource": 2,
+            "start": 408.5
+          }
+        ],
+        "current_vertical_descent_count": 1,
+        "eps": 1e-09,
+        "frame_time": 420,
+        "future_only_count": 4,
+        "future_only_reservations": [
+          {
+            "aircraft_id": "initial_outer_07",
+            "aircraft_ring_at_frame": "inner",
+            "aircraft_soc_at_frame": 0.3331908480270755,
+            "aircraft_status_at_frame": "FINAL_NORMAL",
+            "committed": true,
+            "dependencies": [],
+            "end": 502.14800124614607,
+            "kind": "final",
+            "plan_hash": "92264d384bb199ab06bb4f7648ff2e840690007f94f65690503ecce55ecc188a",
+            "resource": 1,
+            "start": 428.64800124614607
+          },
+          {
+            "aircraft_id": "initial_inner_09",
+            "aircraft_ring_at_frame": "inner",
+            "aircraft_soc_at_frame": 0.20713900232138718,
+            "aircraft_status_at_frame": "FINAL_EMERGENCY",
+            "committed": true,
+            "dependencies": [],
+            "end": 475.9,
+            "kind": "emergency",
+            "plan_hash": "59e6d49e8fc8ee262470bad51734ca1a7769037b0654eb3e2ed8fac0d5f9bb4b",
+            "resource": 3,
+            "start": 432.4
+          },
+          {
+            "aircraft_id": "req_000008",
+            "aircraft_ring_at_frame": "inner",
+            "aircraft_soc_at_frame": 0.4225329880136099,
+            "aircraft_status_at_frame": "FINAL_NORMAL",
+            "committed": true,
+            "dependencies": [],
+            "end": 492.0491152277798,
+            "kind": "final",
+            "plan_hash": "40c1e3932b9d8a91b20e7ebce4ecdb1a5b441ee96d5947317d4c9ac92d0b5210",
+            "resource": 4,
+            "start": 448.5491152277798
+          },
+          {
+            "aircraft_id": "req_000003",
+            "aircraft_ring_at_frame": "inner",
+            "aircraft_soc_at_frame": 0.40348528688374596,
+            "aircraft_status_at_frame": "FINAL_NORMAL",
+            "committed": true,
+            "dependencies": [],
+            "end": 496.8440371027798,
+            "kind": "final",
+            "plan_hash": "b192a9ff10da7a8a769e8170fd4be6b2bfdc86fbe4a814c89a4fb71e05c6459e",
+            "resource": 5,
+            "start": 423.3440371027798
+          }
+        ],
+        "truly_unreserved_pad_ids": [
+          1,
+          3,
+          5
+        ]
+      },
+      "pad_ids_considered": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    "rh_cp_sat": {
+      "at_360": {
+        "classification": "current: start <= frame_time + eps and end > frame_time + eps; future_only: start > frame_time + eps",
+        "current_count": 4,
+        "current_landed_service": [
+          {
+            "aircraft_id": "initial_middle_06",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.39541057284660197,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 380.5756241914836,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 1,
+            "start": 260.5756241914836
+          },
+          {
+            "aircraft_id": "initial_middle_04",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.30224013308456926,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 403.5,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 3,
+            "start": 343.5
+          },
+          {
+            "aircraft_id": "initial_outer_10",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.34409947962334364,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 407.67609980634126,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 5,
+            "start": 347.67609980634126
+          }
+        ],
+        "current_landed_service_count": 3,
+        "current_reservations": [
+          {
+            "aircraft_id": "initial_middle_06",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.39541057284660197,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 380.5756241914836,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 1,
+            "start": 260.5756241914836
+          },
+          {
+            "aircraft_id": "initial_middle_04",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.30224013308456926,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 403.5,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 3,
+            "start": 343.5
+          },
+          {
+            "aircraft_id": "initial_outer_11",
+            "aircraft_ring_at_frame": "inner",
+            "aircraft_soc_at_frame": 0.46895944990064925,
+            "aircraft_status_at_frame": "VERTICAL_DESCENT",
+            "committed": true,
+            "dependencies": [],
+            "end": 430.4301540441621,
+            "kind": "final",
+            "plan_hash": "a46ee9b447d848136ff1092e9f4a0f48b864b0274cedd0137f1e23059a9f90b3",
+            "resource": 4,
+            "start": 356.9301540441621
+          },
+          {
+            "aircraft_id": "initial_outer_10",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.34409947962334364,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 407.67609980634126,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 5,
+            "start": 347.67609980634126
+          }
+        ],
+        "current_resource_ids": [
+          1,
+          3,
+          4,
+          5
+        ],
+        "current_vertical_descent": [
+          {
+            "aircraft_id": "initial_outer_11",
+            "aircraft_ring_at_frame": "inner",
+            "aircraft_soc_at_frame": 0.46895944990064925,
+            "aircraft_status_at_frame": "VERTICAL_DESCENT",
+            "committed": true,
+            "dependencies": [],
+            "end": 430.4301540441621,
+            "kind": "final",
+            "plan_hash": "a46ee9b447d848136ff1092e9f4a0f48b864b0274cedd0137f1e23059a9f90b3",
+            "resource": 4,
+            "start": 356.9301540441621
+          }
+        ],
+        "current_vertical_descent_count": 1,
+        "eps": 1e-09,
+        "frame_time": 360,
+        "future_only_count": 2,
+        "future_only_reservations": [
+          {
+            "aircraft_id": "initial_outer_01",
+            "aircraft_ring_at_frame": "inner",
+            "aircraft_soc_at_frame": 0.444418824400179,
+            "aircraft_status_at_frame": "FINAL_NORMAL",
+            "committed": true,
+            "dependencies": [],
+            "end": 439.1141789046728,
+            "kind": "final",
+            "plan_hash": "519fed5b093ada5073fd49778bc71a834aabb556c60fe0a72148a718b96785de",
+            "resource": 0,
+            "start": 365.6141789046728
+          },
+          {
+            "aircraft_id": "initial_inner_04",
+            "aircraft_ring_at_frame": "inner",
+            "aircraft_soc_at_frame": 0.38577918978538794,
+            "aircraft_status_at_frame": "FINAL_NORMAL",
+            "committed": true,
+            "dependencies": [],
+            "end": 448.76984980634126,
+            "kind": "final",
+            "plan_hash": "9febf8567977e27f0ed7ee55115088f1e06ca3fa67d75050b445eee7af4159cb",
+            "resource": 2,
+            "start": 375.26984980634126
+          }
+        ],
+        "truly_unreserved_pad_ids": [
+          0,
+          2
+        ]
+      },
+      "at_420": {
+        "classification": "current: start <= frame_time + eps and end > frame_time + eps; future_only: start > frame_time + eps",
+        "current_count": 5,
+        "current_landed_service": [
+          {
+            "aircraft_id": "initial_outer_01",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.4132959894423555,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 439.1141789046728,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 0,
+            "start": 379.1141789046728
+          },
+          {
+            "aircraft_id": "initial_outer_05",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.33435039148551726,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 470.28568367422645,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 1,
+            "start": 410.28568367422645
+          },
+          {
+            "aircraft_id": "initial_inner_04",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.3408532869102705,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 448.76984980634126,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 2,
+            "start": 388.76984980634126
+          },
+          {
+            "aircraft_id": "initial_outer_11",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.4516778915538092,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 430.4301540441621,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 4,
+            "start": 370.4301540441621
+          }
+        ],
+        "current_landed_service_count": 4,
+        "current_reservations": [
+          {
+            "aircraft_id": "initial_outer_01",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.4132959894423555,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 439.1141789046728,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 0,
+            "start": 379.1141789046728
+          },
+          {
+            "aircraft_id": "initial_outer_05",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.33435039148551726,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 470.28568367422645,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 1,
+            "start": 410.28568367422645
+          },
+          {
+            "aircraft_id": "initial_inner_04",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.3408532869102705,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 448.76984980634126,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 2,
+            "start": 388.76984980634126
+          },
+          {
+            "aircraft_id": "initial_outer_12",
+            "aircraft_ring_at_frame": "inner",
+            "aircraft_soc_at_frame": 0.275780884125621,
+            "aircraft_status_at_frame": "VERTICAL_DESCENT",
+            "committed": true,
+            "dependencies": [],
+            "end": 492.0,
+            "kind": "emergency",
+            "plan_hash": "f3a88a9662a71a0b09a82faee00f04b81e735bdbb2c9441e57f2dfc36d15fd50",
+            "resource": 3,
+            "start": 418.5
+          },
+          {
+            "aircraft_id": "initial_outer_11",
+            "aircraft_ring_at_frame": null,
+            "aircraft_soc_at_frame": 0.4516778915538092,
+            "aircraft_status_at_frame": "LANDED_SERVICE",
+            "committed": true,
+            "dependencies": [],
+            "end": 430.4301540441621,
+            "kind": "service",
+            "plan_hash": null,
+            "resource": 4,
+            "start": 370.4301540441621
+          }
+        ],
+        "current_resource_ids": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "current_vertical_descent": [
+          {
+            "aircraft_id": "initial_outer_12",
+            "aircraft_ring_at_frame": "inner",
+            "aircraft_soc_at_frame": 0.275780884125621,
+            "aircraft_status_at_frame": "VERTICAL_DESCENT",
+            "committed": true,
+            "dependencies": [],
+            "end": 492.0,
+            "kind": "emergency",
+            "plan_hash": "f3a88a9662a71a0b09a82faee00f04b81e735bdbb2c9441e57f2dfc36d15fd50",
+            "resource": 3,
+            "start": 418.5
+          }
+        ],
+        "current_vertical_descent_count": 1,
+        "eps": 1e-09,
+        "frame_time": 420,
+        "future_only_count": 2,
+        "future_only_reservations": [
+          {
+            "aircraft_id": "initial_middle_01",
+            "aircraft_ring_at_frame": "inner",
+            "aircraft_soc_at_frame": 0.21818222091733233,
+            "aircraft_status_at_frame": "FINAL_EMERGENCY",
+            "committed": true,
+            "dependencies": [],
+            "end": 518.7856836742264,
+            "kind": "emergency",
+            "plan_hash": "d311d2511eb57674aa0690e2c702da9ad260e073a869eadaa1c54a7e300005de",
+            "resource": 4,
+            "start": 445.28568367422645
+          },
+          {
+            "aircraft_id": "initial_middle_02",
+            "aircraft_ring_at_frame": "inner",
+            "aircraft_soc_at_frame": 0.4371525860997441,
+            "aircraft_status_at_frame": "FINAL_NORMAL",
+            "committed": true,
+            "dependencies": [],
+            "end": 498.49999999999994,
+            "kind": "final",
+            "plan_hash": "2eb1bae1dc50c4e5e2215ac3f3287f49e276a6480a7ccc3eb7309300645bb1a7",
+            "resource": 5,
+            "start": 424.99999999999994
+          }
+        ],
+        "truly_unreserved_pad_ids": [
+          5
+        ]
+      },
+      "pad_ids_considered": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    }
+  },
+  "schema_version": "v4_emergency_0420_facts.v1",
+  "schemas": {
+    "energy_slack": {
+      "events_record_keys": [
+        "aircraft_id",
+        "details",
+        "time",
+        "type"
+      ],
+      "final_attempt_rejected_details_keys": [
+        "emergency",
+        "pad_id",
+        "reason",
+        "rejection_indices",
+        "trajectory_hash",
+        "validation"
+      ],
+      "rejections_details_keys": [
+        "candidate",
+        "pad_id"
+      ],
+      "rejections_record_keys": [
+        "aircraft_id",
+        "details",
+        "reason",
+        "time"
+      ]
+    },
+    "rh_cp_sat": {
+      "events_record_keys": [
+        "aircraft_id",
+        "details",
+        "time",
+        "type"
+      ],
+      "final_attempt_rejected_details_keys": [
+        "emergency",
+        "pad_id",
+        "reason",
+        "rejection_indices",
+        "trajectory_hash",
+        "validation"
+      ],
+      "rejections_details_keys": [
+        "candidate",
+        "pad_id"
+      ],
+      "rejections_record_keys": [
+        "aircraft_id",
+        "details",
+        "reason",
+        "time"
+      ]
+    }
+  },
+  "scope": {
+    "continuation_window": "360 < time <= 420",
+    "eps_s": 1e-09,
+    "fixed_replays_only": true,
+    "note": "current pad reservations use half-open [start,end); future-only reservations are kept separate",
+    "source_root": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022",
+    "time_window_s": [
+      0.0,
+      420.0
+    ]
+  },
+  "source_paths": {
+    "energy_slack": {
+      "audit_0420": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\audit_0420.json",
+      "events_0360": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\replay_0360\\events.jsonl",
+      "events_0420": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\replay_0420\\events.jsonl",
+      "rejections_0420": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\replay_0420\\rejections.jsonl",
+      "replay_0360": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\replay_0360",
+      "replay_0420": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\replay_0420",
+      "states_0360": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\replay_0360\\states.jsonl",
+      "states_0420": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\replay_0420\\states.jsonl",
+      "summary_0360": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\summary_0360.json",
+      "summary_0420": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\summary_0420.json",
+      "trajectories_0420": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\energy_slack\\replay_0420\\trajectories.json"
+    },
+    "rh_cp_sat": {
+      "audit_0420": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\audit_0420.json",
+      "events_0360": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\replay_0360\\events.jsonl",
+      "events_0420": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\replay_0420\\events.jsonl",
+      "rejections_0420": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\replay_0420\\rejections.jsonl",
+      "replay_0360": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\replay_0360",
+      "replay_0420": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\replay_0420",
+      "states_0360": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\replay_0360\\states.jsonl",
+      "states_0420": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\replay_0420\\states.jsonl",
+      "summary_0360": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\summary_0360.json",
+      "summary_0420": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\summary_0420.json",
+      "trajectories_0420": "D:\\7_codespace\\training_outputs\\terminal\\stage2_progress_service_360s_v4_20261022\\rh_cp_sat\\replay_0420\\trajectories.json"
+    }
+  },
+  "target_evidence": {
+    "energy_slack": {
+      "initial_inner_09": {
+        "admission_rejections_replay_0420": {
+          "candidate duration/phase search exhausted; no infeasibility proof": {
+            "count": 36,
+            "first_time": 298.99999999999994,
+            "last_time": 391.71927332317773,
+            "representative": {
+              "candidate": true,
+              "details_keys": [
+                "candidate",
+                "pad_id"
+              ],
+              "reason": "candidate duration/phase search exhausted; no infeasibility proof",
+              "slot": null,
+              "stage": null,
+              "time": 298.99999999999994,
+              "validation_keys": null
+            }
+          }
+        },
+        "declaration": {
+          "declaration_ring": "inner",
+          "declaration_time": 298.99999999999994,
+          "declared_at_0360": true,
+          "q_e": 0.07089803497162737,
+          "state": "EMERGENCY_WAITING"
+        },
+        "energy_failure_event_count": 0,
+        "event_counts_replay_0360_0_360": {
+          "emergency_declared": 1,
+          "emergency_triggered": 1,
+          "final_attempt_rejected": 294
+        },
+        "event_counts_replay_0420_0_420": {
+          "emergency_declared": 1,
+          "emergency_triggered": 1,
+          "final_attempt_rejected": 441,
+          "maneuver_started": 1,
+          "plan_committed": 1
+        },
+        "event_counts_replay_0420_360_420": {
+          "final_attempt_rejected": 142,
+          "maneuver_started": 1,
+          "plan_committed": 1
+        },
+        "event_types_observed": [
+          "emergency_declared",
+          "emergency_triggered",
+          "final_attempt_rejected",
+          "maneuver_started",
+          "plan_committed"
+        ],
+        "final_attempt_rejected_reasons_replay_0420_0_420": {
+          "by_reason": {
+            "HARD_SEPARATION": {
+              "count": 234,
+              "first_time": 298.99999999999994,
+              "last_time": 392.4,
+              "representative": {
+                "emergency": true,
+                "pad_id": 2,
+                "reason": "HARD_SEPARATION",
+                "rejection_indices": [
+                  839
+                ],
+                "time": 298.99999999999994,
+                "trajectory_hash": "de69e947e666069938cdc302a6dc70c012fa12527141e70739a22ce2ed3674a8",
+                "type": "final_attempt_rejected",
+                "validation": {
+                  "pair": [
+                    "initial_outer_02",
+                    "initial_inner_09"
+                  ],
+                  "validation": {
+                    "distance_m": 68.26124857185424,
+                    "upper_bound_m": 68.26124857185431,
+                    "witness_time": 382.9062499999999
+                  }
+                },
+                "validation_keys": [
+                  "pair",
+                  "validation"
+                ]
+              }
+            },
+            "LANDING_RESERVE": {
+              "count": 3,
+              "first_time": 298.99999999999994,
+              "last_time": 298.99999999999994,
+              "representative": {
+                "emergency": false,
+                "pad_id": 2,
+                "reason": "LANDING_RESERVE",
+                "rejection_indices": [
+                  833
+                ],
+                "time": 298.99999999999994,
+                "trajectory_hash": "410eb387f633c0f7913ad211533ca3e8524779a986bad30f77958b47de528415",
+                "type": "final_attempt_rejected",
+                "validation": {
+                  "predicted_soc": 0.18942907857708574,
+                  "required_soc": 0.4105257002549224
+                },
+                "validation_keys": [
+                  "predicted_soc",
+                  "required_soc"
+                ]
+              }
+            },
+            "RESOURCE_CONFLICT": {
+              "count": 204,
+              "first_time": 298.99999999999994,
+              "last_time": 392.4,
+              "representative": {
+                "emergency": false,
+                "pad_id": 0,
+                "reason": "RESOURCE_CONFLICT",
+                "rejection_indices": [
+                  831
+                ],
+                "time": 298.99999999999994,
+                "trajectory_hash": "c312e4adec2a388e0cb81a673a4ec7ccf6e17305cddfe124cdbfeabb7d463f00",
+                "type": "final_attempt_rejected",
+                "validation": {
+                  "blocking_reservations": [
+                    {
+                      "aircraft_id": "initial_middle_07",
+                      "committed": true,
+                      "dependencies": [],
+                      "end": 363.5,
+                      "kind": "final",
+                      "plan_hash": "7116ca371e5bee68de4059d9762275d8e0e12207d59b3d068bd65eb06ecfc991",
+                      "resource": 0,
+                      "start": 290.0
+                    }
+                  ],
+                  "detail": "resource 0 already reserved"
+                },
+                "validation_keys": [
+                  "blocking_reservations",
+                  "detail"
+                ]
+              }
+            }
+          },
+          "total": 441
+        },
+        "final_attempt_rejected_reasons_replay_0420_360_420": {
+          "by_reason": {
+            "HARD_SEPARATION": {
+              "count": 99,
+              "first_time": 361.3999999999999,
+              "last_time": 392.4,
+              "representative": {
+                "emergency": true,
+                "pad_id": 0,
+                "reason": "HARD_SEPARATION",
+                "rejection_indices": [
+                  1565
+                ],
+                "time": 361.3999999999999,
+                "trajectory_hash": "44b08b6f6ff0314bbac47d13b04d9f0cfa7fe0c87863d05f091187cc7e084ee6",
+                "type": "final_attempt_rejected",
+                "validation": {
+                  "pair": [
+                    "initial_outer_11",
+                    "initial_inner_09"
+                  ],
+                  "validation": {
+                    "distance_m": 74.34878863095206,
+                    "upper_bound_m": 74.34878863095213,
+                    "witness_time": 410.9312499999999
+                  }
+                },
+                "validation_keys": [
+                  "pair",
+                  "validation"
+                ]
+              }
+            },
+            "RESOURCE_CONFLICT": {
+              "count": 43,
+              "first_time": 361.3999999999999,
+              "last_time": 392.4,
+              "representative": {
+                "emergency": true,
+                "pad_id": 4,
+                "reason": "RESOURCE_CONFLICT",
+                "rejection_indices": [
+                  1569
+                ],
+                "time": 361.3999999999999,
+                "trajectory_hash": "cdeb2885a3128aad662b10659c46baf73b77cdca4243d8976be159396d39e6a0",
+                "type": "final_attempt_rejected",
+                "validation": {
+                  "blocking_reservations": [
+                    {
+                      "aircraft_id": "initial_outer_09",
+                      "committed": true,
+                      "dependencies": [],
+                      "end": 429.1141789046728,
+                      "kind": "final",
+                      "plan_hash": "b7b244aa068a6fbb021816475b32e07d60fff0f8d1bd49bb833f8075d84291a8",
+                      "resource": 4,
+                      "start": 355.6141789046728
+                    }
+                  ],
+                  "detail": "resource 4 already reserved"
+                },
+                "validation_keys": [
+                  "blocking_reservations",
+                  "detail"
+                ]
+              }
+            }
+          },
+          "total": 142
+        },
+        "key_events_replay_0420_0_420": [
+          {
+            "pending": false,
+            "q_e": 0.07089803497162737,
+            "time": 298.99999999999994,
+            "type": "emergency_triggered"
+          },
+          {
+            "ring": "inner",
+            "time": 298.99999999999994,
+            "type": "emergency_declared"
+          },
+          {
+            "end_time": 445.9,
+            "start_time": 392.4,
+            "time": 392.4,
+            "trajectory_hash": "59e6d49e8fc8ee262470bad51734ca1a7769037b0654eb3e2ed8fac0d5f9bb4b",
+            "type": "plan_committed"
+          },
+          {
+            "dependencies": [],
+            "time": 392.4,
+            "trajectory_hash": "59e6d49e8fc8ee262470bad51734ca1a7769037b0654eb3e2ed8fac0d5f9bb4b",
+            "type": "maneuver_started"
+          }
+        ],
+        "pending_future_submitted_plans_at_420": [
+          {
+            "commit_events": [
+              {
+                "aircraft_id": "initial_inner_09",
+                "event_time": 392.4
+              }
+            ],
+            "pad_reservation": {
+              "aircraft_id": "initial_inner_09",
+              "aircraft_ring_at_frame": "inner",
+              "aircraft_soc_at_frame": 0.20713900232138718,
+              "aircraft_status_at_frame": "FINAL_EMERGENCY",
+              "committed": true,
+              "dependencies": [],
+              "end": 475.9,
+              "kind": "emergency",
+              "plan_hash": "59e6d49e8fc8ee262470bad51734ca1a7769037b0654eb3e2ed8fac0d5f9bb4b",
+              "resource": 3,
+              "start": 432.4
+            },
+            "trajectory": {
+              "aircraft_id": "initial_inner_09",
+              "end_time": 445.9,
+              "kind": "FINAL_EMERGENCY",
+              "pad_id": 3,
+              "source_ring": "inner",
+              "source_slot": 16,
+              "source_version": 0,
+              "start_time": 392.4,
+              "target_ring": null,
+              "target_slot": null,
+              "trajectory_hash": "59e6d49e8fc8ee262470bad51734ca1a7769037b0654eb3e2ed8fac0d5f9bb4b"
+            }
+          }
+        ],
+        "soc_at_or_after_declaration": {
+          "airborne_time": 298.99999999999994,
+          "emergency": {
+            "charged": false,
+            "deadline_missed": false,
+            "declaration_ring": "inner",
+            "declaration_time": 298.99999999999994,
+            "declared": true,
+            "eligible": true,
+            "pending": false,
+            "q_e": 0.07089803497162737,
+            "start_ring": null,
+            "start_time": null,
+            "state": "EMERGENCY_WAITING"
+          },
+          "final_time": 0.0,
+          "holding_time": 298.99999999999994,
+          "id": "initial_inner_09",
+          "pad_id": null,
+          "ring": "inner",
+          "slot": 16,
+          "soc": 0.34995477883200815,
+          "status": "HOLD_INNER",
+          "time": 298.99999999999994,
+          "touchdown_time": null,
+          "transfer_time": 0.0
+        },
+        "soc_before_declaration": {
+          "airborne_time": 298.0,
+          "emergency": {
+            "charged": false,
+            "deadline_missed": false,
+            "declaration_ring": null,
+            "declaration_time": null,
+            "declared": false,
+            "eligible": false,
+            "pending": false,
+            "q_e": null,
+            "start_ring": null,
+            "start_time": null,
+            "state": "NONE"
+          },
+          "final_time": 0.0,
+          "holding_time": 298.0,
+          "id": "initial_inner_09",
+          "pad_id": null,
+          "ring": "inner",
+          "slot": 16,
+          "soc": 0.3511578746986771,
+          "status": "HOLD_INNER",
+          "time": 298.0,
+          "touchdown_time": null,
+          "transfer_time": 0.0
+        },
+        "state_at_0360": {
+          "airborne_time": 360.0,
+          "emergency": {
+            "charged": false,
+            "deadline_missed": false,
+            "declaration_ring": "inner",
+            "declaration_time": 298.99999999999994,
+            "declared": true,
+            "eligible": true,
+            "pending": false,
+            "q_e": 0.07089803497162737,
+            "start_ring": null,
+            "start_time": null,
+            "state": "EMERGENCY_WAITING"
+          },
+          "final_time": 0.0,
+          "holding_time": 360.0,
+          "id": "initial_inner_09",
+          "pad_id": null,
+          "ring": "inner",
+          "slot": 16,
+          "soc": 0.27656593096519794,
+          "status": "HOLD_INNER",
+          "time": 360.0,
+          "touchdown_time": null,
+          "transfer_time": 0.0
+        },
+        "state_at_0420": {
+          "airborne_time": 420.0,
+          "emergency": {
+            "charged": true,
+            "deadline_missed": false,
+            "declaration_ring": "inner",
+            "declaration_time": 298.99999999999994,
+            "declared": true,
+            "eligible": true,
+            "pending": false,
+            "q_e": 0.07089803497162737,
+            "start_ring": "inner",
+            "start_time": 392.4,
+            "state": "FINAL_EMERGENCY"
+          },
+          "final_time": 27.600000000000023,
+          "holding_time": 392.4,
+          "id": "initial_inner_09",
+          "pad_id": null,
+          "ring": "inner",
+          "slot": 16,
+          "soc": 0.20713900232138718,
+          "status": "FINAL_EMERGENCY",
+          "time": 420.0,
+          "touchdown_time": null,
+          "transfer_time": 0.0
+        },
+        "touchdown_event_count": 0,
+        "wait_to_420": {
+          "declared_to_420_s": 121.00000000000006,
+          "declared_to_first_post_declaration_maneuver_s": 93.40000000000003,
+          "post_declaration_maneuver_started": [
+            {
+              "dependencies": [],
+              "time": 392.4,
+              "trajectory_hash": "59e6d49e8fc8ee262470bad51734ca1a7769037b0654eb3e2ed8fac0d5f9bb4b",
+              "type": "maneuver_started"
+            }
+          ]
+        }
+      },
+      "initial_middle_04": {
+        "admission_rejections_replay_0420": {
+          "candidate duration/phase search exhausted; no infeasibility proof": {
+            "count": 49,
+            "first_time": 315.6141789046728,
+            "last_time": 418.64800124614607,
+            "representative": {
+              "candidate": true,
+              "details_keys": [
+                "candidate",
+                "pad_id"
+              ],
+              "reason": "candidate duration/phase search exhausted; no infeasibility proof",
+              "slot": null,
+              "stage": null,
+              "time": 315.6141789046728,
+              "validation_keys": null
+            }
+          }
+        },
+        "declaration": {
+          "declaration_ring": "inner",
+          "declaration_time": 309.59999999999997,
+          "declared_at_0360": true,
+          "q_e": 0.0671467012993926,
+          "state": "EMERGENCY_WAITING"
+        },
+        "energy_failure_event_count": 0,
+        "event_counts_replay_0360_0_360": {
+          "emergency_declared": 1,
+          "emergency_triggered": 1,
+          "final_attempt_rejected": 258,
+          "maneuver_started": 1,
+          "plan_committed": 1,
+          "transfer_completed": 1
+        },
+        "event_counts_replay_0420_0_420": {
+          "emergency_declared": 1,
+          "emergency_triggered": 1,
+          "final_attempt_rejected": 545,
+          "maneuver_started": 1,
+          "plan_committed": 1,
+          "transfer_completed": 1
+        },
+        "event_counts_replay_0420_360_420": {
+          "final_attempt_rejected": 281
+        },
+        "event_types_observed": [
+          "emergency_declared",
+          "emergency_triggered",
+          "final_attempt_rejected",
+          "maneuver_started",
+          "plan_committed",
+          "transfer_completed"
+        ],
+        "final_attempt_rejected_reasons_replay_0420_0_420": {
+          "by_reason": {
+            "HARD_SEPARATION": {
+              "count": 329,
+              "first_time": 309.59999999999997,
+              "last_time": 418.64800124614607,
+              "representative": {
+                "emergency": true,
+                "pad_id": 0,
+                "reason": "HARD_SEPARATION",
+                "rejection_indices": [
+                  915
+                ],
+                "time": 309.59999999999997,
+                "trajectory_hash": "4a9f938c5648e600f33028288b733248c24129b864fab45aaf013c1ad2a9dc14",
+                "type": "final_attempt_rejected",
+                "validation": {
+                  "pair": [
+                    "initial_outer_01",
+                    "initial_middle_04"
+                  ],
+                  "validation": {
+                    "distance_m": 74.15653920022714,
+                    "upper_bound_m": 74.15653920022721,
+                    "witness_time": 359.53749999999997
+                  }
+                },
+                "validation_keys": [
+                  "pair",
+                  "validation"
+                ]
+              }
+            },
+            "LANDING_RESERVE": {
+              "count": 4,
+              "first_time": 309.59999999999997,
+              "last_time": 309.59999999999997,
+              "representative": {
+                "emergency": false,
+                "pad_id": 0,
+                "reason": "LANDING_RESERVE",
+                "rejection_indices": [
+                  909
+                ],
+                "time": 309.59999999999997,
+                "trajectory_hash": "9aa82bc577ad45f157778998fe78bb16094219885f368715c5dfe601891236bf",
+                "type": "final_attempt_rejected",
+                "validation": {
+                  "predicted_soc": 0.2241523397373391,
+                  "required_soc": 0.37561284435679
+                },
+                "validation_keys": [
+                  "predicted_soc",
+                  "required_soc"
+                ]
+              }
+            },
+            "RESOURCE_CONFLICT": {
+              "count": 212,
+              "first_time": 309.59999999999997,
+              "last_time": 418.64800124614607,
+              "representative": {
+                "emergency": false,
+                "pad_id": 2,
+                "reason": "RESOURCE_CONFLICT",
+                "rejection_indices": [
+                  911
+                ],
+                "time": 309.59999999999997,
+                "trajectory_hash": "9343588dfb2118e26983190784f085ab1ff7f9488254f9b720e39e9c4c958b67",
+                "type": "final_attempt_rejected",
+                "validation": {
+                  "blocking_reservations": [
+                    {
+                      "aircraft_id": "initial_outer_02",
+                      "committed": true,
+                      "dependencies": [],
+                      "end": 388.4999999999999,
+                      "kind": "final",
+                      "plan_hash": "fe447a5b1b61d3e797d7318418a3926a5b4a1f559db9de552eb560dd15613ef9",
+                      "resource": 2,
+                      "start": 314.9999999999999
+                    }
+                  ],
+                  "detail": "resource 2 already reserved"
+                },
+                "validation_keys": [
+                  "blocking_reservations",
+                  "detail"
+                ]
+              }
+            }
+          },
+          "total": 545
+        },
+        "final_attempt_rejected_reasons_replay_0420_360_420": {
+          "by_reason": {
+            "HARD_SEPARATION": {
+              "count": 177,
+              "first_time": 361.3999999999999,
+              "last_time": 418.64800124614607,
+              "representative": {
+                "emergency": true,
+                "pad_id": 2,
+                "reason": "HARD_SEPARATION",
+                "rejection_indices": [
+                  1573
+                ],
+                "time": 361.3999999999999,
+                "trajectory_hash": "838fda09354ec96cbb57bade9f7d85b0b2316726734e99386823ae0e8e1b9e0f",
+                "type": "final_attempt_rejected",
+                "validation": {
+                  "pair": [
+                    "initial_outer_04",
+                    "initial_middle_04"
+                  ],
+                  "validation": {
+                    "distance_m": 78.47613735633426,
+                    "upper_bound_m": 78.47613735633433,
+                    "witness_time": 380.4781249999999
+                  }
+                },
+                "validation_keys": [
+                  "pair",
+                  "validation"
+                ]
+              }
+            },
+            "RESOURCE_CONFLICT": {
+              "count": 104,
+              "first_time": 361.3999999999999,
+              "last_time": 418.64800124614607,
+              "representative": {
+                "emergency": true,
+                "pad_id": 0,
+                "reason": "RESOURCE_CONFLICT",
+                "rejection_indices": [
+                  1571
+                ],
+                "time": 361.3999999999999,
+                "trajectory_hash": "ab726425e39f6ee62f4b8d19d01f0e167ed3104afb74991332d73cb8c307ffb5",
+                "type": "final_attempt_rejected",
+                "validation": {
+                  "blocking_reservations": [
+                    {
+                      "aircraft_id": "initial_middle_02",
+                      "committed": true,
+                      "dependencies": [],
+                      "end": 455.6441517909111,
+                      "kind": "final",
+                      "plan_hash": "729880dafd70bdef980e94b23463ef8d004ae7a7a7caec85b7579a630863b699",
+                      "resource": 0,
+                      "start": 382.1441517909111
+                    }
+                  ],
+                  "detail": "resource 0 already reserved"
+                },
+                "validation_keys": [
+                  "blocking_reservations",
+                  "detail"
+                ]
+              }
+            }
+          },
+          "total": 281
+        },
+        "key_events_replay_0420_0_420": [
+          {
+            "end_time": 40.0,
+            "start_time": 0.0,
+            "time": 0.0,
+            "trajectory_hash": "84616ec02e9e2299993eff23cf68538fd6f80f659557f514da9943dbbc496d47",
+            "type": "plan_committed"
+          },
+          {
+            "dependencies": [],
+            "time": 0.0,
+            "trajectory_hash": "84616ec02e9e2299993eff23cf68538fd6f80f659557f514da9943dbbc496d47",
+            "type": "maneuver_started"
+          },
+          {
+            "time": 40.0,
+            "type": "transfer_completed"
+          },
+          {
+            "pending": false,
+            "q_e": 0.0671467012993926,
+            "time": 309.59999999999997,
+            "type": "emergency_triggered"
+          },
+          {
+            "ring": "inner",
+            "time": 309.59999999999997,
+            "type": "emergency_declared"
+          }
+        ],
+        "pending_future_submitted_plans_at_420": [],
+        "soc_at_or_after_declaration": {
+          "airborne_time": 309.59999999999997,
+          "emergency": {
+            "charged": false,
+            "deadline_missed": false,
+            "declaration_ring": "inner",
+            "declaration_time": 309.59999999999997,
+            "declared": true,
+            "eligible": true,
+            "pending": false,
+            "q_e": 0.0671467012993926,
+            "start_ring": null,
+            "start_time": null,
+            "state": "EMERGENCY_WAITING"
+          },
+          "final_time": 0.0,
+          "holding_time": 269.59999999999997,
+          "id": "initial_middle_04",
+          "pad_id": null,
+          "ring": "inner",
+          "slot": 6,
+          "soc": 0.3497651840941291,
+          "status": "HOLD_INNER",
+          "time": 309.59999999999997,
+          "touchdown_time": null,
+          "transfer_time": 40.0
+        },
+        "soc_before_declaration": {
+          "airborne_time": 309.0,
+          "emergency": {
+            "charged": false,
+            "deadline_missed": false,
+            "declaration_ring": null,
+            "declaration_time": null,
+            "declared": false,
+            "eligible": false,
+            "pending": false,
+            "q_e": null,
+            "start_ring": null,
+            "start_time": null,
+            "state": "NONE"
+          },
+          "final_time": 0.0,
+          "holding_time": 269.0,
+          "id": "initial_middle_04",
+          "pad_id": null,
+          "ring": "inner",
+          "slot": 6,
+          "soc": 0.35048704161413047,
+          "status": "HOLD_INNER",
+          "time": 309.0,
+          "touchdown_time": null,
+          "transfer_time": 40.0
+        },
+        "state_at_0360": {
+          "airborne_time": 360.0,
+          "emergency": {
+            "charged": false,
+            "deadline_missed": false,
+            "declaration_ring": "inner",
+            "declaration_time": 309.59999999999997,
+            "declared": true,
+            "eligible": true,
+            "pending": false,
+            "q_e": 0.0671467012993926,
+            "start_ring": null,
+            "start_time": null,
+            "state": "EMERGENCY_WAITING"
+          },
+          "final_time": 0.0,
+          "holding_time": 320.0,
+          "id": "initial_middle_04",
+          "pad_id": null,
+          "ring": "inner",
+          "slot": 6,
+          "soc": 0.2891291524140105,
+          "status": "HOLD_INNER",
+          "time": 360.0,
+          "touchdown_time": null,
+          "transfer_time": 40.0
+        },
+        "state_at_0420": {
+          "airborne_time": 420.0,
+          "emergency": {
+            "charged": false,
+            "deadline_missed": false,
+            "declaration_ring": "inner",
+            "declaration_time": 309.59999999999997,
+            "declared": true,
+            "eligible": true,
+            "pending": false,
+            "q_e": 0.0671467012993926,
+            "start_ring": null,
+            "start_time": null,
+            "state": "EMERGENCY_WAITING"
+          },
+          "final_time": 0.0,
+          "holding_time": 380.0,
+          "id": "initial_middle_04",
+          "pad_id": null,
+          "ring": "inner",
+          "slot": 6,
+          "soc": 0.21694340041386942,
+          "status": "HOLD_INNER",
+          "time": 420.0,
+          "touchdown_time": null,
+          "transfer_time": 40.0
+        },
+        "touchdown_event_count": 0,
+        "wait_to_420": {
+          "declared_to_420_s": 110.40000000000003,
+          "declared_to_first_post_declaration_maneuver_s": null,
+          "post_declaration_maneuver_started": []
+        }
+      }
+    },
+    "rh_cp_sat": {
+      "initial_middle_01": {
+        "admission_rejections_replay_0420": {
+          "candidate duration/phase search exhausted; no infeasibility proof": {
+            "count": 38,
+            "first_time": 310.1649601546728,
+            "last_time": 407.67609980634126,
+            "representative": {
+              "candidate": true,
+              "details_keys": [
+                "candidate",
+                "pad_id"
+              ],
+              "reason": "candidate duration/phase search exhausted; no infeasibility proof",
+              "slot": null,
+              "stage": null,
+              "time": 310.1649601546728,
+              "validation_keys": null
+            }
+          }
+        },
+        "declaration": {
+          "declaration_ring": "inner",
+          "declaration_time": 310.1649601546728,
+          "declared_at_0360": true,
+          "q_e": 0.07115282597305654,
+          "state": "EMERGENCY_WAITING"
+        },
+        "energy_failure_event_count": 0,
+        "event_counts_replay_0360_0_360": {
+          "emergency_declared": 1,
+          "emergency_triggered": 1,
+          "final_attempt_rejected": 215,
+          "maneuver_started": 1,
+          "plan_committed": 1,
+          "transfer_completed": 1
+        },
+        "event_counts_replay_0420_0_420": {
+          "emergency_declared": 1,
+          "emergency_triggered": 1,
+          "final_attempt_rejected": 434,
+          "maneuver_started": 2,
+          "plan_committed": 2,
+          "transfer_completed": 1
+        },
+        "event_counts_replay_0420_360_420": {
+          "final_attempt_rejected": 213,
+          "maneuver_started": 1,
+          "plan_committed": 1
+        },
+        "event_types_observed": [
+          "emergency_declared",
+          "emergency_triggered",
+          "final_attempt_rejected",
+          "maneuver_started",
+          "plan_committed",
+          "transfer_completed"
+        ],
+        "final_attempt_rejected_reasons_replay_0420_0_420": {
+          "by_reason": {
+            "HARD_SEPARATION": {
+              "count": 261,
+              "first_time": 310.1649601546728,
+              "last_time": 410.28568367422645,
+              "representative": {
+                "emergency": false,
+                "pad_id": 0,
+                "reason": "HARD_SEPARATION",
+                "rejection_indices": [
+                  787
+                ],
+                "time": 310.1649601546728,
+                "trajectory_hash": "e53b86fedee936628ef646c5ed50c8689e0e80343f8059406e111f93c05609fe",
+                "type": "final_attempt_rejected",
+                "validation": {
+                  "pair": [
+                    "initial_outer_07",
+                    "initial_middle_01"
+                  ],
+                  "validation": {
+                    "distance_m": 78.02960348496678,
+                    "upper_bound_m": 78.02960348496686,
+                    "witness_time": 345.24201703943845
+                  }
+                },
+                "validation_keys": [
+                  "pair",
+                  "validation"
+                ]
+              }
+            },
+            "LANDING_RESERVE": {
+              "count": 3,
+              "first_time": 310.1649601546728,
+              "last_time": 310.1649601546728,
+              "representative": {
+                "emergency": false,
+                "pad_id": 3,
+                "reason": "LANDING_RESERVE",
+                "rejection_indices": [
+                  790
+                ],
+                "time": 310.1649601546728,
+                "trajectory_hash": "6d070844a0275df8ad41a1dcb6e350fa5f0fa8bc2ec086da542e97b066ce656b",
+                "type": "final_attempt_rejected",
+                "validation": {
+                  "predicted_soc": 0.18919312133496313,
+                  "required_soc": 0.4107648220658381
+                },
+                "validation_keys": [
+                  "predicted_soc",
+                  "required_soc"
+                ]
+              }
+            },
+            "RESOURCE_CONFLICT": {
+              "count": 170,
+              "first_time": 310.1649601546728,
+              "last_time": 410.28568367422645,
+              "representative": {
+                "emergency": false,
+                "pad_id": 1,
+                "reason": "RESOURCE_CONFLICT",
+                "rejection_indices": [
+                  788
+                ],
+                "time": 310.1649601546728,
+                "trajectory_hash": "b766e15ccffc738ff259cf1defeaa7e43d0b13853f59a063f21338860b26785f",
+                "type": "final_attempt_rejected",
+                "validation": {
+                  "blocking_reservations": [
+                    {
+                      "aircraft_id": "initial_middle_06",
+                      "committed": true,
+                      "dependencies": [],
+                      "end": 380.5756241914836,
+                      "kind": "service",
+                      "plan_hash": null,
+                      "resource": 1,
+                      "start": 260.5756241914836
+                    }
+                  ],
+                  "detail": "resource 1 already reserved"
+                },
+                "validation_keys": [
+                  "blocking_reservations",
+                  "detail"
+                ]
+              }
+            }
+          },
+          "total": 434
+        },
+        "final_attempt_rejected_reasons_replay_0420_360_420": {
+          "by_reason": {
+            "HARD_SEPARATION": {
+              "count": 164,
+              "first_time": 360.3124999999998,
+              "last_time": 410.28568367422645,
+              "representative": {
+                "emergency": true,
+                "pad_id": 1,
+                "reason": "HARD_SEPARATION",
+                "rejection_indices": [
+                  1234
+                ],
+                "time": 360.3124999999998,
+                "trajectory_hash": "52110a8afbaa7ebdc02f826b64dcf553f33c33f9605d8dc23e3657e55ea1318d",
+                "type": "final_attempt_rejected",
+                "validation": {
+                  "pair": [
+                    "initial_middle_00",
+                    "initial_middle_01"
+                  ],
+                  "validation": {
+                    "distance_m": 72.40607507007478,
+                    "upper_bound_m": 72.40607507007485,
+                    "witness_time": 405.6640624999998
+                  }
+                },
+                "validation_keys": [
+                  "pair",
+                  "validation"
+                ]
+              }
+            },
+            "RESOURCE_CONFLICT": {
+              "count": 49,
+              "first_time": 360.3124999999998,
+              "last_time": 410.28568367422645,
+              "representative": {
+                "emergency": true,
+                "pad_id": 0,
+                "reason": "RESOURCE_CONFLICT",
+                "rejection_indices": [
+                  1233
+                ],
+                "time": 360.3124999999998,
+                "trajectory_hash": "ef2428c3e973147e2481e1d6cbc9dc2d0a9fd104236472494ace30d6f72d02e6",
+                "type": "final_attempt_rejected",
+                "validation": {
+                  "blocking_reservations": [
+                    {
+                      "aircraft_id": "initial_outer_01",
+                      "committed": true,
+                      "dependencies": [],
+                      "end": 439.1141789046728,
+                      "kind": "final",
+                      "plan_hash": "519fed5b093ada5073fd49778bc71a834aabb556c60fe0a72148a718b96785de",
+                      "resource": 0,
+                      "start": 365.6141789046728
+                    }
+                  ],
+                  "detail": "resource 0 already reserved"
+                },
+                "validation_keys": [
+                  "blocking_reservations",
+                  "detail"
+                ]
+              }
+            }
+          },
+          "total": 213
+        },
+        "key_events_replay_0420_0_420": [
+          {
+            "end_time": 40.0,
+            "start_time": 0.0,
+            "time": 0.0,
+            "trajectory_hash": "9670394b216271d34d5d61c232649893050511674f2fb598fbd4e5a3761ae87e",
+            "type": "plan_committed"
+          },
+          {
+            "dependencies": [],
+            "time": 0.0,
+            "trajectory_hash": "9670394b216271d34d5d61c232649893050511674f2fb598fbd4e5a3761ae87e",
+            "type": "maneuver_started"
+          },
+          {
+            "time": 40.0,
+            "type": "transfer_completed"
+          },
+          {
+            "pending": false,
+            "q_e": 0.07115282597305654,
+            "time": 310.1649601546728,
+            "type": "emergency_triggered"
+          },
+          {
+            "ring": "inner",
+            "time": 310.1649601546728,
+            "type": "emergency_declared"
+          },
+          {
+            "end_time": 458.78568367422645,
+            "start_time": 410.28568367422645,
+            "time": 410.28568367422645,
+            "trajectory_hash": "d311d2511eb57674aa0690e2c702da9ad260e073a869eadaa1c54a7e300005de",
+            "type": "plan_committed"
+          },
+          {
+            "dependencies": [],
+            "time": 410.28568367422645,
+            "trajectory_hash": "d311d2511eb57674aa0690e2c702da9ad260e073a869eadaa1c54a7e300005de",
+            "type": "maneuver_started"
+          }
+        ],
+        "pending_future_submitted_plans_at_420": [
+          {
+            "commit_events": [
+              {
+                "aircraft_id": "initial_middle_01",
+                "event_time": 410.28568367422645
+              }
+            ],
+            "pad_reservation": {
+              "aircraft_id": "initial_middle_01",
+              "aircraft_ring_at_frame": "inner",
+              "aircraft_soc_at_frame": 0.21818222091733233,
+              "aircraft_status_at_frame": "FINAL_EMERGENCY",
+              "committed": true,
+              "dependencies": [],
+              "end": 518.7856836742264,
+              "kind": "emergency",
+              "plan_hash": "d311d2511eb57674aa0690e2c702da9ad260e073a869eadaa1c54a7e300005de",
+              "resource": 4,
+              "start": 445.28568367422645
+            },
+            "trajectory": {
+              "aircraft_id": "initial_middle_01",
+              "end_time": 458.78568367422645,
+              "kind": "FINAL_EMERGENCY",
+              "pad_id": 4,
+              "source_ring": "inner",
+              "source_slot": 2,
+              "source_version": 1,
+              "start_time": 410.28568367422645,
+              "target_ring": null,
+              "target_slot": null,
+              "trajectory_hash": "d311d2511eb57674aa0690e2c702da9ad260e073a869eadaa1c54a7e300005de"
+            }
+          }
+        ],
+        "soc_at_or_after_declaration": {
+          "airborne_time": 310.1649601546728,
+          "emergency": {
+            "charged": false,
+            "deadline_missed": false,
+            "declaration_ring": "inner",
+            "declaration_time": 310.1649601546728,
+            "declared": true,
+            "eligible": true,
+            "pending": false,
+            "q_e": 0.07115282597305654,
+            "start_ring": null,
+            "start_time": null,
+            "state": "EMERGENCY_WAITING"
+          },
+          "final_time": 0.0,
+          "holding_time": 270.1649601546728,
+          "id": "initial_middle_01",
+          "pad_id": null,
+          "ring": "inner",
+          "slot": 2,
+          "soc": 0.3499579434008012,
+          "status": "HOLD_INNER",
+          "time": 310.1649601546728,
+          "touchdown_time": null,
+          "transfer_time": 40.0
+        },
+        "soc_before_declaration": {
+          "airborne_time": 310.0,
+          "emergency": {
+            "charged": false,
+            "deadline_missed": false,
+            "declaration_ring": null,
+            "declaration_time": null,
+            "declared": false,
+            "eligible": false,
+            "pending": false,
+            "q_e": null,
+            "start_ring": null,
+            "start_time": null,
+            "state": "NONE"
+          },
+          "final_time": 0.0,
+          "holding_time": 270.0,
+          "id": "initial_middle_01",
+          "pad_id": null,
+          "ring": "inner",
+          "slot": 2,
+          "soc": 0.35015640628105316,
+          "status": "HOLD_INNER",
+          "time": 310.0,
+          "touchdown_time": null,
+          "transfer_time": 40.0
+        },
+        "state_at_0360": {
+          "airborne_time": 360.0,
+          "emergency": {
+            "charged": false,
+            "deadline_missed": false,
+            "declaration_ring": "inner",
+            "declaration_time": 310.1649601546728,
+            "declared": true,
+            "eligible": true,
+            "pending": false,
+            "q_e": 0.07115282597305654,
+            "start_ring": null,
+            "start_time": null,
+            "state": "EMERGENCY_WAITING"
+          },
+          "final_time": 0.0,
+          "holding_time": 320.0,
+          "id": "initial_middle_01",
+          "pad_id": null,
+          "ring": "inner",
+          "slot": 2,
+          "soc": 0.29000161294760235,
+          "status": "HOLD_INNER",
+          "time": 360.0,
+          "touchdown_time": null,
+          "transfer_time": 40.0
+        },
+        "state_at_0420": {
+          "airborne_time": 420.0,
+          "emergency": {
+            "charged": true,
+            "deadline_missed": false,
+            "declaration_ring": "inner",
+            "declaration_time": 310.1649601546728,
+            "declared": true,
+            "eligible": true,
+            "pending": false,
+            "q_e": 0.07115282597305654,
+            "start_ring": "inner",
+            "start_time": 410.28568367422645,
+            "state": "FINAL_EMERGENCY"
+          },
+          "final_time": 9.714316325773552,
+          "holding_time": 370.28568367422645,
+          "id": "initial_middle_01",
+          "pad_id": null,
+          "ring": "inner",
+          "slot": 2,
+          "soc": 0.21818222091733233,
+          "status": "FINAL_EMERGENCY",
+          "time": 420.0,
+          "touchdown_time": null,
+          "transfer_time": 40.0
+        },
+        "touchdown_event_count": 0,
+        "wait_to_420": {
+          "declared_to_420_s": 109.83503984532717,
+          "declared_to_first_post_declaration_maneuver_s": 100.12072351955362,
+          "post_declaration_maneuver_started": [
+            {
+              "dependencies": [],
+              "time": 410.28568367422645,
+              "trajectory_hash": "d311d2511eb57674aa0690e2c702da9ad260e073a869eadaa1c54a7e300005de",
+              "type": "maneuver_started"
+            }
+          ]
+        }
+      },
+      "initial_middle_11": {
+        "admission_rejections_replay_0420": {
+          "candidate duration/phase search exhausted; no infeasibility proof": {
+            "count": 25,
+            "first_time": 331.5310817930876,
+            "last_time": 418.64800124614607,
+            "representative": {
+              "candidate": true,
+              "details_keys": [
+                "candidate",
+                "pad_id"
+              ],
+              "reason": "candidate duration/phase search exhausted; no infeasibility proof",
+              "slot": null,
+              "stage": null,
+              "time": 331.5310817930876,
+              "validation_keys": null
+            }
+          }
+        },
+        "declaration": {
+          "declaration_ring": "inner",
+          "declaration_time": 331.5310817930876,
+          "declared_at_0360": true,
+          "q_e": 0.07146316877328379,
+          "state": "EMERGENCY_WAITING"
+        },
+        "energy_failure_event_count": 0,
+        "event_counts_replay_0360_0_360": {
+          "emergency_declared": 1,
+          "emergency_triggered": 1,
+          "final_attempt_rejected": 102,
+          "maneuver_started": 1,
+          "plan_committed": 1,
+          "transfer_completed": 1
+        },
+        "event_counts_replay_0420_0_420": {
+          "emergency_declared": 1,
+          "emergency_triggered": 1,
+          "final_attempt_rejected": 359,
+          "maneuver_started": 1,
+          "plan_committed": 1,
+          "transfer_completed": 1
+        },
+        "event_counts_replay_0420_360_420": {
+          "final_attempt_rejected": 252
+        },
+        "event_types_observed": [
+          "emergency_declared",
+          "emergency_triggered",
+          "final_attempt_rejected",
+          "maneuver_started",
+          "plan_committed",
+          "transfer_completed"
+        ],
+        "final_attempt_rejected_reasons_replay_0420_0_420": {
+          "by_reason": {
+            "HARD_SEPARATION": {
+              "count": 212,
+              "first_time": 331.5310817930876,
+              "last_time": 418.64800124614607,
+              "representative": {
+                "emergency": true,
+                "pad_id": 1,
+                "reason": "HARD_SEPARATION",
+                "rejection_indices": [
+                  993
+                ],
+                "time": 331.5310817930876,
+                "trajectory_hash": "5bd346b0863d0429e121e40b58ff218cd3e6379566eeff2db3cb69f7fc474213",
+                "type": "final_attempt_rejected",
+                "validation": {
+                  "pair": [
+                    "initial_outer_12",
+                    "initial_middle_11"
+                  ],
+                  "validation": {
+                    "distance_m": 47.70075020825028,
+                    "upper_bound_m": 47.70075020825031,
+                    "witness_time": 370.3592067930876
+                  }
+                },
+                "validation_keys": [
+                  "pair",
+                  "validation"
+                ]
+              }
+            },
+            "LANDING_RESERVE": {
+              "count": 3,
+              "first_time": 331.5310817930876,
+              "last_time": 331.5310817930876,
+              "representative": {
+                "emergency": false,
+                "pad_id": 1,
+                "reason": "LANDING_RESERVE",
+                "rejection_indices": [
+                  987
+                ],
+                "time": 331.5310817930876,
+                "trajectory_hash": "4bbb5f5f03fb0cff19c7eeb479c7945429aaaf8e495b08cc24d09c0195047dd9",
+                "type": "final_attempt_rejected",
+                "validation": {
+                  "predicted_soc": 0.18885396118393039,
+                  "required_soc": 0.41105503256600273
+                },
+                "validation_keys": [
+                  "predicted_soc",
+                  "required_soc"
+                ]
+              }
+            },
+            "RESOURCE_CONFLICT": {
+              "count": 144,
+              "first_time": 331.5310817930876,
+              "last_time": 413.9999999999999,
+              "representative": {
+                "emergency": false,
+                "pad_id": 4,
+                "reason": "RESOURCE_CONFLICT",
+                "rejection_indices": [
+                  990
+                ],
+                "time": 331.5310817930876,
+                "trajectory_hash": "5c0f5685726893781e35fcf5f91c44128c0833aaf66889e32d284a41718a9b26",
+                "type": "final_attempt_rejected",
+                "validation": {
+                  "blocking_reservations": [
+                    {
+                      "aircraft_id": "initial_outer_11",
+                      "committed": true,
+                      "dependencies": [],
+                      "end": 430.4301540441621,
+                      "kind": "final",
+                      "plan_hash": "a46ee9b447d848136ff1092e9f4a0f48b864b0274cedd0137f1e23059a9f90b3",
+                      "resource": 4,
+                      "start": 356.9301540441621
+                    }
+                  ],
+                  "detail": "resource 4 already reserved"
+                },
+                "validation_keys": [
+                  "blocking_reservations",
+                  "detail"
+                ]
+              }
+            }
+          },
+          "total": 359
+        },
+        "final_attempt_rejected_reasons_replay_0420_360_420": {
+          "by_reason": {
+            "HARD_SEPARATION": {
+              "count": 158,
+              "first_time": 360.3124999999998,
+              "last_time": 418.64800124614607,
+              "representative": {
+                "emergency": true,
+                "pad_id": 0,
+                "reason": "HARD_SEPARATION",
+                "rejection_indices": [
+                  1239
+                ],
+                "time": 360.3124999999998,
+                "trajectory_hash": "33329cf3f093d89db58696f57a1aadd189532e69a6f14e082232ed926f4a5e34",
+                "type": "final_attempt_rejected",
+                "validation": {
+                  "pair": [
+                    "initial_outer_12",
+                    "initial_middle_11"
+                  ],
+                  "validation": {
+                    "distance_m": 46.74366287539132,
+                    "upper_bound_m": 46.74366287539136,
+                    "witness_time": 399.1406249999998
+                  }
+                },
+                "validation_keys": [
+                  "pair",
+                  "validation"
+                ]
+              }
+            },
+            "RESOURCE_CONFLICT": {
+              "count": 94,
+              "first_time": 360.3124999999998,
+              "last_time": 413.9999999999999,
+              "representative": {
+                "emergency": true,
+                "pad_id": 2,
+                "reason": "RESOURCE_CONFLICT",
+                "rejection_indices": [
+                  1241
+                ],
+                "time": 360.3124999999998,
+                "trajectory_hash": "1896fec9a52a8d68bde552a806864faf2be57d65515be404af77e4fb92ccd3c0",
+                "type": "final_attempt_rejected",
+                "validation": {
+                  "blocking_reservations": [
+                    {
+                      "aircraft_id": "initial_inner_04",
+                      "committed": true,
+                      "dependencies": [],
+                      "end": 448.76984980634126,
+                      "kind": "final",
+                      "plan_hash": "9febf8567977e27f0ed7ee55115088f1e06ca3fa67d75050b445eee7af4159cb",
+                      "resource": 2,
+                      "start": 375.26984980634126
+                    }
+                  ],
+                  "detail": "resource 2 already reserved"
+                },
+                "validation_keys": [
+                  "blocking_reservations",
+                  "detail"
+                ]
+              }
+            }
+          },
+          "total": 252
+        },
+        "key_events_replay_0420_0_420": [
+          {
+            "end_time": 88.5,
+            "start_time": 48.5,
+            "time": 48.5,
+            "trajectory_hash": "9efd876625fea99993376457bd660b866f79f95c4f2d504b22fc888d627f36ba",
+            "type": "plan_committed"
+          },
+          {
+            "dependencies": [
+              "08680e5fa85873a16c465898ed3887cb0ad6967670b73e439ac53b8b8ebd05f0"
+            ],
+            "time": 48.5,
+            "trajectory_hash": "9efd876625fea99993376457bd660b866f79f95c4f2d504b22fc888d627f36ba",
+            "type": "maneuver_started"
+          },
+          {
+            "time": 88.5,
+            "type": "transfer_completed"
+          },
+          {
+            "pending": false,
+            "q_e": 0.07146316877328379,
+            "time": 331.5310817930876,
+            "type": "emergency_triggered"
+          },
+          {
+            "ring": "inner",
+            "time": 331.5310817930876,
+            "type": "emergency_declared"
+          }
+        ],
+        "pending_future_submitted_plans_at_420": [],
+        "soc_at_or_after_declaration": {
+          "airborne_time": 331.5310817930876,
+          "emergency": {
+            "charged": false,
+            "deadline_missed": false,
+            "declaration_ring": "inner",
+            "declaration_time": 331.5310817930876,
+            "declared": true,
+            "eligible": true,
+            "pending": false,
+            "q_e": 0.07146316877328379,
+            "start_ring": null,
+            "start_time": null,
+            "state": "EMERGENCY_WAITING"
+          },
+          "final_time": 0.0,
+          "holding_time": 291.5310817930876,
+          "id": "initial_middle_11",
+          "pad_id": null,
+          "ring": "inner",
+          "slot": 16,
+          "soc": 0.3499089937499331,
+          "status": "HOLD_INNER",
+          "time": 331.5310817930876,
+          "touchdown_time": null,
+          "transfer_time": 40.0
+        },
+        "soc_before_declaration": {
+          "airborne_time": 331.3310817930876,
+          "emergency": {
+            "charged": false,
+            "deadline_missed": false,
+            "declaration_ring": null,
+            "declaration_time": null,
+            "declared": false,
+            "eligible": false,
+            "pending": false,
+            "q_e": null,
+            "start_ring": null,
+            "start_time": null,
+            "state": "NONE"
+          },
+          "final_time": 0.0,
+          "holding_time": 291.3310817930876,
+          "id": "initial_middle_11",
+          "pad_id": null,
+          "ring": "inner",
+          "slot": 16,
+          "soc": 0.3501496129232669,
+          "status": "HOLD_INNER",
+          "time": 331.3310817930876,
+          "touchdown_time": null,
+          "transfer_time": 40.0
+        },
+        "state_at_0360": {
+          "airborne_time": 360.0,
+          "emergency": {
+            "charged": false,
+            "deadline_missed": false,
+            "declaration_ring": "inner",
+            "declaration_time": 331.5310817930876,
+            "declared": true,
+            "eligible": true,
+            "pending": false,
+            "q_e": 0.07146316877328379,
+            "start_ring": null,
+            "start_time": null,
+            "state": "EMERGENCY_WAITING"
+          },
+          "final_time": 0.0,
+          "holding_time": 320.0,
+          "id": "initial_middle_11",
+          "pad_id": null,
+          "ring": "inner",
+          "slot": 16,
+          "soc": 0.3156581559266585,
+          "status": "HOLD_INNER",
+          "time": 360.0,
+          "touchdown_time": null,
+          "transfer_time": 40.0
+        },
+        "state_at_0420": {
+          "airborne_time": 420.0,
+          "emergency": {
+            "charged": false,
+            "deadline_missed": false,
+            "declaration_ring": "inner",
+            "declaration_time": 331.5310817930876,
+            "declared": true,
+            "eligible": true,
+            "pending": false,
+            "q_e": 0.07146316877328379,
+            "start_ring": null,
+            "start_time": null,
+            "state": "EMERGENCY_WAITING"
+          },
+          "final_time": 0.0,
+          "holding_time": 380.0,
+          "id": "initial_middle_11",
+          "pad_id": null,
+          "ring": "inner",
+          "slot": 16,
+          "soc": 0.24347240392651742,
+          "status": "HOLD_INNER",
+          "time": 420.0,
+          "touchdown_time": null,
+          "transfer_time": 40.0
+        },
+        "touchdown_event_count": 0,
+        "wait_to_420": {
+          "declared_to_420_s": 88.4689182069124,
+          "declared_to_first_post_declaration_maneuver_s": null,
+          "post_declaration_maneuver_started": []
+        }
+      }
+    }
+  }
+}

@@ -2,7 +2,7 @@
 
 记录日期：2026-10-22。用户已观看两份 0360 回放，确认总体调度合理，记录为 `HUMAN_CONFIRMED_GENERAL_SCHEDULING`；这项确认不表示所有性能目标均已达到。用户要求再接续 120 秒观察应急处置，0480 人工验收仍为 `HUMAN_PENDING`。本记录只说明已授权的接续、0360 实际计划及耗时证据，以及后续学习方向；不新增实验或修改算法。
 
-## 唯一一次同状态接续
+## 同检查点接续（含预算截尾与补齐）
 
 从同一 root 的 0360 checkpoint 继续到 480 秒，不 reset、不重新 prepare，保持原 manifest、source、config 及算法。原 0360 回放与证据保留。root 为 `/home/user/training_outputs/terminal/stage2_progress_service_360s_v4_20261022`，本地同步目录为 `D:/7_codespace/training_outputs/terminal/stage2_progress_service_360s_v4_20261022`。
 
@@ -12,7 +12,7 @@
 /home/user/envs/terminal_stage2_v1/bin/python -u /home/user/projects/terminal/scripts/server/run_rotating_slots_stage2.py resume --output /home/user/training_outputs/terminal/stage2_progress_service_360s_v4_20261022 --target 480
 ```
 
-服务器启动时间 UTC `2026-10-22T02:06:40.624434Z`；wrapper PID 129810、runner PID 129817，方法 worker PID 129820/129821，绑定 CPU 0/2 不同物理核，线程数及数值库线程环境均为 1。日志为 `resume_0480.log`，计时为 `resume_0480.timing.txt`，终态退出码记录为 `resume_0480.exit_code.txt`。启动后已观察两方法 states 到达 361.4/361.0 秒；这里只确认开始接续，不宣称完成。初始 T0 取 600 秒，依据原 360 秒 runner 1599 秒的三分之一加归档开销作估计，不是完成保证。
+首次接续启动于服务器 UTC `2026-10-22T02:06:40.624434Z`；当时 wrapper PID 129810、runner PID 129817，方法 worker PID 129820/129821，绑定 CPU 0/2 不同物理核，线程数及数值库线程环境均为 1。日志为 `resume_0480.log`，计时为 `resume_0480.timing.txt`，终态退出码记录为 `resume_0480.exit_code.txt`。历史启动观察见两方法 states 到达 361.4/361.0 秒。原 T0 取 600 秒，依据原 360 秒 runner 1599 秒的三分之一加归档开销作估计；后续证明主对话这次耗时估计偏低。
 
 接续账目见 root 下 `continuation_0480_accounting.json`，接续前证据保存在 `continuation_0480_pre_run/`。旧持久预算 2502.5826683044434 秒继续保留，已结束后的人工等待不计入新计算，不清零旧账。依据用户新增 120 秒的续跑授权，主对话将本次追加计算与归档上限设为 1200 秒，包含 300 秒归档；前期保守计入 60 秒。
 
@@ -25,9 +25,35 @@
 | 新累计 compute stop | 3402.5826683044434 |
 | 归档保留 | 300 |
 
-Luna 的四次有界进度观察已结束。最后一次观察时 runner 已运行 470.09 秒，两方法均有完整 `summary_0420.json` 与 `checkpoint_0420.json`，states 均到 420 秒，未见 error/invalid，尚无 resume 终态退出码。持久预算下界为 3094.896069765091 秒，计算截止仍为 3402.5826683044434 秒；当前只确认已完成到 420 秒，不能写成 480 秒完成。
+首次接续期间，Luna 四次有界进度观察的最后一轮见 runner 已运行 470.09 秒，两方法均有完整 `summary_0420.json` 与 `checkpoint_0420.json`，states 均到 420 秒，未见 error/invalid，当时尚无终态退出码。该次持久预算下界为 3094.896069765091 秒，计算截止为 3402.5826683044434 秒；这段是历史观察。
 
-原 T0=600 秒低估了本次耗时。按新增 120 秒中完成 60 秒粗估，总耗时约 940 秒、剩余约 470 秒；计算预算可能先截止，因此不保证到达 480 秒。主对话已通过工具成功创建当前 thread 的 heartbeat `stage2-480`，状态 ACTIVE，间隔 5 分钟，设置时扣除观察后经过时间；不保留睡眠监控 worker，唤醒后继续检查、分析与归档。若最终预算截在 420 秒，先核验终态，再决定如何完成原授权目标剩余的 60 秒；此处不预记任何未执行的追加预算。
+当时按新增 120 秒中完成 60 秒粗估，总耗时约 940 秒、剩余约 470 秒，主对话创建了 `stage2-480` 的 5 分钟 heartbeat。该轮唤醒后已确认首次接续终态：UTC `2026-10-22T02:20:09.191574` 结束，runner 墙钟 808.5670824050903 秒，真实退出码 0，campaign 为 `BUDGET_LIMITED`，共同完成到 420 秒。两份 0420 summary/checkpoint 完整，audit 均 PASS；0480 结果尚未产生。累计预算下界为 3433.9263050556183 秒。这是正常预算截止，不是软件失败；原 T0 低估属于主对话估计问题，用户要求的 480 秒目标当时仍未完成。
+
+| 0420 已完成窗口 | 正常落地 | 应急落地 | 能量失败 | 空中待完成 | 上游待完成 | offered |
+|---|---:|---:|---:|---:|---:|---:|
+| EnergySlack | 22 | 0 | 0 | 42 | 0 | 64 |
+| RH-CP-SAT | 24 | 0 | 0 | 40 | 0 | 64 |
+
+0420 应急已声明 / 未落地数量分别为 Slack 11/11、CP 8/8，并非 0。追踪原 0360 各方法的两架应急目标：Slack 的 `initial_inner_09` 在 299 秒声明，392.4 秒已实际开始 FINAL_EMERGENCY，计划结束 445.9 秒；`initial_middle_04` 在 309.6 秒声明，到 420 秒仍 HOLD。CP 的 `initial_middle_01` 在 310.16496 秒声明，410.28568 秒已实际开始 FINAL_EMERGENCY，计划结束 458.78568 秒；`initial_middle_11` 在 331.53108 秒声明，到 420 秒仍 HOLD。两架已启动目标从声明到启动分别等待 93.4 / 100.1207 秒；420 秒内均尚无应急 touchdown，不能将计划结束时间写成实测落地。
+
+在 `360<t≤420` 窗口，这些目标存在已经尝试、但因 HARD_SEPARATION 或 RESOURCE_CONFLICT 未通过安全/资源核验的动作；这不能证明不存在其他安全且更优的救援方案。应急响应整体是否合理仍待 480 秒结果及人工回放，不能写成已经全面解决。证据见 [0420 应急事实 JSON](../../artifacts/rotating_slots_stage2_20261022/v4_emergency_0420_facts.json)。
+
+为完成同一授权目标的剩余 60 秒，主对话已启动唯一一次补齐。接续前将 17 个文件（包括被预算截断的未完成 states）备份到 `continuation_0480_finish_pre_run/`。源文件、环境锁及 identity 均核对为 MATCH；0360/0420 摘要和检查点 hash 与备份一致。不重新 prepare、不从 t=0 重跑、不修改算法；恢复 420 检查点后，被截断的未完成片段不作为结果拼接。
+
+本次沿用累计 3433.9263050556183 秒并排除停后等待，前期开销记入 30 秒。主对话为补齐设置新增上限 900 秒，其中计算 600 秒、归档 300 秒：
+
+| 补齐记账项 | 秒 |
+|---|---:|
+| 沿用累计预算 | 3433.9263050556183 |
+| 补齐前开销 credit | 30 |
+| 补齐初始 live floor | 3463.9263050556183 |
+| 新累计 compute stop | 4033.9263050556183 |
+| 新累计 total 上限 | 4333.9263050556183 |
+| 归档保留 | 300 |
+
+补齐仍使用上面的 `resume --target 480` 命令，启动于服务器 UTC `2026-10-22T02:27:33.440115+00:00`。wrapper PID 131216、runner PID 131226，worker PID 131229/131230，CPU 0/2、线程数均为 1。独立日志、计时和终态退出码文件分别为 `resume_0480_finish.log`、`resume_0480_finish.timing.txt`、`resume_0480_finish.exit_code.txt`。启动检查时经过 33.07585 秒，两方法 states 已到 421/425 秒，无 error/invalid；不能据此宣称 480 秒完成。
+
+补齐 T0 取 550 秒，依据上一段 60 秒约 470 秒加归档估计；该次观察剩余约 517 秒。主对话已通过工具将同一个 `stage2-480` heartbeat 更新为约 8 分钟，设置时扣除已经过时间，状态 ACTIVE，不保留睡眠 worker。后续唤醒检查完成状态并继续分析、归档；0480 终态及 `HUMAN_PENDING` 人工验收尚未完成。
 
 ## 为什么 CP 只在 24/266 次决策中求解
 
