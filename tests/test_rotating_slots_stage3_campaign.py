@@ -389,3 +389,36 @@ def test_terminal_failure_is_preserved_beyond_latest_completed_boundary(tmp_path
     assert row["status"]=="EVALUATION_PARTIAL" and row["time"]==0.
     assert row["terminal_observation"]["observed_time_s"]==2. and row["terminal_observation"]["failed"]
     assert row["terminal_observation"]["quality"]["F_energy_total"]==1
+
+
+@pytest.mark.parametrize("newline",[b"",b"\n",b"\r\n"])
+def test_seed_scan_exact_synthetic_sentinel_is_audited_in_split_hash(tmp_path,newline):
+    from hashlib import sha256
+    import yaml
+    from terminal_marl.core.rotating_slots.stage3_learning.data import scan_used_seeds
+    from terminal_marl.core.rotating_slots.stage3_learning.campaign import PACKAGE
+    sentinel=tmp_path/"manifest.json"
+    content=b"SYNTHETIC_BYTE_COMPARISON_ONLY:manifest.json"+newline
+    sentinel.write_bytes(content)
+    real=tmp_path/"protocol.json";atomic_json(real,dict(seed=7301,nested=dict(initial_seed=7350)))
+    exclusions=[]
+    used,scanned=scan_used_seeds([sentinel,real],exclusions=exclusions)
+    assert {7301,7350}<=used and str(real.resolve()) in scanned and str(sentinel.resolve()) not in scanned
+    assert exclusions==[dict(path=str(sentinel.resolve()),reason="EXACT_SYNTHETIC_BYTE_COMPARISON_SENTINEL",sha256=sha256(content).hexdigest())]
+    plan=yaml.safe_load((PACKAGE/"stage3_dataset_plan_v1_0.yaml").read_text(encoding="utf-8"))
+    split=freeze_split(plan,used,scan_inputs=scanned,seed_scan_exclusions=exclusions)
+    assert split["seed_scan_exclusions"]==exclusions
+    payload=dict(split);recorded=payload.pop("split_manifest_id")
+    assert digest(payload)==recorded
+    assert freeze_split(plan,used,scan_inputs=scanned)["split_manifest_id"]!=recorded
+    # The existing two-value return remains available to callers without an audit list.
+    assert scan_used_seeds([real])[0]>=used
+
+
+@pytest.mark.parametrize("content",[b"not json",b"SYNTHETIC_BYTE_COMPARISON_ONLY:wrong.json\n",b" SYNTHETIC_BYTE_COMPARISON_ONLY:manifest.json\n",b"SYNTHETIC_BYTE_COMPARISON_ONLY:manifest.json\n\n"])
+def test_seed_scan_arbitrary_malformed_json_stays_fail_closed(tmp_path,content):
+    from terminal_marl.core.rotating_slots.stage3_learning.data import scan_used_seeds
+    path=tmp_path/"manifest.json";path.write_bytes(content);exclusions=[]
+    with pytest.raises(ValueError,match="unreadable collision-scan input"):
+        scan_used_seeds([path],exclusions=exclusions)
+    assert exclusions==[]

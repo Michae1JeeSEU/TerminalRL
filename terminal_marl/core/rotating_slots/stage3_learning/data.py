@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from hashlib import sha256
 from pathlib import Path
 import json
 import math
@@ -31,7 +32,7 @@ def connected_splits(records):
     return {str(k): next(iter(v)) for k, v in groups.items()}
 
 
-def scan_used_seeds(paths):
+def scan_used_seeds(paths, *, exclusions=None):
     """Read protocol/manifest metadata only; never use outcome values to select seeds."""
     found = {11, 23, 47, 71, 101}
     allowed = {"seed", "preferred_seed", "initial_seed", "manifest_seed", "seeds"}
@@ -48,6 +49,13 @@ def scan_used_seeds(paths):
     for path in sorted(set(Path(p).resolve() for p in paths)):
         if path.is_file() and path.suffix.lower() in (".json", ".yaml", ".yml"):
             try:
+                raw=path.read_bytes()
+                sentinel=("SYNTHETIC_BYTE_COMPARISON_ONLY:"+path.name).encode("utf-8")
+                if raw in (sentinel,sentinel+b"\n",sentinel+b"\r\n"):
+                    if exclusions is not None:
+                        exclusions.append(dict(path=str(path),reason="EXACT_SYNTHETIC_BYTE_COMPARISON_SENTINEL",
+                            sha256=sha256(raw).hexdigest()))
+                    continue
                 if path.suffix == ".json": value = load_json(path)
                 else:
                     import yaml
@@ -58,7 +66,7 @@ def scan_used_seeds(paths):
     return found, scanned
 
 
-def freeze_split(plan, used_seeds=(), *, scan_inputs=()):
+def freeze_split(plan, used_seeds=(), *, scan_inputs=(), seed_scan_exclusions=()):
     used = set(used_seeds) | {71}
     rows = []
     for planned in plan["roots"]:
@@ -75,6 +83,7 @@ def freeze_split(plan, used_seeds=(), *, scan_inputs=()):
         raise ValueError("formal split must contain exactly 24 roots (16/4/4)")
     value = dict(schema="stage3_split_v1", roots=rows, collision_scan_inputs=list(scan_inputs),
         used_seeds_before_freeze=sorted(set(used_seeds)), frozen_before_outcomes=True)
+    if seed_scan_exclusions:value["seed_scan_exclusions"]=list(seed_scan_exclusions)
     value["split_manifest_id"] = digest(value)
     return value
 

@@ -137,9 +137,10 @@ def freeze_local(output, seed_scan_paths=()):
             for pattern in ("**/manifest.json","**/protocol.json","**/split_manifest.json","**/campaign.json"):
                 discovered.extend(base.glob(pattern))
     discovered.extend(Path(p) for p in seed_scan_paths)
-    used,scanned=scan_used_seeds(discovered)
+    exclusions=[]
+    used,scanned=scan_used_seeds(discovered,exclusions=exclusions)
     plan=yaml.safe_load((PACKAGE/"stage3_dataset_plan_v1_0.yaml").read_text(encoding="utf-8"))
-    split=freeze_split(plan,used,scan_inputs=scanned)
+    split=freeze_split(plan,used,scan_inputs=scanned,seed_scan_exclusions=exclusions)
     atomic_json(output/"split_manifest.json",split)
     (output/"workspace.diff").write_text(diff,encoding="utf-8")
     atomic_json(output/"source_freeze.json",value)
