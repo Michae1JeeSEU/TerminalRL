@@ -1,0 +1,375 @@
+# 正式Stage3规范配置；不是已实现或已通过的运行结果。
+schema_version: ft_rs_s3_initial_formal_v1_0
+contract_id: FT-RS-S3-INITIAL-1.0
+status: FORMAL_FOR_IMPLEMENTATION
+contract_file: stage3_learning_initial_contract_v1_0.md
+dataset_config_file: stage3_dataset_plan_v1_0.yaml
+data_schema_file: stage3_data_schema_v1_0.json
+targeted_checks_file: stage3_targeted_checks_v1_0.json
+approval:
+  D1_D7: APPROVED_BY_USER
+  user_instruction: D1-D7问题就按照你给的建议执行，给我正式版的合同以及相应的配置等文件
+  decisions:
+    D1:
+      topic: primary_learning_goal
+      approved: true
+      choice: candidate_construction_acceleration_with_tail_interface_only
+    D2:
+      topic: learning_paradigm
+      approved: true
+      choice: offline_supervised_grouped_pairwise_ranking
+    D3:
+      topic: model_family
+      approved: true
+      choice: cpu_candidate_conditioned_set_mlp
+    D4:
+      topic: deployment_mode
+      approved: true
+      choice: offline_shadow_then_guarded_reduced_budget_trial
+    D5:
+      topic: new_data_permission
+      approved: true
+      choice: bounded_reference_labels_and_independent_new_roots
+    D6:
+      topic: campaign_budget
+      approved: true
+      choice: four_hours_fixed_snapshots_and_60s_paired_pilot
+    D7:
+      topic: quality_tradeoff
+      approved: true
+      choice: report_pareto_differences_no_authorized_quality_degradation
+provenance:
+  input_draft_sha256: be57ebc1f4aa2602e6fdc58bbd8c1711615c8b4adbb35f9db23c307632512270
+  repository: Michae1JeeSEU/TerminalRL
+  branch: codex/arrival-restructure
+  historical_design_review_commit: 2407b6accc3931bc319355be03dfcf9fa32bfbf2
+  historical_stage2_planning_blob: ab6d1639f0297c1790e2791d274cebad5c87d562
+  historical_evidence_commit: 4da4f3852290f73b6369e67589d3f8d54ad0b80e
+  fresh_repository_review_performed_for_this_package: false
+  run_binding_policy: GENERATE_FROM_ACTUAL_REPOSITORY_AT_PREFLIGHT_AND_FREEZE
+  generated_binding_file: run_binding.generated.json
+  generated_resolved_config: resolved_config.generated.yaml
+  cross_objective_label_reuse: RELABEL_REQUIRED
+  cross_semantics_model_loading: REJECT_FOR_EVALUATION
+execution:
+  implementation_authorized: true
+  training_authorized: true
+  guided_pilot_authorized: true
+  implementation_already_run: false
+  model_already_trained: false
+  simulation_already_run: false
+  default_advisor_mode: 'OFF'
+  campaign_autorun_on_import: false
+  unresolved_research_decisions: []
+  phase_order:
+  - S3-A
+  - S3-B
+  - S3-C
+  - S3-D
+  activation_preconditions:
+  - targeted_checks_pass
+  - compatible_run_binding
+  - independent_split_manifest
+  - valid_training_and_validation_labels
+  - frozen_pilot_model
+  allowed_advisor_modes:
+  - 'OFF'
+  - RECORD
+  - SHADOW_OFFLINE
+  - GUIDED_ORDER
+  - GUIDED_LIMITED
+scope:
+  primary: learned_candidate_construction_priority
+  secondary: tail_value_interface_only
+  backend_for_first_guided_pilot: rh_cp_sat
+  learned_energy_slack_closed_loop: false
+  change_cp_objective: false
+  tail_model_training: false
+  tail_model_inference: false
+  online_rl: false
+  world_model: false
+  cp_branching_learning: false
+  learned_safety_authorization: false
+  physical_rules_changed: false
+  emergency_rules_changed: false
+  final_authoritative_validation_required: true
+proposal:
+  unit: unmaterialized_WorkDescriptor
+  learned_output: priority_order_only
+  stages:
+  - progress
+  - reference
+  - alternative
+  descriptor_schema_id: work_descriptor_v1_0
+  allowed_target_kinds:
+  - next_ring_slot
+  - normal_pad
+  ready_batch_max: 64
+  materializations_per_rank_max: 8
+  parent_must_be_materialized: true
+  allow_new_continuous_action_space: false
+  full_generated_catalog_before_inference: false
+  coverage:
+    preserve_keep_wait: true
+    preserve_commitments_and_dependencies: true
+    inherit_stage2_catalog_diversity: true
+    initial_pass: one_heuristic_opportunity_per_eligible_aircraft_if_budget_available
+    ring_order:
+    - outer
+    - middle
+    - inner
+    within_ring_order: energy_slack_then_stable_id
+    post_initial_interleave:
+    - learned
+    - learned
+    - learned
+    - heuristic
+    unserved_aircraft_count_logged: true
+  budget:
+    reference_scale: 1.0
+    reduced_scale: 0.5
+    scaled_fields:
+    - candidate_seconds
+    - max_per_aircraft
+    - max_attempts
+    integer_scaling: max(1,floor(reference*0.5))
+    unchanged_fields:
+    - solver_seconds
+    - hint_seconds
+    - soft_seconds
+    - watchdog_seconds
+    - max_refinement_rounds
+    - catalog_cap
+    deterministic_finish_fraction: 0.2
+    full_budget_reset_on_fallback: false
+    same_coverage_for_reduced_control: true
+    historical_example_only:
+      candidate_seconds:
+      - 12.0
+      - 6.0
+      max_per_aircraft:
+      - 64
+      - 32
+      max_attempts:
+      - 2048
+      - 1024
+features:
+  schema_id: candidate_context_sets_v1_0
+  cost_policy_id: pre_materialization_only_v1_0
+  entity_sets:
+  - aircraft
+  - slots
+  - pads
+  - reservations
+  entity_limits:
+    aircraft: 256
+    slots: 128
+    pads: 16
+    reservations: 1024
+  overflow_policy: FALLBACK_NO_ENTITY_TRUNCATION
+  candidate_conditioned_relations:
+  - relative_phase
+  - relative_distance
+  - is_self
+  - is_target
+  - shares_target_resource
+  - relative_interval
+  - source_and_target_ring
+  forbidden_inputs:
+  - unrevealed_manifest
+  - random_seed
+  - numeric_aircraft_id
+  - method_name
+  - future_outcome
+  - post_query_min_distance
+  - post_query_exact_energy
+  - final_solver_choice
+  forbidden_feature_calls:
+  - trajectory_generation
+  - energy_integration
+  - continuous_collision_validation
+  - cp_solve
+  missing_fill: 0.0
+  missing_mask: true
+  scales:
+    length_m: 900.0
+    speed_mps: 25.0
+    acceleration_mps2: 1.5
+    time: BOUND_STAGE2_HORIZON
+    power_W: 100000.0
+    energy_J: BOUND_MODEL_EQUIVALENT_CAPACITY
+    SOC: 1.0
+  learned_standardization_fit_split: train
+  downstream_estimator: SHARED_BOUND_STAGE2_OR_MISSING_MASK
+  full_scene_aggregate_only: false
+model:
+  family: candidate_conditioned_set_mlp
+  architecture_id: cc_set_mlp64_v1_0
+  entity_encoder_hidden:
+  - 64
+  - 64
+  query_encoder_hidden:
+  - 64
+  - 64
+  pooling:
+  - masked_mean
+  - masked_max
+  - normalized_count
+  score_head_hidden:
+  - 128
+  - 64
+  activation: ReLU
+  dropout: 0.0
+  batch_norm: false
+  heads:
+  - priority_score
+  - single_vehicle_valid_logit
+  - log1p_compute_cost_ms
+  priority_uses_auxiliary_ratio: false
+  parameter_count_cap: 250000
+  dtype: float32
+  device: cpu
+  physics_dtype_changed: false
+training:
+  paradigm: offline_supervised_grouped_pairwise_ranking
+  formal_runs_max: 1
+  seed: 20261023
+  optimizer: AdamW
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  max_epochs: 30
+  batch_context_groups_max: 16
+  pairs_per_group_per_batch_max: 64
+  gradient_clip_norm: 1.0
+  early_stopping_patience: 5
+  selection_metric: validation_rank_loss
+  loss:
+    ranking: pairwise_softplus
+    single_vehicle_validity: masked_binary_cross_entropy
+    compute_cost: masked_huber_log1p_ms
+    huber_delta: 1.0
+    weights:
+      ranking: 1.0
+      single_vehicle_validity: 0.1
+      compute_cost: 0.1
+    reduction: per_context_then_batch_mean
+  validity_label_mask_required: true
+  cost_timeout_is_censored: true
+  unknown_is_negative: false
+  unselected_is_negative: false
+  zero_effective_pairs_action: DATA_INSUFFICIENT_NO_FORMAL_TRAINING
+  no_validation_rank_labels_action: DATA_INSUFFICIENT_NO_TEST_BASED_SELECTION
+  debug_overfit:
+    enabled: true
+    max_gradient_steps: 100
+    discard_debug_weights_before_formal_training: true
+  grid_search: false
+  automatic_retraining: false
+  test_based_tuning: false
+  auxiliary_heads_policy: ENABLED_WITH_VALID_LABEL_MASKS_ONLY
+labeling:
+  policy_id: bounded_reference_supported_pair_v1_0
+  per_snapshot_total_wall_seconds: 180.0
+  reference_candidate_budget_multiplier: 2.0
+  reference_candidate_wall_cap_seconds: 30.0
+  reference_solvers:
+  - energy_slack
+  - rh_cp_sat
+  certified_reference_solutions_max: 8
+  conditional_resolves_max_per_snapshot: 8
+  conditional_resolve_wall_cap_seconds: 5.0
+  pair_sources:
+  - reference_supported_vs_explicit_single_vehicle_invalid
+  - same_context_bounded_conditional_certified_objective_preference
+  conditional_result_is_global_oracle: false
+  all_tied_solutions_supported: true
+  nonselected_valid_label: UNSUPPORTED_NOT_NEGATIVE
+  unknown_label: MASKED
+  offline_probe_fraction: 0.2
+  offline_probe_seed: 20261024
+  exploration_strata:
+  - source_ring
+  - target_type
+  - immediate_or_delayed
+  - chain_depth
+  probe_changes_live_world: false
+  prioritize_completed_labels_over_target_count: true
+evaluation:
+  same_snapshot_cases_max: 6
+  heldout_cases_target_min: 2
+  repetitions_per_arm: 1
+  arms:
+  - reference_full
+  - heuristic_reduced
+  - learned_reduced
+  reference_quality_is_global_optimum: false
+  cold_warm_regime: IDENTICAL_PER_CASE_SEPARATE_PROCESSES
+  method_order: ROTATE_BY_CASE_INDEX
+  closed_loop_arms:
+  - heuristic_reduced
+  - learned_reduced
+  closed_loop_sim_seconds: 60.0
+  closed_loop_repetitions: 1
+  closed_loop_case_selection: FIRST_PREDECLARED_COMPATIBLE_MEDIUM_TEST_ROOT
+  closed_loop_parallel: false
+  use_existing_visualization: true
+  quality_degradation_allowance: NOT_AUTHORIZED
+  quality_decision: REPORT_VECTOR_NO_AUTOMATIC_NONINFERIORITY_CLAIM
+  performance_pass_threshold: NONE
+  incomplete_window_policy: REPORT_LATEST_COMMON_COMPLETED_BOUNDARY
+  after_test_retrain: false
+  full_600s_or_drain_campaign: false
+fallback:
+  reasons:
+  - MODEL_MISSING
+  - FINGERPRINT_MISMATCH
+  - INPUT_OOD
+  - ENTITY_LIMIT
+  - NONFINITE_SCORE
+  - ILLEGAL_DESCRIPTOR_ID
+  - INFERENCE_ERROR
+  runtime_action: DETERMINISTIC_ORDER_WITH_REMAINING_SHARED_BUDGET
+  evaluation_mismatch_action: REJECT_MODEL
+  uncalibrated_confidence_gate: false
+  reset_clock: false
+  execute_unverified_action: false
+  quality_oracle_used_online: false
+compute:
+  campaign_wall_seconds: 14400
+  compute_stop_seconds: 13500
+  archive_reserve_seconds: 900
+  phase_caps_seconds:
+    preflight_tests: 900
+    data_and_labels: 7200
+    training: 1800
+    evaluation: 3600
+    archive: 900
+  budget_is_new_not_inherited_stage2: true
+  resume_resets_budget: false
+  phase_unused_budget_reallocated: false
+  max_parallel_processes: 2
+  per_process_threads: 1
+  cp_workers: 1
+  torch_threads: 1
+  torch_interop_threads: 1
+  dataloader_workers: 0
+  blas_threads: 1
+  nested_parallelism: false
+  gpu_required: false
+  budget_end_action: SAVE_PARTIAL_AND_REPORT_NO_AUTOMATIC_EXTENSION
+  include_parent_and_child_cpu_in_report: true
+delivery:
+  generated_at_runtime:
+  - run_binding.generated.json
+  - resolved_config.generated.yaml
+  - dataset_index.json
+  - split_manifest.json
+  - feature_normalizer.json
+  - model_card.json
+  - training_history.jsonl
+  - same_state_comparison.json
+  - closed_loop_comparison.json
+  - FINAL_REPORT.md
+  performance_claim_prepopulated: false
+  model_weights_in_document_package: false
+  current_status: IMPLEMENTATION_NOT_RUN

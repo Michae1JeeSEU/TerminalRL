@@ -1,0 +1,406 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:terminalrl:stage3:data:v1.0",
+  "title": "Stage3 minimum portable records",
+  "description": "用于实现时记录结构检查；不是已生成的数据。额外字段必须由版本声明。",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/WorkDescriptor"
+    },
+    {
+      "$ref": "#/$defs/FactualResult"
+    },
+    {
+      "$ref": "#/$defs/PreferencePair"
+    },
+    {
+      "$ref": "#/$defs/RunBinding"
+    }
+  ],
+  "$defs": {
+    "Fingerprint": {
+      "type": "object",
+      "required": [
+        "source_commit",
+        "workspace_diff_hash",
+        "physical_config_hash",
+        "numerical_backend_id",
+        "admission_policy_id",
+        "emergency_policy_id",
+        "failure_policy_id",
+        "proposal_universe_id",
+        "descriptor_schema_id",
+        "feature_schema_id",
+        "feature_cost_policy_id",
+        "objective_id",
+        "tail_estimator_id",
+        "evaluation_protocol_id",
+        "behavior_policy_id",
+        "planning_budget_profile",
+        "label_policy_id",
+        "model_id",
+        "split_manifest_id",
+        "hardware_profile_id",
+        "cache_regime"
+      ],
+      "properties": {
+        "source_commit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workspace_diff_hash": {
+          "type": "string",
+          "minLength": 1
+        },
+        "physical_config_hash": {
+          "type": "string",
+          "minLength": 1
+        },
+        "numerical_backend_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "admission_policy_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "emergency_policy_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "failure_policy_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "proposal_universe_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "descriptor_schema_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "feature_schema_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "feature_cost_policy_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "objective_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tail_estimator_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evaluation_protocol_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "behavior_policy_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "planning_budget_profile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label_policy_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "split_manifest_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hardware_profile_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cache_regime": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true,
+      "description": "数据采集尚无模型时model_id填NO_MODEL；正式评价必须填写已冻结模型hash。其余ID在preflight或split建立后产生，不能伪造。"
+    },
+    "WorkDescriptor": {
+      "type": "object",
+      "required": [
+        "record_type",
+        "descriptor_id",
+        "snapshot_id",
+        "source_node_id",
+        "aircraft_id",
+        "source_ring",
+        "source_slot",
+        "target_kind",
+        "target_id",
+        "start_offset_s",
+        "duration_s",
+        "parent_prefix_id",
+        "construction_stage",
+        "proposal_origin",
+        "inherited_order"
+      ],
+      "properties": {
+        "record_type": {
+          "const": "WorkDescriptor"
+        },
+        "descriptor_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "snapshot_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_node_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "aircraft_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_ring": {
+          "enum": [
+            "outer",
+            "middle",
+            "inner"
+          ]
+        },
+        "source_slot": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "target_kind": {
+          "enum": [
+            "next_ring_slot",
+            "normal_pad"
+          ]
+        },
+        "target_id": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "start_offset_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "duration_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "parent_prefix_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "construction_stage": {
+          "enum": [
+            "progress",
+            "reference",
+            "alternative"
+          ]
+        },
+        "proposal_origin": {
+          "enum": [
+            "current",
+            "delayed",
+            "resource_aligned",
+            "reuse"
+          ]
+        },
+        "inherited_order": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": true
+    },
+    "FactualResult": {
+      "type": "object",
+      "required": [
+        "record_type",
+        "descriptor_id",
+        "context_id",
+        "ancestry_root_id",
+        "fingerprint",
+        "outcome",
+        "wall_s",
+        "cpu_s",
+        "censored",
+        "cache_state",
+        "features_before_query_ref"
+      ],
+      "properties": {
+        "record_type": {
+          "const": "FactualResult"
+        },
+        "descriptor_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "context_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ancestry_root_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fingerprint": {
+          "$ref": "#/$defs/Fingerprint"
+        },
+        "outcome": {
+          "enum": [
+            "SINGLE_VALID",
+            "SINGLE_INVALID_CERTIFIED",
+            "FIXED_BACKGROUND_CONFLICT",
+            "JOINT_CERTIFIED",
+            "UNKNOWN",
+            "TIMEOUT",
+            "NOT_ATTEMPTED"
+          ]
+        },
+        "wall_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "cpu_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "censored": {
+          "type": "boolean"
+        },
+        "cache_state": {
+          "type": "object"
+        },
+        "features_before_query_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "PreferencePair": {
+      "type": "object",
+      "required": [
+        "record_type",
+        "context_id",
+        "preferred_descriptor",
+        "other_descriptor",
+        "label_source",
+        "objective_id",
+        "label_policy_id",
+        "ancestry_root_id",
+        "split",
+        "evidence_refs"
+      ],
+      "properties": {
+        "record_type": {
+          "const": "PreferencePair"
+        },
+        "context_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "preferred_descriptor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "other_descriptor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label_source": {
+          "enum": [
+            "supported_vs_certified_single_invalid",
+            "bounded_conditional_certified_objective_preference"
+          ]
+        },
+        "objective_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label_policy_id": {
+          "const": "bounded_reference_supported_pair_v1_0"
+        },
+        "ancestry_root_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "split": {
+          "enum": [
+            "train",
+            "validation",
+            "test",
+            "development"
+          ]
+        },
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "RunBinding": {
+      "type": "object",
+      "required": [
+        "record_type",
+        "contract_id",
+        "fingerprint",
+        "inputs",
+        "environment",
+        "resolved_budgets",
+        "created_at"
+      ],
+      "properties": {
+        "record_type": {
+          "const": "RunBinding"
+        },
+        "contract_id": {
+          "const": "FT-RS-S3-INITIAL-1.0"
+        },
+        "fingerprint": {
+          "$ref": "#/$defs/Fingerprint"
+        },
+        "inputs": {
+          "type": "object"
+        },
+        "environment": {
+          "type": "object"
+        },
+        "resolved_budgets": {
+          "type": "object"
+        },
+        "created_at": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

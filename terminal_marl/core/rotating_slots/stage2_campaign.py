@@ -127,13 +127,16 @@ def read_manifest(path):
 
 
 def busy_fixture(manifest=None, *, state_sink=None, config=None,
-                 scenario_profile="legacy_busy_v5", rescue_rule_profile="legacy_v5"):
+                 scenario_profile="legacy_busy_v5", rescue_rule_profile="legacy_v5", initial_seed=None):
     if scenario_profile not in SCENARIO_PROFILES or rescue_rule_profile not in RESCUE_RULE_PROFILES:
         raise ValueError("unknown scenario/rescue rule profile")
     world = RotatingSlotWorld(config=config, manifest=manifest, state_sink=state_sink,
                               experiment_policy_id=STAGE2_POLICY_ID)
     world.rescue_rule_profile = rescue_rule_profile
-    soc_rng, service_rng = random.Random(2071), random.Random(2072)
+    # Preserve the historical default byte-for-byte RNG streams. Stage3 roots
+    # use independent named streams while retaining this exact fixture law.
+    soc_rng, service_rng = ((random.Random(2071), random.Random(2072)) if initial_seed is None else
+        (random.Random(f"stage3:{int(initial_seed)}:soc"), random.Random(f"stage3:{int(initial_seed)}:service")))
     normal = NormalDist(.75, .08)
     lower, upper = normal.cdf(.60), normal.cdf(.90)
     counts = dict(diagnostic18_rate120_v1=(("outer",6),("middle",6),("inner",6)),

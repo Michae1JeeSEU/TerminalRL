@@ -1,0 +1,8 @@
+# The sealed package remains the numeric machine fact source.
+canonical_config: new10.16/rotating_slots_stage3_learning_v1_0/stage3_learning_config_v1_0.yaml
+canonical_dataset: new10.16/rotating_slots_stage3_learning_v1_0/stage3_dataset_plan_v1_0.yaml
+planning_profile: downstream_service_v8
+rescue_rule_profile: rescue_need_v7
+service_profile: service_half_v1
+budget_profile: quality_v5
+default_advisor_mode: 'OFF'

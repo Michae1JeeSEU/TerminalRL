@@ -1,0 +1,91 @@
+{
+  "contract_id": "FT-RS-S3-INITIAL-1.0",
+  "status": "REQUIREMENTS_NOT_RUN",
+  "count": 12,
+  "checks": [
+    {
+      "id": "S3-T01",
+      "name": "OFF_RECORD_PARITY",
+      "scenario": "OFF无模型依赖；RECORD不修改状态/资源",
+      "expected": "固定工作额度下传统顺序与物理事务不变；wall截止抖动单列。",
+      "execution_status": "NOT_RUN"
+    },
+    {
+      "id": "S3-T02",
+      "name": "CHEAP_FEATURES",
+      "scenario": "特征不提前支付昂贵成本",
+      "expected": "调用桩确认无轨迹生成、能耗积分、完整冲突检查或CP调用。",
+      "execution_status": "NOT_RUN"
+    },
+    {
+      "id": "S3-T03",
+      "name": "SET_ID_INVARIANCE",
+      "scenario": "对象排列和ID重命名",
+      "expected": "关联保持时评分按映射一致；pad/slot几何身份保留。",
+      "execution_status": "NOT_RUN"
+    },
+    {
+      "id": "S3-T04",
+      "name": "NO_FUTURE_LEAKAGE",
+      "scenario": "部署输入与监督标签隔离",
+      "expected": "拒绝future manifest、seed、方法标签与事后结果进入模型特征。",
+      "execution_status": "NOT_RUN"
+    },
+    {
+      "id": "S3-T05",
+      "name": "REAL_PARENT_ONLY",
+      "scenario": "子描述依赖已构造父链",
+      "expected": "未物化父链的子描述不能进入ready，不能产生伪造SOC状态。",
+      "execution_status": "NOT_RUN"
+    },
+    {
+      "id": "S3-T06",
+      "name": "LABEL_MASKS",
+      "scenario": "UNKNOWN及未被选中不作伪负",
+      "expected": "超时/未尝试/未选择按各自语义mask；空标签组跳过并记录。",
+      "execution_status": "NOT_RUN"
+    },
+    {
+      "id": "S3-T07",
+      "name": "RUNTIME_FALLBACK",
+      "scenario": "异常模型与兼容性",
+      "expected": "NaN/非法ID/OOD按剩余额度退回传统顺序；正式不兼容模型拒载。",
+      "execution_status": "NOT_RUN"
+    },
+    {
+      "id": "S3-T08",
+      "name": "COVERAGE_NO_PRUNING",
+      "scenario": "共同覆盖与保留",
+      "expected": "KEEP/WAIT、承诺、完整/部分链、延后及目标多样性不被模型硬删。",
+      "execution_status": "NOT_RUN"
+    },
+    {
+      "id": "S3-T09",
+      "name": "AUTHORITATIVE_COMMIT",
+      "scenario": "模型不能绕过执行授权",
+      "expected": "高分冲突候选仍被原验证拒绝；整段承诺与执行一致。",
+      "execution_status": "NOT_RUN"
+    },
+    {
+      "id": "S3-T10",
+      "name": "ANCESTRY_SPLIT",
+      "scenario": "数据血缘隔离",
+      "expected": "同root续跑、相邻帧和策略分支不跨split；seed71仅开发。",
+      "execution_status": "NOT_RUN"
+    },
+    {
+      "id": "S3-T11",
+      "name": "FAIR_TIMING",
+      "scenario": "完整成本和同预算对照",
+      "expected": "特征/推理/验证/fallback计时；0.5额度非学习组存在；缓存待遇一致。",
+      "execution_status": "NOT_RUN"
+    },
+    {
+      "id": "S3-T12",
+      "name": "REPLAY_DISTINCTION",
+      "scenario": "既有可视化与统计",
+      "expected": "区分提议/尝试/提交，查看等待/能源/接地；人工未看不得自动PASS。",
+      "execution_status": "NOT_RUN"
+    }
+  ]
+}

@@ -366,18 +366,24 @@ class ReferenceProvider:
         self.energy = {}
         self.motion_energy_index = {}
         self.energy_stats = Counter()
+        self.advisor_runtime = None
+        self._stage3_screened = set()
 
     def move_energy(self,node,plan,config):
         key=(config.config_hash,node,plan.trajectory_hash)
         if key in self.energy:
             self.energy_stats["hits"]+=1
             _bounded_put(self.motion_energy_index,(config.config_hash,plan.trajectory_hash),(node,self.energy[key]))
+            if self.advisor_runtime is not None: self.advisor_runtime.record_energy(node,plan,self.energy[key],True)
             return self.energy[key]
         self.energy_stats["misses"]+=1
+        energy_clock=(time.perf_counter(),time.process_time()) if self.advisor_runtime is not None else None
         q=_move_energy(node,plan,config)
         if all(math.isfinite(x) for x in q):
             _bounded_put(self.energy,key,q)
             _bounded_put(self.motion_energy_index,(config.config_hash,plan.trajectory_hash),(node,q))
+        if self.advisor_runtime is not None:
+            self.advisor_runtime.record_energy(node,plan,q,False,time.perf_counter()-energy_clock[0],time.process_time()-energy_clock[1])
         return q
 
     def screen(self, snapshot, node, start, budget):
@@ -388,9 +394,26 @@ class ReferenceProvider:
         budget.screening["cache_hits"] += int(hit)
         budget.screening["templates"] += len(table)
         budget.screening["witness_rejected"] += sum(value is not None for value in table.values())
+        if self.advisor_runtime is not None:
+            self._stage3_screened.add((snapshot.config.config_hash,node.ring,node.slot,start))
+            if len(self._stage3_screened)>4096: self._stage3_screened.clear()
         return table
 
-    def generate(self,snapshot,a,node,target,start,duration,budget):
+    def generate(self,snapshot,a,node,target,start,duration,budget,*,construction_stage="reference",prefix=(),base=None,work_descriptor=None):
+        runtime=self.advisor_runtime
+        if runtime is None:
+            return self._generate_unobserved(snapshot,a,node,target,start,duration,budget)
+        descriptor=work_descriptor or runtime.descriptor(snapshot,a,node,target,start,duration,construction_stage,prefix,base)
+        key=(snapshot.config.config_hash,a.id,node.ring,node.slot,node.version,target,start,duration)
+        cache=dict(template_hit=self.templates.get(key) is not None,reference_hits=self.hits,
+                   geometry_screened_before_query=(snapshot.config.config_hash,node.ring,node.slot,start) in self._stage3_screened,
+                   geometry_cost_separate=True)
+        token=runtime.record_before(snapshot,descriptor,budget,cache)
+        ok,p=self._generate_unobserved(snapshot,a,node,target,start,duration,budget)
+        runtime.record_after(descriptor,token,ok,p,budget,dict(cache,reference_hits_after=self.hits))
+        return ok,p
+
+    def _generate_unobserved(self,snapshot,a,node,target,start,duration,budget):
         key=(snapshot.config.config_hash,a.id,node.ring,node.slot,node.version,target,start,duration)
         if self.templates.get(key) is not None:
             self.hits+=1
@@ -419,7 +442,10 @@ class ReferenceProvider:
         """Yield at every primitive attempt so callers can round-robin aircraft."""
         key=(snapshot.config.config_hash,node.ring,node.slot,node.time,node.version,aircraft.id)
         if key in self.cache:
-            self.hits+=1; return self.cache[key]
+            self.hits+=1
+            if self.advisor_runtime is not None:
+                self._register_reused_chain(snapshot,aircraft,node,self.cache[key].plans,budget)
+            return self.cache[key]
         current,plans=node,[]
         for _ in range({"outer":3,"middle":2,"inner":1}[node.ring]):
             found=[]
@@ -428,9 +454,21 @@ class ReferenceProvider:
             if screen is None: return NormalReference("UNKNOWN",identity=key)
             yield None
             for duration in range(20,301 if current.ring=="inner" else 181,5):
-                for target in targets:
+                ready=[target for target in targets if screen[(target,duration)] is None]
+                while ready:
+                    descriptor=None
+                    if self.advisor_runtime is not None:
+                        runtime=self.advisor_runtime
+                        work=[runtime.descriptor(snapshot,aircraft,current,target,current.time,duration,"reference",tuple(plans)) for target in ready[:64]]
+                        descriptor=runtime.order(snapshot,work,budget)[0]
+                        target=descriptor.target_id;ready.remove(target)
+                    else: target=ready.pop(0)
                     if screen[(target,duration)] is not None: continue
-                    ok,p=self.generate(snapshot,aircraft,current,target,current.time,duration,budget)
+                    if self.advisor_runtime is None:
+                        ok,p=self.generate(snapshot,aircraft,current,target,current.time,duration,budget)
+                    else:
+                        ok,p=self.generate(snapshot,aircraft,current,target,current.time,duration,budget,
+                                           prefix=tuple(plans),work_descriptor=descriptor)
                     if not ok: return NormalReference("UNKNOWN",identity=key)
                     yield None
                     if p is not None:
@@ -454,11 +492,29 @@ class ReferenceProvider:
             q = self._reference(snapshot, node, c.plans, "catalog_minimum")
             return q
         key = (snapshot.config.config_hash, node.ring, node.slot, node.time, node.version,aircraft.id)
-        if key in self.cache: self.hits += 1; return self.cache[key]
+        if key in self.cache:
+            self.hits += 1
+            if self.advisor_runtime is not None:
+                self._register_reused_chain(snapshot,aircraft,node,self.cache[key].plans,budget)
+            return self.cache[key]
         gen=self.build_steps(snapshot,aircraft,node,budget or PlanningBudget())
         while True:
             try: next(gen)
             except StopIteration as stop: return stop.value
+
+    def _register_reused_chain(self,snapshot,a,node,plans,budget):
+        """Observe exact cached source epochs, without translating a plan."""
+        current=node;prefix=()
+        for p in plans:
+            if (p.source_ring,p.source_slot,p.source_version)!=(current.ring,current.slot,current.version) or p.start_time<current.time-1.e-8:
+                return
+            q=self.move_energy(current,p,snapshot.config)
+            if not all(math.isfinite(v) for v in q): return
+            self.advisor_runtime.register_reuse(snapshot,a,current,p,prefix,q)
+            prefix=(*prefix,p)
+            if p.target_ring is None: break
+            current=PlanningNode(p.target_ring,p.target_slot,p.end_time,current.soc-q[1],current.peak+q[2],
+                current.version+1,current.error_j+q[3],current.peak_error_s+q[4])
 
     @staticmethod
     def _reference(snapshot, node, plans, source):
@@ -725,7 +781,7 @@ class EvaluationContext:
 
 
 class CandidateProvider:
-    def __init__(self, reference_provider=None, planning_profile=PLANNING_PROFILE_LEGACY):
+    def __init__(self, reference_provider=None, planning_profile=PLANNING_PROFILE_LEGACY, advisor_runtime=None):
         candidate_policy_id(planning_profile)
         self.planning_profile=planning_profile
         self.references = reference_provider or ReferenceProvider()
@@ -733,6 +789,32 @@ class CandidateProvider:
         self.aligned_starts=[]
         self._aligned_by_node={}
         self.validation_cache={}
+        self.advisor_runtime=advisor_runtime if advisor_runtime is not None and advisor_runtime.enabled else None
+        self.references.advisor_runtime=self.advisor_runtime
+
+    def _pop_ready(self, heap, snapshot, a, budget, stage, extract, is_ready=None):
+        """Select from at most 64 existing ready items before generation.
+
+        Structural heap entries are still expanded by Stage2. Every descriptor
+        supplied here has a materialized node and a concrete generator tuple.
+        Only one work item is consumed per rank, so coverage/parent changes
+        invalidate the ranking before the next primitive attempt.
+        """
+        runtime=self.advisor_runtime
+        if runtime is None or (is_ready is not None and not is_ready(heap[0])):
+            return heapq.heappop(heap),None
+        ready=heapq.nsmallest(64,(item for item in heap if is_ready is None or is_ready(item)))
+        descriptors=[]
+        for item in ready:
+            node,chain,raw=extract(item)
+            target,start,duration,base=raw
+            descriptors.append(runtime.descriptor(snapshot,a,node,target,start,duration,stage,chain,base))
+        ranked=runtime.order(snapshot,descriptors,budget)
+        chosen=ready[descriptors.index(ranked[0])]
+        index=heap.index(chosen)
+        heap[index]=heap[-1];heap.pop()
+        if heap: heapq.heapify(heap)
+        return chosen,ranked[0]
 
     @staticmethod
     def _stop_prediction(snapshot,state):
@@ -860,7 +942,9 @@ class CandidateProvider:
         initial_energy=self.references._reference(snapshot,node,prefix,"ordering").energy_j if prefix else 0.
         push_state(node,prefix,initial_energy)
         while frontier and budget.available(a.id):
-            _,_,tag,current,chain,energy,work=heapq.heappop(frontier)
+            item,work_descriptor=self._pop_ready(frontier,snapshot,a,budget,"alternative",
+                lambda item:(item[3],item[4],item[6][0]),lambda item:item[2]=="TEMPLATE")
+            _,_,tag,current,chain,energy,work=item
             if tag=="STATE":
                 if chain and (current.time>=snapshot.time+HORIZON or len(chain)>=3):
                     emitted_column(chain)
@@ -905,7 +989,11 @@ class CandidateProvider:
                      (bool(chain) or root_counts[first]<2 or self.planning_profile==PLANNING_PROFILE_DOWNSTREAM) and
                      (start==base or start in aligned or len(aligned)<2))
             if allowed:
-                ok,p=self.references.generate(snapshot,a,current,target,start,duration,budget)
+                if self.advisor_runtime is None:
+                    ok,p=self.references.generate(snapshot,a,current,target,start,duration,budget)
+                else:
+                    ok,p=self.references.generate(snapshot,a,current,target,start,duration,budget,
+                        construction_stage="alternative",prefix=chain,base=base,work_descriptor=work_descriptor)
                 if not ok: break
                 yield ("ATTEMPT",None,None)
                 if p is not None and p.end_time<=snapshot.time+900:
@@ -1097,14 +1185,19 @@ class CandidateProvider:
             push(cursor)
         yield ("SCREEN",None,None)
         while heap and budget.available(a.id):
-            _,_,_,descriptor,cursor=heapq.heappop(heap)
+            item,work_descriptor=self._pop_ready(heap,snapshot,a,budget,"progress",lambda item:(node,(),item[3]))
+            _,_,_,descriptor,cursor=item
             target,start,duration,_=descriptor
             if self._current_progress_reservation_conflict(snapshot,a,node,target,start,duration):
                 budget.screening["progress_existing_reservation_skipped"]+=1
                 push(cursor)
                 continue
             before=budget.attempts[a.id]
-            ok,p=self.references.generate(snapshot,a,node,target,start,duration,budget)
+            if self.advisor_runtime is None:
+                ok,p=self.references.generate(snapshot,a,node,target,start,duration,budget)
+            else:
+                ok,p=self.references.generate(snapshot,a,node,target,start,duration,budget,
+                    construction_stage="progress",work_descriptor=work_descriptor)
             budget.screening["progress_attempts"]+=budget.attempts[a.id]-before
             if not ok: return
             push(cursor)
@@ -1132,8 +1225,13 @@ class CandidateProvider:
         for offset in self._search_offsets(snapshot,a,node)[1:]:
             for cursor in self._offset_cursors(snapshot,a,node,budget,offset,include_aligned=False): push(cursor)
         while heap and budget.available(a.id):
-            _,_,(target,start,duration,_),cursor=heapq.heappop(heap)
-            ok,p=self.references.generate(snapshot,a,node,target,start,duration,budget)
+            item,work_descriptor=self._pop_ready(heap,snapshot,a,budget,"alternative",lambda item:(node,(),item[2]))
+            _,_,(target,start,duration,base),cursor=item
+            if self.advisor_runtime is None:
+                ok,p=self.references.generate(snapshot,a,node,target,start,duration,budget)
+            else:
+                ok,p=self.references.generate(snapshot,a,node,target,start,duration,budget,
+                    construction_stage="alternative",base=base,work_descriptor=work_descriptor)
             if not ok: return
             push(cursor)
             if p is not None:
@@ -1158,7 +1256,11 @@ class CandidateProvider:
                                     if d>=duration-1.e-8 and witness is None),key=lambda item:(item[1],item[0]))
                 p=None; ok=True
                 for target,duration in options:
-                    ok,p=self.references.generate(snapshot,a,current,target,start,duration,budget)
+                    if self.advisor_runtime is None:
+                        ok,p=self.references.generate(snapshot,a,current,target,start,duration,budget)
+                    else:
+                        ok,p=self.references.generate(snapshot,a,current,target,start,duration,budget,
+                            construction_stage="reference",prefix=tuple(chain))
                     if not ok or p is not None: break
                 if not ok or p is None: break
                 q=self.references.move_energy(current,p,snapshot.config)
@@ -1194,6 +1296,8 @@ class CandidateProvider:
                     current.version+1,current.error_j+q[3],current.peak_error_s+q[4])
         budget.screening["previous_chain_hits"]+=1
         budget.screening["previous_prefix_trimmed"]+=len(previous)-len(plans)
+        if self.advisor_runtime is not None:
+            self.references._register_reused_chain(snapshot,a,node,plans,budget)
         return plans
 
     @staticmethod
@@ -1236,6 +1340,8 @@ class CandidateProvider:
         self._aligned_by_node={}
         start_hits=self.references.hits
         aircraft=_decision_aircraft(snapshot)
+        runtime=self.advisor_runtime
+        if runtime is not None: runtime.begin_snapshot(snapshot,budget,[a.id for a in aircraft])
         refs={}; slacks={}; columns={}; incomplete=[]
         # Immediate progress and full references share the same fixed budget.
         for a in aircraft:
@@ -1256,11 +1362,16 @@ class CandidateProvider:
             ref=(ReferenceProvider._reference(snapshot,_node(snapshot,a),plans,"catalog_minimum")
                  if plans[-1].pad_id is not None else refs[a.id])
             c=self._column(snapshot,a,plans,"MOVE",context,ref,emergency)
-            if c is not None and c.signature not in {x.signature for x in columns[a.id]} and context.check_single(c).accepted:
-                if not self._retain_column(columns[a.id],c,self.planning_profile): return False
-                counts[a.id].clear(); counts[a.id].update(x.first_target for x in columns[a.id] if x.kind=="MOVE")
-                if plans[-1].pad_id is not None and (refs[a.id].status!="KNOWN" or ref.energy_j<refs[a.id].energy_j): refs[a.id]=ref
-                return True
+            if c is not None and c.signature not in {x.signature for x in columns[a.id]}:
+                validation=context.check_single(c)
+                if validation.accepted:
+                    retained=self._retain_column(columns[a.id],c,self.planning_profile)
+                    if runtime is not None: runtime.record_column(c,validation,retained)
+                    if not retained: return False
+                    counts[a.id].clear(); counts[a.id].update(x.first_target for x in columns[a.id] if x.kind=="MOVE")
+                    if plans[-1].pad_id is not None and (refs[a.id].status!="KNOWN" or ref.energy_j<refs[a.id].energy_j): refs[a.id]=ref
+                    return True
+                if runtime is not None: runtime.record_column(c,validation,False)
             return False
         by_ring={ring:[a for a in ordered if _node(snapshot,a).ring==ring]
                  for ring in ("outer","middle","inner")}
@@ -1268,6 +1379,25 @@ class CandidateProvider:
                     for group in by_ring.values() if index<len(group)]
         progress={a.id:self._progress_steps(snapshot,a,_node(snapshot,a),budget,context) for a in seed_order
                   if _node(snapshot,a).time<=snapshot.time+5. and a.id not in snapshot.soft}
+        if runtime is not None and runtime.guided:
+            # SCREEN is enumeration, not a materialization opportunity. Advance
+            # each eligible aircraft to its first real query before learning.
+            # Future nodes are the actual endpoints of existing commitments;
+            # they remain predictions and still pass the common validator.
+            with budget.measure("stage3_initial_coverage"):
+                for a in seed_order:
+                    if not budget.available(): break
+                    gen=progress.get(a.id)
+                    if gen is None: gen=self._progress_steps(snapshot,a,_node(snapshot,a),budget,context)
+                    while budget.available(a.id):
+                        try: tag,plans,emergency=next(gen)
+                        except StopIteration:
+                            progress.pop(a.id,None); break
+                        if tag=="COLUMN":
+                            if add_column(a,plans,emergency): progress.pop(a.id,None)
+                            break
+                        if tag=="ATTEMPT": break
+            runtime.complete_initial_coverage()
         progress_start=Counter(budget.attempts)
         progress_share=.25 if self.planning_profile==PLANNING_PROFILE_DOWNSTREAM else .5
         with budget.measure("safe_progress_generation"):
@@ -1371,6 +1501,10 @@ class CandidateProvider:
             baseline={aid:values[0] for aid,values in columns.items()}
             for aid,values in columns.items():
                 columns[aid]=[replace(c,objective=downstream.key(tuple(dict(baseline,**{aid:c}).values())),downstream=demands[c.signature].diagnostics) for c in values]
+        if runtime is not None:
+            for values in columns.values():
+                for column in values: runtime.record_column(column,retained=True)
+            runtime.finish_snapshot(budget)
         return CandidateCatalog(MappingProxyType({k:tuple(v) for k,v in columns.items()}),MappingProxyType(slacks),
                                 MappingProxyType(dict(budget.attempts)),tuple(incomplete),self.references.hits-start_hits,
                                 MappingProxyType({aid:ref.status for aid,ref in refs.items()}),downstream)
@@ -1578,12 +1712,17 @@ class RollingHorizonCPSATScheduler:
 
 class NormalSchedulerCallback:
     """Callable SchedulerPort adapter; runner owns admission/emergency timing."""
-    def __init__(self,method="energy_slack",candidate_provider=None,budget_profile=QUALITY_BUDGET_PROFILE,planning_profile=PLANNING_PROFILE_LEGACY):
+    def __init__(self,method="energy_slack",candidate_provider=None,budget_profile=QUALITY_BUDGET_PROFILE,planning_profile=PLANNING_PROFILE_LEGACY,
+                 advisor_runtime=None,budget_scale=1.):
         self.scheduler=EnergySlackScheduler() if method=="energy_slack" else RollingHorizonCPSATScheduler() if method=="rh_cp_sat" else None
         if self.scheduler is None: raise ValueError("unknown Stage2 baseline")
         candidate_policy_id(planning_profile)
         self.planning_profile=planning_profile
-        self.provider=candidate_provider or CandidateProvider(planning_profile=planning_profile)
+        self.provider=candidate_provider or CandidateProvider(planning_profile=planning_profile,advisor_runtime=advisor_runtime)
+        if candidate_provider is not None and advisor_runtime is not None and self.provider.advisor_runtime is not advisor_runtime:
+            raise ValueError("candidate provider advisor runtime mismatch")
+        if budget_scale<=0 or not math.isfinite(budget_scale): raise ValueError("invalid candidate budget scale")
+        self.budget_scale=budget_scale
         if self.provider.planning_profile!=planning_profile: raise ValueError("candidate provider planning profile mismatch")
         PlanningBudget.for_profile(budget_profile)  # fail closed on unknown names
         self.budget_profile=budget_profile
@@ -1602,10 +1741,22 @@ class NormalSchedulerCallback:
                 "templates":[(key,p.to_dict() if p is not None else None) for key,p in self.provider.references.templates.items()],
                 "reference_hits":self.provider.references.hits}
         if self.planning_profile!=PLANNING_PROFILE_LEGACY: state["planning_profile"]=self.planning_profile
+        if self.provider.advisor_runtime is not None or self.budget_scale!=1.:
+            runtime=self.provider.advisor_runtime
+            state["stage3"]={"budget_scale":self.budget_scale,"mode":runtime.mode if runtime is not None else "OFF",
+                             "deterministic_only":runtime.deterministic_only if runtime is not None else False,
+                             "fingerprint":runtime.fingerprint if runtime is not None else {}}
         return json.loads(json.dumps(state,allow_nan=False))
 
     def load_state_dict(self,state):
         from .trajectory import TrajectoryPlan
+        runtime=self.provider.advisor_runtime
+        binding={"budget_scale":self.budget_scale,"mode":runtime.mode if runtime is not None else "OFF",
+                 "deterministic_only":runtime.deterministic_only if runtime is not None else False,
+                 "fingerprint":runtime.fingerprint if runtime is not None else {}}
+        saved=dict(state.get("stage3",{"budget_scale":1.,"mode":"OFF","fingerprint":{}}))
+        saved.setdefault("deterministic_only",False)
+        if saved!=binding: raise ValueError("Stage3 callback binding mismatch")
         if state["method"]!=self.scheduler.method: raise ValueError("scheduler method mismatch")
         if state.get("planning_profile",PLANNING_PROFILE_LEGACY)!=self.planning_profile: raise ValueError("scheduler planning profile mismatch")
         profile=state.get("budget_profile",LEGACY_BUDGET_PROFILE)
@@ -1624,6 +1775,9 @@ class NormalSchedulerCallback:
     def __call__(self,port,*args):
         if args: port=args[-1]  # executor callback(snapshot, port) convention
         budget=PlanningBudget.for_profile(self.budget_profile)
+        if self.budget_scale!=1.:
+            from .stage3_learning.runtime import scale_candidate_budget
+            scale_candidate_budget(budget,self.budget_scale)
         solver_history=[]
         for restart in range(2):
             with budget.measure("snapshot_and_uniform_refinement"):
@@ -1644,6 +1798,15 @@ class NormalSchedulerCallback:
         if result.certified and budget.watchdog_ok():
             with budget.measure("commit"):
                 commit=port.commit_validated_prefix(result.evaluation,snapshot_version=snapshot.version)
+        runtime=self.provider.advisor_runtime
+        if runtime is not None:
+            from .stage3_learning.adapters import stable_id
+            runtime.emit(dict(record_type="PlanningSelection",snapshot_id=runtime.snapshot_id,
+                selected_column_ids=[stable_id("column",c.signature) for c in result.selected],
+                selected_descriptor_ids=sorted({did for c in result.selected for p in c.plans for did in runtime._plans.get(p.trajectory_hash,())[-1:]}),
+                certified=result.certified,objective=list(result.objective),
+                submitted_trajectory_hashes=[p.trajectory_hash for p in result.prefix] if commit is not None and commit.accepted else [],
+                commit_status=getattr(commit,"status","NOT_COMMITTED")))
         evidence_report=None
         report=getattr(port,"report_normal_evidence",None)
         if _v6(snapshot) and callable(report):

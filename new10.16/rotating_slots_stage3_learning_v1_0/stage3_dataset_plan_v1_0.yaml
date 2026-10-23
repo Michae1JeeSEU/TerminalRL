@@ -1,0 +1,203 @@
+# 固定的数据血缘和场景计划；实际文件路径、hash和根状态在preflight中生成。
+schema_version: stage3_dataset_plan_v1_0
+contract_id: FT-RS-S3-INITIAL-1.0
+status: APPROVED_BOUNDED_PILOT_PLAN_NOT_GENERATED_DATA
+run_binding_required: true
+root_target: 24
+split_targets:
+  train: 16
+  validation: 4
+  test: 4
+roots:
+- root_id: s3r01
+  preferred_seed: 7301
+  split: train
+  scenario_profile: diagnostic18_rate120_v1
+  initial_aircraft: 18
+  arrival_rate_per_hour: 120
+- root_id: s3r02
+  preferred_seed: 7302
+  split: train
+  scenario_profile: medium24_rate150_v1
+  initial_aircraft: 24
+  arrival_rate_per_hour: 150
+- root_id: s3r03
+  preferred_seed: 7303
+  split: train
+  scenario_profile: stress36_rate180_v1
+  initial_aircraft: 36
+  arrival_rate_per_hour: 180
+- root_id: s3r04
+  preferred_seed: 7304
+  split: train
+  scenario_profile: diagnostic18_rate120_v1
+  initial_aircraft: 18
+  arrival_rate_per_hour: 120
+- root_id: s3r05
+  preferred_seed: 7305
+  split: train
+  scenario_profile: medium24_rate150_v1
+  initial_aircraft: 24
+  arrival_rate_per_hour: 150
+- root_id: s3r06
+  preferred_seed: 7306
+  split: train
+  scenario_profile: stress36_rate180_v1
+  initial_aircraft: 36
+  arrival_rate_per_hour: 180
+- root_id: s3r07
+  preferred_seed: 7307
+  split: train
+  scenario_profile: diagnostic18_rate120_v1
+  initial_aircraft: 18
+  arrival_rate_per_hour: 120
+- root_id: s3r08
+  preferred_seed: 7308
+  split: train
+  scenario_profile: medium24_rate150_v1
+  initial_aircraft: 24
+  arrival_rate_per_hour: 150
+- root_id: s3r09
+  preferred_seed: 7309
+  split: train
+  scenario_profile: stress36_rate180_v1
+  initial_aircraft: 36
+  arrival_rate_per_hour: 180
+- root_id: s3r10
+  preferred_seed: 7310
+  split: train
+  scenario_profile: diagnostic18_rate120_v1
+  initial_aircraft: 18
+  arrival_rate_per_hour: 120
+- root_id: s3r11
+  preferred_seed: 7311
+  split: train
+  scenario_profile: medium24_rate150_v1
+  initial_aircraft: 24
+  arrival_rate_per_hour: 150
+- root_id: s3r12
+  preferred_seed: 7312
+  split: train
+  scenario_profile: stress36_rate180_v1
+  initial_aircraft: 36
+  arrival_rate_per_hour: 180
+- root_id: s3r13
+  preferred_seed: 7313
+  split: train
+  scenario_profile: diagnostic18_rate120_v1
+  initial_aircraft: 18
+  arrival_rate_per_hour: 120
+- root_id: s3r14
+  preferred_seed: 7314
+  split: train
+  scenario_profile: medium24_rate150_v1
+  initial_aircraft: 24
+  arrival_rate_per_hour: 150
+- root_id: s3r15
+  preferred_seed: 7315
+  split: train
+  scenario_profile: stress36_rate180_v1
+  initial_aircraft: 36
+  arrival_rate_per_hour: 180
+- root_id: s3r16
+  preferred_seed: 7316
+  split: train
+  scenario_profile: diagnostic18_rate120_v1
+  initial_aircraft: 18
+  arrival_rate_per_hour: 120
+- root_id: s3r17
+  preferred_seed: 7317
+  split: validation
+  scenario_profile: medium24_rate150_v1
+  initial_aircraft: 24
+  arrival_rate_per_hour: 150
+- root_id: s3r18
+  preferred_seed: 7318
+  split: validation
+  scenario_profile: stress36_rate180_v1
+  initial_aircraft: 36
+  arrival_rate_per_hour: 180
+- root_id: s3r19
+  preferred_seed: 7319
+  split: validation
+  scenario_profile: diagnostic18_rate120_v1
+  initial_aircraft: 18
+  arrival_rate_per_hour: 120
+- root_id: s3r20
+  preferred_seed: 7320
+  split: validation
+  scenario_profile: medium24_rate150_v1
+  initial_aircraft: 24
+  arrival_rate_per_hour: 150
+- root_id: s3r21
+  preferred_seed: 7321
+  split: test
+  scenario_profile: stress36_rate180_v1
+  initial_aircraft: 36
+  arrival_rate_per_hour: 180
+- root_id: s3r22
+  preferred_seed: 7322
+  split: test
+  scenario_profile: diagnostic18_rate120_v1
+  initial_aircraft: 18
+  arrival_rate_per_hour: 120
+- root_id: s3r23
+  preferred_seed: 7323
+  split: test
+  scenario_profile: medium24_rate150_v1
+  initial_aircraft: 24
+  arrival_rate_per_hour: 150
+- root_id: s3r24
+  preferred_seed: 7324
+  split: test
+  scenario_profile: stress36_rate180_v1
+  initial_aircraft: 36
+  arrival_rate_per_hour: 180
+input_sources:
+  priority:
+  - COMPATIBLE_UNSEEN_INDEPENDENT_EXISTING_ROOT
+  - EXISTING_VALID_FIXTURE_FACTORY_NEW_SEED
+  factory_preserve:
+  - physical_config
+  - service_distribution
+  - SOC_distribution
+  - slot_safety
+  - emergency_rules
+  - admission_rules
+  never_fabricate:
+  - in_flight_commitments
+  - past_energy_ledger
+  - historical_failures
+  - passed_audits
+seed_collision_policy:
+  meaning: preferred seed already used for development or another ancestry
+  action: deterministically_allocate_smallest_unused_integer_ge_7301_and_freeze_before_labels
+  look_at_outcomes_to_pick_seed: false
+grouping_keys:
+- ancestry_root_id
+- manifest_lineage_id
+- checkpoint_parent_id
+grouping_policy: CONNECTED_COMPONENTS_CANNOT_CROSS_SPLITS
+development:
+  seed_71_role: DEVELOPMENT_ONLY
+  snapshots_max: 18
+  rerun_long_history_to_fill: false
+  formal_training_use: false
+  formal_validation_use: false
+  formal_test_use: false
+  debug_weights_reusable: false
+heldout_access: AFTER_MODEL_AND_NORMALIZER_FREEZE_ONLY
+mixed_policy_prefix: PRESERVE_SEGMENT_PROVENANCE_NOT_RELABEL_AS_PURE_NEW_POLICY
+legacy_failed_frame_audits: NO_RECLASSIFICATION_FILTER_EVENT_DEPENDENT_LABELS
+short_pilot:
+  preferred_root_id: s3r23
+  preferred_seed: 7323
+  profile: medium24_rate150_v1
+  selection_rule: first_medium_in_frozen_test_order
+  missing_case_action: EVALUATION_INPUT_MISSING_NO_TRAIN_ROOT_SUBSTITUTION
+  sim_seconds: 60
+  manifest_shared_by_all_arms: true
+  unrevealed_manifest_in_features: false
+budget_limited_policy: SAVE_ACTUAL_COUNTS_NO_RESAMPLING_TO_FORCE_TARGET
+statistical_claim: PILOT_ONLY_NOT_LONG_HORIZON_GENERALIZATION_EVIDENCE
+heldout_precollection: AUTOMATED_SEALED_LABELS_ALLOWED_NO_TRAIN_OR_TUNING_ACCESS

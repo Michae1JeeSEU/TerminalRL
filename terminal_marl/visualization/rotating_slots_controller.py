@@ -244,9 +244,14 @@ class ReplayController:
         upstream = _plain(frame.get("upstream", ()))
         dispatch = [r for r in self.bundle.data.get("dispatch_timings", ()) if r["time"] <= self.time]
         predictions = [r for r in self.bundle.data.get("tentative_predictions", ()) if r.get("as_of",0.)<=self.time]
+        stage3 = [_plain(r) for r in self.bundle.data.get("stage3_trace", ()) if r.get("as_of",0.)<=self.time]
         return {"minimum_current_3d_pair": current_min, "minimum_current_time": self.time,
             "latest_dispatch_timing": _plain(dispatch[-1]) if dispatch else None,
             "tentative_predictions": _plain(predictions),
+            "stage3_proposals": [r for r in stage3 if r.get("record_type")=="WorkDescriptor"],
+            "stage3_attempts": [r for r in stage3 if r.get("record_type")=="FactualResult"],
+            "stage3_ranking": [r for r in stage3 if r.get("record_type")=="Rank"],
+            "stage3_authority": "COMPUTATION_ONLY_SEE_CURRENT_COMMITS_FOR_EXECUTION",
             "failed_isolated": [a for a in aircraft if a.get("status") == "ENERGY_MISSION_FAILED"],
             "failure_archive": _plain(self.bundle.data.get("failure_archive", {})),
             "logged_metrics": _plain(frame.get("metrics", {})),
@@ -316,6 +321,13 @@ class ReplayController:
             lines.append(f'Isolated loss markers={len(overlay["failed_isolated"])}; abstract isolation, no accident cascade')
             if timing:
                 lines.append(f'Normal wall={timing["normal_wall_s"]:.4f}s; full dispatch wall={timing["dispatch_wall_s"]:.4f}s')
+        if overlay["stage3_proposals"] or overlay["stage3_attempts"]:
+            lines.append(f'Stage3 computation: proposals={len(overlay["stage3_proposals"])}; attempts={len(overlay["stage3_attempts"])}; commits={len(overlay["current_commits"])}')
+            if overlay["stage3_ranking"]:
+                lines.append('Last proposal order: '+', '.join(overlay["stage3_ranking"][-1].get("ordered_ids",())[:3]))
+            if overlay["stage3_attempts"]:
+                attempt=overlay["stage3_attempts"][-1]
+                lines.append(f'Last attempt {attempt.get("descriptor_id")}: {attempt.get("outcome")} / {attempt.get("reason", "")}; computation only')
         for pad in overlay["pad_resources"]:
             prefix = f'P{pad["id"]} '
             if pad["occupant_id"] is not None:

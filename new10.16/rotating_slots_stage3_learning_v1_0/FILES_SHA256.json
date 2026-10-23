@@ -1,0 +1,16 @@
+{
+  "algorithm": "SHA-256",
+  "scope": "all regular package files except FILES_SHA256.json itself",
+  "files": {
+    "CHANGELOG.md": "4a95e212f665a6acc0df257e8e5925b58b34f930af03fac3e61584ac0b090838",
+    "DOCUMENT_CHECK.json": "b3b562d16f0c03365c9ee861a260581613a166902c4490b0aa044430b27b57e7",
+    "IMPLEMENTATION_ENTRY.md": "0063cb1b86de6b81be95bd70cc4823dec0279c47d8607c462a8814ad022d7ba4",
+    "README.md": "d0a6792c1b7203de7bf408e02a8bfe1e1f1569f84f9c6a79713e68803cb8c7e3",
+    "stage3_data_schema_v1_0.json": "30e1aa334a3cd5015a4d0a30e7223af0f3de316527a2bdb2e3b58c0152cb37ff",
+    "stage3_dataset_plan_v1_0.yaml": "b0208fe7a56285ab768b3f4396e4eee8f5e1986f2a7d9bdb408b42c93d16070b",
+    "stage3_learning_config_v1_0.yaml": "44535eb240a24219ce557edc7dd5d309256fbdb318f86ad2b07151918db3cfe7",
+    "stage3_learning_initial_contract_v1_0.md": "bbeaacb3126539ddc8931feca89b6c53e973af292912ca3e830f2852a7ee3f2a",
+    "stage3_targeted_checks_v1_0.json": "ab25261217a26b63d2a3822b8ccbf3c0f51327a8bc72c44e98ebb4c6f4943e4d",
+    "validate_package.py": "3fe67c9cd3e1ce3e09a49883c20a8d60d7829e0e37a4ef232ca690c1a34321d3"
+  }
+}

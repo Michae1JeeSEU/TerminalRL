@@ -176,6 +176,9 @@ class ReplayBundle:
                 payloads[name+".json"] = _json(source.get(name, {} if name != "tentative_predictions" else []))
             payloads["visual_acceptance.json"] = _json({"researcher_visual_acceptance":"HUMAN_PENDING",
                 "observer":None,"observed_at":None,"observations":[],"visualization_integration_status":"NOT_OBSERVED"})
+        if "stage3_trace" in source:
+            # Computation proposals never enter the authoritative trajectory map.
+            payloads["stage3_trace.jsonl"] = b"".join(_json(row)+b"\n" for row in source["stage3_trace"])
         for name, content in payloads.items():
             (root / name).write_bytes(content)
         hashes = {name: sha256(content).hexdigest() for name, content in payloads.items()}
