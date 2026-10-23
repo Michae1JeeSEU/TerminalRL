@@ -14,7 +14,8 @@ function consoleHarness(overrides = {}) {
   const source = readFileSync(new URL("../terminal_marl/visualization/web/console.js", import.meta.url), "utf8")
     .replace(/^import Scene from .*;\r?\n/, "")
     .replace(/\binitialize\(\);\s*$/, "");
-  vm.runInContext(`${source}\nglobalThis.harness = {state, sameAircraft, discreteReplay, interpolateFrame, displayFrame, renderFlights, appendServerPayload, metricsForFrame, referenceAtTime, validateReplayPayload, formatSoc, requestJson};`, context);
+  const sceneSource = readFileSync(new URL("../terminal_marl/visualization/web/scene.js", import.meta.url), "utf8").replace("export default class Scene", "class Scene");
+  vm.runInContext(`${sceneSource}\n${source}\nglobalThis.harness = {state, sameAircraft, discreteReplay, interpolateFrame, displayFrame, renderFlights, renderKpis, updateHistory, appendServerPayload, metricsForFrame, referenceAtTime, validateReplayPayload, formatSoc, requestJson};`, context);
   return context.harness;
 }
 
@@ -139,4 +140,83 @@ test("API errors expose the descriptive server message", async () => {
   const message = "replay cannot be read: D:/missing/replay.json";
   const h = consoleHarness({ fetch: async () => ({ ok: false, status: 400, text: async () => JSON.stringify({ error: "invalid_request", message }) }) });
   await assert.rejects(h.requestJson("/replay", { method: "POST", body: "{}" }), (error) => error.message === message && error.status === 400);
+});
+
+test("recorded energy and rolling flow values are selected-frame values, including zero and unknown", () => {
+  const h = consoleHarness();
+  const later = frame(480, { energy_diagnostics: { low_soc_threshold: .35, low_soc_count: 9, emergency_active_count: 6, emergency_landed_count: 0 },
+    traffic_flow: { window_s: 60, nominal_rate_per_hour: 180, requested_per_hour: 180, admitted_per_hour: 120, landed_per_hour: 0 } });
+  const earlier = frame(30, { energy_diagnostics: { low_soc_threshold: .35, low_soc_count: 1, emergency_active_count: 0, emergency_landed_count: null },
+    traffic_flow: { window_s: 30, nominal_rate_per_hour: 180, requested_per_hour: 120, admitted_per_hour: 0, landed_per_hour: 0 } });
+  h.state.frames = [earlier, later];
+  h.state.currentIndex = 1;
+  assert.equal(h.metricsForFrame(h.displayFrame()).emergencyActive, 6);
+  assert.equal(h.metricsForFrame(later).emergencyLanded, 0);
+  assert.equal(h.metricsForFrame(later).landedFlow, 0);
+  h.state.currentIndex = 0;
+  const values = h.metricsForFrame(h.displayFrame());
+  assert.equal(values.lowSoc, 1); assert.equal(values.emergencyActive, 0); assert.equal(values.emergencyLanded, null);
+  assert.equal(values.flowWindow, 30); assert.equal(values.nominalFlow, 180); assert.equal(values.requestedFlow, 120);
+  assert.equal(values.admittedFlow, 0);
+  assert.equal(h.metricsForFrame(frame(0, { traffic_flow: { window_s: 0, landed_per_hour: 0 } })).landedFlow, null);
+  const unknown = h.metricsForFrame({ time: 0 });
+  for (const key of ["lowSoc", "emergencyActive", "emergencyLanded", "nominalFlow", "requestedFlow", "admittedFlow", "landedFlow"]) assert.equal(unknown[key], null, key);
+});
+
+test("legacy current counts use flags and exclude ground/frozen records; cumulative counts require touchdown", () => {
+  const h = consoleHarness();
+  const f = frame(15, { uavs: [
+    { phase: "HOLD", soc: .3, low_soc: true, emergency_landing: true },
+    { phase: "HOLD", energy_alert: "low_soc", emergency_landing: false },
+    { phase: "HOLD", energy_alert: "normal", emergency_landing: false },
+    ...["LANDED_SERVICE", "CLEARED", "ENERGY_MISSION_FAILED", "CENSORED_DUE_TO_FAILURE"].map((status) => ({ phase: "HOLD", status, low_soc: true, emergency_landing: true })),
+  ], terminal_events: [{ type: "emergency_declared", time: 5, emergency: true },
+    { outcome: "touchdown", time: 10, emergency: true }, { outcome: "touchdown", time: 12, emergency: false },
+    { outcome: "touchdown", time: 20, emergency: true }] });
+  const values = h.metricsForFrame(f);
+  assert.equal(values.lowSoc, 2); assert.equal(values.emergencyActive, 1); assert.equal(values.emergencyLanded, 1);
+  assert.equal(values.threshold, null);
+  assert.equal(h.metricsForFrame(frame(0, { uavs: [{ phase: "HOLD", soc: .1 }] })).lowSoc, null);
+  assert.equal(h.metricsForFrame(frame(15, { terminal_events: [{ outcome: "touchdown", time: 10 }] })).emergencyLanded, null);
+  assert.equal(h.metricsForFrame(frame(15, { telemetry: { L_emergency: 4 } })).emergencyLanded, 4);
+  assert.equal(h.metricsForFrame(frame(15, { telemetry: { emergency_landed: 0, L_emergency: 4 } })).emergencyLanded, 0);
+  assert.equal(h.metricsForFrame(frame(0)).lowSoc, 0);
+  assert.equal(h.metricsForFrame(frame(0)).emergencyLanded, null);
+  assert.equal(h.metricsForFrame(frame(0, { console_replay_kind: "rotating_slots" })).emergencyLanded, 0);
+  assert.equal(h.metricsForFrame(frame(0, { console_replay_kind: "rotating_slots", energy_diagnostics: { emergency_landed_count: null } })).emergencyLanded, null);
+  h.state.metadata = { replay_kind: "rotating_slots" };
+  assert.equal(h.metricsForFrame(frame(0)).emergencyLanded, null);
+});
+
+test("KPI labels retain units, partial window and unknown values after seeking", () => {
+  const elements = new Map();
+  const h = consoleHarness({ document: { getElementById(id) { if (!elements.has(id)) elements.set(id, {}); return elements.get(id); } } });
+  h.renderKpis(frame(480, { energy_diagnostics: { low_soc_threshold: .35, low_soc_count: 8, emergency_active_count: 6, emergency_landed_count: 0 }, traffic_flow: { window_s: 60, nominal_rate_per_hour: 180, admitted_per_hour: 120, landed_per_hour: 0 } }));
+  assert.equal(elements.get("kpiLowSocLabel").textContent, "低电量 ≤35%");
+  assert.equal(elements.get("kpiEmergencyActive").textContent, "当前应急 6");
+  assert.equal(elements.get("kpiEmergencyLanded").textContent, "0");
+  assert.equal(elements.get("kpiDemand").textContent, "180");
+  assert.equal(elements.get("kpiLandedFlow").textContent, "0.0");
+  h.renderKpis(frame(10, { traffic_flow: { window_s: 10, landed_per_hour: 0 } }));
+  assert.equal(elements.get("kpiFlowWindow").textContent, "近10.0 s / 起始窗口");
+  assert.equal(elements.get("kpiDemand").textContent, "—");
+  h.renderKpis(null);
+  assert.equal(elements.get("kpiEmergencyActive").textContent, "当前应急 —");
+  assert.equal(elements.get("kpiEmergencyLanded").textContent, "—");
+});
+
+test("emergency history crosses approach/descent phases, splits gaps and rewinds without future points", () => {
+  const h = consoleHarness();
+  const uav = (phase, x, extra = {}) => ({ uid: 7, phase, position: [x, 0, 20 - x], committed: true, trajectory_kind: "FINAL_EMERGENCY", ...extra });
+  h.state.frames = [frame(0, { uavs: [uav("FINAL_EMERGENCY", 0)] }),
+    frame(1, { uavs: [uav("VERTICAL_DESCENT", 1)] }),
+    frame(2, { uavs: [uav("LANDED_SERVICE", 2)] }), frame(3),
+    frame(4, { uavs: [uav("FINAL_EMERGENCY", 4)] }), frame(5)];
+  let points = h.updateHistory(5).get("7:emergency");
+  assert.deepEqual(JSON.parse(JSON.stringify(points)), [[0, 0, 20], [1, 0, 19], null, [4, 0, 16], null]);
+  points = h.updateHistory(1).get("7:emergency");
+  assert.deepEqual(JSON.parse(JSON.stringify(points)), [[0, 0, 20], [1, 0, 19]]);
+  h.state.frames = Array.from({ length: 905 }, (_, index) => frame(index, { uavs: [uav("FINAL_EMERGENCY", index)] }));
+  h.state.historyCache = { index: -1, map: new Map() };
+  assert.equal(h.updateHistory(904).get("7:emergency").length, 900);
 });

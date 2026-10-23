@@ -570,6 +570,7 @@ function updateHistory(index) {
   if (index < state.historyCache.index) clearHistory();
   const map = state.historyCache.map;
   for (let i = state.historyCache.index + 1; i <= index; i += 1) {
+    const emergencyUids = new Set();
     for (const uav of safeArray(state.frames[i]?.uavs)) {
       if (!finitePoint(uav.position)) continue;
       const key = `${uav.uid}:${uav.phase}`;
@@ -577,6 +578,20 @@ function updateHistory(index) {
       points.push(uav.position.slice(0, 3).map(Number));
       if (points.length > 900) points.splice(0, points.length - 900);
       map.set(key, points);
+      if (Scene.emergencyFlight(uav)) {
+        const emergencyKey = `${uav.uid}:emergency`;
+        const emergencyPoints = map.get(emergencyKey) || [];
+        emergencyPoints.push(uav.position.slice(0, 3).map(Number));
+        if (emergencyPoints.length > 900) emergencyPoints.splice(0, emergencyPoints.length - 900);
+        map.set(emergencyKey, emergencyPoints);
+        emergencyUids.add(emergencyKey);
+      }
+    }
+    for (const [key, points] of map) {
+      if (key.endsWith(":emergency") && !emergencyUids.has(key) && points.length && points.at(-1) !== null) {
+        points.push(null);
+        if (points.length > 900) points.splice(0, points.length - 900);
+      }
     }
   }
   state.historyCache.index = index;
@@ -695,11 +710,51 @@ function syncLayerInputs() {
   for (const [key, id] of Object.entries(ids)) $(id).checked = Boolean(state.layers[key]);
 }
 
+function energyState(value) { return String(value ?? "").trim().toUpperCase().replace(/[\s-]+/g, "_"); }
+
+function airborneForEnergy(uav) {
+  return ![uav.phase, uav.status, uav.original_status].some((value) =>
+    /LANDED|SERVICE|CLEARED|COMPLETED|FAIL|CENSORED|REROUTED|UNRELEASED|GROUND|HARD_SEPARATION_VIOLATION/.test(energyState(value)));
+}
+
+function energyFlags(uav, threshold = null) {
+  if (!airborneForEnergy(uav)) return { low: false, emergency: false };
+  const alert = energyState(uav.energy_alert), phase = energyState(uav.phase);
+  const emergency = uav.emergency_landing === true || alert === "EMERGENCY" || phase === "FINAL_EMERGENCY" || energyState(uav.rescue_status) === "ACTIVE"
+    || uav.committed === true && energyState(uav.trajectory_kind) === "FINAL_EMERGENCY" ? true
+    : typeof uav.emergency_landing === "boolean" || ["NORMAL", "LOW_SOC"].includes(alert) ? false : null;
+  const soc = finiteNumber(uav.soc);
+  const low = typeof uav.low_soc === "boolean" ? uav.low_soc : threshold !== null && soc !== null ? soc <= threshold
+    : alert === "LOW_SOC" ? true : alert === "NORMAL" ? false : null;
+  return { low, emergency };
+}
+
+function energyMetricsForFrame(frame) {
+  const recorded = frame?.energy_diagnostics;
+  const threshold = finiteNumber(recorded?.low_soc_threshold);
+  const airborne = safeArray(frame?.uavs).filter(airborneForEnergy);
+  const flags = airborne.map((uav) => energyFlags(uav, threshold));
+  const count = (key) => !Array.isArray(frame?.uavs) || flags.some((item) => item[key] === null) ? null : flags.filter((item) => item[key]).length;
+  const hasRecorded = (key) => recorded != null && Object.hasOwn(recorded, key);
+  let landed = hasRecorded("emergency_landed_count") ? finiteNumber(recorded.emergency_landed_count) : finiteNumber(frame?.telemetry?.emergency_landed, finiteNumber(frame?.telemetry?.L_emergency));
+  if (!hasRecorded("emergency_landed_count") && landed === null && Array.isArray(frame?.terminal_events)) {
+    const touchdowns = frame.terminal_events.filter((event) => energyState(event.outcome ?? event.type) === "TOUCHDOWN" && finiteNumber(event.time) !== null && Number(event.time) <= Number(frame.time));
+    const emergencyFlag = (event) => event.emergency ?? event.emergency_landing ?? event.details?.emergency;
+    landed = (touchdowns.length > 0 || discreteReplay(frame, {})) && touchdowns.every((event) => typeof emergencyFlag(event) === "boolean") ? touchdowns.filter((event) => emergencyFlag(event) === true).length : null;
+  }
+  return { threshold, lowSoc: hasRecorded("low_soc_count") ? finiteNumber(recorded.low_soc_count) : count("low"), emergencyActive: hasRecorded("emergency_active_count") ? finiteNumber(recorded.emergency_active_count) : count("emergency"), emergencyLanded: landed };
+}
+
 function metricsForFrame(frame) {
-  if (!frame) return { active: null, queue: null, completed: null, minSoc: null };
+  const energy = energyMetricsForFrame(frame);
+  const flow = frame?.traffic_flow;
+  const window = finiteNumber(flow?.window_s);
+  const rate = (key) => window === 0 ? null : finiteNumber(flow?.[key]);
+  const diagnostics = { ...energy, flowWindow: window, nominalFlow: finiteNumber(flow?.nominal_rate_per_hour), requestedFlow: rate("requested_per_hour"), admittedFlow: rate("admitted_per_hour"), landedFlow: rate("landed_per_hour") };
+  if (!frame) return { active: null, queue: null, completed: null, minSoc: null, ...diagnostics };
   const uavs = safeArray(frame.uavs);
   const socs = uavs.map((uav) => finiteNumber(uav.soc)).filter((value) => value !== null);
-  return { active: finiteNumber(frame.active_count, uavs.length), queue: finiteNumber(frame.rotating_slots?.upstream_waiting_count, finiteNumber(frame.external_queue_size)), completed: finiteNumber(frame.completed_count), minSoc: socs.length ? Math.min(...socs) : null };
+  return { active: finiteNumber(frame.active_count, uavs.length), queue: finiteNumber(frame.rotating_slots?.upstream_waiting_count, finiteNumber(frame.external_queue_size)), completed: finiteNumber(frame.completed_count), minSoc: socs.length ? Math.min(...socs) : null, ...diagnostics };
 }
 
 function referenceAtTime(time) {
@@ -758,6 +813,14 @@ function renderKpis(frame) {
   $("kpiQueue").textContent = `${frame?.rotating_slots ? "上游等待" : "队列"} ${metrics.queue === null ? "—" : metrics.queue}`;
   $("kpiService").textContent = frame ? String(finiteNumber(frame.service_count, 0)) : "—";
   $("kpiCompleted").textContent = metrics.completed === null ? "—" : String(metrics.completed);
+  const countLabel = (value) => value === null ? "—" : String(value);
+  $("kpiLowSoc").textContent = countLabel(metrics.lowSoc);
+  $("kpiLowSocLabel").textContent = metrics.threshold === null ? "低电量" : `低电量 ≤${formatNumber(metrics.threshold * 100, 0)}%`;
+  $("kpiEmergencyActive").textContent = `当前应急 ${countLabel(metrics.emergencyActive)}`;
+  $("kpiEmergencyLanded").textContent = countLabel(metrics.emergencyLanded);
+  $("kpiDemand").textContent = formatNumber(metrics.nominalFlow, 0);
+  $("kpiFlowWindow").textContent = metrics.flowWindow === null ? "观测窗口 —" : metrics.flowWindow < 60 ? `近${formatNumber(metrics.flowWindow, 1)} s / 起始窗口` : `近${formatNumber(metrics.flowWindow, 0)} s`;
+  for (const [id, value] of [["kpiRequestedFlow", metrics.requestedFlow], ["kpiAdmittedFlow", metrics.admittedFlow], ["kpiLandedFlow", metrics.landedFlow]]) $(id).textContent = formatNumber(value, 1);
   const occupancy = safeArray(frame?.rings).reduce((total, ring) => total + (finiteNumber(ring.occupancy, 0) || 0), 0);
   const capacity = safeArray(frame?.rings).reduce((total, ring) => total + (finiteNumber(ring.capacity, 0) || 0), 0);
   $("kpiOccupancy").textContent = frame ? `${occupancy}/${capacity}` : "—";
@@ -859,7 +922,19 @@ function renderFlights(frame) {
     const cells = [
       aircraftIdentity(uav), String(uav.phase ?? "—"), String(uav.ring_role ?? "—"), formatSoc(uav.soc), `${formatNumber(uav.speed, 1)} m/s`, uav.assigned_lz == null ? "—" : `LZ ${uav.assigned_lz}`, uav.status ?? uav.original_status ?? (conflict ? "冲突关注" : uav.committed ? "已承诺" : "等待"),
     ];
-    cells.forEach((value) => { const cell = document.createElement("td"); cell.textContent = value; row.append(cell); });
+    cells.forEach((value, index) => {
+      const cell = document.createElement("td"); cell.textContent = value;
+      if (index === 6) {
+        const flags = energyFlags(uav, finiteNumber(frame?.energy_diagnostics?.low_soc_threshold));
+        if (flags.emergency || flags.low) {
+          const badge = document.createElement("span");
+          badge.className = `flight-energy-badge ${flags.emergency ? "energy-emergency" : "energy-low"}`;
+          badge.textContent = flags.emergency ? "EMERGENCY" : "LOW SOC";
+          cell.append(badge);
+        }
+      }
+      row.append(cell);
+    });
     body.append(row);
   }
   $("flightTableEmpty").hidden = uavs.length > 0;

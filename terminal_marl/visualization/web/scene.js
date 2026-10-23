@@ -4,6 +4,36 @@
  * import/export rewrite.
  */
 export default class Scene {
+  static _state(value) { return String(value ?? "").trim().toUpperCase().replace(/[\s-]+/g, "_"); }
+
+  static _airborne(uav) {
+    // Terminal and ground records can retain their last energy declaration.
+    return ![uav.phase, uav.status, uav.original_status].some((value) =>
+      /LANDED|SERVICE|CLEARED|COMPLETED|FAIL|CENSORED|REROUTED|UNRELEASED|GROUND|HARD_SEPARATION_VIOLATION/.test(Scene._state(value)));
+  }
+
+  static energyCue(uav, frame = {}) {
+    if (!Scene._airborne(uav)) return null;
+    const phase = Scene._state(uav.phase);
+    const alert = Scene._state(uav.energy_alert);
+    const emergency = uav.emergency_landing === true || alert === "EMERGENCY"
+      || phase === "FINAL_EMERGENCY" || Scene._state(uav.rescue_status) === "ACTIVE" || Scene.emergencyFlight(uav);
+    const soc = typeof uav.soc === "number" && Number.isFinite(uav.soc) ? uav.soc : null;
+    const low = typeof uav.low_soc === "boolean" ? uav.low_soc : alert === "LOW_SOC"
+      || frame.console_replay_kind === "rotating_slots" && soc !== null && soc <= .35;
+    if (!emergency && !low) return null;
+    return { kind: emergency ? "emergency" : "low_soc", color: emergency ? "#b23c43" : "#a66b13",
+      label: `${emergency ? "EMERGENCY" : "LOW SOC"} ${soc === null ? "—" : `${Math.round(soc * 100)}%`}` };
+  }
+
+  static emergencyFlight(uav) {
+    if (!Scene._airborne(uav)) return false;
+    const phase = Scene._state(uav.phase);
+    const moving = ["INBOUND", "TRANSFER_O_M", "TRANSFER_M_I", "FINAL_NORMAL", "FINAL_EMERGENCY", "VERTICAL_DESCENT", "TRANSFER", "FINAL_APPROACH"].includes(phase);
+    return phase === "FINAL_EMERGENCY" || moving && (Scene._state(uav.rescue_status) === "ACTIVE"
+      || uav.committed === true && Scene._state(uav.trajectory_kind) === "FINAL_EMERGENCY");
+  }
+
   constructor(canvas, options = {}) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
@@ -391,8 +421,13 @@ export default class Scene {
 
   _drawTrail(uav, points) {
     if (!Array.isArray(points) || points.length < 2) return;
-    const color = `${this._colorFor(uav.uid)}88`;
-    this._path(points, color, 1.2);
+    // Histories are keyed by recorded phase. A newly committed rescue plan
+    // must not recolor a preceding inbound/transfer/holding phase as rescue.
+    const phase = Scene._state(uav.phase);
+    const emergency = Scene.emergencyFlight(uav) && ["FINAL_EMERGENCY", "VERTICAL_DESCENT"].includes(phase);
+    if (emergency && this.history instanceof Map && this.history.has(`${uav.uid}:emergency`)) return;
+    const color = emergency ? "#b23c43" : `${this._colorFor(uav.uid)}88`;
+    this._path(points, color, emergency ? 3.5 : 1.2);
     const last = points[points.length - 1];
     if (this._finitePoint(last)) {
       const p = this._project(last);
@@ -400,20 +435,36 @@ export default class Scene {
     }
   }
 
+  _drawEmergencyHistory() {
+    if (!(this.history instanceof Map)) return;
+    for (const [key, points] of this.history) {
+      if (!String(key).endsWith(":emergency") || !Array.isArray(points)) continue;
+      let run = [];
+      const flush = () => { if (run.length >= 2) this._path(run, "#b23c43", 3.5); run = []; };
+      for (const point of points) {
+        if (this._finitePoint(point)) run.push(point);
+        else flush();
+      }
+      flush();
+    }
+  }
+
   _drawCommitted(uav) {
     const points = Array.isArray(uav.trajectory_points) ? uav.trajectory_points.filter((p) => this._finitePoint(p)) : [];
     if (points.length < 2) return;
     const selected = this.selectedUid != null && Number(uav.uid) === Number(this.selectedUid);
-    this._path(points, selected ? this._colorFor(uav.uid) : `${this._colorFor(uav.uid)}6e`, selected ? 1.7 : .95, false, [7, 4]);
+    const emergency = Scene.emergencyFlight(uav);
+    const color = emergency ? "#b23c43" : this._colorFor(uav.uid);
+    this._path(points, emergency ? color : selected ? color : `${color}6e`, emergency ? 4.5 : selected ? 1.7 : .95, false, emergency ? [8, 4] : [7, 4]);
     const end = this._project(points[points.length - 1]);
-    this.ctx.save(); this.ctx.strokeStyle = this._colorFor(uav.uid); this.ctx.globalAlpha = .7; this.ctx.lineWidth = 1; this.ctx.beginPath(); this.ctx.arc(end.x, end.y, 3, 0, Math.PI * 2); this.ctx.stroke(); this.ctx.restore();
+    this.ctx.save(); this.ctx.strokeStyle = color; this.ctx.globalAlpha = .7; this.ctx.lineWidth = 1; this.ctx.beginPath(); this.ctx.arc(end.x, end.y, 3, 0, Math.PI * 2); this.ctx.stroke(); this.ctx.restore();
   }
 
   _drawReferenceUav(uav) {
     if (!this._finitePoint(uav.position)) return;
     const p = this._project(uav.position);
     const match = (this.frame?.uavs || []).find((candidate) => uav.aircraft_id != null || candidate.aircraft_id != null ? uav.aircraft_id != null && candidate.aircraft_id != null && String(uav.aircraft_id) === String(candidate.aircraft_id) : uav.arrival_id != null && candidate.arrival_id != null && String(uav.arrival_id) === String(candidate.arrival_id));
-    const color = this._colorFor(match?.uid ?? uav.uid);
+    const color = Scene.emergencyFlight(uav) ? "#c98287" : this._colorFor(match?.uid ?? uav.uid);
     const size = 6;
     const ctx = this.ctx;
     ctx.save();
@@ -434,7 +485,8 @@ export default class Scene {
     const ctx = this.ctx;
     for (const uav of frame.uavs || []) {
       const points = Array.isArray(uav.trajectory_points) ? uav.trajectory_points.filter((p) => this._finitePoint(p)) : [];
-      if (points.length >= 2) this._path(points, `${this._colorFor(uav.uid)}82`, 1.1, false, [3, 4]);
+      const emergency = Scene.emergencyFlight(uav);
+      if (points.length >= 2) this._path(points, emergency ? "#c98287" : `${this._colorFor(uav.uid)}82`, emergency ? 1.7 : 1.1, false, emergency ? [2, 5] : [3, 4]);
     }
     const refs = Array.isArray(frame.uavs) ? frame.uavs.slice().sort((a, b) => this._depth(a.position) - this._depth(b.position)) : [];
     refs.forEach((uav) => this._drawReferenceUav(uav));
@@ -482,7 +534,8 @@ export default class Scene {
     ctx.rotate(heading);
     if (selected) { ctx.strokeStyle = "#202428"; ctx.globalAlpha = .95; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(0, 0, size + 6, 0, Math.PI * 2); ctx.stroke(); }
     if (conflict && this.layers.conflicts) { ctx.strokeStyle = "#b23c43"; ctx.globalAlpha = .88; ctx.lineWidth = 1.4; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.arc(0, 0, size + 4, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
-    ctx.strokeStyle = color; ctx.globalAlpha = .82; ctx.lineWidth = 1.5;
+    const cue = Scene.energyCue(uav, this.frame);
+    ctx.strokeStyle = color; ctx.globalAlpha = cue ? .96 : .82; ctx.lineWidth = cue?.kind === "emergency" ? 3.4 : cue ? 2.8 : 1.5;
     const arm = size * .85;
     ctx.beginPath(); ctx.moveTo(-arm, -arm); ctx.lineTo(arm, arm); ctx.moveTo(-arm, arm); ctx.lineTo(arm, -arm); ctx.stroke();
     ctx.fillStyle = `${color}32`;
@@ -492,6 +545,77 @@ export default class Scene {
     ctx.restore();
     if (showLabel || selected || hovered) {
       ctx.save(); ctx.font = `${selected ? "600 " : ""}10px Inter, system-ui, sans-serif`; ctx.fillStyle = selected ? "#171a1d" : "#444a50"; ctx.fillText(String(uav.aircraft_id ?? `U${uav.uid}`), p.x + 12, p.y - 9); ctx.restore();
+    }
+  }
+
+  _drawEnergyAlerts(uavs, now = performance.now()) {
+    const ctx = this.ctx;
+    const alerts = uavs.filter((uav) => this._finitePoint(uav.position))
+      .map((uav) => ({ uav, cue: Scene.energyCue(uav, this.frame), p: this._project(uav.position) }))
+      .filter(({ cue }) => cue);
+    // Reserve glyphs and pad IDs before placing any tags. This pass is separate
+    // from ordinary labels so safety information survives the label toggle.
+    const obstacles = uavs.filter((uav) => this._finitePoint(uav.position)).map((uav) => {
+      const p = this._project(uav.position);
+      return { x: p.x - 15, y: p.y - 15, w: 30, h: 30, weight: 2 };
+    });
+    if (this.layers.landingZones) for (const zone of this.frame?.landing_zones || []) {
+      if (!this._finitePoint(zone.position)) continue;
+      const p = this._project(zone.position);
+      const size = Math.max(14, Math.min(19, this.metrics.scale * 2.4));
+      obstacles.push({ x: p.x - 20, y: p.y + size - 8, w: 40, h: 18, weight: 1000 });
+    }
+    for (const { p, cue } of alerts) {
+      ctx.save(); ctx.strokeStyle = cue.color; ctx.lineWidth = cue.kind === "emergency" ? 3.5 : 3;
+      ctx.beginPath();
+      if (cue.kind === "emergency") {
+        ctx.moveTo(p.x, p.y - 14); ctx.lineTo(p.x + 14, p.y); ctx.lineTo(p.x, p.y + 14); ctx.lineTo(p.x - 14, p.y); ctx.closePath();
+      } else ctx.arc(p.x, p.y, 13, 0, Math.PI * 2);
+      ctx.stroke();
+      if (cue.kind === "emergency") {
+        ctx.beginPath(); ctx.arc(p.x, p.y, 10, 0, Math.PI * 2); ctx.stroke();
+        // Wall time drives the halo independently of replay time, including
+        // paused playback. Aircraft, diamond and tag never blink away.
+        const pulse = (1 + Math.cos(now * Math.PI * 2 / 1000)) / 2;
+        ctx.globalAlpha = .2 + .7 * pulse; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 17 + 3 * pulse, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    // Deterministic finite search: the nearest available compact position wins;
+    // dense scenes use the least overlapping candidate, never drop an alert.
+    for (const { uav, p, cue } of alerts) {
+      const identity = String(uav.aircraft_id ?? `U${uav.uid}`);
+      const text = `${identity.length > 12 ? `${identity.slice(0, 4)}…${identity.slice(-7)}` : identity} · ${cue.label}`;
+      ctx.save(); ctx.font = "600 11px Inter, system-ui, sans-serif";
+      const w = ctx.measureText(text).width + 10, h = 19;
+      const candidates = [];
+      for (const dy of [-24, 6, -46, 28, -68, 50, -90, 72]) {
+        for (const dx of [18, -w - 18, -w / 2]) {
+          const x = Math.max(4, Math.min(this.metrics.cssWidth - w - 4, p.x + dx));
+          const y = Math.max(4, Math.min(this.metrics.cssHeight - h - 4, p.y + dy));
+          let score = Math.hypot(Math.max(x - p.x, 0, p.x - x - w), Math.max(y - p.y, 0, p.y - y - h));
+          for (const box of obstacles) {
+            const overlap = Math.max(0, Math.min(x + w + 3, box.x + box.w) - Math.max(x - 3, box.x))
+              * Math.max(0, Math.min(y + h + 3, box.y + box.h) - Math.max(y - 3, box.y));
+            score += overlap * box.weight;
+          }
+          candidates.push({ x, y, w, h, score });
+        }
+      }
+      const box = candidates.reduce((best, candidate) => candidate.score < best.score ? candidate : best);
+      const endX = Math.max(box.x, Math.min(box.x + w, p.x));
+      const endY = Math.max(box.y, Math.min(box.y + h, p.y));
+      const length = Math.hypot(endX - p.x, endY - p.y) || 1;
+      const trim = Math.min(15, length);
+      ctx.strokeStyle = cue.color; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(p.x + (endX - p.x) / length * trim, p.y + (endY - p.y) / length * trim); ctx.lineTo(endX, endY); ctx.stroke();
+      ctx.fillStyle = "#fffffff2"; ctx.fillRect(box.x, box.y, w, h);
+      ctx.strokeStyle = cue.color; ctx.lineWidth = .8; ctx.strokeRect(box.x, box.y, w, h);
+      ctx.fillStyle = cue.color; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+      ctx.fillText(text, box.x + 5, box.y + h / 2);
+      ctx.restore();
+      obstacles.push({ ...box, weight: 10 });
     }
   }
 
@@ -533,10 +657,14 @@ export default class Scene {
     this._drawTerminalEvents(this.frame);
     const conflicts = new Set((this.frame.recent_conflict_uids || []).map((uid) => Number(uid)));
     const uavs = Array.isArray(this.frame.uavs) ? this.frame.uavs.slice() : [];
-    if (this.layers.trails) uavs.forEach((uav) => this._drawTrail(uav, this.history instanceof Map ? this.history.get(`${uav.uid}:${uav.phase}`) || this.history.get(Number(uav.uid)) : null));
+    if (this.layers.trails) {
+      uavs.forEach((uav) => this._drawTrail(uav, this.history instanceof Map ? this.history.get(`${uav.uid}:${uav.phase}`) || this.history.get(Number(uav.uid)) : null));
+      this._drawEmergencyHistory();
+    }
     if (this.layers.committed) uavs.forEach((uav) => this._drawCommitted(uav));
     const showUavLabels = this.layers.labels && uavs.length <= 8;
     uavs.sort((a, b) => this._depth(a.position) - this._depth(b.position)).forEach((uav) => this._drawUav(uav, conflicts.has(Number(uav.uid)), showUavLabels));
+    this._drawEnergyAlerts(uavs);
     if (this.layers.landingZones) (this.frame.landing_zones || []).forEach((zone) => this._drawLandingZoneLabel(zone));
     if (this.layers.labels) this._drawAxis();
     this.lastRender = performance.now();

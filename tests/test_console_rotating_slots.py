@@ -1,6 +1,7 @@
 """FT-RS console conversion uses verified recordings without renderer imports."""
 from __future__ import annotations
 
+from copy import deepcopy
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -142,6 +143,7 @@ def test_active_maneuver_is_bounded_and_dispatch_is_latest_recorded(tmp_path):
     _, frames, metadata = load_replay(bundle.path)
     points = frames[0]["uavs"][0]["trajectory_points"]
     assert len(points) == 24 and points[0] == list(plan.state(0.).p) and points[-1] == list(plan.state(plan.end_time).p)
+    assert frames[0]["uavs"][0]["trajectory_kind"] == plan.kind
     assert frames[0]["rotating_slots"]["latest_dispatch_timing"]["dispatch_wall_s"] == 1.
     assert frames[-1]["rotating_slots"]["latest_dispatch_timing"]["dispatch_wall_s"] == 2.
     assert metadata["method"] == "recorded_method" and metadata["method_source"] == "recorded_decisions"
@@ -157,3 +159,109 @@ def test_terminal_missing_soc_remains_nullable_and_member_size_is_bounded(tmp_pa
     assert event["soc"] is None and event["energy_remaining"] is None and event["soc_source"] == "unavailable"
     with pytest.raises(ValueError, match="size limit|exceed"):
         load_rotating_slots_replay(bundle.path, max_bytes=100)
+
+
+def _diagnostic_bundle(tmp_path, times, events, *, aircraft=None, metrics=None, manifest=None):
+    source = _plain(_bundle(tmp_path).data)
+    template = source["states"][0]
+    source["states"] = []
+    for timestamp in times:
+        state = deepcopy(template)
+        state["time"] = timestamp
+        state["metrics"] = (metrics or {}).get(timestamp, {})
+        if aircraft is not None:
+            state["aircraft"] = deepcopy(aircraft)
+        source["states"].append(state)
+    source["events"] = events
+    source["metrics"]["emergency_landed"] = 999  # Whole-episode evidence is never a current counter.
+    source["manifest"].update(manifest or {})
+    return ReplayBundle.write(tmp_path/"diagnostics", record=source, code_commit="recorded-commit")
+
+
+def test_low_soc_display_boundary_counts_airborne_emergencies_and_plan_kind(tmp_path):
+    base = _plain(_bundle(tmp_path/"base").data)["states"][0]["aircraft"][0]
+    aircraft = []
+    for identity, status, soc, declared in (
+        ("boundary", "HOLD_OUTER", .35, False),
+        ("emergency", "FINAL_EMERGENCY", .2, True),
+        ("above", "HOLD_OUTER", .350001, False),
+        ("landed", "LANDED_SERVICE", .1, True),
+        ("failed", "ENERGY_MISSION_FAILED", .1, True),
+        ("cleared", "CLEARED", .1, True),
+    ):
+        row = deepcopy(base)
+        row.update(id=identity, status=status, soc=soc, emergency={"declared": declared}, trajectory_hash=None)
+        aircraft.append(row)
+    bundle = _diagnostic_bundle(tmp_path, [0., 1.], [], aircraft=aircraft)
+    _, frames, metadata = load_replay(bundle.path)
+    frame = frames[0]
+    assert frame["energy_diagnostics"] == {"low_soc_threshold": .35, "low_soc_count": 2,
+        "emergency_active_count": 1, "emergency_landed_count": 0}
+    assert frame["active_count"] == 3
+    uavs = {row["aircraft_id"]: row for row in frame["uavs"]}
+    assert uavs["boundary"]["low_soc"] is True and uavs["boundary"]["emergency_landing"] is False
+    assert uavs["boundary"]["energy_alert"] == "low_soc"
+    assert uavs["emergency"]["low_soc"] is True and uavs["emergency"]["emergency_landing"] is True
+    assert uavs["emergency"]["energy_alert"] == "emergency"
+    assert uavs["above"]["low_soc"] is False
+    assert uavs["landed"]["low_soc"] is True and uavs["failed"]["low_soc"] is True
+    assert all(row["trajectory_kind"] is None for row in uavs.values())
+    assert "display-only" in metadata["low_soc_semantics"]
+    json.dumps(frames, allow_nan=False)
+
+
+def test_emergency_landed_uses_current_metrics_then_asof_explicit_touchdowns(tmp_path):
+    events = [
+        {"time": 1., "type": "emergency_declared", "aircraft_id": "original/uav-17", "details": {}},
+        {"time": 2., "type": "pad_service_completed", "aircraft_id": "original/uav-17", "details": {"emergency": True}},
+        {"time": 3., "type": "touchdown", "aircraft_id": "original/uav-17", "details": {"emergency": True}},
+        {"time": 4., "type": "touchdown", "aircraft_id": "normal", "details": {"emergency": False}},
+        {"time": 5., "type": "touchdown", "aircraft_id": "unknown", "details": {}},
+        {"time": 7., "type": "touchdown", "aircraft_id": "future", "details": {"emergency": True}},
+    ]
+    bundle = _diagnostic_bundle(tmp_path, [0., 1., 2., 3., 4., 5., 6., 7.], events,
+        metrics={6.: {"emergency_landed": 4, "L_emergency": 8}, 7.: {"emergency_landed": True, "L_emergency": 5}})
+    _, frames, _ = load_replay(bundle.path)
+    assert [frame["energy_diagnostics"]["emergency_landed_count"] for frame in frames] == [0, 0, 0, 1, 1, None, 4, 5]
+    assert frames[-1]["terminal_events"][-1]["emergency"] is True
+    assert next(row for row in frames[-1]["terminal_events"] if row["aircraft_id"] == "normal")["emergency"] is False
+    assert "emergency" not in next(row for row in frames[-1]["terminal_events"] if row["aircraft_id"] == "unknown")
+    assert frames[0]["terminal_events"] == []  # Inspecting an earlier frame has no future outcomes.
+    json.dumps(frames, allow_nan=False)
+
+
+def test_traffic_flow_event_windows_rates_and_authoritative_nominal_manifest(tmp_path):
+    def event(timestamp, kind):
+        return {"time": timestamp, "type": kind, "aircraft_id": "original/uav-17",
+                "details": {"emergency": False}}
+    events = [event(0., "request_released"), event(5., "request_released"), event(10., "admitted"),
+              event(20., "touchdown"), event(30., "pad_service_completed"), event(60., "request_released"),
+              event(65., "request_released"), event(70., "admitted"), event(80., "touchdown")]
+    # Deliberately reverse event order to exercise the one-time sorted indexes.
+    bundle = _diagnostic_bundle(tmp_path, [0., 10., 60., 65., 70., 80.], events[::-1], manifest={"rate_per_hour": 180.})
+    _, frames, metadata = load_replay(bundle.path)
+    flows = [frame["traffic_flow"] for frame in frames]
+    assert flows[0] == {"window_s": 0., "requested_count": 0, "admitted_count": 0, "landed_count": 0,
+        "requested_per_hour": None, "admitted_per_hour": None, "landed_per_hour": None, "nominal_rate_per_hour": 180.}
+    assert flows[1] == {"window_s": 10., "requested_count": 2, "admitted_count": 1, "landed_count": 0,
+        "requested_per_hour": 720., "admitted_per_hour": 360., "landed_per_hour": 0., "nominal_rate_per_hour": 180.}
+    assert (flows[2]["requested_count"], flows[2]["admitted_count"], flows[2]["landed_count"]) == (2, 1, 1)
+    assert flows[2]["requested_per_hour"] == 120. and flows[2]["window_s"] == 60.
+    assert flows[3]["requested_count"] == 2  # (5,65] excludes the event exactly at 5.
+    assert flows[4]["admitted_count"] == 1  # (10,70] excludes admission at 10, includes 70.
+    assert flows[5]["landed_count"] == 1 and flows[5]["landed_per_hour"] == 60.
+    assert metadata["traffic_flow_nominal_source"] == "manifest.rate_per_hour"
+    assert "(t-60,t]" in metadata["traffic_flow_semantics"]
+    json.dumps(frames, allow_nan=False)
+
+
+def test_partial_flow_window_starts_at_first_recorded_time_and_has_no_invented_nominal(tmp_path):
+    events = [{"time": 100., "type": "admitted", "aircraft_id": "original/uav-17", "details": {}},
+              {"time": 105., "type": "request_released", "aircraft_id": "original/uav-17", "details": {}}]
+    bundle = _diagnostic_bundle(tmp_path, [100., 110., 160.], events)
+    _, frames, _ = load_replay(bundle.path)
+    assert frames[0]["traffic_flow"]["window_s"] == 0.
+    assert frames[1]["traffic_flow"]["window_s"] == 10.
+    assert frames[1]["traffic_flow"]["admitted_per_hour"] == 360.
+    assert frames[2]["traffic_flow"]["admitted_count"] == 0
+    assert all("nominal_rate_per_hour" not in frame["traffic_flow"] for frame in frames)

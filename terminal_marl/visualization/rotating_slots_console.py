@@ -5,7 +5,7 @@ a world, steps a simulation, imports VTK, or interpolates browser poses.
 """
 from __future__ import annotations
 
-from bisect import bisect_right
+from bisect import bisect_left, bisect_right
 from collections.abc import Mapping
 from dataclasses import fields, is_dataclass
 from hashlib import sha256
@@ -21,6 +21,8 @@ from .rotating_slots_controller import (
 
 MAX_FUTURE_POINTS = 24
 MAX_TERMINAL_EVENTS = 10000
+LOW_SOC_DISPLAY_THRESHOLD = .35
+TRAFFIC_FLOW_WINDOW_S = 60.
 _TERMINAL_OUTCOMES = {
     "energy_failure": "failed_energy", "aircraft_energy_failure": "failed_energy",
     "energy_mission_failed": "failed_energy", "rerouted": "rerouted",
@@ -57,6 +59,64 @@ def _snapshot_plain(value):
     return value
 
 
+def _finite_number(value):
+    return type(value) in (int, float) and math.isfinite(value)
+
+
+def _declared_emergency(aircraft):
+    emergency = aircraft.get("emergency", False)
+    return bool(emergency.get("declared", False)) if isinstance(emergency, Mapping) else bool(emergency)
+
+
+class _RecordedEventDiagnostics:
+    """Indexed event queries; every frame can be inspected in either seek direction."""
+    def __init__(self, events, record_start, nominal_rate=None):
+        self.record_start = record_start
+        self.nominal_rate = nominal_rate if _finite_number(nominal_rate) else None
+        self.times = {kind: [] for kind in ("request_released", "admitted", "touchdown")}
+        self.emergency_touchdowns = []
+        self.unclassified_touchdowns = []
+        for event in events:
+            kind = str(event["type"]).lower()
+            timestamp = float(event["time"])
+            if kind in self.times:
+                self.times[kind].append(timestamp)
+            if kind == "touchdown":
+                emergency = (event.get("details") or {}).get("emergency")
+                if emergency is True:
+                    self.emergency_touchdowns.append(timestamp)
+                elif emergency is not False:
+                    self.unclassified_touchdowns.append(timestamp)
+        for times in (*self.times.values(), self.emergency_touchdowns, self.unclassified_touchdowns):
+            times.sort()
+
+    def emergency_landed(self, timestamp, metrics):
+        for key in ("emergency_landed", "L_emergency"):
+            value = metrics.get(key)
+            if _finite_number(value):
+                return value
+        if bisect_right(self.unclassified_touchdowns, timestamp):
+            return None
+        return bisect_right(self.emergency_touchdowns, timestamp)
+
+    def traffic_flow(self, timestamp):
+        elapsed = max(0., timestamp - self.record_start)
+        window = min(TRAFFIC_FLOW_WINDOW_S, elapsed)
+        lower = timestamp - window
+        result = {"window_s": window}
+        for name, kind in (("requested", "request_released"), ("admitted", "admitted"), ("landed", "touchdown")):
+            times = self.times[kind]
+            # Include the recording's first instant only in the early, partial
+            # window. Full windows are (t-60, t]; a zero-length window is empty.
+            start = bisect_left(times, lower) if 0. < elapsed < TRAFFIC_FLOW_WINDOW_S else bisect_right(times, lower)
+            count = bisect_right(times, timestamp) - start if window else 0
+            result[name + "_count"] = count
+            result[name + "_per_hour"] = count * 3600. / window if window else None
+        if self.nominal_rate is not None:
+            result["nominal_rate_per_hour"] = self.nominal_rate
+        return result
+
+
 def _terminal_rows(bundle, controller):
     events = [event for event in bundle.data["events"]
               if str(event["type"]).lower() in _TERMINAL_OUTCOMES]
@@ -71,13 +131,16 @@ def _terminal_rows(bundle, controller):
                          .get("aircraft", ()) if str(a["id"]) == identity), {})
         details = event.get("details") or {}
         soc = details.get("soc", observed.get("soc"))
-        result.append({"uid": uid, "arrival_id": uid if uid is not None else -1,
+        row = {"uid": uid, "arrival_id": uid if uid is not None else -1,
             "aircraft_id": identity, "outcome": _TERMINAL_OUTCOMES[str(event["type"]).lower()],
             "event_type": str(event["type"]), "reason": str(details.get("reason", "")),
             "time": timestamp, "position": _plain(details.get("position", details.get("p", observed.get("p")))),
             "soc": soc, "soc_source": "recorded_event" if "soc" in details else "recorded_sample" if soc is not None else "unavailable",
             "energy_remaining": soc * controller.config.energy.derived_equivalent_capacity_kWh * 3.6e6 if soc is not None else None,
-            "phase": str(observed.get("status", ""))})
+            "phase": str(observed.get("status", ""))}
+        if type(details.get("emergency")) is bool:
+            row["emergency"] = details["emergency"]
+        result.append(row)
     return result
 
 
@@ -112,6 +175,8 @@ def load_rotating_slots_replay(path, *, max_frames=6000, max_bytes=256*1024*1024
     separation["scope"] = "whole_episode"
     methods = sorted({str(row["method"]) for row in bundle.data.get("decisions", ()) if row.get("method")})
     provenance = bundle.data.get("stage2_provenance", {})
+    event_diagnostics = _RecordedEventDiagnostics(bundle.data["events"], bundle.time_bounds[0],
+                                                 bundle.data.get("manifest", {}).get("rate_per_hour"))
     method = ", ".join(methods) or index.get("method") or provenance.get("method") or "unrecorded"
     scenario = root.parent.parent.name
     frames = []
@@ -125,8 +190,10 @@ def load_rotating_slots_replay(path, *, max_frames=6000, max_bytes=256*1024*1024
             row = aircraft[identity]
             status = str(row.get("status", ""))
             uav.update(aircraft_id=identity, status=status, slot_index=row.get("slot"),
-                       battery_power_w=row.get("battery_power_w"))
+                       battery_power_w=row.get("battery_power_w"),
+                       low_soc=_finite_number(row.get("soc")) and row["soc"] <= LOW_SOC_DISPLAY_THRESHOLD)
             plan = controller._plans.get(row.get("trajectory_hash"))
+            uav["trajectory_kind"] = plan.kind if plan else None
             if (uav["committed"] and status in _ACTIVE_MANEUVER and plan and plan.kind not in ("STABLE", "GROUND")
                     and plan.start_time <= controller.time < plan.end_time):
                 uav["trajectory_points"] = [list(plan.state(controller.time + (plan.end_time-controller.time)*i/(MAX_FUTURE_POINTS-1)).p)
@@ -134,8 +201,14 @@ def load_rotating_slots_replay(path, *, max_frames=6000, max_bytes=256*1024*1024
         policy = observed.get("policy_id", observed.get("metrics", {}).get("policy_id", episode_metrics.get("policy_id")))
         upstream = observed.get("metrics", {}).get("upstream_waiting", len(observed.get("upstream", ())))
         latest = bisect_right(dispatch_times, controller.time)-1
+        active = [row for row in aircraft.values() if row.get("status") not in _GROUNDED | _FROZEN | _INVISIBLE]
         frame.update(console_replay_kind="rotating_slots", interpolation="none", step_count=frame_index,
-            active_count=sum(row.get("status") not in _GROUNDED | _FROZEN | _INVISIBLE for row in aircraft.values()),
+            active_count=len(active),
+            energy_diagnostics={"low_soc_threshold": LOW_SOC_DISPLAY_THRESHOLD,
+                "low_soc_count": sum(_finite_number(row.get("soc")) and row["soc"] <= LOW_SOC_DISPLAY_THRESHOLD for row in active),
+                "emergency_active_count": sum(_declared_emergency(row) for row in active),
+                "emergency_landed_count": event_diagnostics.emergency_landed(controller.time, observed.get("metrics", {}))},
+            traffic_flow=event_diagnostics.traffic_flow(controller.time),
             external_queue_size=upstream,
             terminal_events=terminal[:bisect_right(terminal_times, controller.time)],
             rotating_slots={"slots": _plain(controller.slots_at()), "pads": _plain(controller.pads_at()),
@@ -167,6 +240,10 @@ def load_rotating_slots_replay(path, *, max_frames=6000, max_bytes=256*1024*1024
         "failure_model": "recorded isolated frozen markers; abstract isolation without accident cascade",
         "terminal_event_semantics": "touchdown and pad_service_completed are distinct; completed_count is service clearance",
         "terminal_soc_semantics": "recorded event SOC or preceding recorded state; unavailable is null",
+        "low_soc_semantics": "display-only finite recorded SOC <= 0.35; active counts exclude grounded, frozen and invisible aircraft; includes declared emergencies; does not declare an emergency",
+        "emergency_landed_semantics": "current recorded state emergency_landed then L_emergency; otherwise cumulative touchdown events with explicit emergency flags through frame time; null when touchdown classification is incomplete",
+        "traffic_flow_semantics": "recorded request_released/admitted/touchdown events in (t-60,t]; early windows use elapsed recording time and include the recording start; zero elapsed has zero counts and null rates; excludes future events and initial aircraft without events",
+        "traffic_flow_nominal_source": "manifest.rate_per_hour" if event_diagnostics.nominal_rate is not None else "unavailable",
         "separation_evidence_scope": "whole_episode", "prediction_authority": index.get("prediction_authority"),
         "experiment_policy_id": index.get("experiment_policy_id"),
         "scenario_profile": provenance.get("scenario_profile"), "service_profile": provenance.get("service_profile"),

@@ -118,9 +118,11 @@
           <div class="kpi"><span class="kpi-label">在空 UAV</span><strong id="kpiActive">—</strong><span class="kpi-sub" id="kpiQueue">队列 —</span></div>
           <div class="kpi"><span class="kpi-label">服务中</span><strong id="kpiService">—</strong><span class="kpi-sub">当前降落区</span></div>
           <div class="kpi"><span class="kpi-label">已完成</span><strong id="kpiCompleted">—</strong><span class="kpi-sub">累计完成服务</span></div>
-          <div class="kpi"><span class="kpi-label">环占用</span><strong id="kpiOccupancy">—</strong><span class="kpi-sub">实际 / 容量</span></div>
-          <div class="kpi kpi-alert"><span class="kpi-label">冲突关注</span><strong id="kpiConflict">—</strong><span class="kpi-sub" id="kpiConflictSub">近期冲突飞机</span></div>
+          <div class="kpi kpi-low"><span class="kpi-label" id="kpiLowSocLabel">低电量</span><strong id="kpiLowSoc">—</strong><span class="kpi-sub" id="kpiEmergencyActive">当前应急 —</span></div>
+          <div class="kpi kpi-emergency"><span class="kpi-label">累计应急着陆</span><strong id="kpiEmergencyLanded">—</strong><span class="kpi-sub">实际 touchdown</span></div>
+          <div class="kpi kpi-demand"><span class="kpi-label">到达需求</span><strong id="kpiDemand">—</strong><span class="kpi-sub">场景设定 · 架/h</span></div>
           <div class="kpi kpi-meta"><span class="kpi-label">仿真时间</span><strong id="kpiTime">—</strong><span class="kpi-sub" id="kpiStep">step —</span></div>
+          <div class="kpi-context"><span id="kpiFlowWindow">近60 s</span><span>请求 <b id="kpiRequestedFlow">—</b></span><span>入场 <b id="kpiAdmittedFlow">—</b></span><span>着陆 <b id="kpiLandedFlow">—</b></span><span class="context-unit">架/h</span><span class="context-resource">环占用 <b id="kpiOccupancy">—</b></span><span>冲突关注 <b id="kpiConflict">—</b><span id="kpiConflictSub" class="sr-only">近期冲突飞机</span></span></div>
         </div>
 
         <div class="scene-panel panel" id="scenePanel">
@@ -157,6 +159,7 @@
             <span class="toolbar-separator"></span>
             <span class="pad-legend" aria-label="降落 pad 状态图例" title="Pad 图形有最小屏幕尺寸，用于状态识别；不表示真实物理占地。"><span class="pad-free">空闲</span><span class="pad-occupied">服务中</span><span class="pad-reserved">已预留</span><span class="pad-soft">软预约</span><span class="pad-unknown">未知</span></span>
             <span class="camera-hint">拖拽旋转 · Shift+拖拽平移 · 滚轮缩放 · 空格播放 · ←/→ 步进</span>
+            <span class="energy-legend" aria-label="电量与轨迹图例"><span class="energy-low">● LOW SOC · 低电量</span><span class="energy-emergency">● EMERGENCY · 当前应急</span><span><i class="legend-line emergency-route"></i>应急承诺路径</span><span><i class="legend-line history-route"></i>应急已飞轨迹</span><span><i class="legend-line reference-route"></i>参考应急路径</span></span>
           </div>
         </div>
 
