@@ -6,6 +6,8 @@
 with common tangential speed 21 m/s. Clockwise angular speeds are outer 0.035,
 middle 21/450, and inner 0.07 rad/s. The old common-angular field remains as the
 unchanged legacy reference; runtime ring motion uses `ring_angular_speed`.
+The chosen 21 m/s preserves the existing outer-ring speed, 600*0.035=21 m/s,
+while changing the middle and inner ring clocks.
 
 Only rotation fields differ from the corresponding old service payload. Ring
 geometry/capacity, vehicle and safety limits, SOC and arrival streams, service
@@ -92,27 +94,85 @@ stubs; actual CP evidence comes from the server tiny-method runs.
 
 ## Planned formal comparison
 
-No formal runs have started. The planned sequence first runs the three
-`equal_linear_21_v1` scenarios below, each freshly initialized at t=0 and run to
-t=600 with both EnergySlack and RHCP. Matched fresh `equal_angular` controls then
-use the same scenario inputs, CPU pairs and budgets. All conditions retain
+The three `equal_linear_21_v1` formal scenarios below are running, each freshly
+initialized at t=0 with a target of t=600 for both EnergySlack and RHCP. Startup
+has been verified; no t=600 results have been obtained. Matched fresh
+`equal_angular` controls have not been prepared or launched; they follow this
+wave using the same scenario inputs, CPU pairs and budgets after fresh resource
+preflight. All conditions retain
 `service_half_v1`, `rescue_need_v7`, `quality_v5`, the frozen SOC/arrival streams,
 and the existing geometry, safety/vehicle limits, service durations and solver
 budgets.
 
-| Scenario profile | Initial airborne count | Arrival rate/h | Planned method CPU pair |
+| Scenario profile | Initial airborne count | Arrival rate/h | Linear-wave method CPU pair |
 |---|---:|---:|---|
 | diagnostic18_rate120_v1 | 18 | 120 | 4, 6 |
 | medium24_rate150_v1 | 24 | 150 | 8, 10 |
 | stress36_rate180_v1 | 36 | 180 | 0, 2 |
 
-These CPU assignments are provisional until launch preflight confirms the cores,
-load and memory are available. Each rotation/scenario combination has a new
+Launch preflight confirmed these CPU assignments for the running linear wave,
+with no overlapping prior computation. The angular control wave must repeat
+preflight before reusing them. Each rotation/scenario combination has a new
 output root and matching locally frozen provenance. No historical checkpoint is
 an initialization source. The historical runs with an inherited v6 prefix and a
 v7 suffix, recorded in [the v7 status document](rescue_need_v7_status.md), do not
 supply a causal rotation-profile control. Formal comparison outcomes remain
 unobserved.
+
+## Running linear wave: launch record
+
+Implementation commit `b7d0d24b179317031b891f9da4814bfe85b7e8f5` was accepted and
+pushed before launch. Locally frozen provenance files are
+`artifacts/rotating_slots/equal_linear21/diagnostic18_provenance.json`,
+`medium24_provenance.json`, and `stress36_provenance.json` in that same directory.
+Each records revision b7d0d24 and an empty tracked diff; source/config byte
+verification succeeded on the server. The server uses the existing
+`/home/user/envs/terminal_stage2_v1/bin/python` and one numerical-library thread
+per process.
+
+All output roots below are under `/home/user/training_outputs/terminal/`.
+Times are on 2026-10-23, Asia/Shanghai (UTC+08:00).
+
+| Condition / output-root basename | Wrapper PID | Runner PID | CPUs | Start time |
+|---|---:|---:|---|---|
+| equal_linear21_diagnostic_600s_20261023 | 174136 | 174137 | 4, 6 | 18:08:07 |
+| equal_linear21_medium_600s_20261023 | 174298 | 174300 | 8, 10 | 18:08:19 |
+| equal_linear21_stress_600s_20261023 | 174299 | 174301 | 0, 2 | 18:08:19 |
+
+Each preparation used `--preparation-wall-seconds 300
+--campaign-wall-budget-seconds 36000 --archive-reserve-seconds 1800`. The measured
+campaign preparation values, including the 300-second credited validation cost,
+were 301.1787 s (diagnostic), 301.5931 s (medium), and 302.3543 s (stress); actual
+preparation elapsed times were approximately 1.18, 1.59, and 2.35 s. Each run used
+`--target 600 --cpus` with its tabled pair and the frozen service/rotation/scenario/
+rescue selectors above.
+
+Startup checks around 45 seconds after launch observed six growing state streams
+with positive simulation times and no error markers. The initial observations
+below are EnergySlack / RHCP respectively; byte counts refer to their
+`states.jsonl` files, not completed episodes.
+
+| Condition | Latest observed simulation times (s) | State bytes |
+|---|---|---|
+| diagnostic | 17 / 14.6875 | 735489 / 671525 |
+| medium | 9.3887 / 9 | 517450 / 447273 |
+| stress | 7 / 7 | 518509 / 500237 |
+
+Initial historical runtime estimates T0 were 9000 s, 12600 s, and 21600 s for
+diagnostic, medium, and stress. Early frame times do not support reliable linear
+runtime extrapolation. A current-chat heartbeat, ID `600`, was successfully
+created and verified ACTIVE around 18:12 with a 15-minute interval for the first
+complete 60-second block calibration. The initial creation attempt lacking a
+destination created no schedule; the successful retry and subsequent view
+confirmed this heartbeat. After a usable block observation, the same heartbeat
+is to be updated to the estimated remaining duration R; this initial calibration
+interval is not a repeated 15-minute polling policy. No sleeping monitoring
+worker is retained while waiting.
+
+Remaining work is to verify full t=600 completion and both methods' output
+integrity, interpret the linear results, run and verify the matched fresh angular
+controls, and then compare the conditions. The startup observations do not
+establish any t=600 outcome or method/profile advantage.
 
 ## Fresh campaign commands
 
