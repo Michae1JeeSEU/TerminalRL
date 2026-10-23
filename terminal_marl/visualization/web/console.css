@@ -100,6 +100,20 @@ h3 { font-size: 12px; }
 .inline-notice { margin-top: 8px; padding: 8px; border: 1px solid rgba(245, 182, 78, .3); border-radius: 6px; color: var(--amber); background: rgba(245, 182, 78, .08); font-size: 10px; }
 .inline-notice.error { border-color: rgba(252, 111, 120, .34); color: #ffabb0; background: rgba(252, 111, 120, .08); }
 .run-config-summary { padding-top: 8px; color: var(--muted-2); font-size: 9px; line-height: 1.45; overflow-wrap: anywhere; }
+.replay-loader { padding-top: 14px; }
+.replay-buttons { display: flex; gap: 6px; margin-top: 8px; }
+.replay-buttons button { flex: 1; padding: 7px 5px; font-size: 10px; }
+#showSimulationButton { margin-top: 8px; color: var(--teal); }
+.slots-swatch { height: 6px; width: 6px; margin: 0 3px; border: 1px solid #5aa8ff; border-radius: 50%; }
+.slot-legend { display: flex; flex-wrap: wrap; gap: 5px 9px; font-size: 8px; line-height: 1.6; margin-top: 12px; }
+.slot-free { color: #52d99b; }.slot-occupied { color: #5aa8ff; }.slot-reserved { color: #f5b64e; }.slot-departing { color: #fc6f78; }.slot-soft { color: #c68bff; }
+.recorded-details { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.recorded-details dd { white-space: normal; overflow-wrap: anywhere; }
+.resource-content { overflow: auto; min-height: 0; padding: 0 10px 10px; scrollbar-width: thin; }
+.resource-evidence { color: var(--amber); font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.resource-row { color: #bcd1e4; font-size: 10px; line-height: 1.6; padding: 4px 7px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.resource-pad { color: var(--teal); background: rgba(37,211,198,.05); margin-top: 5px; }
+.resource-soft { color: #c68bff; }.resource-note { color: var(--muted); }
 .rail-section { padding: 15px 0 0; border-top: 1px solid var(--line); margin-top: 15px; }
 .section-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .section-title-row h2, .section-title-row h3 { color: #d7e8fa; }

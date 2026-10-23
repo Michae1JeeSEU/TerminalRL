@@ -42,6 +42,15 @@
           </div>
           <span class="live-led" id="connectionLed" title="服务器连接状态"></span>
         </div>
+        <section class="replay-loader" aria-label="本地回放">
+          <div class="section-title-row"><h2>本地回放</h2><span class="small-note">目录 / replay.json</span></div>
+          <label class="field-label" for="replayPathInput">绝对路径<input id="replayPathInput" class="control-input" type="text" placeholder="D:\…\replay_bundle" spellcheck="false"></label>
+          <div class="replay-buttons"><button id="openReplayButton" class="primary-button" type="button">打开回放</button><button id="referenceReplayButton" class="tool-button" type="button">设为参考</button></div>
+          <div id="replayNotice" class="inline-notice" role="status" hidden></div>
+          <div id="replaySummary" class="run-config-summary" hidden></div>
+          <button id="showSimulationButton" class="text-button" type="button">新建仿真设置</button>
+        </section>
+        <section id="simulationConfig">
         <div class="field-grid">
           <label class="field-label" for="scenarioSelect">场景
             <select id="scenarioSelect" class="control-select" aria-label="选择仿真场景"></select>
@@ -72,10 +81,12 @@
         <button id="stopButton" class="tool-button wide stop-button" type="button" title="停止服务器仿真进程" aria-label="停止服务器仿真进程">停止运行</button>
         <div id="rebuildNotice" class="inline-notice" hidden></div>
         <div id="runConfigSummary" class="run-config-summary">controller — · profile — · seed 0</div>
+        </section>
 
         <section class="rail-section">
           <div class="section-title-row"><h2>图层</h2><button id="resetLayersButton" class="text-button" type="button" title="恢复默认图层" aria-label="恢复默认图层">重置</button></div>
           <div class="layer-list">
+            <label class="toggle-row"><input id="layerSlots" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch slots-swatch"></span><span>旋转槽位</span></label>
             <label class="toggle-row"><input id="layerRings" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch ring-swatch"></span><span>盘旋环</span></label>
             <label class="toggle-row"><input id="layerTargetRings" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch target-ring-swatch"></span><span>目标环</span></label>
             <label class="toggle-row"><input id="layerGates" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch gate-swatch"></span><span>入口 Gate</span></label>
@@ -83,9 +94,10 @@
             <label class="toggle-row"><input id="layerGrid" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch grid-swatch"></span><span>地面网格</span></label>
             <label class="toggle-row"><input id="layerLabels" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch label-swatch"></span><span>标签</span></label>
             <label class="toggle-row"><input id="layerTrails" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch trail-swatch"></span><span>历史尾迹</span></label>
-            <label class="toggle-row"><input id="layerCommitted" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch committed-swatch"></span><span>已承诺轨迹</span></label>
+            <label class="toggle-row"><input id="layerCommitted" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch committed-swatch"></span><span>承诺轨迹采样</span></label>
             <label class="toggle-row"><input id="layerConflicts" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch conflict-swatch"></span><span>冲突高亮</span></label>
           </div>
+          <div id="slotLegend" class="slot-legend" hidden><span class="slot-free">● FREE</span><span class="slot-occupied">● OCCUPIED</span><span class="slot-reserved">● RESERVED</span><span class="slot-departing">● DEPARTING</span><span class="slot-soft">● SOFT</span></div>
         </section>
 
         <section class="rail-section visual-section">
@@ -151,12 +163,13 @@
             <button class="drawer-tab active" data-panel="flightsPanel" type="button">航班表 <span id="flightCountBadge" class="tab-badge">0</span></button>
             <button class="drawer-tab" data-panel="eventsPanel" type="button">事件 <span id="eventCountBadge" class="tab-badge">0</span></button>
             <button class="drawer-tab" data-panel="telemetryPanel" type="button">遥测</button>
+            <button class="drawer-tab" data-panel="resourcesPanel" type="button">资源诊断</button>
             <button id="drawerToggleButton" class="drawer-toggle" type="button" title="收起或展开底部面板" aria-label="收起或展开底部面板">⌄</button>
           </div>
           <div class="drawer-content" id="drawerContent">
             <div class="drawer-panel active" id="flightsPanel">
-              <div class="table-tools"><label class="search-field"><span aria-hidden="true">⌕</span><input id="flightSearch" type="search" placeholder="搜索 UID" aria-label="搜索 UAV UID"></label><select id="phaseFilter" class="compact-select" aria-label="按 phase 过滤"><option value="">全部 phase</option></select><select id="flightSort" class="compact-select" aria-label="航班表排序"><option value="uid">按 UID</option><option value="soc">按 SOC</option></select><span class="table-note" id="flightTableNote">—</span></div>
-              <div class="table-scroll"><table class="data-table" id="flightTable"><thead><tr><th>UID</th><th>PHASE</th><th>环</th><th>SOC</th><th>速度</th><th>目标 LZ</th><th>状态</th></tr></thead><tbody></tbody></table></div>
+              <div class="table-tools"><label class="search-field"><span aria-hidden="true">⌕</span><input id="flightSearch" type="search" placeholder="搜索飞机 ID" aria-label="搜索飞机 ID"></label><select id="phaseFilter" class="compact-select" aria-label="按 phase 过滤"><option value="">全部 phase</option></select><select id="flightSort" class="compact-select" aria-label="航班表排序"><option value="uid">按 ID</option><option value="soc">按 SOC</option></select><span class="table-note" id="flightTableNote">—</span></div>
+              <div class="table-scroll"><table class="data-table" id="flightTable"><thead><tr><th>飞机 ID</th><th>PHASE</th><th>环</th><th>SOC</th><th>速度</th><th>目标 LZ</th><th>状态</th></tr></thead><tbody></tbody></table></div>
               <div class="table-empty" id="flightTableEmpty">暂无 UAV 数据</div>
             </div>
             <div class="drawer-panel" id="eventsPanel">
@@ -167,6 +180,7 @@
             <div class="drawer-panel" id="telemetryPanel">
               <div class="telemetry-grid" id="telemetryGrid"><div class="table-empty">暂无遥测数据</div></div>
             </div>
+            <div class="drawer-panel" id="resourcesPanel"><div class="table-tools"><span id="resourceEvidence" class="resource-evidence">仅显示记录中的资源与时间证据</span></div><div class="resource-content" id="resourceContent"><div class="table-empty">当前记录无资源诊断</div></div></div>
           </div>
         </section>
       </section>
@@ -187,11 +201,12 @@
         <section class="detail-section">
           <div class="section-title-row"><h3>位置</h3><span class="small-note" id="detailPositionState">—</span></div>
           <dl class="detail-list"><div><dt>X</dt><dd id="detailX">—</dd></div><div><dt>Y</dt><dd id="detailY">—</dd></div><div><dt>Z</dt><dd id="detailZ">—</dd></div></dl>
+          <dl class="detail-list recorded-details"><div><dt>原始状态</dt><dd id="detailOriginalStatus">—</dd></div><div><dt>槽位</dt><dd id="detailSlot">—</dd></div><div><dt>救援状态</dt><dd id="detailRescue">—</dd></div><div><dt>电池功率</dt><dd id="detailPower">—</dd></div></dl>
         </section>
         <section class="detail-section trajectory-summary">
           <div class="section-title-row"><h3>轨迹与决策</h3><span class="status-pill" id="detailCommitted">—</span></div>
           <dl class="detail-list"><div><dt>轨迹计划</dt><dd id="detailPlan">—</dd></div><div><dt>Release</dt><dd id="detailRelease">—</dd></div><div><dt>Safety</dt><dd id="detailSafety">—</dd></div><div><dt>目标 LZ</dt><dd id="detailLz">—</dd></div></dl>
-          <div class="trajectory-bar"><span id="detailTrajectoryCount">0 点</span><span>安全链承诺轨迹</span></div>
+          <div class="trajectory-bar"><span id="detailTrajectoryCount">0 点</span><span>已记录轨迹采样</span></div>
         </section>
         <section class="detail-section history-section">
           <div class="section-title-row"><h3>历史表现</h3><span class="small-note">真实帧采样</span></div>

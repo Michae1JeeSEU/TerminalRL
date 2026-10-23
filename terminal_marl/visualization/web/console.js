@@ -4,7 +4,7 @@ const $ = (id) => document.getElementById(id);
 const API_ROOT = String(window.TERMINAL_API_BASE || "/api").replace(/\/$/, "");
 const MAX_BUFFER_FRAMES = 6000;
 const MAX_IMPORTED_FRAMES = 100000;
-const MAX_IMPORT_BYTES = 50 * 1024 * 1024;
+const MAX_IMPORT_BYTES = 256 * 1024 * 1024;
 const FRAME_POLL_MS = 250;
 const PROFILES = [
   { id: "checkpoint12", label: "Checkpoint 12" },
@@ -49,6 +49,8 @@ const state = {
   viewMode: "live",
   liveFollow: true,
   playing: false,
+  loadingReplay: false,
+  showSimulationConfig: false,
   playbackSpeed: 1,
   currentIndex: 0,
   playheadTime: 0,
@@ -58,7 +60,7 @@ const state = {
   followLost: false,
   reference: null,
   layers: {
-    rings: true, targetRings: true, gates: true, landingZones: true, grid: true, labels: true, trails: true, committed: true, conflicts: true,
+    slots: true, rings: true, targetRings: true, gates: true, landingZones: true, grid: true, labels: true, trails: true, committed: true, conflicts: true,
   },
   heightScale: 1.6,
   historyCache: { index: -1, map: new Map() },
@@ -70,6 +72,7 @@ const state = {
 };
 
 function finiteNumber(value, fallback = null) {
+  if (value === null || value === undefined || value === "") return fallback;
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
 }
@@ -77,6 +80,46 @@ function finiteNumber(value, fallback = null) {
 function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
 
 function safeArray(value) { return Array.isArray(value) ? value : []; }
+
+function aircraftIdentity(uav) { return uav?.aircraft_id != null ? String(uav.aircraft_id) : `U${uav?.uid ?? "—"}`; }
+
+function sameAircraft(first, second) {
+  if (first?.aircraft_id != null || second?.aircraft_id != null) return first?.aircraft_id != null && second?.aircraft_id != null && String(first.aircraft_id) === String(second.aircraft_id);
+  return first?.arrival_id != null && second?.arrival_id != null && String(first.arrival_id) === String(second.arrival_id);
+}
+
+function discreteReplay(frame, metadata = state.metadata) {
+  const m = metadata?.run_metadata ? { ...metadata, ...metadata.run_metadata } : metadata;
+  return frame?.console_replay_kind === "rotating_slots" || frame?.interpolation === "none" || m?.replay_kind === "rotating_slots" || m?.source === "rotating_slots" || m?.interpolation === "none";
+}
+
+function recordedReplay() { return state.source !== "server" || state.status === "replay" || discreteReplay(state.frames[0]); }
+
+function replayScenarioLabel(metadata) {
+  const scenario = metadata.scenario_profile ?? metadata.scenario;
+  if (scenario == null) return "";
+  return typeof scenario === "object" ? String(scenario.id ?? scenario.name ?? scenario.profile ?? JSON.stringify(scenario)).slice(0, 120) : String(scenario);
+}
+
+function updateReplayControls() {
+  const replay = recordedReplay();
+  $("simulationConfig").hidden = replay && !state.showSimulationConfig;
+  $("showSimulationButton").hidden = !replay || state.offline;
+  $("showSimulationButton").textContent = state.showSimulationConfig ? "收起仿真设置" : "新建仿真设置";
+  $("viewLiveButton").disabled = state.offline || replay;
+  $("slotLegend").hidden = !discreteReplay(state.frames[state.currentIndex]);
+  for (const id of ["openReplayButton", "referenceReplayButton", "replayPathInput"]) $(id).disabled = state.loadingReplay || state.offline;
+  const summary = $("replaySummary");
+  summary.hidden = !replay;
+  document.querySelector(".brand-subtitle").textContent = discreteReplay(state.frames[0]) ? "固定多环终端区 · 旋转槽位回放" : "动态终端区 · 多 UAV 降落流工作台";
+  if (replay) {
+    const m = { ...state.metadata, ...(state.metadata.run_metadata || {}) };
+    const bounds = `${formatTime(state.frames[0]?.time)} – ${formatTime(state.frames.at(-1)?.time)}`;
+    const scenario = replayScenarioLabel(m);
+    summary.textContent = `${scenario ? `${scenario} · ` : ""}${m.method ?? m.policy_id ?? "记录回放"} · seed ${m.seed ?? "—"} · ${bounds}${discreteReplay(state.frames[0]) ? " · 原始采样帧" : ""}`;
+    summary.title = [m.replay_path ?? m.source_path ?? state.title, m.scenario && `scenario ${typeof m.scenario === "object" ? JSON.stringify(m.scenario) : m.scenario}`, m.code_commit && `commit ${m.code_commit}`, m.config_hash && `config ${m.config_hash}`].filter(Boolean).join(" · ");
+  }
+}
 
 function formatNumber(value, digits = 1) {
   const number = finiteNumber(value);
@@ -127,7 +170,8 @@ async function requestJson(path, options = {}) {
     try { payload = JSON.parse(text); } catch { throw new Error(`服务器返回非 JSON（HTTP ${response.status}）`); }
   }
   if (!response.ok) {
-    const error = payload && (payload.error || payload.message) ? payload.error || payload.message : `HTTP ${response.status}`;
+    const message = typeof payload?.message === "string" ? payload.message.trim() : "";
+    const error = message || payload?.error || `HTTP ${response.status}`;
     const failure = new Error(String(error));
     failure.status = response.status;
     throw failure;
@@ -348,12 +392,18 @@ function appendServerPayload(payload) {
   state.serverError = payload?.error ? String(payload.error) : "";
   state.processAlive = Boolean(payload?.process_alive);
   if (payload?.metadata && typeof payload.metadata === "object") state.metadata = payload.metadata;
+  const replay = state.status === "replay" || discreteReplay(safeArray(payload?.frames)[0]);
+  if (replay && (firstGeneration || generationChanged || !state.frames.length)) {
+    state.viewMode = "replay"; state.liveFollow = false; state.playing = false;
+    state.currentIndex = 0; state.showSimulationConfig = false;
+    state.sourceLabel = "记录回放";
+  }
   const shouldSyncForm = firstGeneration || generationChanged || !state.runConfig;
   const metadataConfig = configFromMetadata(payload?.metadata);
   const serverConfig = payload?.config && typeof payload.config === "object" ? payload.config : state.metadata?.config;
   if (metadataConfig) state.runConfig = { ...(state.runConfig || {}), ...metadataConfig };
   if (serverConfig) state.runConfig = { ...(state.runConfig || {}), ...serverConfig };
-  if (shouldSyncForm && state.runConfig) {
+  if (shouldSyncForm && state.runConfig && !replay) {
     applyServerConfig(state.runConfig);
     if (state.status === "replay" || state.runConfig.mode === "replay") state.sourceLabel = "记录回放";
   }
@@ -369,7 +419,7 @@ function appendServerPayload(payload) {
   else state.cursor += incoming.length;
   state.droppedFrames = Math.max(state.droppedFrames, finiteNumber(payload?.dropped_frames, 0) || 0);
   if (state.droppedFrames > 0) state.truncated = true;
-  if (state.frames.length > MAX_BUFFER_FRAMES) {
+  if (!replay && state.frames.length > MAX_BUFFER_FRAMES) {
     const trimCount = state.frames.length - MAX_BUFFER_FRAMES;
     state.frames.splice(0, trimCount);
     state.truncated = true;
@@ -384,7 +434,10 @@ function appendServerPayload(payload) {
     state.playheadTime = 0;
   } else {
     state.currentIndex = clamp(state.currentIndex, 0, state.frames.length - 1);
+    if (replay && state.currentIndex === 0 && !state.playing) state.playheadTime = finiteNumber(state.frames[0].time, 0);
   }
+  if (payload?.title) state.title = String(payload.title);
+  else if (replay && state.metadata?.method) state.title = String(state.metadata.method);
   state.uiDirty = true;
 }
 
@@ -431,6 +484,15 @@ async function pollFrames() {
     const payload = await requestJson(`/frames?${query.toString()}`);
     if (state.source === requestSource && requestSource === "server" && state.pollEpoch === requestEpoch) {
       appendServerPayload(payload);
+      // A replay is finite: drain its pages immediately while keeping the first
+      // sampled frame selected. Live polling retains its existing batch cadence.
+      let batch = payload;
+      while (state.status === "replay" && safeArray(batch.frames).length && state.frames.length < MAX_IMPORTED_FRAMES && state.pollEpoch === requestEpoch) {
+        const next = new URLSearchParams({ after: String(state.cursor), generation: String(state.generation) });
+        batch = await requestJson(`/frames?${next.toString()}`);
+        if (state.pollEpoch !== requestEpoch || state.source !== "server") break;
+        appendServerPayload(batch);
+      }
       state.retryMs = FRAME_POLL_MS;
       setConnection("online", "已连接");
       schedulePoll(FRAME_POLL_MS);
@@ -461,10 +523,11 @@ function setReplayFrames(payload, source = "import", label = "记录回放") {
   state.viewMode = "replay";
   state.liveFollow = false;
   state.playing = false;
+  state.showSimulationConfig = false;
   state.generation = null;
   state.cursor = 0;
   state.serverError = "";
-  state.metadata = payload.metadata && typeof payload.metadata === "object" ? payload.metadata : {};
+  state.metadata = payload.metadata && typeof payload.metadata === "object" ? { ...payload.metadata, ...(payload.metadata.run_metadata || {}) } : {};
   state.runConfig = configFromMetadata(state.metadata);
   setSource(source, label, payload.title || (source === "offline" ? "离线记录回放" : "记录回放"));
   if (state.metadata?.source) state.sourceLabel = "记录回放";
@@ -473,6 +536,7 @@ function setReplayFrames(payload, source = "import", label = "记录回放") {
 }
 
 function interpolateFrame(first, second, alpha) {
+  if (discreteReplay(first) || discreteReplay(second)) return first;
   if (!first || !second || alpha <= 0 || alpha >= 1) return first;
   const gap = finiteNumber(second.time, 0) - finiteNumber(first.time, 0);
   if (!(gap > 0 && gap <= 1.01)) return first;
@@ -535,6 +599,7 @@ function enterReplay(index = state.currentIndex) {
 }
 
 function enterLive() {
+  if (recordedReplay() && state.source === "server") { toast("当前为记录回放；使用新建仿真设置启动一次新运行", "warn"); return; }
   if (state.offline) { toast("离线记录回放没有服务器实时视图", "warn"); return; }
   if (state.source === "import") {
     clearFrames(); state.cursor = 0; state.generation = null; state.runConfig = null; state.metadata = {}; setSource("server", "新诊断运行", scenarioLabelFor($("scenarioSelect").value)); schedulePoll(20);
@@ -614,18 +679,18 @@ async function handleStep(direction) {
 async function handleSpeed(value) {
   const speed = finiteNumber(value, 1) || 1;
   state.playbackSpeed = speed;
-  if (state.viewMode === "live" && state.liveFollow && !state.offline && state.source === "server") await sendControl("speed", speed);
+  if (!recordedReplay() && state.viewMode === "live" && state.liveFollow && !state.offline && state.source === "server") await sendControl("speed", speed);
   state.uiDirty = true;
 }
 
 function resetLayers() {
-  state.layers = { rings: true, targetRings: true, gates: true, landingZones: true, grid: true, labels: true, trails: true, committed: true, conflicts: true };
+  state.layers = { slots: true, rings: true, targetRings: true, gates: true, landingZones: true, grid: true, labels: true, trails: true, committed: true, conflicts: true };
   syncLayerInputs();
   state.uiDirty = true;
 }
 
 function syncLayerInputs() {
-  const ids = { rings: "layerRings", targetRings: "layerTargetRings", gates: "layerGates", landingZones: "layerLandingZones", grid: "layerGrid", labels: "layerLabels", trails: "layerTrails", committed: "layerCommitted", conflicts: "layerConflicts" };
+  const ids = { slots: "layerSlots", rings: "layerRings", targetRings: "layerTargetRings", gates: "layerGates", landingZones: "layerLandingZones", grid: "layerGrid", labels: "layerLabels", trails: "layerTrails", committed: "layerCommitted", conflicts: "layerConflicts" };
   for (const [key, id] of Object.entries(ids)) $(id).checked = Boolean(state.layers[key]);
 }
 
@@ -633,7 +698,7 @@ function metricsForFrame(frame) {
   if (!frame) return { active: null, queue: null, completed: null, minSoc: null };
   const uavs = safeArray(frame.uavs);
   const socs = uavs.map((uav) => finiteNumber(uav.soc)).filter((value) => value !== null);
-  return { active: uavs.length, queue: finiteNumber(frame.external_queue_size), completed: finiteNumber(frame.completed_count), minSoc: socs.length ? Math.min(...socs) : null };
+  return { active: finiteNumber(frame.active_count, uavs.length), queue: finiteNumber(frame.rotating_slots?.upstream_waiting_count, finiteNumber(frame.external_queue_size)), completed: finiteNumber(frame.completed_count), minSoc: socs.length ? Math.min(...socs) : null };
 }
 
 function referenceAtTime(time) {
@@ -641,7 +706,7 @@ function referenceAtTime(time) {
   if (!frames.length || !Number.isFinite(Number(time))) return null;
   const target = Number(time);
   const first = finiteNumber(frames[0]?.time), last = finiteNumber(frames[frames.length - 1]?.time);
-  if (first === null || last === null || target < first || target > last) return null;
+  if (first === null || last === null || target < first - 1e-3 || target > last + 1e-3) return null;
   let low = 0, high = frames.length - 1;
   while (low <= high) {
     const mid = (low + high) >> 1;
@@ -660,13 +725,17 @@ function updateCompare(frame, reference) {
   if (!state.reference) { box.hidden = true; return; }
   box.hidden = false;
   const coverage = $("referenceCoverage");
+  const currentMetadata = { ...state.metadata, ...(state.metadata.run_metadata || {}) };
+  const referenceMetadata = { ...state.reference.metadata, ...(state.reference.metadata?.run_metadata || {}) };
+  const mismatch = ["seed", "scenario_profile"].some((key) => currentMetadata[key] != null && referenceMetadata[key] != null && String(currentMetadata[key]) !== String(referenceMetadata[key]));
+  const compareWarning = mismatch ? " · 场景/种子不同，差值仅供查看" : "";
   if (!reference) {
     const target = finiteNumber(frame?.time);
     const frames = state.reference?.frames || [];
     const first = finiteNumber(frames[0]?.time);
     const last = finiteNumber(frames[frames.length - 1]?.time);
-    const outside = target === null || first === null || last === null || target < first || target > last;
-    coverage.textContent = outside ? "当前 simulation time 超出参考覆盖范围 · 无参考，不外推" : "该时刻没有对应参考快照（采样时间未对齐）· 无参考，不外推";
+    const outside = target === null || first === null || last === null || target < first - 1e-3 || target > last + 1e-3;
+    coverage.textContent = (outside ? "当前 simulation time 超出参考覆盖范围 · 无参考，不外推" : "该时刻没有对应参考快照（采样时间未对齐）· 无参考，不外推") + compareWarning;
     for (const id of ["compareActive", "compareQueue", "compareCompleted", "compareSoc", "compareActiveRef", "compareQueueRef", "compareCompletedRef", "compareSocRef", "compareActiveDelta", "compareQueueDelta", "compareCompletedDelta", "compareSocDelta"]) $(id).textContent = "—";
     return;
   }
@@ -678,13 +747,13 @@ function updateCompare(frame, reference) {
     const delta = currentValue === null || refValue === null ? null : currentValue - refValue;
     $(deltaId).textContent = delta === null ? "—" : `${delta >= 0 ? "+" : ""}${currentId === "compareSoc" ? (delta * 100).toFixed(1) + "pp" : delta.toFixed(0)}`;
   });
-  coverage.textContent = `参考已按绝对时间对齐 · t=${formatTime(reference.time)} · 当前指标为快照值`;
+  coverage.textContent = `${state.reference.title} · 按绝对时间对齐 t=${formatTime(reference.time)} · 原始快照值${compareWarning}`;
 }
 
 function renderKpis(frame) {
   const metrics = metricsForFrame(frame);
   $("kpiActive").textContent = metrics.active === null ? "—" : String(metrics.active);
-  $("kpiQueue").textContent = `队列 ${metrics.queue === null ? "—" : metrics.queue}`;
+  $("kpiQueue").textContent = `${frame?.rotating_slots ? "上游等待" : "队列"} ${metrics.queue === null ? "—" : metrics.queue}`;
   $("kpiService").textContent = frame ? String(finiteNumber(frame.service_count, 0)) : "—";
   $("kpiCompleted").textContent = metrics.completed === null ? "—" : String(metrics.completed);
   const occupancy = safeArray(frame?.rings).reduce((total, ring) => total + (finiteNumber(ring.occupancy, 0) || 0), 0);
@@ -694,7 +763,7 @@ function renderKpis(frame) {
   $("kpiConflict").textContent = frame ? String(conflicts.length) : "—";
   $("kpiConflictSub").textContent = "近期冲突飞机";
   $("kpiTime").textContent = frame ? formatTime(frame.time) : "—";
-  $("kpiStep").textContent = `step ${frame?.step_count ?? "—"}`;
+  $("kpiStep").textContent = discreteReplay(frame) ? `记录帧 ${state.currentIndex + 1}` : `step ${frame?.step_count ?? "—"}`;
 }
 
 function statusDescription() {
@@ -712,7 +781,7 @@ function renderTimeline(frame) {
   $("timelineEnd").textContent = last >= 0 ? formatTime(state.frames[last].time) : "—";
   $("timelineState").textContent = state.offline ? "回放状态 · 离线记录" : `计算状态 · ${STATUS_LABELS[state.status] || state.status || "—"}`;
   $("timelineFrame").textContent = last >= 0 ? `帧 ${state.currentIndex + 1} / ${state.frames.length}` : "帧 — / —";
-  $("timelineFollowState").textContent = state.liveFollow && state.viewMode === "live" ? "实时跟随" : state.playing ? `回放 ${state.playbackSpeed}×` : "历史回放";
+  $("timelineFollowState").textContent = discreteReplay(frame) ? `原始采样帧 · ${state.playing ? `${state.playbackSpeed}×` : "已暂停"}` : state.liveFollow && state.viewMode === "live" ? "实时跟随" : state.playing ? `回放 ${state.playbackSpeed}×` : "历史回放";
   $("playButton").textContent = state.playing || (state.viewMode === "live" && state.liveFollow && state.status === "running") ? "Ⅱ" : "▶";
   $("playButton").setAttribute("aria-label", state.playing ? "暂停" : "播放");
   $("playbackSpeed").value = String(state.playbackSpeed);
@@ -727,7 +796,10 @@ function updateSceneHeader(frame) {
   const sourceText = state.offline ? "记录回放 · 离线" : state.sourceLabel;
   $("sceneTitle").textContent = state.title || "终端区场景";
   $("sceneTitle").title = state.title || "终端区场景";
-  $("sceneSubtitle").textContent = frame ? `${sourceText} · ${configSummaryText(activeConfig)} · t=${formatTime(frame.time)}` : `${sourceText} · ${configSummaryText(activeConfig)}`;
+  const metadata = { ...state.metadata, ...(state.metadata.run_metadata || {}) };
+  const scenario = replayScenarioLabel(metadata);
+  $("sceneSubtitle").textContent = discreteReplay(frame) ? `${sourceText} · ${scenario ? `${scenario} · ` : ""}${metadata.method ?? frame?.rotating_slots?.policy_id ?? "rotating_slots"} · seed ${metadata.seed ?? "—"} · 原始采样帧 · t=${formatTime(frame?.time)}` : frame ? `${sourceText} · ${configSummaryText(activeConfig)} · t=${formatTime(frame.time)}` : `${sourceText} · ${configSummaryText(activeConfig)}`;
+  $("sceneSubtitle").title = $("replaySummary").title;
   $("viewModePill").textContent = state.offline ? "离线回放" : state.viewMode === "live" && state.liveFollow ? "实时跟随" : state.viewMode === "live" ? "实时 · 已脱离" : state.playing ? `回放 ${state.playbackSpeed}×` : "历史回放";
   $("viewLiveButton").classList.toggle("active", state.viewMode === "live" && state.liveFollow);
   $("viewReplayButton").classList.toggle("active", state.viewMode === "replay");
@@ -757,8 +829,8 @@ function renderFlights(frame) {
   const search = $("flightSearch").value.trim().toLowerCase();
   const phase = $("phaseFilter").value;
   const sort = $("flightSort").value;
-  const uavs = safeArray(frame?.uavs).filter((uav) => (!phase || String(uav.phase ?? "") === phase) && (!search || String(uav.uid).toLowerCase().includes(search)));
-  uavs.sort((a, b) => sort === "soc" ? (finiteNumber(a.soc, 0) - finiteNumber(b.soc, 0)) : (Number(a.uid) - Number(b.uid)));
+  const uavs = safeArray(frame?.uavs).filter((uav) => (!phase || String(uav.phase ?? "") === phase) && (!search || `${aircraftIdentity(uav)} ${uav.uid}`.toLowerCase().includes(search)));
+  uavs.sort((a, b) => sort === "soc" ? (finiteNumber(a.soc, 0) - finiteNumber(b.soc, 0)) : aircraftIdentity(a).localeCompare(aircraftIdentity(b), undefined, { numeric: true }));
   const phases = [...new Set(safeArray(frame?.uavs).map((uav) => String(uav.phase ?? "")).filter(Boolean))].sort();
   const filter = $("phaseFilter");
   const previous = filter.value;
@@ -771,7 +843,7 @@ function renderFlights(frame) {
     row.addEventListener("click", () => selectUid(uav.uid));
     const conflict = safeArray(frame?.recent_conflict_uids).map(Number).includes(Number(uav.uid));
     const cells = [
-      `U${uav.uid}`, String(uav.phase ?? "—"), String(uav.ring_role ?? "—"), formatSoc(uav.soc), `${formatNumber(uav.speed, 1)} m/s`, uav.assigned_lz == null ? "—" : `LZ ${uav.assigned_lz}`, conflict ? "冲突关注" : uav.committed ? "已承诺" : "等待",
+      aircraftIdentity(uav), String(uav.phase ?? "—"), String(uav.ring_role ?? "—"), formatSoc(uav.soc), `${formatNumber(uav.speed, 1)} m/s`, uav.assigned_lz == null ? "—" : `LZ ${uav.assigned_lz}`, uav.status ?? uav.original_status ?? (conflict ? "冲突关注" : uav.committed ? "已承诺" : "等待"),
     ];
     cells.forEach((value) => { const cell = document.createElement("td"); cell.textContent = value; row.append(cell); });
     body.append(row);
@@ -788,7 +860,7 @@ function renderEvents(frame) {
   for (const event of events.slice().reverse()) {
     const row = document.createElement("tr");
     row.addEventListener("click", () => selectEvent(event));
-    const values = [formatTime(event.time), event.uid == null ? "—" : `U${event.uid}`, String(event.outcome ?? "—"), String(event.reason ?? "—"), String(event.phase ?? "—"), formatSoc(event.soc)];
+    const values = [formatTime(event.time), event.aircraft_id ?? (event.uid == null ? "—" : `U${event.uid}`), String(event.outcome ?? "—"), String(event.reason ?? "—"), String(event.phase ?? "—"), formatSoc(event.soc)];
     values.forEach((value) => { const cell = document.createElement("td"); cell.textContent = value; row.append(cell); });
     body.append(row);
   }
@@ -819,6 +891,40 @@ function renderTelemetry(frame) {
     const valueNode = document.createElement("strong"); valueNode.className = "telemetry-value"; valueNode.textContent = typeof value === "number" && Number.isFinite(value) ? formatNumber(value, 3) : String(value);
     item.append(keyNode, valueNode); grid.append(item);
   });
+}
+
+function renderResources(frame) {
+  const content = $("resourceContent"); content.replaceChildren();
+  const recorded = frame?.rotating_slots;
+  $("resourceEvidence").textContent = "仅显示记录中的资源与时间证据";
+  if (!recorded) { const empty = document.createElement("div"); empty.className = "table-empty"; empty.textContent = "当前记录无 rotating_slots 资源诊断"; content.append(empty); return; }
+  const line = (text, kind = "") => { const row = document.createElement("div"); row.className = `resource-row ${kind}`; row.textContent = text; content.append(row); };
+  const evidence = recorded.separation_evidence;
+  if (evidence) $("resourceEvidence").textContent = `全回合间隔证据（非当前时刻） · ${evidence.label ?? "记录值"} · [${formatNumber(evidence.lower_bound_m, 3)}, ${formatNumber(evidence.upper_bound_m, 3)}] m · ${evidence.status ?? "未记录状态"} · witness ${formatTime(evidence.witness_time)}`;
+  $("resourceEvidence").title = $("resourceEvidence").textContent;
+  const metadata = { ...state.metadata, ...(state.metadata.run_metadata || {}) };
+  if (metadata.fixture_only || metadata.fixture_banner || recorded.fixture_banner) line(String(recorded.fixture_banner || metadata.fixture_banner || "ANALYTIC FIXTURE · 不代表物理回合结果"), "resource-soft");
+  if (metadata.verification_status || metadata.human_status) line(`记录验证状态：${metadata.verification_status ?? metadata.human_status}`, "resource-note");
+  if (recorded.admission_model) line(`准入模型：${recorded.admission_model}`, "resource-note");
+  for (const pad of safeArray(recorded.pads).slice(0, 32)) {
+    const occupied = pad.occupant_id != null;
+    line(`PAD ${pad.id} · ${occupied ? `实际服务 ${pad.occupant_id} · 服务结束 ${formatTime(pad.service_end)} · 剩余 ${formatTime(pad.service_remaining)}` : `无当前服务 · ${pad.state ?? "状态未记录"}`}`, "resource-pad");
+    for (const row of safeArray(pad.reservations).slice(0, 20)) {
+      const soft = row.commitment === "SOFT_UNSTARTED_REMOVABLE";
+      line(`${soft ? "SOFT 可移除" : row.commitment ?? "记录区间"} · ${row.owner_id ?? row.aircraft_id ?? "—"} · ${row.future_interval ? "未来区间" : "记录区间"} [${formatTime(row.interval_start ?? row.start)}, ${formatTime(row.interval_end ?? row.end)}) · 飞行开始 ${formatTime(row.maneuver_start)} · 下降 ${formatTime(row.descent_start)} · 接地 ${formatTime(row.touchdown_time)} · 区间结束 ${formatTime(row.interval_end ?? row.end)}`, soft ? "resource-soft" : "");
+    }
+    if (safeArray(pad.reservations).length > 20) line(`另有 ${pad.reservations.length - 20} 条 pad 日历记录，界面仅展示前 20 条`, "resource-note");
+  }
+  const selected = findSelected(frame);
+  const future = safeArray(recorded.slots).flatMap((slot) => safeArray(slot.reservations).filter((row) => row.future_interval || (selected && String(row.owner_id ?? row.aircraft_id) === aircraftIdentity(selected))).map((row) => ({ slot: slot.id, ...row })));
+  future.sort((a, b) => Number(String(b.owner_id) === aircraftIdentity(selected)) - Number(String(a.owner_id) === aircraftIdentity(selected)));
+  for (const row of future.slice(0, 12)) line(`SLOT ${row.slot} · ${row.commitment ?? "记录区间"} · ${row.owner_id ?? row.aircraft_id ?? "—"} · [${formatTime(row.interval_start ?? row.start)}, ${formatTime(row.interval_end ?? row.end)}) · 飞行开始 ${formatTime(row.maneuver_start)}`, row.commitment === "SOFT_UNSTARTED_REMOVABLE" ? "resource-soft" : "");
+  if (future.length > 12) line(`另有 ${future.length - 12} 条槽位日历记录，选中飞机优先`, "resource-note");
+  const timing = recorded.latest_dispatch_timing;
+  if (timing) {
+    const fields = Object.entries(timing).filter(([, value]) => value == null || ["string", "number", "boolean"].includes(typeof value)).slice(0, 12);
+    line(`最近调度记录 · ${fields.map(([key, value]) => `${key}=${value == null ? "—" : String(value).slice(0, 100)}`).join(" · ")}`, "resource-note");
+  }
 }
 
 function renderRings(frame) {
@@ -865,11 +971,11 @@ function drawHistoryChart(uid, index) {
 function renderDetails(frame) {
   const uav = findSelected(frame);
   const selectedExists = Boolean(uav);
-  $("selectedTitle").textContent = uav ? `U${uav.uid}` : state.selectedUid == null ? "未选择 UAV" : `U${state.selectedUid} · 当前帧无数据`;
+  $("selectedTitle").textContent = uav ? aircraftIdentity(uav) : state.selectedEvent?.aircraft_id != null ? String(state.selectedEvent.aircraft_id) : state.selectedUid == null ? "未选择 UAV" : `U${state.selectedUid} · 当前帧无数据`;
   $("selectionPulse").classList.toggle("active", selectedExists);
-  const refUav = uav && state.reference ? safeArray(referenceAtTime(frame?.time)?.uavs).find((candidate) => Number(candidate.arrival_id) === Number(uav.arrival_id)) : null;
+  const refUav = uav && state.reference ? safeArray(referenceAtTime(frame?.time)?.uavs).find((candidate) => sameAircraft(candidate, uav)) : null;
   const eventText = state.selectedEvent ? ` · 事件 ${state.selectedEvent.outcome ?? "—"} / ${state.selectedEvent.reason ?? "—"} @ ${formatTime(state.selectedEvent.time)}` : "";
-  const baseState = uav ? `${uav.committed ? "已承诺安全链轨迹" : "等待 / 可决策"}${refUav ? ` · 参考 arrival_id ${uav.arrival_id} 已匹配` : state.reference ? ` · 参考 arrival_id ${uav.arrival_id ?? "—"} 无匹配` : ""}${eventText}` : state.selectedUid == null ? state.selectedEvent ? `终态事件 ${state.selectedEvent.outcome ?? "—"} / ${state.selectedEvent.reason ?? "—"} @ ${formatTime(state.selectedEvent.time)}${finitePoint(state.selectedEvent.position) ? " · 已定位事件位置" : ""}` : "点击场景中的 UAV 或航班表行查看详情。" : `${state.followLost ? "已离开当前帧，跟随已退出；" : ""}选中 UAV 不在当前帧。${eventText}`;
+  const baseState = uav ? `${uav.status ?? uav.original_status ?? (uav.committed ? "已承诺轨迹" : "等待 / 可决策")}${refUav ? ` · 参考 ${aircraftIdentity(refUav)} 已匹配` : state.reference ? ` · 参考 ${aircraftIdentity(uav)} 无匹配` : ""}${eventText}` : state.selectedUid == null ? state.selectedEvent ? `终态事件 ${state.selectedEvent.outcome ?? "—"} / ${state.selectedEvent.reason ?? "—"} @ ${formatTime(state.selectedEvent.time)}${finitePoint(state.selectedEvent.position) ? " · 已定位事件位置" : ""}` : "点击场景中的 UAV 或航班表行查看详情。" : `${state.followLost ? "已离开当前帧，跟随已退出；" : ""}选中 UAV 不在当前帧。${eventText}`;
   $("selectedState").textContent = baseState;
   $("selectedState").classList.toggle("missing", !selectedExists && state.selectedUid != null);
   $("followSelectedButton").disabled = !selectedExists || state.offline;
@@ -882,6 +988,10 @@ function renderDetails(frame) {
   $("detailX").textContent = finitePoint(uav?.position) ? formatNumber(uav.position[0], 2) : "—";
   $("detailY").textContent = finitePoint(uav?.position) ? formatNumber(uav.position[1], 2) : "—";
   $("detailZ").textContent = finitePoint(uav?.position) ? formatNumber(uav.position[2], 2) : "—";
+  $("detailOriginalStatus").textContent = uav?.status ?? uav?.original_status ?? "—";
+  $("detailSlot").textContent = uav?.slot_index ?? "—";
+  $("detailRescue").textContent = uav?.rescue_status ?? "—";
+  $("detailPower").textContent = uav?.battery_power_w == null ? "—" : `${formatNumber(uav.battery_power_w, 1)} W`;
   $("detailCommitted").textContent = uav ? (uav.committed ? "COMMITTED" : "OPEN") : "—";
   $("detailCommitted").className = `status-pill${uav?.emergency_landing ? " alert" : uav?.energy_alert && uav.energy_alert !== "normal" ? " warning" : ""}`;
   $("detailPlan").textContent = uav?.trajectory_plan_id ?? "—";
@@ -910,7 +1020,7 @@ function renderUI(force = false) {
   const now = performance.now();
   if (!force && !state.uiDirty && signature === state.lastDisplaySignature && now - state.lastUiAt < 100) return;
   state.lastDisplaySignature = signature; state.lastUiAt = now; state.uiDirty = false;
-  renderKpis(frame); updateSceneHeader(frame); renderTimeline(frame); renderFlights(frame); renderEvents(frame); renderTelemetry(frame); renderDetails(frame); updateCompare(frame, referenceAtTime(frame?.time));
+  updateReplayControls(); renderKpis(frame); updateSceneHeader(frame); renderTimeline(frame); renderFlights(frame); renderEvents(frame); renderTelemetry(frame); renderDetails(frame); renderResources(frame); updateCompare(frame, referenceAtTime(frame?.time));
   setSimStatus(statusDescription());
   if (state.offline) setConnection("offline", "离线记录");
   else if (state.serverError) setConnection("error", "服务器错误");
@@ -1018,7 +1128,7 @@ function validateReplayFrame(frame, index) {
     const points = requireArray(uav.trajectory_points, `uavs[${uavIndex}].trajectory_points`); points.forEach((point, pointIndex) => requirePoint(point, `uavs[${uavIndex}].trajectory_points[${pointIndex}]`));
   });
   const conflicts = requireArray(frame.recent_conflict_uids, "recent_conflict_uids"); conflicts.forEach((uid, conflictIndex) => requireFinite(uid, `recent_conflict_uids[${conflictIndex}]`));
-  const events = requireArray(frame.terminal_events, "terminal_events", true); events.forEach((event, eventIndex) => { requireObject(event, `terminal_events[${eventIndex}]`); requireFinite(event.time, `terminal_events[${eventIndex}].time`); requireFinite(event.soc, `terminal_events[${eventIndex}].soc`); if (event.position != null) requirePoint(event.position, `terminal_events[${eventIndex}].position`); });
+  const events = requireArray(frame.terminal_events, "terminal_events", true); events.forEach((event, eventIndex) => { requireObject(event, `terminal_events[${eventIndex}]`); requireFinite(event.time, `terminal_events[${eventIndex}].time`); if (!(discreteReplay(frame, {}) && event.soc === null && event.soc_source === "unavailable")) requireFinite(event.soc, `terminal_events[${eventIndex}].soc`); if (event.position != null) requirePoint(event.position, `terminal_events[${eventIndex}].position`); });
   if (frame.telemetry == null || typeof frame.telemetry !== "object" || Array.isArray(frame.telemetry)) throw new Error(`第 ${index + 1} 帧 telemetry 必须是对象`);
   Object.entries(frame.telemetry).forEach(([key, value]) => requireFinite(value, `telemetry.${key}`));
 }
@@ -1051,7 +1161,10 @@ function parseReplayText(text, filename = "") {
 async function importFile(file, reference = false) {
   if (!file) return;
   if (file.size > MAX_IMPORT_BYTES) { toast(`文件超过 ${Math.round(MAX_IMPORT_BYTES / 1024 / 1024)} MiB 限制`, "error"); return; }
+  if (state.loadingReplay) return;
+  state.loadingReplay = true; setLoading(true, reference ? "正在读取参考文件…" : "正在读取回放文件…"); updateReplayControls();
   try {
+    await new Promise((resolve) => window.requestAnimationFrame(resolve));
     const payload = parseReplayText(await file.text(), file.name);
     if (reference) {
       state.reference = payload;
@@ -1062,6 +1175,49 @@ async function importFile(file, reference = false) {
     }
     state.uiDirty = true;
   } catch (error) { toast(`导入失败：${error instanceof Error ? error.message : String(error)}`, "error"); }
+  finally { state.loadingReplay = false; setLoading(false); updateReplayControls(); }
+}
+
+async function openLocalReplay(reference = false) {
+  const path = $("replayPathInput").value.trim();
+  const notice = $("replayNotice");
+  if (!path) { notice.hidden = false; notice.className = "inline-notice error"; notice.textContent = "请填写本机回放目录或 replay.json 的绝对路径"; return; }
+  if (state.offline || state.loadingReplay) return;
+  state.loadingReplay = true;
+  if (!reference) {
+    state.pollEpoch += 1;
+    if (state.pollTimer) { window.clearTimeout(state.pollTimer); state.pollTimer = null; }
+  }
+  notice.hidden = false; notice.className = "inline-notice"; notice.textContent = reference ? "正在读取参考回放…" : "正在读取回放…";
+  setLoading(true, reference ? "正在读取参考回放…" : "正在读取本地回放…"); updateReplayControls();
+  try {
+    const payload = await requestJson("/replay", { method: "POST", body: JSON.stringify({ path, reference }) });
+    if (reference) {
+      state.reference = validateReplayPayload(payload);
+      notice.textContent = `参考已加载 · ${state.reference.title} · ${state.reference.frames.length} 帧`;
+    } else {
+      const frames = []; let cursor = 0; let metadata = payload.metadata || {}; let batch;
+      do {
+        const query = new URLSearchParams({ after: String(cursor), generation: String(payload.generation) });
+        batch = await requestJson(`/frames?${query.toString()}`);
+        if (batch.generation !== payload.generation) throw new Error("服务器回放已被另一次操作切换，请重新打开");
+        frames.push(...safeArray(batch.frames)); cursor = finiteNumber(batch.next_cursor, cursor);
+        metadata = batch.metadata || metadata;
+        if (frames.length > MAX_IMPORTED_FRAMES) throw new Error("回放帧数超过界面限制");
+      } while (safeArray(batch.frames).length);
+      const replay = validateReplayPayload({ title: payload.title || metadata.method || "固定多环终端区 · 旋转槽位回放", frames, metadata });
+      setReplayFrames(replay, "server", "记录回放"); clearSelection();
+      state.status = "replay"; state.generation = payload.generation; state.cursor = cursor; state.processAlive = false;
+      notice.textContent = "回放已打开 · 从首帧暂停 · 播放仅推进记录";
+    }
+    state.uiDirty = true;
+  } catch (error) {
+    notice.className = "inline-notice error";
+    notice.textContent = `读取失败：${error instanceof Error ? error.message : String(error)}`;
+  } finally {
+    state.loadingReplay = false; setLoading(false); updateReplayControls(); state.uiDirty = true;
+    if (!reference && state.source === "server") schedulePoll(FRAME_POLL_MS);
+  }
 }
 
 function downloadText(filename, text, type = "application/json") {
@@ -1126,6 +1282,10 @@ function disableOfflineControls() {
 }
 
 function wireControls() {
+  $("openReplayButton").addEventListener("click", () => openLocalReplay(false));
+  $("referenceReplayButton").addEventListener("click", () => openLocalReplay(true));
+  $("replayPathInput").addEventListener("keydown", (event) => { if (event.key === "Enter") openLocalReplay(false); });
+  $("showSimulationButton").addEventListener("click", () => { state.showSimulationConfig = !state.showSimulationConfig; updateReplayControls(); });
   $("importButton").addEventListener("click", () => $("importFile").click()); $("importFile").addEventListener("change", (event) => importFile(event.target.files?.[0], false));
   $("importReferenceButton").addEventListener("click", () => $("importReferenceFile").click()); $("importReferenceFile").addEventListener("change", (event) => importFile(event.target.files?.[0], true));
   $("exportButton").addEventListener("click", exportReplay); $("exportPngButton").addEventListener("click", exportScenePng);
@@ -1136,7 +1296,7 @@ function wireControls() {
   $("timelineInput").addEventListener("input", (event) => { enterReplay(Number(event.target.value)); }); $("followSelectedButton").addEventListener("click", toggleFollow); $("clearSelectedButton").addEventListener("click", clearSelection); $("followCameraButton").addEventListener("click", toggleFollow);
   $("perspectiveButton").addEventListener("click", () => { state.scene.setProjection("perspective"); $("perspectiveButton").classList.add("active"); $("topButton").classList.remove("active"); state.uiDirty = true; }); $("topButton").addEventListener("click", () => { state.scene.setProjection("top"); $("topButton").classList.add("active"); $("perspectiveButton").classList.remove("active"); state.uiDirty = true; }); $("resetCameraButton").addEventListener("click", () => { state.scene.resetCamera(); $("topButton").classList.remove("active"); $("perspectiveButton").classList.add("active"); state.uiDirty = true; });
   $("heightScaleInput").addEventListener("input", (event) => { state.heightScale = finiteNumber(event.target.value, 1.6) || 1.6; $("heightScaleOutput").textContent = `${state.heightScale.toFixed(1)}×`; state.scene.setHeightScale(state.heightScale); state.uiDirty = true; });
-  const layerIds = { rings: "layerRings", targetRings: "layerTargetRings", gates: "layerGates", landingZones: "layerLandingZones", grid: "layerGrid", labels: "layerLabels", trails: "layerTrails", committed: "layerCommitted", conflicts: "layerConflicts" }; Object.entries(layerIds).forEach(([key, id]) => $(id).addEventListener("change", (event) => { state.layers[key] = event.target.checked; state.scene.setLayers(state.layers); state.uiDirty = true; })); $("resetLayersButton").addEventListener("click", resetLayers);
+  const layerIds = { slots: "layerSlots", rings: "layerRings", targetRings: "layerTargetRings", gates: "layerGates", landingZones: "layerLandingZones", grid: "layerGrid", labels: "layerLabels", trails: "layerTrails", committed: "layerCommitted", conflicts: "layerConflicts" }; Object.entries(layerIds).forEach(([key, id]) => $(id).addEventListener("change", (event) => { state.layers[key] = event.target.checked; state.scene.setLayers(state.layers); state.uiDirty = true; })); $("resetLayersButton").addEventListener("click", resetLayers);
   $("flightSearch").addEventListener("input", () => { state.uiDirty = true; renderUI(true); }); $("phaseFilter").addEventListener("change", () => { state.uiDirty = true; renderUI(true); }); $("flightSort").addEventListener("change", () => { state.uiDirty = true; renderUI(true); });
   document.querySelectorAll(".drawer-tab").forEach((tab) => tab.addEventListener("click", () => { document.querySelectorAll(".drawer-tab").forEach((item) => item.classList.toggle("active", item === tab)); document.querySelectorAll(".drawer-panel").forEach((panel) => panel.classList.toggle("active", panel.id === tab.dataset.panel)); })); $("drawerToggleButton").addEventListener("click", () => { document.querySelector(".app-shell").classList.toggle("drawer-collapsed"); $("drawerToggleButton").classList.toggle("collapsed"); });
   window.addEventListener("keydown", (event) => { const target = event.target; if (target && ["INPUT", "SELECT", "TEXTAREA"].includes(target.tagName)) return; if (event.key === " ") { event.preventDefault(); handlePlay(); } else if (event.key === "ArrowLeft") { event.preventDefault(); handleStep(-1); } else if (event.key === "ArrowRight") { event.preventDefault(); handleStep(1); } else if (event.key.toLowerCase() === "f") { event.preventDefault(); toggleFollow(); } });

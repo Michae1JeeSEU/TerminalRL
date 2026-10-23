@@ -341,6 +341,8 @@ def _extract_replay_object(raw: bytes, path: Path) -> dict[str, Any]:
 
 def load_replay(path: str | Path) -> tuple[str, list[dict[str, Any]], dict[str, Any]]:
     replay_path = Path(path)
+    if replay_path.is_dir():
+        return _load_rotating_slots_replay(replay_path)
     try:
         size = replay_path.stat().st_size
     except OSError as error:
@@ -352,6 +354,10 @@ def load_replay(path: str | Path) -> tuple[str, list[dict[str, Any]], dict[str, 
     except OSError as error:
         raise ConsoleInputError(f"replay cannot be read: {replay_path}") from error
     payload = _extract_replay_object(raw, replay_path)
+    if payload.get("schema") == "FT-RS-S1-1.0-ReplayBundle":
+        if replay_path.name != "replay.json":
+            raise ConsoleInputError("rotating_slots bundle index must be named replay.json")
+        return _load_rotating_slots_replay(replay_path)
     frames = _validate_frames(payload.get("frames"))
     title = payload.get("title", replay_path.stem)
     if not isinstance(title, str) or not title:
@@ -360,6 +366,18 @@ def load_replay(path: str | Path) -> tuple[str, list[dict[str, Any]], dict[str, 
     if not isinstance(metadata, Mapping):
         raise ConsoleInputError("replay metadata must be an object")
     return title, frames, dict(_jsonable(metadata))
+
+
+def _load_rotating_slots_replay(path: Path) -> tuple[str, list[dict[str, Any]], dict[str, Any]]:
+    # Lazy import keeps ordinary console/legacy replay startup lightweight.
+    from .rotating_slots_console import load_rotating_slots_replay
+    try:
+        title, frames, metadata = load_rotating_slots_replay(path, max_frames=MAX_FRAMES, max_bytes=MAX_REPLAY_BYTES)
+        return title, _validate_frames(frames), dict(_jsonable(metadata))
+    except ConsoleInputError:
+        raise
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, OverflowError) as error:
+        raise ConsoleInputError(f"invalid rotating_slots ReplayBundle: {error}") from error
 
 
 def _scenario_is_allowed(mode: str, scenario: str, profile: str | None) -> None:
@@ -729,16 +747,33 @@ class ConsoleSession:
             return self._generation
 
     def _load_replay(self, path: str | Path) -> None:
+        self.load_replay_path(path)
+
+    def load_replay_path(self, path: str | Path, *, reference: bool = False) -> dict[str, Any]:
+        """Validate fully before replacing the current session or stopping a run."""
+        if not isinstance(path, (str, Path)) or not str(path).strip() or len(str(path)) > 4096:
+            raise ConsoleInputError("replay path must be a non-empty local path")
+        if not isinstance(reference, bool):
+            raise ConsoleInputError("reference must be boolean")
         title, frames, metadata = load_replay(path)
+        if reference:
+            return {"title": title, "frames": frames, "metadata": metadata}
         with self._lock:
+            if self._closed:
+                raise RuntimeError("console session is closed")
+            self._stop_locked(explicit=False)
+            self._generation += 1
             self._frames.clear()
             self._frames.extend(frames)
             self._base_cursor = 0
             self._dropped_frames = 0
             self._status = "replay"
+            self._error = None
             self._title = title
             self._metadata = {"source": "replay", **metadata}
-            self._config = {"mode": "replay", "scenario": "imported", "replay_path": str(path)}
+            self._config = {"mode": "replay", "scenario": metadata.get("scenario", "imported"),
+                            "method": metadata.get("method"), "replay_path": str(path)}
+            return self._state_locked()
 
     def _stop_locked(self, *, explicit: bool = True) -> None:
         run = self._run
@@ -1138,14 +1173,22 @@ class ConsoleRequestHandler(BaseHTTPRequestHandler):
         if not self._authorized(token=True):
             return
         parsed = urlsplit(self.path)
-        if parsed.path not in {"/api/start", "/api/control"}:
+        if parsed.path not in {"/api/start", "/api/control", "/api/replay"}:
             self._json_error(HTTPStatus.NOT_FOUND, "not_found", "endpoint not found")
             return
         payload = self._read_json_body()
         if payload is None:
             return
         try:
-            result = self.session.start(payload) if parsed.path == "/api/start" else self.session.control(payload)
+            if parsed.path == "/api/replay":
+                if set(payload) - {"path", "reference"}:
+                    raise ConsoleInputError("replay request supports only path and reference")
+                path = payload.get("path")
+                if not isinstance(path, str):
+                    raise ConsoleInputError("replay path must be a non-empty local path")
+                result = self.session.load_replay_path(path, reference=payload.get("reference", False))
+            else:
+                result = self.session.start(payload) if parsed.path == "/api/start" else self.session.control(payload)
         except ConsoleInputError as error:
             self._json_error(HTTPStatus.BAD_REQUEST, "invalid_request", str(error))
         except RuntimeError as error:
@@ -1209,7 +1252,7 @@ def _cli_parser() -> argparse.ArgumentParser:
     parser.add_argument("--port", type=int, default=DEFAULT_PORT)
     parser.add_argument("--no-browser", action="store_true")
     parser.add_argument("--no-autostart", action="store_true")
-    parser.add_argument("--replay", type=Path)
+    parser.add_argument("--replay", type=Path, help="ReplayBundle directory or its replay.json; also accepts console JSON and legacy HTML")
     parser.add_argument("--mode", choices=tuple(sorted(MODE_IDS)), default=DEFAULT_MODE)
     parser.add_argument("--scenario", choices=tuple(sorted(SCENARIO_IDS)), default=DEFAULT_SCENARIO)
     parser.add_argument("--profile", choices=tuple(sorted(PROFILE_IDS)))

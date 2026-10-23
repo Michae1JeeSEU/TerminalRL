@@ -134,6 +134,23 @@ def test_replay_rejects_nonfinite_time_bad_order_and_bad_point(tmp_path: Path) -
             load_replay(path)
 
 
+def test_replay_path_api_token_reference_and_atomic_failure(running_server, tmp_path: Path) -> None:
+    server, session = running_server
+    path = tmp_path / "recorded.json"
+    path.write_text(json.dumps({"title": "recorded", "frames": [{"time": 0., "step_count": 0}]}), encoding="utf-8")
+    assert _request(server, "POST", "/api/replay", body={"path": str(path)}, token="wrong")[0] == 403
+    status, state = _request(server, "POST", "/api/replay", body={"path": str(path)}, token="test-token")
+    assert status == 200 and state["status"] == "replay" and state["generation"] == 1
+    original = session.export_payload()
+    status, reference = _request(server, "POST", "/api/replay", body={"path": str(path), "reference": True}, token="test-token")
+    assert status == 200 and reference["title"] == "recorded" and len(reference["frames"]) == 1
+    assert session.export_payload() == original
+    status, _ = _request(server, "POST", "/api/replay", body={"path": str(tmp_path / "missing")}, token="test-token")
+    assert status == 400 and session.export_payload() == original
+    status, _ = _request(server, "POST", "/api/replay", body={"path": str(path), "reference": "yes"}, token="test-token")
+    assert status == 400 and session.export_payload() == original
+
+
 def test_console_observer_does_not_require_second_permit_at_max_step() -> None:
     frame_queue = Queue()
     status_queue = Queue()

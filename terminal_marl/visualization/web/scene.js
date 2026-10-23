@@ -13,6 +13,7 @@ export default class Scene {
     this.selectedUid = null;
     this.hoverUid = null;
     this.layers = {
+      slots: true,
       rings: true,
       targetRings: true,
       gates: true,
@@ -343,6 +344,21 @@ export default class Scene {
     if (this.layers.labels) { ctx.save(); ctx.font = "9px Inter, system-ui, sans-serif"; ctx.fillStyle = color; ctx.fillText(`LZ ${zone.lz_id ?? "—"} · ${status}`, p.x + 8, p.y + 3); ctx.restore(); }
   }
 
+  _drawSlots() {
+    const colors = { FREE: "#52d99b", OCCUPIED: "#5aa8ff", RESERVED: "#f5b64e", DEPARTING: "#fc6f78", SOFT: "#c68bff" };
+    const selected = (this.frame?.uavs || []).find((uav) => String(uav.uid) === String(this.selectedUid));
+    for (const slot of this.frame?.rotating_slots?.slots || []) {
+      if (!this._finitePoint(slot.position)) continue;
+      const p = this._project(slot.position);
+      const color = colors[String(slot.state).toUpperCase()] || "#839db4";
+      const owned = selected?.aircraft_id != null && String(slot.occupant_id) === String(selected.aircraft_id);
+      const ctx = this.ctx; ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = `${color}55`; ctx.lineWidth = owned ? 2 : 1;
+      ctx.beginPath(); ctx.arc(p.x, p.y, owned ? 5 : 3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      if (owned && this.layers.labels) { ctx.font = "9px Inter, system-ui, sans-serif"; ctx.fillStyle = color; ctx.fillText(`slot ${slot.id}`, p.x + 7, p.y + 11); }
+      ctx.restore();
+    }
+  }
+
   _drawTrail(uav, points) {
     if (!Array.isArray(points) || points.length < 2) return;
     const color = `${this._colorFor(uav.uid)}88`;
@@ -366,7 +382,8 @@ export default class Scene {
   _drawReferenceUav(uav) {
     if (!this._finitePoint(uav.position)) return;
     const p = this._project(uav.position);
-    const color = this._colorFor(uav.uid);
+    const match = (this.frame?.uavs || []).find((candidate) => uav.aircraft_id != null || candidate.aircraft_id != null ? uav.aircraft_id != null && candidate.aircraft_id != null && String(uav.aircraft_id) === String(candidate.aircraft_id) : uav.arrival_id != null && candidate.arrival_id != null && String(uav.arrival_id) === String(candidate.arrival_id));
+    const color = this._colorFor(match?.uid ?? uav.uid);
     const size = 6;
     const ctx = this.ctx;
     ctx.save();
@@ -379,7 +396,7 @@ export default class Scene {
     ctx.setLineDash([]);
     ctx.beginPath(); ctx.arc(0, 0, size * .72, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.restore();
-    if (this.layers.labels) { ctx.save(); ctx.font = "9px Inter, system-ui, sans-serif"; ctx.fillStyle = `${color}bb`; ctx.fillText(`R${uav.uid}`, p.x + 9, p.y + 3); ctx.restore(); }
+    if (this.layers.labels && (this.referenceFrame?.uavs?.length <= 8 || (match && String(match.uid) === String(this.selectedUid)))) { ctx.save(); ctx.font = "9px Inter, system-ui, sans-serif"; ctx.fillStyle = `${color}bb`; ctx.fillText(`R ${uav.aircraft_id ?? `U${uav.uid}`}`, p.x + 9, p.y + 3); ctx.restore(); }
   }
 
   _drawReferenceFrame(frame) {
@@ -423,6 +440,13 @@ export default class Scene {
     const heading = this._heading(uav);
     const size = selected || hovered ? 9 : 7;
     const ctx = this.ctx;
+    if (["ENERGY_FAILURE", "ENERGY_MISSION_FAILED", "CENSORED_DUE_TO_FAILURE", "EXECUTED_HARD_SEPARATION_VIOLATION"].includes(String(uav.status ?? uav.original_status ?? uav.phase).toUpperCase())) {
+      ctx.save(); ctx.translate(p.x, p.y); ctx.strokeStyle = "#fc6f78"; ctx.lineWidth = selected ? 3 : 2;
+      ctx.beginPath(); ctx.moveTo(-6, -6); ctx.lineTo(6, 6); ctx.moveTo(6, -6); ctx.lineTo(-6, 6); ctx.stroke();
+      if (selected) { ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.stroke(); }
+      if (this.layers.labels && (showLabel || selected || hovered)) { ctx.font = "9px Inter, system-ui, sans-serif"; ctx.fillStyle = "#ffb1b6"; ctx.fillText(`${uav.aircraft_id ?? `U${uav.uid}`} · ${uav.status ?? uav.original_status ?? uav.phase}`, 10, -9); }
+      ctx.restore(); return;
+    }
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.rotate(heading);
@@ -437,7 +461,7 @@ export default class Scene {
     ctx.fillStyle = "#eefaff"; ctx.beginPath(); ctx.moveTo(size + 5, 0); ctx.lineTo(size - 1, -3); ctx.lineTo(size - 1, 3); ctx.closePath(); ctx.fill();
     ctx.restore();
     if (showLabel || selected || hovered) {
-      ctx.save(); ctx.font = `${selected ? "600 " : ""}10px Inter, system-ui, sans-serif`; ctx.fillStyle = selected ? "#f2ffff" : "#b3c8dc"; ctx.fillText(`U${uav.uid}`, p.x + 12, p.y - 9); ctx.restore();
+      ctx.save(); ctx.font = `${selected ? "600 " : ""}10px Inter, system-ui, sans-serif`; ctx.fillStyle = selected ? "#f2ffff" : "#b3c8dc"; ctx.fillText(String(uav.aircraft_id ?? `U${uav.uid}`), p.x + 12, p.y - 9); ctx.restore();
     }
   }
 
@@ -475,6 +499,7 @@ export default class Scene {
     if (this.layers.rings || this.layers.targetRings) rings.map((r, i) => ({ r, i, d: this._depth([Number(r.radius) || 0, 0, Number(r.height) || 0]) })).sort((a, b) => a.d - b.d).forEach(({ r, i }) => this._drawRing(r, i));
     if (this.layers.gates) (this.frame.gates || []).slice().sort((a, b) => this._depth(a.gate_position) - this._depth(b.gate_position)).forEach((gate) => this._drawGate(gate));
     if (this.layers.landingZones) (this.frame.landing_zones || []).slice().sort((a, b) => this._depth(a.position) - this._depth(b.position)).forEach((zone) => this._drawLandingZone(zone));
+    if (this.layers.slots) this._drawSlots();
     this._drawReferenceFrame(this.referenceFrame);
     this._drawTerminalEvents(this.frame);
     const conflicts = new Set((this.frame.recent_conflict_uids || []).map((uid) => Number(uid)));

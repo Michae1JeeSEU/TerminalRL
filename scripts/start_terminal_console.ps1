@@ -11,7 +11,8 @@
     Loopback HTTP port. Defaults to 8787.
 
 .PARAMETER Replay
-    Optional JSON, legacy HTML, or single-file console replay to open.
+    Optional rotating_slots ReplayBundle directory or its replay.json,
+    console JSON, legacy HTML, or single-file console replay to open.
 
 .PARAMETER NoBrowser
     Do not open the default browser after the server binds.
