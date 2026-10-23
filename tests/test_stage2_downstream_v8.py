@@ -7,7 +7,7 @@ import pytest
 from terminal_marl.core.rotating_slots.stage2_planning import (
     CandidateProvider, EnergySlackScheduler, EvaluationContext, NormalSchedulerCallback,
     PlanningBudget, PLANNING_PROFILE_DOWNSTREAM, PLANNING_PROFILE_LEGACY,
-    ReferenceProvider, _node, objective_schema_id,
+    NormalReference, PlanningNode, ReferenceProvider, _node, objective_schema_id,
 )
 from terminal_marl.core.rotating_slots.stage2_downstream import (
     Demand, JointDownstream, ENERGY_UNIT_J, describe_column, ticks,
@@ -229,3 +229,49 @@ def test_fixed_final_calendar_is_counted_once_without_virtual_job():
     cat=CandidateProvider(planning_profile=PLANNING_PROFILE_DOWNSTREAM).get_columns(s,PlanningBudget(max_attempts=0))
     assert not cat.columns and not cat.downstream.assignment and not cat.downstream.fixed_demands
     assert len(cat.downstream.fixed_identity)==1
+
+
+def test_delayed_reference_uses_supported_screen_keys_at_35_minus_ulp(monkeypatch):
+    p=CandidateProvider(planning_profile=PLANNING_PROFILE_DOWNSTREAM)
+    epoch=9.388737514630813
+    final_start=epoch+40.; final_end=final_start+35.+13.5
+    reference_duration=final_end-final_start-13.5
+    assert reference_duration==math.nextafter(35.,0.) and int(reference_duration)==34
+    transfer=SimpleNamespace(pad_id=None,target_slot=0,start_time=epoch,end_time=final_start)
+    final=SimpleNamespace(pad_id=0,target_slot=None,start_time=final_start,end_time=final_end)
+    ref=NormalReference("KNOWN",plans=(transfer,final))
+    # Missing (0,35) must never be invented as an implicitly safe key;
+    # reject witnesses and durations below the reference are also excluded.
+    screen={(0,40):None,(3,35):("REJECTED",),(1,35):None,(0,30):None}
+    calls=[]
+    def generate(snapshot,a,node,target,start,duration,budget):
+        calls.append((node.ring,target,duration))
+        landing=node.ring=="inner"
+        return True,SimpleNamespace(target_ring=None if landing else "inner",target_slot=None if landing else target,
+            pad_id=target if landing else None,start_time=start,end_time=start+duration+(13.5 if landing else 0.))
+    monkeypatch.setattr(p,"_search_offsets",lambda *args:(0.,10.))
+    monkeypatch.setattr(p.references,"screen",lambda *args:screen)
+    monkeypatch.setattr(p.references,"generate",generate)
+    monkeypatch.setattr(p.references,"move_energy",lambda *args:(0.,0.,0.,0.,0.))
+    node=PlanningNode("middle",0,epoch,.9,0.,0)
+    result=list(p._delayed_reference_seed(SimpleNamespace(config=None),SimpleNamespace(id="a"),node,ref,PlanningBudget()))
+    assert len(result)==1
+    assert [row for row in calls if row[0]=="inner"]==[("inner",1,35)]
+
+
+def test_real_noninteger_epoch_delayed_reference_catalog_and_prefix():
+    w=RotatingSlotWorld(config=load_service_profile("service_half_v1"),experiment_policy_id=STAGE2_POLICY_ID)
+    w.rescue_rule_profile=RESCUE_PROFILE_V7
+    w.seed_hold("a","middle",0,.9)
+    for pad in range(6): w.seed_service("ground"+str(pad),pad,remaining=150.)
+    w.advance(9.388737514630813)
+    s=w.build_planning_snapshot();p=CandidateProvider(planning_profile=PLANNING_PROFILE_DOWNSTREAM)
+    budget=PlanningBudget.for_profile("quality_v5");ctx=EvaluationContext(s,budget=budget)
+    catalog=p.get_columns(s,budget,ctx)
+    source=p.references.cache[(s.config.config_hash,"middle",0,s.time,0,"a")]
+    last=source.plans[-1]
+    assert last.end_time-last.start_time-13.5==math.nextafter(35.,0.)
+    assert budget.screening["delayed_full_chain_retained"]>0
+    result=EnergySlackScheduler().plan(s,catalog,ctx,budget)
+    assert result.certified and ctx.check_commit_prefix(result.selected).accepted
+    assert len(catalog.columns["a"])<=10 and budget.attempts["a"]<=64

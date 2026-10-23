@@ -1154,7 +1154,8 @@ class CandidateProvider:
                 if old.pad_id is not None:
                     screen=self.references.screen(snapshot,current,start,budget)
                     if screen is None: break
-                    options=[(pad,d) for d in range(int(duration),301,5) for pad in range(snapshot.config.pads.count) if screen[(pad,d)] is None]
+                    options=sorted(((pad,d) for (pad,d),witness in screen.items()
+                                    if d>=duration-1.e-8 and witness is None),key=lambda item:(item[1],item[0]))
                 p=None; ok=True
                 for target,duration in options:
                     ok,p=self.references.generate(snapshot,a,current,target,start,duration,budget)
