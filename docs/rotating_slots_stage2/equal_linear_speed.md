@@ -1,11 +1,11 @@
 # Equal linear speed profile
 
-The linear-speed wave has completed all three fresh 0-to-600 s scenarios for both
-methods. All six exported audits passed with zero issues and CERTIFIED continuous
-separation. All three fresh angular control campaigns have launched and their six
-method streams passed startup verification at 22:21:23 UTC+08:00 on 2026-10-23.
-Their completion, audits and matched rotation-profile comparison remain pending.
-The completed result table below describes the linear wave only.
+Both rotation modes have completed all three fresh 0-to-600 s scenarios for both
+methods. All 12 exported audits passed with zero issues and CERTIFIED continuous
+separation. Under this single-seed, fixed-budget protocol, equal linear speed
+produced fewer normal and total landings in every matched row, and higher normal
+scheduling callback mean and P95 times. The final same-version comparison below
+supersedes the historical reference comparison for this question.
 
 `rotation_profile` is independent of `service_profile`. The default
 `equal_angular` preserves the two existing frozen YAML payloads and their hashes.
@@ -106,9 +106,10 @@ stubs; actual CP evidence comes from the server tiny-method runs.
 
 The three `equal_linear_21_v1` formal scenarios below completed the requested
 t=600 boundary, each freshly initialized at t=0 for both EnergySlack and RHCP.
-Matched fresh `equal_angular` controls have launched using the same scenario
-inputs, CPU pairs and budgets after fresh resource preflight. Startup is verified;
-their t=600 results and audits remain pending. All conditions retain
+Matched fresh `equal_angular` controls also completed t=600 using the same
+scenario inputs, CPU pairs and budgets after fresh resource preflight. Final
+checkpoints, replay bundles, archive records and all six angular audits are
+complete. All conditions retain
 `service_half_v1`, `rescue_need_v7`, `quality_v5`, the frozen SOC/arrival streams,
 and the existing geometry, safety/vehicle limits, service durations and solver
 budgets.
@@ -125,8 +126,80 @@ repeated preflight and reused the same pairs. Each rotation/scenario combination
 output root and matching locally frozen provenance. No historical checkpoint is
 an initialization source. The historical runs with an inherited v6 prefix and a
 v7 suffix, recorded in [the v7 status document](rescue_need_v7_status.md), do not
-supply a causal rotation-profile control. A matched rotation-profile comparison
-remains pending the fresh angular results.
+supply a causal rotation-profile control. The final table below instead uses the
+fresh same-version angular results.
+
+## Final same-version paired comparison at 600 s
+
+All six campaigns exited 0 and all 12 method summaries are at t=600. Every
+summary reports `F_energy_total=0`, `N_upstream_pending=0`, `conservation=true`
+and `terminated_invalid=false`. Offered populations are 46, 57 and 75 in
+diagnostic, medium and stress respectively. Airborne pending counts below remain
+part of the population accounting and are not failures. Landing entries are
+normal + emergency = total; arrows run angular → linear and differences are
+linear minus angular. Energy is cumulative modelled aircraft propulsion
+consumption over 0-600 s.
+
+| Scenario | Method | Landings: angular → linear | Airborne: angular → linear | Angular kWh | Linear kWh | Total landing difference | Energy difference (kWh) |
+|---|---|---|---|---:|---:|---:|---:|
+| diagnostic | EnergySlack | 30 + 0 = 30 → 22 + 0 = 22 | 16 → 24 | 257.874537 | 281.047077 | -8 | +23.172540 |
+| diagnostic | RHCP | 31 + 0 = 31 → 24 + 0 = 24 | 15 → 22 | 239.710520 | 265.959891 | -7 | +26.249371 |
+| medium | EnergySlack | 27 + 2 = 29 → 16 + 0 = 16 | 28 → 41 | 392.567460 | 386.263858 | -13 | -6.303601 |
+| medium | RHCP | 25 + 4 = 29 → 14 + 0 = 14 | 28 → 43 | 390.737024 | 389.884678 | -15 | -0.852346 |
+| stress | EnergySlack | 25 + 2 = 27 → 6 + 0 = 6 | 48 → 69 | 573.909983 | 588.754220 | -21 | +14.844237 |
+| stress | RHCP | 24 + 4 = 28 → 6 + 0 = 6 | 47 → 69 | 581.821688 | 588.473194 | -22 | +6.651507 |
+
+Normal and total landings are lower in all six linear conditions. Total landing
+reductions are 8/7 in diagnostic, 13/15 in medium and 21/22 in stress for
+EnergySlack/RHCP. The stress reductions are 77.78% and 78.57%. Linear energy is
+higher in diagnostic and stress. Medium uses slightly less energy while landing
+fewer aircraft; that joint outcome does not establish higher efficiency.
+
+The independent timing comparison uses only the normal scheduling callback
+`summary_0600.json.normal_timing` wall-time statistics, not all executor callbacks
+or pure solver time. Mean and P95 are both higher with linear speed in every row.
+
+| Scenario | Method | Angular mean / P95 (s) | Linear mean / P95 (s) |
+|---|---|---|---|
+| diagnostic | EnergySlack | 13.5164 / 14.2498 | 15.0506 / 18.1960 |
+| diagnostic | RHCP | 14.5262 / 18.0928 | 17.6144 / 23.2966 |
+| medium | EnergySlack | 15.4356 / 16.6130 | 18.9143 / 24.2285 |
+| medium | RHCP | 17.8949 / 19.9013 | 21.7036 / 28.7400 |
+| stress | EnergySlack | 18.7136 / 23.0182 | 21.0746 / 30.1384 |
+| stress | RHCP | 20.7960 / 26.5969 | 24.2182 / 30.9865 |
+
+These outcomes describe one frozen seed and the specified finite candidate,
+solver and wall-clock budgets. Wall-clock limits can also introduce run-to-run
+variation; no multi-seed statistical significance is established. The change
+jointly alters relative-phase dynamics, middle/inner tangential speeds and
+centripetal accelerations, so it is not a pure phase causal ablation. In linear
+stress, all 259/261 EnergySlack/RHCP callbacks reached `CANDIDATE_WORK_CUTOFF`;
+this bounded-search observation does not identify a physical capacity limit.
+The completed panel therefore supports the reported differences for these
+budget-limited planners, without a general profile or method dominance claim.
+
+The angular campaigns all started at 2026-10-23 22:20:19 UTC+08:00 and ended as
+follows; the elapsed times exclude the credited preparation cost.
+
+| Angular condition | End time, 2026-10-24 UTC+08:00 | Actual elapsed time (s) |
+|---|---|---:|
+| diagnostic | 00:02:41 | 6142 |
+| medium | 00:53:39 | 9200 |
+| stress | 02:04:18 | 13439 |
+
+Angular roots are
+`/home/user/training_outputs/terminal/equal_angular_control_diagnostic_600s_20261023`,
+`equal_angular_control_medium_600s_20261023` and
+`equal_angular_control_stress_600s_20261023` under the same server parent. Their
+synchronized local roots are under `D:\7_codespace\training_outputs\terminal`
+with the same basenames. Both method directories contain `summary_0600.json`,
+`audit_0600.json`, `checkpoint_0600.json`, `replay_0600/` and
+`archive_status.json`; root-level `exit_code.txt`, `end_timestamp.txt` and
+`campaign.json` record completion. All 12 audits are PASS with issue_count 0 and
+CERTIFIED continuous separation; their count fields and energy match the direct
+summaries. The shared-kernel audit scope described below remains applicable,
+and human visual acceptance remains pending. No further experiment monitoring is
+needed; heartbeat cleanup is a separate delivery action and is not claimed here.
 
 ## Completed linear wave: 600 s results
 
@@ -175,7 +248,8 @@ normal landings with 15.0872 kWh less energy in diagnostic, two fewer normal
 landings with 3.6208 kWh more energy in medium, and the same six landings with
 approximately 0.2810 kWh less energy in stress. These are one-seed outcomes within
 the linear profile. They establish neither general method dominance nor a causal
-rotation-profile effect; the matched angular comparison is still pending.
+rotation-profile effect. The completed matched profile comparison is reported
+above.
 
 | Scenario | End time, 2026-10-23 UTC+08:00 | Campaign wall time (s, including preparation credit) |
 |---|---|---:|
@@ -207,8 +281,8 @@ result update.
 
 The following table compares the completed linear wave with the historical
 angular-speed results in [the rescue_need_v7 status document](rescue_need_v7_status.md).
-It is a historical reference comparison, not the pending same-version matched
-control comparison. Historical diagnostic and stress combine a v6 0-240 s prefix
+It is a historical reference comparison, separate from the completed same-version
+matched comparison above. Historical diagnostic and stress combine a v6 0-240 s prefix
 with a v7 240-600 s suffix; historical medium is v7 from t=0 but uses the older
 code. Landing entries show normal + emergency = total; total differences are
 linear minus historical angular.
@@ -225,8 +299,8 @@ linear minus historical angular.
 Against this historical reference, normal and total landings are lower in all
 six linear rows, with the largest total reductions in stress. Energy differences
 have mixed directions. These are single-seed observations under differing code
-and, for diagnostic/stress, mixed policy protocols; formal profile comparison
-awaits the fresh same-version angular controls. The rotation change also changes
+and, for diagnostic/stress, mixed policy protocols. The completed fresh
+same-version comparison above is the applicable formal profile comparison. The rotation change also changes
 middle/inner tangential speeds and centripetal accelerations, so this table
 cannot attribute the differences solely to phase dynamics or establish a physical
 capacity optimum.
@@ -237,7 +311,7 @@ status is CERTIFIED in all six cases. The new linear audits are 6 PASS with zero
 issues. The historical FAIL results are preserved and are not reclassified by
 this comparison.
 
-## Angular controls: verified startup record
+## Historical angular-control startup and monitoring record
 
 All three fresh controls started on 2026-10-23 at 22:20:19 UTC+08:00. Startup was
 verified at 22:21:23: six state streams and checkpoints had been created, every
@@ -287,10 +361,11 @@ common completed summaries at 420/300/240 s respectively. The latest complete
 stress RHCP 60-second block took 933.6015 wall seconds (previous block 901.2268);
 its throughput projected approximately 4870 wall seconds for the remaining 313
 simulation seconds. Around 23:37, the tool confirmed heartbeat `600` ACTIVE with
-an updated 80-minute interval, giving the current next-wake estimate near
-2026-10-24 00:58 UTC+08:00 after allowing for scheduling delay. This is an estimate,
-not a completion guarantee. Completion checks, angular audits and the matched
-comparison remain pending. No general profile dominance is established.
+an updated 80-minute interval, giving the then-current next-wake estimate near
+2026-10-24 00:58 UTC+08:00 after allowing for scheduling delay. This was a historical
+estimate, not a completion guarantee. The final completed angular results and
+audits are now reported above; these monitoring records do not establish general
+profile dominance.
 
 ## Historical linear-wave launch record
 
@@ -342,13 +417,12 @@ confirmed this heartbeat. The launch-time plan was to update the same heartbeat
 to the estimated remaining duration R after a usable block observation; the
 initial calibration interval was not a repeated 15-minute polling policy.
 
-The linear wave is now complete and angular startup has been verified. The
-current control-wave heartbeat plan is recorded above. Remaining work is to verify
-the fresh angular runs, check their completed outputs, and compare matched conditions.
-The historical startup observations themselves establish no method/profile
+Both waves are now complete, with final output and matched-comparison evidence
+reported above. The historical startup and heartbeat observations are retained
+for the execution record; they do not themselves establish a method/profile
 advantage.
 
-## Fresh campaign commands
+## Reproduction commands for the completed protocol
 
 Freeze provenance locally after the final reviewed source changes, with an
 ignored artifact path inside this checkout (Syncthing carries this file):
@@ -398,9 +472,10 @@ Both methods run through the same campaign and produce separate checkpoints,
 summaries, trajectories, replay bundles and audit evidence. Inspect both
 `energy_slack` and `rh_cp_sat` outputs, completion boundary, invalid/error markers and
 archive_status. This is a validation smoke, not the formal 0-to-600 comparison.
-The three frozen scenario profiles are diagnostic18_rate120_v1,
-medium24_rate150_v1, and stress36_rate180_v1; each formal condition starts from 0
-in a new root and explicitly runs to 600. Freeze a matching provenance file per
-service/rotation/scenario combination. Fresh equal_angular controls use the same
-commands with their matching selector/provenance and separate output roots.
+The three frozen scenario profiles were diagnostic18_rate120_v1,
+medium24_rate150_v1 and stress36_rate180_v1; every completed condition started
+from 0 in a new root and explicitly ran to 600. Each service/rotation/scenario
+combination used matching frozen provenance. The completed fresh equal_angular
+controls used the same commands with their matching selector/provenance and
+separate output roots. These commands document reproduction, not pending runs.
 Never use the branch command or older v6/v7 checkpoints to initialize these runs.
