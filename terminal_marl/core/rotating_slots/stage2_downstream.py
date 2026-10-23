@@ -211,7 +211,7 @@ class JointDownstream:
                 if (p,lo,hi,aid) not in self.fixed_identity:
                     intervals[p].append(model.NewOptionalIntervalVar(lo,hi-lo,hi,v,f"real_{aid}_{len(intervals[p])}"))
         for aid in self.order:
-            options=[(key,d) for key,d in self.demands.items() if d.aircraft_id==aid]
+            options=[(key,d) for key,d in self.demands.items() if d.aircraft_id==aid and key in variables]
             fixed=self.fixed_demands.get(aid)
             if fixed: options=[(None,fixed)]
             active=[]; starts=[]; ends=[]

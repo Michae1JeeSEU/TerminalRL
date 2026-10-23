@@ -59,7 +59,9 @@ opportunities; it records its selected stratum and conditional probability.
 There is no live exploration. Each finite reference uses one common materialized
 catalog, independent Slack/CP checks, and original prefix validation. Conditional
 solves restrict a target aircraft to generated descendants, retaining the original
-downstream evaluator, catalog objective and background. UNKNOWN, unsupported
+downstream evaluator, catalog objective and background.
+CP expressions include only variable-backed candidate options from that catalog;
+fixed demands and the original frozen queue assignment remain shared. UNKNOWN, unsupported
 valid branches, ties and uncertified resolves cannot produce negative ranking
 labels. Timed auxiliary cost explicitly covers generation plus observed energy,
 excluding joint validation. Missing pairs return `DATA_INSUFFICIENT`.

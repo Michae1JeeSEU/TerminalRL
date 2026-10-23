@@ -422,3 +422,50 @@ def test_seed_scan_arbitrary_malformed_json_stays_fail_closed(tmp_path,content):
     with pytest.raises(ValueError,match="unreadable collision-scan input"):
         scan_used_seeds([path],exclusions=exclusions)
     assert exclusions==[]
+
+
+@pytest.mark.parametrize("restrict_branch",[False,True])
+def test_conditional_downstream_cp_subset_and_full_catalog_match_original_queue(restrict_branch):
+    from copy import deepcopy
+    from ortools.sat.python import cp_model
+    from terminal_marl.core.rotating_slots.stage2_downstream import Demand,JointDownstream,ENERGY_UNIT_J,TICKS_PER_SECOND
+    from terminal_marl.core.rotating_slots.stage2_planning import CandidateCatalog
+    keep=SimpleNamespace(aircraft_id="a",signature=("a","KEEP",()))
+    final=SimpleNamespace(aircraft_id="a",signature=("a","MOVE",("final",)))
+    branch=SimpleNamespace(aircraft_id="a",signature=("a","MOVE",("descendant",)))
+    other=SimpleNamespace(aircraft_id="b",signature=("b","KEEP",()))
+    def demand(aid,*,ready=0,duration=435,base=1000,full=False,real=()):
+        return Demand(aid,full,ready,duration,base,0 if full else 10,10000000,0,0,-1 if full else 0,
+            ready+135,"middle",{},real)
+    demands={keep.signature:demand("a"),
+        final.signature:demand("a",ready=1500,duration=735,full=True,real=((0,1500,2235,"a"),)),
+        branch.signature:demand("a",ready=600,base=800),other.signature:demand("b",base=1200)}
+    fixed=demand("fixed",ready=100,duration=300,base=700)
+    downstream=JointDownstream(demands,((0,500,1500,"ground"),),("a","fixed","b"),pad_count=1,fixed_demands=(fixed,))
+    original=dict(demands=deepcopy(downstream.demands),fixed_demands=deepcopy(downstream.fixed_demands),
+        calendars=deepcopy(downstream.calendars),order=downstream.order,assignment=dict(downstream.assignment),fixed_identity=set(downstream.fixed_identity))
+    catalog=CandidateCatalog({"a":(keep,final,branch),"b":(other,)},{"a":0.,"b":1.},{},(),downstream=downstream)
+    ancestry={branch.signature:("required_branch",)}
+    selected_catalog=conditional_catalog(catalog,"required_branch",ancestry) if restrict_branch else catalog
+    assert selected_catalog.downstream is downstream
+    model=cp_model.CpModel()
+    lookup={c.signature:c for columns in selected_catalog.columns.values() for c in columns}
+    variables={key:model.NewBoolVar(repr(key)) for key in lookup}
+    for columns in selected_catalog.columns.values():model.AddExactlyOne([variables[c.signature] for c in columns])
+    expressions=downstream.cp_expressions(model,variables,lookup)
+    solver=cp_model.CpSolver();solver.parameters.num_search_workers=1;solver.parameters.max_time_in_seconds=2.
+    for expression in expressions:
+        model.Minimize(expression)
+        assert solver.Solve(model)==cp_model.OPTIMAL
+        model.Add(expression==solver.Value(expression))
+    selected=tuple(c for key,c in lookup.items() if solver.Value(variables[key]))
+    cp_key=tuple(solver.Value(expression) for expression in expressions)
+    assert cp_key==downstream.evaluate(selected)[0]
+    assert (cp_key[0],cp_key[1],cp_key[2]*ENERGY_UNIT_J/3600.,cp_key[3]*ENERGY_UNIT_J,cp_key[4]/TICKS_PER_SECOND)==downstream.key(selected)
+    assert (branch if restrict_branch else final) in selected
+    if restrict_branch:
+        assert any("required_branch" in ancestry.get(c.signature,()) for c in selected)
+        assert keep.signature not in variables and final.signature not in variables
+    else:assert set(variables)==set(demands)
+    assert dict(demands=downstream.demands,fixed_demands=downstream.fixed_demands,calendars=downstream.calendars,
+        order=downstream.order,assignment=downstream.assignment,fixed_identity=downstream.fixed_identity)==original
