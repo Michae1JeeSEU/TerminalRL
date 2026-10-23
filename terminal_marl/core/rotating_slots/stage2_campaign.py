@@ -207,9 +207,12 @@ def environment_lock():
         numerical_threads=1,cp_workers=1,solver_seed=71)
 
 
-def source_provenance(service_profile="baseline", *, scenario_profile="legacy_busy_v5", rescue_rule_profile="legacy_v5"):
+def source_provenance(service_profile="baseline", *, scenario_profile="legacy_busy_v5", rescue_rule_profile="legacy_v5",
+                      planning_profile="progress_tail_v7"):
     """Local-only freeze operation; campaign execution never runs Git."""
-    from .stage2_planning import CANDIDATE_POLICY_ID, QUALITY_BUDGET_PROFILE, PlanningBudget
+    from .stage2_planning import (QUALITY_BUDGET_PROFILE, PlanningBudget, PLANNING_PROFILES,
+                                 candidate_policy_id, objective_schema_id)
+    if planning_profile not in PLANNING_PROFILES: raise ValueError("unknown planning profile: "+planning_profile)
     files = sorted((ROOT/"terminal_marl/core/rotating_slots").glob("*.py"))
     files += [ROOT/"terminal_marl/core/rotating_slots/performance/checkpoint.py"]
     files += [ROOT/"scripts/server/run_rotating_slots_stage2.py",ROOT/"terminal_marl/visualization/rotating_slots_replay.py"]
@@ -221,7 +224,7 @@ def source_provenance(service_profile="baseline", *, scenario_profile="legacy_bu
         raise ValueError("unknown scenario/rescue rule profile")
     config=load_service_profile(service_profile)
     original=load_service_profile("baseline")
-    return dict(revision=git("rev-parse","HEAD"),workspace_status_short=git("status","--short"),
+    value=dict(revision=git("rev-parse","HEAD"),workspace_status_short=git("status","--short"),
         tracked_diff=git("diff","--binary","HEAD","--",
         "terminal_marl/core/rotating_slots","terminal_marl/visualization/rotating_slots_replay.py",
         "scripts/server/run_rotating_slots_stage2.py"),source_files=source,source_hash=digest(source),
@@ -232,10 +235,15 @@ def source_provenance(service_profile="baseline", *, scenario_profile="legacy_bu
         effective_config_path=Path(config.path).relative_to(ROOT).as_posix(),
         original_config_hash=original.config_hash,original_config_bytes_sha256=original.raw_hash,
         numeric_backend_hash=digest({k:v for k,v in source.items() if k.endswith(("energy.py","safety.py","trajectory.py"))}),
-        candidate_policy_id=CANDIDATE_POLICY_ID,planning_budget_profile=QUALITY_BUDGET_PROFILE,
+        candidate_policy_id=candidate_policy_id(planning_profile),
+        planning_budget_profile=QUALITY_BUDGET_PROFILE,
         planning_budget=PlanningBudget.for_profile(QUALITY_BUDGET_PROFILE).settings(),
         emergency_policy_id=rescue_rule_profile if rescue_rule_profile in ("rescue_opportunity_v6","rescue_need_v7") else "energy_urgency_yield_v5",
-        objective_id="reliability_throughput_progress_tail_v2")
+        objective_id=objective_schema_id(planning_profile))
+    # Keep the legacy archive identity structure unchanged; absence is the
+    # documented progress_tail_v7 selection. New algorithms are explicit.
+    if planning_profile!="progress_tail_v7": value["planning_profile"]=planning_profile
+    return value
 
 
 def freeze_provenance(path, service_profile="baseline", **profiles):
@@ -246,6 +254,7 @@ def freeze_provenance(path, service_profile="baseline", **profiles):
 
 def verify_source_provenance(provenance):
     """Verify supplied local fingerprint by bytes only, including on the server."""
+    planning_metadata(provenance)
     for relative,expected in provenance["source_files"].items():
         path=(ROOT/relative).resolve()
         if not path.is_relative_to(ROOT.resolve()) or not path.is_file() or sha256(path.read_bytes()).hexdigest()!=expected:
@@ -280,6 +289,8 @@ def checkpoint_identity(provenance, manifest_hash):
     if "service_profile" in provenance: identity["service_profile"]=provenance["service_profile"]
     for name in ("scenario_profile", "rescue_rule_profile"):
         if name in provenance: identity[name]=provenance[name]
+    if "planning_profile" in provenance:
+        identity.update(planning_metadata(provenance))
     return identity
 
 
@@ -289,6 +300,8 @@ def save_checkpoint(path, world, scheduler, identity, *, boundary_summary=None):
         raise CheckpointError("Stage2 world field inventory mismatch: "+str((set(vars(world))-DERIVED_RESCUE_FIELDS)^expected))
     if world.rescue_rule_profile != identity.get("rescue_rule_profile","legacy_v5"):
         raise CheckpointError("Stage2 checkpoint rescue rule profile mismatch")
+    if getattr(scheduler,"planning_profile","progress_tail_v7") != identity.get("planning_profile","progress_tail_v7"):
+        raise CheckpointError("Stage2 checkpoint planning profile mismatch")
     if (world.config.config_hash != identity["base_config_hash"]
         or world.config.service_profile != identity.get("service_profile",world.config.service_profile)):
         raise CheckpointError("Stage2 checkpoint configuration identity mismatch")
@@ -304,6 +317,8 @@ def save_checkpoint(path, world, scheduler, identity, *, boundary_summary=None):
 
 
 def restore_checkpoint(path, scheduler, identity, *, stream_copy=None):
+    if getattr(scheduler,"planning_profile","progress_tail_v7") != identity.get("planning_profile","progress_tail_v7"):
+        raise CheckpointError("Stage2 checkpoint planning profile mismatch")
     envelope = load_json(path)
     payload = envelope["payload"]
     if envelope["sha256"] != digest(payload) or payload["schema"] != SCHEMA or payload["identity"] != identity:
@@ -522,7 +537,10 @@ def report_campaign(root, *, plots=True):
     result=dict(comparison_time_s=boundary,target_observation_s=3600,human_review="HUMAN_PENDING",
         interpretation="one seed, synthetic initial backlog; partial windows are not one-hour capacity",
         methods=methods,ranking=sorted(methods,key=lambda m:tuple(methods[m]["metrics"]["K_episode"])))
-    if (root/"campaign.json").exists(): result["rescue_tables"]=rescue_comparison_tables(root)
+    if (root/"campaign.json").exists():
+        campaign=load_json(root/"campaign.json")
+        result.update(planning_metadata(campaign))
+        result["rescue_tables"]=rescue_comparison_tables(root)
     atomic_json(root/"comparison.json",result)
     if methods:
         fields=("method","T_common_s","failures","touchdowns","normal","emergency","reroutes",
@@ -584,7 +602,8 @@ def physical_cores():
 
 def prepare_campaign(root, preparation_wall_seconds=0., *, provenance_path=None, service_profile="baseline",
                      campaign_wall_budget_seconds=None, archive_reserve_seconds=None,
-                     scenario_profile="legacy_busy_v5", rescue_rule_profile="legacy_v5"):
+                     scenario_profile="legacy_busy_v5", rescue_rule_profile="legacy_v5",
+                     planning_profile="progress_tail_v7"):
     root=Path(root);root.mkdir(parents=True,exist_ok=True)
     if (root/"campaign.json").exists(): raise ValueError("campaign already prepared; use resume")
     budget=CampaignBudget(root/"budget.json",preparation_wall_seconds,total_seconds=campaign_wall_budget_seconds,
@@ -604,7 +623,8 @@ def prepare_campaign(root, preparation_wall_seconds=0., *, provenance_path=None,
         or provenance["base_config_hash"] != config.config_hash):
         raise ValueError("requested service profile differs from frozen provenance")
     for name,value,default in (("scenario_profile",scenario_profile,"legacy_busy_v5"),
-                               ("rescue_rule_profile",rescue_rule_profile,"legacy_v5")):
+                               ("rescue_rule_profile",rescue_rule_profile,"legacy_v5"),
+                               ("planning_profile",planning_profile,"progress_tail_v7")):
         if provenance.get(name,default)!=value:
             raise ValueError("requested "+name+" differs from frozen provenance")
     atomic_json(root/"provenance.json",provenance)
@@ -627,8 +647,21 @@ def prepare_campaign(root, preparation_wall_seconds=0., *, provenance_path=None,
         preparation_wall_s=budget.elapsed,environment_lock_sha256=digest(lock),
         fixture_sha256=sha256((root/"fixture.json").read_bytes()).hexdigest(),
         status="PREPARED",human_review="HUMAN_PENDING",target_s=3600.)
+    campaign.update(planning_metadata(provenance))
     atomic_json(root/"campaign.json",campaign)
     return campaign
+
+
+def planning_metadata(value):
+    """Resolve implicit legacy archives without changing their saved bytes."""
+    from .stage2_planning import PLANNING_PROFILES, candidate_policy_id, objective_schema_id
+    profile=value.get("planning_profile","progress_tail_v7")
+    if profile not in PLANNING_PROFILES: raise ValueError("unknown planning profile: "+profile)
+    expected=dict(planning_profile=profile,candidate_policy_id=candidate_policy_id(profile),
+                  objective_id=objective_schema_id(profile))
+    if any(name in value and value[name]!=expected[name] for name in expected):
+        raise ValueError("planning profile metadata mismatch")
+    return expected
 
 
 def campaign_config(root, campaign):
@@ -650,6 +683,8 @@ def campaign_config(root, campaign):
         value=campaign.get(name,default)
         if value not in allowed or value!=campaign["identity"].get(name,default):
             raise ValueError("campaign "+name+" identity mismatch")
+    if planning_metadata(campaign)!=planning_metadata(campaign["identity"]):
+        raise ValueError("campaign planning profile identity mismatch")
     return config
 
 
@@ -674,6 +709,9 @@ def branch_campaign(parent_root, root, from_time, *, provenance_path,
     parent_config=campaign_config(parent_root,parent)
     old=load_json(parent_root/"provenance.json")
     new=load_json(provenance_path)
+    if (planning_metadata(old)["planning_profile"]!="progress_tail_v7"
+        or planning_metadata(new)["planning_profile"]!="progress_tail_v7"):
+        raise ValueError("branch cannot change planning algorithm; downstream_service_v8 must start from zero")
     verify_source_provenance(new)
     manifest=read_manifest(parent_root/"manifest.json")
     if (digest(old["source_files"])!=old["source_hash"]
@@ -795,7 +833,7 @@ def run_episode_block(root, method, target, cpu=None, connection=None):
     budget=CampaignBudget(root/"budget.json")
     if budget.compute_remaining <= 0: return
     startup=time.perf_counter()
-    scheduler=NormalSchedulerCallback(method)
+    scheduler=NormalSchedulerCallback(method,planning_profile=planning_metadata(campaign)["planning_profile"])
     latest=directory/"checkpoint.json"
     numbered=sorted(directory.glob("checkpoint_[0-9]*.json"))
     if numbered or latest.exists(): world=restore_checkpoint(numbered[-1] if numbered else latest,scheduler,identity)
@@ -879,6 +917,7 @@ def run_episode_block(root, method, target, cpu=None, connection=None):
                 dispatch_wall_per_sim_second=sum(r["dispatch_wall_s"] for r in dispatch)/world.time,
                 event_frequency_hz=len(world.events)/world.time,
                 post_failure_model="abstract_isolation_no_cascade",cpu_affinity=cpu)
+            summary.update(planning_metadata(campaign))
             if branch is not None:
                 inherited=branch["methods"][method]
                 suffix_energy=summary["metrics"]["energy_j"]-inherited["inherited_energy_j"]
@@ -934,7 +973,7 @@ def export_episode(root, method, boundary):
     config=campaign_config(root,load_json(root/"campaign.json"))
     archive=directory/f"replay_{boundary:04d}"
     if archive.exists(): return str(archive)
-    scheduler=NormalSchedulerCallback(method)
+    scheduler=NormalSchedulerCallback(method,planning_profile=planning_metadata(load_json(root/"campaign.json"))["planning_profile"])
     world=restore_checkpoint(directory/f"checkpoint_{boundary:04d}.json",scheduler,
         load_json(root/"campaign.json")["identity"],stream_copy=directory/f"export_states_{boundary:04d}.jsonl")
     try:

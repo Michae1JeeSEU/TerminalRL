@@ -1,0 +1,775 @@
+{
+  "schema": "stage2_v8_validation_compact_facts_v1",
+  "formal_medium_600s_started": false,
+  "interpretation": "Two real independent fresh-t0 callbacks only; objective L is predicted in-window completion, not actual landings; no global optimality claim.",
+  "server_validation_root": "D:\\7_codespace\\training_outputs\\terminal\\stage2_downstream_service_v8_validation_20261023",
+  "tests": {
+    "server": {
+      "passed": 95,
+      "skipped": 1,
+      "elapsed_s": 21.705,
+      "display_elapsed_s": 21.71,
+      "exit_code": 0,
+      "junit_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_downstream_service_v8_validation_20261023\\pytest.junit.xml",
+      "junit_sha256": "79b0ed73204e9bde568ce3b7e58f545f481d9d226c09148e9e4284eb7de1e297"
+    },
+    "local_campaign_service_branch_cli": {
+      "passed": 48,
+      "elapsed_s": 36.38
+    },
+    "local_new_campaign_tests": {
+      "passed": 13,
+      "elapsed_s": 2.19
+    },
+    "counter_synthetic_without_callback": {
+      "passed": true,
+      "columns": 4,
+      "complete": 1,
+      "partial": 1,
+      "no_move": 2
+    },
+    "server_final_diagnostic_fields": {
+      "passed": 14,
+      "skipped": 0,
+      "junit_elapsed_s": 7.746,
+      "display_elapsed_s": 7.75,
+      "exit_code": 0,
+      "wrapper_elapsed_s": 7.918596,
+      "start_utc": "2026-10-23T10:06:55.620Z",
+      "end_utc": "2026-10-23T10:07:03.541Z",
+      "junit_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_downstream_service_v8_validation_20261023\\final_diagnostics_pytest.junit.xml",
+      "junit_sha256": "46d7571a8060b2ef0ecaf1d57fe91477a14a4f806fa8097ef7cdf32b17e83ca7"
+    }
+  },
+  "diagnostic_counter_correction": {
+    "scope": "diagnostic-only helper counting; scheduler/catalog/physics unchanged",
+    "original_error": "NO_MOVE category and identical timing key both incremented the same Counter entry; original reports show 96 for 48 no-move columns.",
+    "corrected_from": "mechanical recount of original runtime/*/candidates.json columns; raw facts/logs retained unchanged",
+    "real_callbacks_rerun": false,
+    "assertions": "COMPLETE + PARTIAL + NO_MOVE equals columns_count globally and for each aircraft"
+  },
+  "methods": {
+    "energy_slack": {
+      "status": "completed",
+      "callback_count": 1,
+      "callback_time_s": 0.0,
+      "callback_wall_s": 16.81247370800702,
+      "wrapper_elapsed_s": 17.202956,
+      "wrapper_start_utc": "2026-10-23T10:03:33.386Z",
+      "wrapper_end_utc": "2026-10-23T10:03:50.588Z",
+      "pid": 172770,
+      "exit_code": 0,
+      "cpu_affinity": [
+        0
+      ],
+      "physical_core": 0,
+      "socket": 0,
+      "numerical_threads": {
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "profile": "downstream_service_v8",
+      "budget_profile": "quality_v5",
+      "budget": {
+        "candidate_seconds": 12.0,
+        "hint_seconds": 3.0,
+        "hint_validation_reserve_seconds": 0.5,
+        "max_attempts": 2048,
+        "max_per_aircraft": 64,
+        "max_refinement_rounds": 64,
+        "soft_seconds": 30.0,
+        "solver_reserve_seconds": 8.0,
+        "solver_seconds": 8.0,
+        "watchdog_seconds": 60.0
+      },
+      "fixture_equal": {
+        "aircraft": true,
+        "pads": true,
+        "slots": true
+      },
+      "config_hash_unchanged": true,
+      "profile_hash_unchanged": true,
+      "baseline_input_files_unchanged": true,
+      "candidate_json_roundtrip_equal": true,
+      "submitted_prefix_count": 10,
+      "commit_status": "ACCEPTED",
+      "post_callback_actual_touchdowns": 0,
+      "status_from_scheduler": "FEASIBLE",
+      "solver_wall_s": 0.0,
+      "refinement_rounds": 0,
+      "solver_phase_records_count": 0,
+      "final_objective": [
+        0,
+        -5,
+        708.0633055555556,
+        662889430.9000001,
+        8166.0
+      ],
+      "hint_objective": null,
+      "solver_stages": [],
+      "candidate_catalogs": [
+        {
+          "columns_count": 136,
+          "corrected_counts": {
+            "NO_MOVE": 48,
+            "NO_MOVE_NO_MOVE": 48,
+            "PARTIAL": 57,
+            "IMMEDIATE": 82,
+            "PARTIAL_IMMEDIATE": 57,
+            "COMPLETE": 31,
+            "COMPLETE_IMMEDIATE": 25,
+            "DELAYED": 6,
+            "COMPLETE_DELAYED": 6
+          },
+          "counts_by_source_ring": {
+            "outer": {
+              "NO_MOVE": 16,
+              "NO_MOVE_NO_MOVE": 16,
+              "PARTIAL": 24,
+              "IMMEDIATE": 32,
+              "PARTIAL_IMMEDIATE": 24,
+              "COMPLETE": 8,
+              "COMPLETE_IMMEDIATE": 8
+            },
+            "middle": {
+              "NO_MOVE": 16,
+              "NO_MOVE_NO_MOVE": 16,
+              "PARTIAL": 33,
+              "IMMEDIATE": 41,
+              "PARTIAL_IMMEDIATE": 33,
+              "COMPLETE": 8,
+              "COMPLETE_IMMEDIATE": 8
+            },
+            "inner": {
+              "NO_MOVE": 16,
+              "NO_MOVE_NO_MOVE": 16,
+              "COMPLETE": 15,
+              "IMMEDIATE": 9,
+              "COMPLETE_IMMEDIATE": 9,
+              "DELAYED": 6,
+              "COMPLETE_DELAYED": 6
+            }
+          },
+          "aircraft_count": 24,
+          "per_aircraft_category_conservation": true,
+          "aircraft_with_complete": 24,
+          "aircraft_with_immediate": 24,
+          "aircraft_with_delayed": 6,
+          "original_diagnostic_counts": {
+            "COMPLETE": 31,
+            "COMPLETE_DELAYED": 6,
+            "COMPLETE_IMMEDIATE": 25,
+            "DELAYED": 6,
+            "IMMEDIATE": 82,
+            "NO_MOVE": 96,
+            "NO_MOVE_NO_MOVE": 48,
+            "PARTIAL": 57,
+            "PARTIAL_IMMEDIATE": 57
+          },
+          "category_sum_equals_columns_count": true
+        }
+      ],
+      "evidence_files": {
+        "facts.json": {
+          "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_downstream_service_v8_validation_20261023\\runtime\\energy_slack\\facts.json",
+          "sha256": "2aaaec035f216cbac9264c97af30f9eb50cb0714de101bd1ad1ac69793ed5278"
+        },
+        "callback.json": {
+          "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_downstream_service_v8_validation_20261023\\runtime\\energy_slack\\callback.json",
+          "sha256": "5c819465da7dbb6baa5b5a26b79c568c6b013516d277e79b42f9abed6087fe05"
+        },
+        "candidates.json": {
+          "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_downstream_service_v8_validation_20261023\\runtime\\energy_slack\\candidates.json",
+          "sha256": "267c152b9672cae97c826504735e6011cc9169e26ba96c251472800e024b3cd6"
+        }
+      },
+      "initial_launch_error": {
+        "pid": 172652,
+        "exit_code": 2,
+        "script_path": "/home/user/artifacts/rotating_slots_stage2_20261023/v8_runtime_validation.py",
+        "message": "/home/user/envs/terminal_stage2_v1/bin/python: can't open file '/home/user/artifacts/rotating_slots_stage2_20261023/v8_runtime_validation.py': [Errno 2] No such file or directory",
+        "script_loaded": false,
+        "callback_executed": false,
+        "log": "D:\\7_codespace\\training_outputs\\terminal\\stage2_downstream_service_v8_validation_20261023\\energy_slack.log"
+      }
+    },
+    "rh_cp_sat": {
+      "status": "completed",
+      "callback_count": 1,
+      "callback_time_s": 0.0,
+      "callback_wall_s": 32.68616673402721,
+      "wrapper_elapsed_s": 33.103907,
+      "wrapper_start_utc": "2026-10-23T10:03:33.386Z",
+      "wrapper_end_utc": "2026-10-23T10:04:06.489Z",
+      "pid": 172771,
+      "exit_code": 0,
+      "cpu_affinity": [
+        2
+      ],
+      "physical_core": 1,
+      "socket": 0,
+      "numerical_threads": {
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "profile": "downstream_service_v8",
+      "budget_profile": "quality_v5",
+      "budget": {
+        "candidate_seconds": 12.0,
+        "hint_seconds": 3.0,
+        "hint_validation_reserve_seconds": 0.5,
+        "max_attempts": 2048,
+        "max_per_aircraft": 64,
+        "max_refinement_rounds": 64,
+        "soft_seconds": 30.0,
+        "solver_reserve_seconds": 8.0,
+        "solver_seconds": 8.0,
+        "watchdog_seconds": 60.0
+      },
+      "fixture_equal": {
+        "aircraft": true,
+        "pads": true,
+        "slots": true
+      },
+      "config_hash_unchanged": true,
+      "profile_hash_unchanged": true,
+      "baseline_input_files_unchanged": true,
+      "candidate_json_roundtrip_equal": true,
+      "submitted_prefix_count": 11,
+      "commit_status": "ACCEPTED",
+      "post_callback_actual_touchdowns": 0,
+      "status_from_scheduler": "LEX_LIMITED",
+      "solver_wall_s": 1.6766273489920422,
+      "refinement_rounds": 7,
+      "solver_phase_records_count": 16,
+      "final_objective": [
+        0,
+        -6,
+        18.0,
+        608480650.1,
+        7485.5
+      ],
+      "hint_objective": [
+        0,
+        -5,
+        708.0633055555556,
+        662889430.9000001,
+        8166.0
+      ],
+      "solver_stages": [
+        {
+          "round": 1,
+          "phase": 0,
+          "status": "OPTIMAL",
+          "model_integer_key": [
+            0,
+            -5,
+            25490279,
+            6628894309,
+            81660
+          ],
+          "canonical_selected_integer_key": [
+            0,
+            -5,
+            25490279,
+            6628894309,
+            81660
+          ],
+          "keys_equal": true
+        },
+        {
+          "round": 1,
+          "phase": 1,
+          "status": "OPTIMAL",
+          "model_integer_key": [
+            0,
+            -9,
+            120949217,
+            6054379115,
+            71650
+          ],
+          "canonical_selected_integer_key": [
+            0,
+            -9,
+            120949217,
+            6054379115,
+            71650
+          ],
+          "keys_equal": true
+        },
+        {
+          "round": 2,
+          "phase": 0,
+          "status": "OPTIMAL",
+          "model_integer_key": [
+            0,
+            -5,
+            25490279,
+            6628894309,
+            81660
+          ],
+          "canonical_selected_integer_key": [
+            0,
+            -5,
+            25490279,
+            6628894309,
+            81660
+          ],
+          "keys_equal": true
+        },
+        {
+          "round": 2,
+          "phase": 1,
+          "status": "OPTIMAL",
+          "model_integer_key": [
+            0,
+            -8,
+            28194883,
+            5909499409,
+            70897
+          ],
+          "canonical_selected_integer_key": [
+            0,
+            -8,
+            28194883,
+            5909338558,
+            70895
+          ],
+          "keys_equal": false
+        },
+        {
+          "round": 3,
+          "phase": 0,
+          "status": "OPTIMAL",
+          "model_integer_key": [
+            0,
+            -5,
+            25490279,
+            6628894309,
+            81660
+          ],
+          "canonical_selected_integer_key": [
+            0,
+            -5,
+            25490279,
+            6628894309,
+            81660
+          ],
+          "keys_equal": true
+        },
+        {
+          "round": 3,
+          "phase": 1,
+          "status": "OPTIMAL",
+          "model_integer_key": [
+            0,
+            -8,
+            53001162,
+            6084013748,
+            72582
+          ],
+          "canonical_selected_integer_key": [
+            0,
+            -8,
+            53001162,
+            6083852897,
+            72580
+          ],
+          "keys_equal": false
+        },
+        {
+          "round": 4,
+          "phase": 0,
+          "status": "OPTIMAL",
+          "model_integer_key": [
+            0,
+            -5,
+            25490279,
+            6628894309,
+            81660
+          ],
+          "canonical_selected_integer_key": [
+            0,
+            -5,
+            25490279,
+            6628894309,
+            81660
+          ],
+          "keys_equal": true
+        },
+        {
+          "round": 4,
+          "phase": 1,
+          "status": "OPTIMAL",
+          "model_integer_key": [
+            0,
+            -8,
+            91974697,
+            6213002273,
+            72532
+          ],
+          "canonical_selected_integer_key": [
+            0,
+            -8,
+            91974697,
+            6212841422,
+            72530
+          ],
+          "keys_equal": false
+        },
+        {
+          "round": 5,
+          "phase": 0,
+          "status": "OPTIMAL",
+          "model_integer_key": [
+            0,
+            -5,
+            25490279,
+            6628894309,
+            81660
+          ],
+          "canonical_selected_integer_key": [
+            0,
+            -5,
+            25490279,
+            6628894309,
+            81660
+          ],
+          "keys_equal": true
+        },
+        {
+          "round": 5,
+          "phase": 1,
+          "status": "OPTIMAL",
+          "model_integer_key": [
+            0,
+            -8,
+            33246233,
+            6162334277,
+            74291
+          ],
+          "canonical_selected_integer_key": [
+            0,
+            -8,
+            33246233,
+            6161869684,
+            74285
+          ],
+          "keys_equal": false
+        },
+        {
+          "round": 6,
+          "phase": 0,
+          "status": "OPTIMAL",
+          "model_integer_key": [
+            0,
+            -5,
+            25490279,
+            6628894309,
+            81660
+          ],
+          "canonical_selected_integer_key": [
+            0,
+            -5,
+            25490279,
+            6628894309,
+            81660
+          ],
+          "keys_equal": true
+        },
+        {
+          "round": 6,
+          "phase": 1,
+          "status": "OPTIMAL",
+          "model_integer_key": [
+            0,
+            -8,
+            68163973,
+            6112971879,
+            74037
+          ],
+          "canonical_selected_integer_key": [
+            0,
+            -8,
+            68163973,
+            6112835723,
+            74035
+          ],
+          "keys_equal": false
+        },
+        {
+          "round": 7,
+          "phase": 0,
+          "status": "OPTIMAL",
+          "model_integer_key": [
+            0,
+            -5,
+            25490279,
+            6628894309,
+            81660
+          ],
+          "canonical_selected_integer_key": [
+            0,
+            -5,
+            25490279,
+            6628894309,
+            81660
+          ],
+          "keys_equal": true
+        },
+        {
+          "round": 7,
+          "phase": 1,
+          "status": "OPTIMAL",
+          "model_integer_key": [
+            0,
+            -6,
+            53073162,
+            6541299209,
+            79326
+          ],
+          "canonical_selected_integer_key": [
+            0,
+            -6,
+            53073162,
+            6541231131,
+            79325
+          ],
+          "keys_equal": false
+        },
+        {
+          "round": 7,
+          "phase": 2,
+          "status": "OPTIMAL",
+          "model_integer_key": [
+            0,
+            -6,
+            648000,
+            6505294807,
+            77985
+          ],
+          "canonical_selected_integer_key": [
+            0,
+            -6,
+            648000,
+            6505294807,
+            77985
+          ],
+          "keys_equal": true
+        },
+        {
+          "round": 7,
+          "phase": 3,
+          "status": "FEASIBLE",
+          "model_integer_key": [
+            0,
+            -6,
+            648000,
+            6084806501,
+            74855
+          ],
+          "canonical_selected_integer_key": [
+            0,
+            -6,
+            648000,
+            6084806501,
+            74855
+          ],
+          "keys_equal": true
+        }
+      ],
+      "candidate_catalogs": [
+        {
+          "columns_count": 136,
+          "corrected_counts": {
+            "NO_MOVE": 48,
+            "NO_MOVE_NO_MOVE": 48,
+            "PARTIAL": 57,
+            "IMMEDIATE": 82,
+            "PARTIAL_IMMEDIATE": 57,
+            "COMPLETE": 31,
+            "COMPLETE_IMMEDIATE": 25,
+            "DELAYED": 6,
+            "COMPLETE_DELAYED": 6
+          },
+          "counts_by_source_ring": {
+            "outer": {
+              "NO_MOVE": 16,
+              "NO_MOVE_NO_MOVE": 16,
+              "PARTIAL": 24,
+              "IMMEDIATE": 32,
+              "PARTIAL_IMMEDIATE": 24,
+              "COMPLETE": 8,
+              "COMPLETE_IMMEDIATE": 8
+            },
+            "middle": {
+              "NO_MOVE": 16,
+              "NO_MOVE_NO_MOVE": 16,
+              "PARTIAL": 33,
+              "IMMEDIATE": 41,
+              "PARTIAL_IMMEDIATE": 33,
+              "COMPLETE": 8,
+              "COMPLETE_IMMEDIATE": 8
+            },
+            "inner": {
+              "NO_MOVE": 16,
+              "NO_MOVE_NO_MOVE": 16,
+              "COMPLETE": 15,
+              "IMMEDIATE": 9,
+              "COMPLETE_IMMEDIATE": 9,
+              "DELAYED": 6,
+              "COMPLETE_DELAYED": 6
+            }
+          },
+          "aircraft_count": 24,
+          "per_aircraft_category_conservation": true,
+          "aircraft_with_complete": 24,
+          "aircraft_with_immediate": 24,
+          "aircraft_with_delayed": 6,
+          "original_diagnostic_counts": {
+            "COMPLETE": 31,
+            "COMPLETE_DELAYED": 6,
+            "COMPLETE_IMMEDIATE": 25,
+            "DELAYED": 6,
+            "IMMEDIATE": 82,
+            "NO_MOVE": 96,
+            "NO_MOVE_NO_MOVE": 48,
+            "PARTIAL": 57,
+            "PARTIAL_IMMEDIATE": 57
+          },
+          "category_sum_equals_columns_count": true
+        }
+      ],
+      "evidence_files": {
+        "facts.json": {
+          "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_downstream_service_v8_validation_20261023\\runtime\\rh_cp_sat\\facts.json",
+          "sha256": "ccdd7d4ea2c9950235633fd1c960479979f30723780381a96ee834a4fcfb55f4"
+        },
+        "callback.json": {
+          "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_downstream_service_v8_validation_20261023\\runtime\\rh_cp_sat\\callback.json",
+          "sha256": "9f900dffa93f7de64c4293830d0882d561147840657e2e7d2a30f53e79af5960"
+        },
+        "candidates.json": {
+          "path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_downstream_service_v8_validation_20261023\\runtime\\rh_cp_sat\\candidates.json",
+          "sha256": "267c152b9672cae97c826504735e6011cc9169e26ba96c251472800e024b3cd6"
+        }
+      },
+      "initial_launch_error": {
+        "pid": 172651,
+        "exit_code": 2,
+        "script_path": "/home/user/artifacts/rotating_slots_stage2_20261023/v8_runtime_validation.py",
+        "message": "/home/user/envs/terminal_stage2_v1/bin/python: can't open file '/home/user/artifacts/rotating_slots_stage2_20261023/v8_runtime_validation.py': [Errno 2] No such file or directory",
+        "script_loaded": false,
+        "callback_executed": false,
+        "log": "D:\\7_codespace\\training_outputs\\terminal\\stage2_downstream_service_v8_validation_20261023\\rh_cp_sat.log"
+      }
+    }
+  },
+  "cp_stage_interpretation": "Earlier F/L phases do not minimize later energy/time components; their Ehat/tau model values can exceed canonical earliest packing while the optimized L component agrees. Final recorded phase 3 is FEASIBLE and its full model/canonical vector agrees; risk phase also agrees. This is not global optimality.",
+  "baseline_input_files_sha256": {
+    "campaign.json": "18da8e4801f2fc43f1604e5e206eaa2a5391d8f68296499a882df754caf57fff",
+    "config.yaml": "a0671841f89ee625cc1ca647ee885801698c837aecc84078f6cd6f4870233fec",
+    "environment.lock.json": "b15a7e9c1debc9e91cffa8029e48706f7fd917382d7be05b873f64a61348eba2",
+    "fixture.json": "fa7e6f18034d147953dd87eca6925d5b15c915d3efbe7e371e424fa481fdd8f5",
+    "manifest.json": "d972c45754727f3ac7266e934b04293cdcf62c637dd98311b34a294b7cd6f7b5",
+    "provenance.json": "478efc84c40180c500cbc5a13334b2d489272ea9e41e0c4dfbb4fd4b585a1cfb"
+  },
+  "server_source_files_sha256": {
+    "terminal_marl/core/rotating_slots/config.py": "a8a9526a3ad383d0836322f623ddf5efc38af54684aab5e8bcd33208cf4370d2",
+    "terminal_marl/core/rotating_slots/energy.py": "d5106e84e82298db43e636f490fbd3bfd7d8908bd356351cea92bc8f15cac913",
+    "terminal_marl/core/rotating_slots/rescue_rules.py": "8921952f3ce1972bdf8ff7128541bd2b1d78dd5bc773f3834d993bf46e097046",
+    "terminal_marl/core/rotating_slots/safety.py": "c1e9e8cf3b19a4d494fbed703163953e5d1f68ebab68dc18a760b4a386c44088",
+    "terminal_marl/core/rotating_slots/stage2_campaign.py": "62b096862ec430e3725ad24cfc2e9fe574c9274a4e16be033f8b6ccb809d009c",
+    "terminal_marl/core/rotating_slots/stage2_downstream.py": "d7fadf2457b4e4c4d24725510fbe75297c04998f52ed709e0dae944f3f5e9c55",
+    "terminal_marl/core/rotating_slots/stage2_planning.py": "1417f75c78e4ef3ec1b5a60cbd1d2b653011c32f68329e0b876d6768111c9a34",
+    "terminal_marl/core/rotating_slots/trajectory.py": "91e487f7df511a8175ce0021b58249670ea6af7eb6eee03b1c79f493cf878983",
+    "terminal_marl/core/rotating_slots/world.py": "01af6dc0faa08ef01502c533697b75f3bb3e6985ecc343f53252a4f6be2de45f"
+  },
+  "server_runtime_helper_sha256": "a9e1445a48cff783208b156311f082786cf421ecb9136bc65855c8af1621414e",
+  "corrected_runtime_helper_sha256": "c678404c6f886c3a7aac4bffc30c03dfb6967d784cc0c196b0c69c7cd7012478",
+  "final_diagnostic_fields_change": {
+    "scope": "predicted waiting explanation fields only; Ehat/objective/candidates/safety unchanged; no callback rerun",
+    "stage2_planning_sha256": "1417f75c78e4ef3ec1b5a60cbd1d2b653011c32f68329e0b876d6768111c9a34",
+    "stage2_downstream_sha256": "ace5381d59d90a5e791f42730ce22c26d1fd6a5e957b631971010e06197f753f",
+    "test_sha256": "70d61f40644bcebd597b40cef8988b079a46d0da80a1034e838b052ea2e7ea67"
+  },
+  "cp_phase1_model_canonical_observations": [
+    {
+      "round": 1,
+      "different_components": [],
+      "L_component_equal": true
+    },
+    {
+      "round": 2,
+      "different_components": [
+        3,
+        4
+      ],
+      "L_component_equal": true
+    },
+    {
+      "round": 3,
+      "different_components": [
+        3,
+        4
+      ],
+      "L_component_equal": true
+    },
+    {
+      "round": 4,
+      "different_components": [
+        3,
+        4
+      ],
+      "L_component_equal": true
+    },
+    {
+      "round": 5,
+      "different_components": [
+        3,
+        4
+      ],
+      "L_component_equal": true
+    },
+    {
+      "round": 6,
+      "different_components": [
+        3,
+        4
+      ],
+      "L_component_equal": true
+    },
+    {
+      "round": 7,
+      "different_components": [
+        3,
+        4
+      ],
+      "L_component_equal": true
+    }
+  ],
+  "cp_final_record": {
+    "round": 7,
+    "phase": 3,
+    "status": "FEASIBLE",
+    "model_integer_key": [
+      0,
+      -6,
+      648000,
+      6084806501,
+      74855
+    ],
+    "canonical_selected_integer_key": [
+      0,
+      -6,
+      648000,
+      6084806501,
+      74855
+    ],
+    "keys_equal": true
+  }
+}

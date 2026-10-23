@@ -32,6 +32,19 @@ SERVICE_SECONDS = {"short": 60., "standard": 120., "long": 240.}
 PHASE_SHARES = (.3, .8, .3, .4, .2)
 QUALITY_BUDGET_PROFILE = "quality_v5"
 CANDIDATE_POLICY_ID = "shared_multistep_columns_v6_reuse_diversity"
+PLANNING_PROFILE_LEGACY = "progress_tail_v7"
+PLANNING_PROFILE_DOWNSTREAM = "downstream_service_v8"
+PLANNING_PROFILES = (PLANNING_PROFILE_LEGACY, PLANNING_PROFILE_DOWNSTREAM)
+
+
+def candidate_policy_id(profile):
+    if profile not in PLANNING_PROFILES: raise ValueError("unknown Stage2 planning profile: "+str(profile))
+    return CANDIDATE_POLICY_ID if profile == PLANNING_PROFILE_LEGACY else "shared_downstream_columns_v8_bounded_delay"
+
+
+def objective_schema_id(profile):
+    if profile not in PLANNING_PROFILES: raise ValueError("unknown Stage2 planning profile: "+str(profile))
+    return "reliability_throughput_progress_tail_v2" if profile == PLANNING_PROFILE_LEGACY else "downstream_service_v8_f_L_risk_Ehat_tau"
 QUALITY_BUDGET_SETTINGS = MappingProxyType(dict(soft_seconds=30.,watchdog_seconds=60.,candidate_seconds=12.,
     hint_seconds=3.,solver_seconds=8.,solver_reserve_seconds=8.))
 LEGACY_BUDGET_PROFILE = "legacy_v4"
@@ -192,6 +205,7 @@ class PredictionColumn:
     emergency_prediction: str = "NONE"
     energy_j: float = 0.
     peak_seconds: float = 0.
+    downstream: object = field(default_factory=dict)
 
     @property
     def signature(self):
@@ -212,6 +226,7 @@ class CandidateCatalog:
     incomplete: tuple
     cache_hits: int = 0
     slack_reference_statuses: object = field(default_factory=dict)
+    downstream: object = None
 
 
 @dataclass(frozen=True)
@@ -233,6 +248,15 @@ def build_planning_snapshot(port):
 
 def _sum_key(columns):
     return tuple(math.fsum(c.objective[k] for c in columns) for k in range(5))
+
+
+def _selection_key(catalog, columns):
+    return catalog.downstream.key(columns) if catalog.downstream is not None else _sum_key(columns)
+
+
+def _selection_solver_key(catalog, columns):
+    return (catalog.downstream.evaluate(columns)[0] if catalog.downstream is not None else
+            tuple(sum(solver_coefficients(c)[k] for c in columns) for k in range(5)))
 
 
 def solver_coefficients(column):
@@ -340,16 +364,20 @@ class ReferenceProvider:
         self.hits = 0
         self.templates = {}
         self.energy = {}
+        self.motion_energy_index = {}
         self.energy_stats = Counter()
 
     def move_energy(self,node,plan,config):
         key=(config.config_hash,node,plan.trajectory_hash)
         if key in self.energy:
             self.energy_stats["hits"]+=1
+            _bounded_put(self.motion_energy_index,(config.config_hash,plan.trajectory_hash),(node,self.energy[key]))
             return self.energy[key]
         self.energy_stats["misses"]+=1
         q=_move_energy(node,plan,config)
-        if all(math.isfinite(x) for x in q): _bounded_put(self.energy,key,q)
+        if all(math.isfinite(x) for x in q):
+            _bounded_put(self.energy,key,q)
+            _bounded_put(self.motion_energy_index,(config.config_hash,plan.trajectory_hash),(node,q))
         return q
 
     def screen(self, snapshot, node, start, budget):
@@ -697,7 +725,9 @@ class EvaluationContext:
 
 
 class CandidateProvider:
-    def __init__(self, reference_provider=None):
+    def __init__(self, reference_provider=None, planning_profile=PLANNING_PROFILE_LEGACY):
+        candidate_policy_id(planning_profile)
+        self.planning_profile=planning_profile
         self.references = reference_provider or ReferenceProvider()
         self.previous = {}
         self.aligned_starts=[]
@@ -782,7 +812,12 @@ class CandidateProvider:
             tau = min(900.,HORIZON+ref.duration) if known else 901.+self._remaining_lower(snapshot,ring)
         rows = context.resources(a,plans)
         if rows is None: return None
-        return PredictionColumn(a.id,kind,tuple(plans),rows,(f,-l,u,tau,qh[0]),current,reference,emergency,energy,peak)
+        c=PredictionColumn(a.id,kind,tuple(plans),rows,(f,-l,u,tau,qh[0]),current,reference,emergency,energy,peak)
+        if self.planning_profile==PLANNING_PROFILE_DOWNSTREAM:
+            from .stage2_downstream import describe_column
+            d=describe_column(snapshot,c,self.references,context)
+            c=replace(c,downstream=d.diagnostics,objective=(f,-l,d.unknown+max(0,d.base_energy-d.reserve_energy)*.1/3600.,d.base_energy*.1,(d.touchdown-round(snapshot.time*10))/10.))
+        return c
 
     _remaining_lower = staticmethod(remaining_normal_time_lower)
 
@@ -811,7 +846,7 @@ class CandidateProvider:
             nonlocal serial
             target=cursor["target"]
             first=(None,None,target) if current.ring=="inner" else ({"outer":"middle","middle":"inner"}[current.ring],target,None)
-            if not chain and root_counts[first]>=2: return
+            if not chain and root_counts[first]>=2 and self.planning_profile==PLANNING_PROFILE_LEGACY: return
             if cursor["aligned_end"] is None and group["feasible"][(target,cursor["start"])]>=2: return
             descriptor=self._next_descriptor(snapshot,a,current,budget,cursor,group["seen"],group["immediate"])
             if descriptor is None: return
@@ -837,7 +872,7 @@ class CandidateProvider:
                 immediate=bool(chain and current.ring=="inner" and self._stop_prediction(snapshot,state))
                 group=dict(feasible=Counter(),remaining=0,emitted=False,immediate=immediate,state=state,chain=chain,seen=set(),enumerating=True)
                 groups.append(group)
-                offsets=tuple(offset for offset in OFFSETS if not immediate or offset==0.)
+                offsets=tuple(offset for offset in self._search_offsets(snapshot,a,current) if not immediate or offset==0.)
                 if offsets:
                     serial+=1
                     heapq.heappush(frontier,((estimate(current)+offsets[0],energy,chain_signature(chain)),serial,"ENUMERATE",current,chain,energy,(group,offsets,0)))
@@ -867,7 +902,7 @@ class CandidateProvider:
             aligned=self._aligned_by_node.setdefault((a.id,current.ring,current.slot,current.time,current.version),set())
             first=(None,None,target) if current.ring=="inner" else ({"outer":"middle","middle":"inner"}[current.ring],target,None)
             allowed=(group["feasible"][(target,start)]<2 and
-                     (bool(chain) or root_counts[first]<2) and
+                     (bool(chain) or root_counts[first]<2 or self.planning_profile==PLANNING_PROFILE_DOWNSTREAM) and
                      (start==base or start in aligned or len(aligned)<2))
             if allowed:
                 ok,p=self.references.generate(snapshot,a,current,target,start,duration,budget)
@@ -935,6 +970,26 @@ class CandidateProvider:
             current=PlanningNode(p.target_ring,p.target_slot,p.end_time,current.soc-q[1],current.peak+q[2],current.version+1,current.error_j+q[3],current.peak_error_s+q[4])
         return None
 
+    def _search_offsets(self,snapshot,a,node):
+        if self.planning_profile==PLANNING_PROFILE_LEGACY: return OFFSETS
+        if node.ring=="inner": return OFFSETS
+        next_ring={"outer":"middle","middle":"inner"}[node.ring]
+        starts={r.end for r in snapshot.slots if isinstance(r.resource,tuple) and r.resource[0]==next_ring and math.isfinite(r.end)}
+        # Back-project observed pad release through the cached normal travel
+        # time when available; otherwise the necessary-time proxy is explicit.
+        exact=self.references.cache.get((snapshot.config.config_hash,node.ring,node.slot,node.time,node.version,a.id))
+        flight=exact.duration if exact and exact.status=="KNOWN" else self._remaining_lower(snapshot,node.ring)
+        final_flight=(exact.plans[-1].end_time-exact.plans[-1].start_time if exact and exact.status=="KNOWN" and exact.plans else self._remaining_lower(snapshot,"inner"))
+        releases=sorted({r.end for r in snapshot.pads if math.isfinite(r.end) and r.end>node.time})
+        # The occupancy boundary and final-approach readiness boundary differ:
+        # ground aircraft can conflict with an approaching final before descent.
+        # Both epochs are regenerated and checked by the original validator.
+        if releases:
+            starts.add(releases[0]-flight+13.5)
+            starts.add(releases[0]-max(0.,flight-final_flight))
+        viable=sorted(x-node.time for x in starts if node.time+1.e-8<x<=snapshot.time+900.)
+        return (0.,*viable[:2])
+
     def _offset_cursors(self,snapshot,a,node,budget,offset,include_aligned=True):
         """One offset's all-target cursors; only their next template is queued."""
         targets=range(6 if node.ring=="inner" else ring_config({"outer":"middle","middle":"inner"}[node.ring],snapshot.config).slot_count)
@@ -942,7 +997,7 @@ class CandidateProvider:
         next_ring=None if node.ring=="inner" else {"outer":"middle","middle":"inner"}[node.ring]
         opportunities=sorted({(r.end,str(r.resource),r.resource) for r in rows
                               if math.isfinite(r.end) and r.end>node.time and
-                              (next_ring is None or (isinstance(r.resource,tuple) and r.resource[0]==next_ring))})[:2] if include_aligned else ()
+                              (next_ring is None or (isinstance(r.resource,tuple) and r.resource[0]==next_ring))})[:2] if include_aligned and (self.planning_profile==PLANNING_PROFILE_LEGACY or node.ring=="inner") else ()
         self._aligned_by_node.setdefault((a.id,node.ring,node.slot,node.time,node.version),set())
         base=node.time+offset
         screen=self.references.screen(snapshot,node,base,budget)
@@ -979,7 +1034,7 @@ class CandidateProvider:
         # Compatibility iterator. The heap search advances these cursors after
         # the precise generator result, rather than enqueuing their full grids.
         seen=set()
-        for index,offset in enumerate(OFFSETS):
+        for index,offset in enumerate(self._search_offsets(snapshot,a,node)):
             if immediate_only and offset!=0.: break
             for cursor in self._offset_cursors(snapshot,a,node,budget,offset,include_aligned=index==0):
                 while budget.available(a.id):
@@ -1064,6 +1119,57 @@ class CandidateProvider:
                 budget.screening["progress_energy_rejected"]+=1
             yield ("ATTEMPT",None,None)
 
+    def _delayed_steps(self,snapshot,a,node,budget,context):
+        """A bounded independent delayed primitive pass before reference work."""
+        if node.ring=="inner": return
+        heap=[]; serial=0; seen=set()
+        def push(cursor):
+            nonlocal serial
+            descriptor=self._next_descriptor(snapshot,a,node,budget,cursor,seen)
+            if descriptor is not None:
+                serial+=1
+                heapq.heappush(heap,(descriptor[1]+descriptor[2],serial,descriptor,cursor))
+        for offset in self._search_offsets(snapshot,a,node)[1:]:
+            for cursor in self._offset_cursors(snapshot,a,node,budget,offset,include_aligned=False): push(cursor)
+        while heap and budget.available(a.id):
+            _,_,(target,start,duration,_),cursor=heapq.heappop(heap)
+            ok,p=self.references.generate(snapshot,a,node,target,start,duration,budget)
+            if not ok: return
+            push(cursor)
+            if p is not None:
+                q=self.references.move_energy(node,p,snapshot.config)
+                if node.soc-q[1]>=0. and node.peak+q[2]<=120.:
+                    yield ("COLUMN",(p,),"DOWNSTREAM_DELAY_ESTIMATE")
+            yield ("ATTEMPT",None,None)
+
+    def _delayed_reference_seed(self,snapshot,a,node,reference,budget):
+        """Regenerate each leg at the new epoch; no translated certificates."""
+        if node.ring=="inner" or reference.status!="KNOWN": return
+        for offset in self._search_offsets(snapshot,a,node)[1:]:
+            current=node; chain=[]; start=node.time+offset
+            for old in reference.plans:
+                target=old.pad_id if old.pad_id is not None else old.target_slot
+                duration=old.end_time-old.start_time-(13.5 if old.pad_id is not None else 0.)
+                options=[(target,duration)]
+                if old.pad_id is not None:
+                    screen=self.references.screen(snapshot,current,start,budget)
+                    if screen is None: break
+                    options=[(pad,d) for d in range(int(duration),301,5) for pad in range(snapshot.config.pads.count) if screen[(pad,d)] is None]
+                p=None; ok=True
+                for target,duration in options:
+                    ok,p=self.references.generate(snapshot,a,current,target,start,duration,budget)
+                    if not ok or p is not None: break
+                if not ok or p is None: break
+                q=self.references.move_energy(current,p,snapshot.config)
+                if current.soc-q[1] < (.25 if p.pad_id is not None else 0.) or current.peak+q[2]>120.: break
+                chain.append(p)
+                if p.pad_id is not None:
+                    yield tuple(chain),"DOWNSTREAM_DELAY_REGENERATED_CHAIN"
+                    break
+                current=PlanningNode(p.target_ring,p.target_slot,p.end_time,current.soc-q[1],current.peak+q[2],
+                                     current.version+1,current.error_j+q[3],current.peak_error_s+q[4])
+                start=current.time
+
     def _previous_chain(self,snapshot,a,node,budget):
         """Trim executed/fixed prefixes without moving any certified epoch."""
         previous=self.previous.get(a.id,())
@@ -1090,7 +1196,7 @@ class CandidateProvider:
         return plans
 
     @staticmethod
-    def _retain_column(columns,column):
+    def _retain_column(columns,column,planning_profile=PLANNING_PROFILE_LEGACY):
         """Bound alternatives while retaining full chains and useful progress."""
         if column.signature in {c.signature for c in columns}: return False
         moves=[c for c in columns if c.kind=="MOVE" and c.plans]
@@ -1102,6 +1208,11 @@ class CandidateProvider:
         choices=same if len(same)>=2 else moves
         choices=[c for c in choices if not (full(c) and full_count==1 and not full(column))
             and not (not full(c) and partial_count==1 and full(column))]
+        if planning_profile==PLANNING_PROFILE_DOWNSTREAM:
+            delayed=lambda c:c.downstream.get("candidate_timing")=="DELAYED"
+            delayed_count=sum(delayed(c) for c in moves)
+            choices=[c for c in choices if not (delayed(c) and delayed_count==1 and not delayed(column))
+                and not (not delayed(c) and len(moves)-delayed_count==1 and delayed(column))]
         if not choices: return False
         # At capacity, preserve target/start coverage before adding durations.
         counts=Counter((c.first_target,c.plans[0].start_time,full(c)) for c in moves)
@@ -1145,7 +1256,7 @@ class CandidateProvider:
                  if plans[-1].pad_id is not None else refs[a.id])
             c=self._column(snapshot,a,plans,"MOVE",context,ref,emergency)
             if c is not None and c.signature not in {x.signature for x in columns[a.id]} and context.check_single(c).accepted:
-                if not self._retain_column(columns[a.id],c): return False
+                if not self._retain_column(columns[a.id],c,self.planning_profile): return False
                 counts[a.id].clear(); counts[a.id].update(x.first_target for x in columns[a.id] if x.kind=="MOVE")
                 if plans[-1].pad_id is not None and (refs[a.id].status!="KNOWN" or ref.energy_j<refs[a.id].energy_j): refs[a.id]=ref
                 return True
@@ -1157,16 +1268,18 @@ class CandidateProvider:
         progress={a.id:self._progress_steps(snapshot,a,_node(snapshot,a),budget,context) for a in seed_order
                   if _node(snapshot,a).time<=snapshot.time+5. and a.id not in snapshot.soft}
         progress_start=Counter(budget.attempts)
+        progress_share=.25 if self.planning_profile==PLANNING_PROFILE_DOWNSTREAM else .5
         with budget.measure("safe_progress_generation"):
-            while progress and budget.available() and budget.elapsed<min(budget.candidate_seconds,budget.soft_seconds)/2:
+            while progress and budget.available() and budget.elapsed<min(budget.candidate_seconds,budget.soft_seconds)*progress_share:
                 for a in seed_order:
-                    if budget.elapsed>=min(budget.candidate_seconds,budget.soft_seconds)/2: break
+                    if budget.elapsed>=min(budget.candidate_seconds,budget.soft_seconds)*progress_share: break
                     gen=progress.get(a.id)
                     if gen is None: continue
                     # The same half allocation reserves physical attempts too,
                     # including under deterministic-clock regression tests.
-                    if (budget.attempts[a.id]-progress_start[a.id]>=budget.max_per_aircraft//2
-                        or sum(budget.attempts.values())-sum(progress_start.values())>=budget.max_attempts//2):
+                    attempt_share=.125 if self.planning_profile==PLANNING_PROFILE_DOWNSTREAM else progress_share
+                    if (budget.attempts[a.id]-progress_start[a.id]>=int(budget.max_per_aircraft*attempt_share)
+                        or sum(budget.attempts.values())-sum(progress_start.values())>=int(budget.max_attempts*progress_share)):
                         progress.pop(a.id,None);continue
                     try: tag,plans,emergency=next(gen)
                     except StopIteration: progress.pop(a.id,None);continue
@@ -1176,6 +1289,20 @@ class CandidateProvider:
                             budget.screening["progress_retained"]+=1
                             progress.pop(a.id,None)
             if progress: budget.screening["progress_pass_cutoff"]+=1
+        if self.planning_profile==PLANNING_PROFILE_DOWNSTREAM:
+            delayed={a.id:self._delayed_steps(snapshot,a,_node(snapshot,a),budget,context) for a in seed_order}
+            delayed_start=Counter(budget.attempts)
+            with budget.measure("bounded_delayed_generation"):
+                while delayed and budget.available() and budget.elapsed<min(budget.candidate_seconds,budget.soft_seconds)*.4:
+                    for a in seed_order:
+                        gen=delayed.get(a.id)
+                        if gen is None: continue
+                        if budget.attempts[a.id]-delayed_start[a.id]>=max(1,budget.max_per_aircraft//16):
+                            delayed.pop(a.id,None); continue
+                        try: tag,plans,emergency=next(gen)
+                        except StopIteration: delayed.pop(a.id,None); continue
+                        if tag=="COLUMN" and add_column(a,plans,emergency):
+                            budget.screening["delayed_retained"]+=1; delayed.pop(a.id,None)
         with budget.measure("reference_seed_generation"):
             for a in seed_order:
                 if not budget.available(): break
@@ -1192,6 +1319,12 @@ class CandidateProvider:
                             seed=self._reference_seed(snapshot,a,_node(snapshot,a),reference,budget)
                             if seed is not None: add_column(a,*seed)
                         break
+        if self.planning_profile==PLANNING_PROFILE_DOWNSTREAM:
+            with budget.measure("delayed_reference_regeneration"):
+                for a in seed_order:
+                    if not budget.available(a.id): continue
+                    for plans,emergency in self._delayed_reference_seed(snapshot,a,_node(snapshot,a),refs[a.id],budget):
+                        if add_column(a,plans,emergency): budget.screening["delayed_full_chain_retained"]+=1
         slacks={a.id:energy_slack(snapshot,a,refs[a.id]) for a in ordered}
         ordered=sorted(ordered,key=lambda a:slacks[a.id])
         generators={a.id:self._paths(snapshot,a,_node(snapshot,a),budget,context,accepted_counts=counts[a.id]) for a in ordered}
@@ -1214,9 +1347,32 @@ class CandidateProvider:
             slacks[a.id]=energy_slack(snapshot,a,refs[a.id])
             columns[a.id][:2]=[self._column(snapshot,a,(),k,context,refs[a.id],budget=budget) for k in ("KEEP","WAIT")]
             if len(columns[a.id])<3 or a.id in generators or budget.truncations: incomplete.append(a.id)
+        downstream=None
+        if self.planning_profile==PLANNING_PROFILE_DOWNSTREAM:
+            from .stage2_downstream import JointDownstream,describe_column,ticks
+            demands={c.signature:describe_column(snapshot,c,self.references,context) for values in columns.values() for c in values}
+            fixed=[]; all_order=list(a.id for a in sorted(ordered,key=lambda a:slacks[a.id]))
+            # Declared but unreserved rescue traffic remains visible demand.
+            # No future manifest or unreleased request is consulted.
+            others=[]
+            for a in snapshot.aircraft.values():
+                if a.id in columns or _node(snapshot,a) is None: continue
+                n=_node(snapshot,a)
+                c=self._column(snapshot,a,(),"WAIT",context)
+                if c is None: continue
+                d=describe_column(snapshot,c,self.references,context)
+                d=replace(d,unknown=1,diagnostics=dict(d.diagnostics,reference_status="UNKNOWN",reference_unknown_flag=True,
+                    uncertainty_risk_penalty_wh=1.,reference_estimate_kind="noncandidate_known_aircraft_proxy"))
+                fixed.append(d); others.append((energy_slack(snapshot,a,NormalReference("UNKNOWN")),a.id))
+            all_order=sorted(all_order+[aid for _,aid in others],key=lambda aid:slacks.get(aid,next((s for s,i in others if i==aid),())))
+            calendars=tuple((r.resource,ticks(r.start),ticks(r.end),r.aircraft_id) for r in snapshot.pads if math.isfinite(r.end))
+            downstream=JointDownstream(demands,calendars,all_order,now=ticks(snapshot.time),pad_count=snapshot.config.pads.count,fixed_demands=fixed)
+            baseline={aid:values[0] for aid,values in columns.items()}
+            for aid,values in columns.items():
+                columns[aid]=[replace(c,objective=downstream.key(tuple(dict(baseline,**{aid:c}).values())),downstream=demands[c.signature].diagnostics) for c in values]
         return CandidateCatalog(MappingProxyType({k:tuple(v) for k,v in columns.items()}),MappingProxyType(slacks),
                                 MappingProxyType(dict(budget.attempts)),tuple(incomplete),self.references.hits-start_hits,
-                                MappingProxyType({aid:ref.status for aid,ref in refs.items()}))
+                                MappingProxyType({aid:ref.status for aid,ref in refs.items()}),downstream)
 
 
 class EnergySlackScheduler:
@@ -1225,7 +1381,8 @@ class EnergySlackScheduler:
         chosen={i:cols[0] for i,cols in candidates.columns.items()}
         for i in sorted(chosen,key=lambda i:candidates.slacks[i]):
             if not budget.search_available(validation_reserve_seconds): break
-            for c in sorted(candidates.columns[i],key=lambda c:(c.objective,c.signature)):
+            order_key=(lambda c:(_selection_key(candidates,tuple(dict(chosen,**{i:c}).values())),c.signature)) if candidates.downstream is not None else (lambda c:(c.objective,c.signature))
+            for c in sorted(candidates.columns[i],key=order_key):
                 if not budget.search_available(validation_reserve_seconds): break
                 trial=dict(chosen); trial[i]=c
                 r,_=context.check_batch(tuple(trial.values()))
@@ -1236,12 +1393,12 @@ class EnergySlackScheduler:
                  (ValidationResult(False,"UNKNOWN",budget.evaluation_stop_reason()),()))
             e=context.check_commit_prefix(selected) if r.accepted and budget.evaluation_available() else None
         if e is not None and e.accepted:
-            return PlanningResult(selected,context.prefix(selected),e,"FEASIBLE",_sum_key(selected),certified=True)
+            return PlanningResult(selected,context.prefix(selected),e,"FEASIBLE",_selection_key(candidates,selected),certified=True)
         # One local repair: rejected predictive release cannot authorize execution.
         with budget.measure("fallback"):
             keep=tuple(cols[0] for cols in candidates.columns.values())
             e=context.check_commit_prefix(keep) if budget.evaluation_available() else None
-        return PlanningResult(keep,(),e,"PREFIX_NOT_EXECUTABLE",_sum_key(keep),certified=bool(e and e.accepted))
+        return PlanningResult(keep,(),e,"PREFIX_NOT_EXECUTABLE",_selection_key(candidates,keep),certified=bool(e and e.accepted))
 
 
 class RollingHorizonCPSATScheduler:
@@ -1316,6 +1473,7 @@ class RollingHorizonCPSATScheduler:
                     if incumbent:
                         chosen={c.signature for c in incumbent.selected}
                         for key,v in variables.items(): model.AddHint(v,int(key in chosen))
+                    shared_expressions=(candidates.downstream.cp_expressions(model,variables,lookup) if candidates.downstream is not None else None)
                 invalid=False; carry=0.
                 for phase,share in enumerate(PHASE_SHARES):
                     if not budget.search_available():
@@ -1328,7 +1486,8 @@ class RollingHorizonCPSATScheduler:
                         budget.solver_seconds-budget.solver_wall_used,max(0.,budget.soft_seconds-budget.elapsed))
                     if limit<=0:
                         all_optimal=False; stop_reason="NO_SOLVER_TIME"; break
-                    expression=sum(solver_coefficients(c)[phase]*variables[key] for key,c in lookup.items())
+                    expression=(shared_expressions[phase] if shared_expressions is not None else
+                                sum(solver_coefficients(c)[phase]*variables[key] for key,c in lookup.items()))
                     model.Minimize(expression)
                     solver=cp_model.CpSolver(); solver.parameters.num_search_workers=1; solver.parameters.random_seed=71
                     solver.parameters.max_time_in_seconds=limit
@@ -1343,6 +1502,9 @@ class RollingHorizonCPSATScheduler:
                         all_optimal=False; stop_reason="SOLVER_"+solver.StatusName(status); break
                     selected=tuple(c for key,c in lookup.items() if solver.Value(variables[key]))
                     rec["objective"]=solver.ObjectiveValue()
+                    if candidates.downstream is not None:
+                        rec["canonical_selected_integer_key"]=_selection_solver_key(candidates,selected)
+                        rec["model_integer_key"]=tuple(solver.Value(expr) for expr in shared_expressions)
                     with budget.measure("selected_validation"):
                         if hasattr(context,"check_batch_conflicts"):
                             r,conflicts=context.check_batch_conflicts(selected)
@@ -1374,14 +1536,14 @@ class RollingHorizonCPSATScheduler:
                         rec["cumulative_single_cuts"]=len(single_exclusions)
                         rec["cumulative_prefix_nogoods"]=len(nogoods)
                         invalid=True; all_optimal=False; break
-                    key=_sum_key(selected)
+                    key=_selection_key(candidates,selected)
                     proposal=PlanningResult(selected,context.prefix(selected),evaluation,"FEASIBLE",key,certified=True)
                     if phase==4:
-                        final_solver_key=tuple(sum(solver_coefficients(c)[k] for c in selected) for k in range(5))
+                        final_solver_key=(tuple(solver.Value(expr) for expr in shared_expressions) if shared_expressions is not None else _selection_solver_key(candidates,selected))
                     if incumbent is None or proposal.objective<incumbent.objective: incumbent=proposal
                     if status!=cp_model.OPTIMAL: all_optimal=False
                     # Only a freshly certified feasible value fixes the next layer.
-                    model.Add(expression==int(round(solver.ObjectiveValue())))
+                    model.Add(expression==(_selection_solver_key(candidates,selected)[phase] if shared_expressions is not None else int(round(solver.ObjectiveValue()))))
                 if not invalid: break
             else:
                 stop_reason="REFINEMENT_LIMIT"; all_optimal=False
@@ -1391,8 +1553,8 @@ class RollingHorizonCPSATScheduler:
             keep=tuple(cols[0] for cols in candidates.columns.values())
             with budget.measure("fallback"):
                 evaluation=context.check_commit_prefix(keep) if budget.watchdog_ok() else None
-            incumbent=PlanningResult(keep,(),evaluation,"NO_VERIFIED_INCUMBENT",_sum_key(keep),certified=bool(evaluation and evaluation.accepted))
-        incumbent_solver_key=tuple(sum(solver_coefficients(c)[k] for c in incumbent.selected) for k in range(5))
+            incumbent=PlanningResult(keep,(),evaluation,"NO_VERIFIED_INCUMBENT",_selection_key(candidates,keep),certified=bool(evaluation and evaluation.accepted))
+        incumbent_solver_key=_selection_solver_key(candidates,incumbent.selected)
         complete=(all_optimal and resource_complete and model_complete and len(records)>=5
             and records[-1]["phase"]==4 and records[-1]["status"]=="OPTIMAL" and incumbent_solver_key==final_solver_key)
         return PlanningResult(incumbent.selected,incumbent.prefix,incumbent.evaluation,
@@ -1415,10 +1577,13 @@ class RollingHorizonCPSATScheduler:
 
 class NormalSchedulerCallback:
     """Callable SchedulerPort adapter; runner owns admission/emergency timing."""
-    def __init__(self,method="energy_slack",candidate_provider=None,budget_profile=QUALITY_BUDGET_PROFILE):
+    def __init__(self,method="energy_slack",candidate_provider=None,budget_profile=QUALITY_BUDGET_PROFILE,planning_profile=PLANNING_PROFILE_LEGACY):
         self.scheduler=EnergySlackScheduler() if method=="energy_slack" else RollingHorizonCPSATScheduler() if method=="rh_cp_sat" else None
         if self.scheduler is None: raise ValueError("unknown Stage2 baseline")
-        self.provider=candidate_provider or CandidateProvider()
+        candidate_policy_id(planning_profile)
+        self.planning_profile=planning_profile
+        self.provider=candidate_provider or CandidateProvider(planning_profile=planning_profile)
+        if self.provider.planning_profile!=planning_profile: raise ValueError("candidate provider planning profile mismatch")
         PlanningBudget.for_profile(budget_profile)  # fail closed on unknown names
         self.budget_profile=budget_profile
         self.records=[]
@@ -1435,11 +1600,13 @@ class NormalSchedulerCallback:
                 "references":[(key,reference(r)) for key,r in self.provider.references.cache.items()],
                 "templates":[(key,p.to_dict() if p is not None else None) for key,p in self.provider.references.templates.items()],
                 "reference_hits":self.provider.references.hits}
+        if self.planning_profile!=PLANNING_PROFILE_LEGACY: state["planning_profile"]=self.planning_profile
         return json.loads(json.dumps(state,allow_nan=False))
 
     def load_state_dict(self,state):
         from .trajectory import TrajectoryPlan
         if state["method"]!=self.scheduler.method: raise ValueError("scheduler method mismatch")
+        if state.get("planning_profile",PLANNING_PROFILE_LEGACY)!=self.planning_profile: raise ValueError("scheduler planning profile mismatch")
         profile=state.get("budget_profile",LEGACY_BUDGET_PROFILE)
         PlanningBudget.for_profile(profile)
         self.budget_profile=profile
@@ -1544,7 +1711,7 @@ class NormalSchedulerCallback:
                 rejection_reasons={key[7:]:value for key,value in rejected.items() if key.startswith("reason:")},
                 validation_status="EXAMINED" if any(r is not None for r in checked) or rejected else "UNKNOWN_NOT_EXAMINED")
         record={"time":snapshot.time,"method":self.scheduler.method,"status":result.status,
-                "candidate_policy_id":CANDIDATE_POLICY_ID,"budget_profile":self.budget_profile,"planning_budget":budget.settings(),
+                "candidate_policy_id":candidate_policy_id(self.planning_profile),"budget_profile":self.budget_profile,"planning_budget":budget.settings(),
                 "deadline_reference_seconds":5.,"hint_wall_s":budget.hint_wall_used,"solver_wall_s":budget.solver_wall_used,
                 "hint_objective":result.details.get("hint_objective"),"final_objective":result.objective,
                 "hint_certified":result.details.get("hint_certified"),
@@ -1581,5 +1748,36 @@ class NormalSchedulerCallback:
                 "stale":bool(commit is not None and commit.status=="STALE"),"watchdog":"WATCHDOG" in budget.truncations,
                 "noop":not result.prefix,"selected_key":result.objective,
                 "keep":sum(c.kind=="KEEP" for c in result.selected),"wait":sum(c.kind=="WAIT" for c in result.selected)}
+        if catalog.downstream is not None:
+            with budget.measure("downstream_explanation"):
+                selected_key,downstream_rows=catalog.downstream.evaluate(result.selected)
+                for selected in result.selected:
+                    timing=selected.downstream.get("candidate_timing")
+                    alternatives=[c for c in catalog.columns[selected.aircraft_id] if c.plans and
+                        (not selected.plans or c.downstream.get("candidate_timing")!=timing)]
+                    comparison=None
+                    if alternatives:
+                        scored=[]
+                        for c in alternatives:
+                            trial=tuple(c if item.aircraft_id==c.aircraft_id else item for item in result.selected)
+                            scored.append((catalog.downstream.evaluate(trial)[0],c.signature,c))
+                        comparison_key,_,comparison=min(scored,key=lambda row:row[:2])
+                        layer=next((name for name,a,b in zip(("F","L","risk","Ehat","tau"),selected_key,comparison_key) if a!=b),"TIE")
+                        reason=("JOINT_VALIDATION_OR_GLOBAL_ALLOCATION" if comparison_key<selected_key else
+                                "TIE_SIGNATURE_OR_ALLOCATION" if comparison_key==selected_key else layer)
+                    else:
+                        comparison_key=None; layer=None; reason="NO_OPPOSITE_TIMING_CANDIDATE"
+                    submitted=any(p.aircraft_id==selected.aircraft_id for p in committed_prefix)
+                    action=("IMMEDIATE_PREFIX_SUBMITTED" if submitted else "HOLD_CURRENT_SLOT" if not selected.plans else
+                            "FUTURE_PREDICTION_NO_RESERVATION" if selected.plans[0].start_time>snapshot.time+5.+1.e-8 else "PREFIX_NOT_COMMITTED")
+                    downstream_rows[selected.aircraft_id]["decision_explanation"]=dict(reason=reason,first_different_objective_layer=layer,
+                        comparison_signature=None if comparison is None else comparison.signature,comparison_integer_key=comparison_key,
+                        comparison_status="NOT_JOINT_VALIDATED" if comparison is not None else "NO_COMPARISON",actual_action=action,
+                        observed_rejections=dict(context.rejections_by_aircraft.get(selected.aircraft_id,{})))
+                record.update(planning_profile=self.planning_profile,objective_id=objective_schema_id(self.planning_profile),
+                    downstream=downstream_rows,downstream_integer_key=selected_key,
+                    virtual_pad_assignment=dict(catalog.downstream.assignment),virtual_queue_order=catalog.downstream.order)
+            record.update(wall_s=budget.elapsed,cpu_s=time.process_time()-budget.cpu_start,
+                timings=dict(budget.timings),deadline_miss=budget.elapsed>5.)
         self.records.append(record)
         return result

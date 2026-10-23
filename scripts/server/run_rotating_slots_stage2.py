@@ -20,6 +20,8 @@ def main():
                         help="explicit frozen service scenario for freeze-provenance/prepare")
     parser.add_argument("--scenario-profile",choices=("legacy_busy_v5","stress36_rate180_v1","diagnostic18_rate120_v1","medium24_rate150_v1"))
     parser.add_argument("--rescue-rule-profile",choices=("legacy_v5","rescue_opportunity_v6","rescue_need_v7"))
+    parser.add_argument("--planning-profile",choices=("progress_tail_v7","downstream_service_v8"),
+                        help="normal planning algorithm frozen by freeze-provenance/prepare; independent of budget")
     parser.add_argument("--cpus",type=int,nargs=2,metavar=("METHOD1_CPU","METHOD2_CPU"),
                         help="two distinct physical-core representatives; run/resume only, frozen on first run")
     parser.add_argument("--campaign-wall-budget-seconds",type=float,help="new prepare/branch allocation; defaults prepare 36000, branch 21600")
@@ -33,13 +35,14 @@ def main():
     elif args.parent_output is not None or args.from_time is not None:
         parser.error("--parent-output and --from-time apply to branch only")
     if args.action not in ("freeze-provenance","prepare") and any(value is not None for value in
-            (args.service_profile,args.scenario_profile,args.rescue_rule_profile)):
+            (args.service_profile,args.scenario_profile,args.rescue_rule_profile,args.planning_profile)):
         parser.error("profiles are frozen during prepare; run/resume reads campaign.json")
     if args.cpus is not None and args.action not in ("run","resume"):
         parser.error("CPU selection applies to run/resume only")
     from terminal_marl.core.rotating_slots.stage2_campaign import (prepare_campaign,run_campaign,
         report_campaign,load_json,CampaignBudget,common_boundary,freeze_provenance,branch_campaign)
-    profiles=dict(scenario_profile=args.scenario_profile or "legacy_busy_v5",rescue_rule_profile=args.rescue_rule_profile or "legacy_v5")
+    profiles=dict(scenario_profile=args.scenario_profile or "legacy_busy_v5",
+        rescue_rule_profile=args.rescue_rule_profile or "legacy_v5",planning_profile=args.planning_profile or "progress_tail_v7")
     if args.action=="freeze-provenance": result=freeze_provenance(args.output,args.service_profile or "baseline",**profiles)
     elif args.action=="prepare": result=prepare_campaign(args.output,args.preparation_wall_seconds,
         provenance_path=args.provenance,service_profile=args.service_profile or "baseline",
