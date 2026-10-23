@@ -1,0 +1,2303 @@
+{
+  "human_acceptance": "HUMAN_PENDING",
+  "visual_review": "HUMAN_PENDING",
+  "all_query_checks_pass": true,
+  "bundles": [
+    {
+      "scene": "stress",
+      "method": "energy_slack",
+      "load": "PASS",
+      "time_bounds": [
+        0.0,
+        600.0
+      ],
+      "audit_status": "FAIL",
+      "audit_issue_count": 3,
+      "queries": [
+        {
+          "requested_time": 0.0,
+          "sampled_time": 0.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 0,
+            "ACTIVE": 0,
+            "record_aircraft": 39,
+            "controller_aircraft": 39,
+            "record_visible": 39,
+            "snapshot_uavs": 39,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 0,
+            "active_normal_finals": 4,
+            "ground_service": 3,
+            "future_pad_reservations": 4
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 240.0,
+          "sampled_time": 240.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 0,
+            "ACTIVE": 0,
+            "record_aircraft": 56,
+            "controller_aircraft": 56,
+            "record_visible": 44,
+            "snapshot_uavs": 44,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "snapshot_completed": 12,
+            "active_normal_finals": 3,
+            "ground_service": 4,
+            "future_pad_reservations": 3
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 333.49999999999983,
+          "sampled_time": 333.49999999999983,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 1,
+            "ACTIVE": 0,
+            "record_aircraft": 63,
+            "controller_aircraft": 63,
+            "record_visible": 47,
+            "snapshot_uavs": 47,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "snapshot_completed": 16,
+            "active_normal_finals": 4,
+            "ground_service": 4,
+            "future_pad_reservations": 5
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 334.49999999999983,
+          "sampled_time": 334.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 1,
+            "ACTIVE": 0,
+            "record_aircraft": 63,
+            "controller_aircraft": 63,
+            "record_visible": 47,
+            "snapshot_uavs": 47,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "snapshot_completed": 16,
+            "active_normal_finals": 4,
+            "ground_service": 4,
+            "future_pad_reservations": 5
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 413.0562424710647,
+          "sampled_time": 413.0562424710647,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 5,
+            "ACTIVE": 1,
+            "record_aircraft": 67,
+            "controller_aircraft": 67,
+            "record_visible": 47,
+            "snapshot_uavs": 47,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 20,
+            "active_normal_finals": 4,
+            "ground_service": 3,
+            "future_pad_reservations": 8
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 414.0562424710647,
+          "sampled_time": 414.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 5,
+            "ACTIVE": 1,
+            "record_aircraft": 67,
+            "controller_aircraft": 67,
+            "record_visible": 47,
+            "snapshot_uavs": 47,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 20,
+            "active_normal_finals": 4,
+            "ground_service": 3,
+            "future_pad_reservations": 8
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 480.0,
+          "sampled_time": 480.0,
+          "counts": {
+            "WAIT": 3,
+            "RESERVED": 1,
+            "ACTIVE": 4,
+            "record_aircraft": 70,
+            "controller_aircraft": 70,
+            "record_visible": 45,
+            "snapshot_uavs": 45,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 25,
+            "active_normal_finals": 0,
+            "ground_service": 3,
+            "future_pad_reservations": 5
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 600.0,
+          "sampled_time": 600.0,
+          "counts": {
+            "WAIT": 13,
+            "RESERVED": 2,
+            "ACTIVE": 3,
+            "record_aircraft": 78,
+            "controller_aircraft": 78,
+            "record_visible": 50,
+            "snapshot_uavs": 50,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 28,
+            "active_normal_finals": 0,
+            "ground_service": 3,
+            "future_pad_reservations": 4
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        }
+      ],
+      "coexistence": {
+        "time": 333.49999999999983,
+        "sampled_time": 333.49999999999983,
+        "event": {
+          "aircraft_id": "initial_outer_12",
+          "details": {
+            "below_reserve": false,
+            "emergency": false,
+            "soc": 0.347079287153404
+          },
+          "time": 333.49999999999983,
+          "type": "touchdown"
+        },
+        "selected_id": "initial_middle_06"
+      },
+      "screenshots": [
+        {
+          "path": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261023\\v7_replay_checks\\stress_energy_slack_coexist_wait_reserved_normal.png",
+          "time": 333.49999999999983,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 1,
+            "ACTIVE": 0,
+            "record_aircraft": 63,
+            "controller_aircraft": 63,
+            "record_visible": 47,
+            "snapshot_uavs": 47,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "snapshot_completed": 16,
+            "active_normal_finals": 4,
+            "ground_service": 4,
+            "future_pad_reservations": 5
+          }
+        },
+        {
+          "path": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261023\\v7_replay_checks\\stress_energy_slack_rescue_start_plus001.png",
+          "time": 413.0662424710647,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 5,
+            "ACTIVE": 1,
+            "record_aircraft": 67,
+            "controller_aircraft": 67,
+            "record_visible": 47,
+            "snapshot_uavs": 47,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 20,
+            "active_normal_finals": 4,
+            "ground_service": 3,
+            "future_pad_reservations": 8
+          }
+        },
+        {
+          "path": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261023\\v7_replay_checks\\stress_energy_slack_rescue_touchdown_plus001.png",
+          "time": 461.5662424710647,
+          "counts": {
+            "WAIT": 2,
+            "RESERVED": 3,
+            "ACTIVE": 2,
+            "record_aircraft": 70,
+            "controller_aircraft": 70,
+            "record_visible": 47,
+            "snapshot_uavs": 47,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "snapshot_completed": 23,
+            "active_normal_finals": 1,
+            "ground_service": 4,
+            "future_pad_reservations": 6
+          }
+        },
+        {
+          "path": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261023\\v7_replay_checks\\stress_energy_slack_end600.png",
+          "time": 600.0,
+          "counts": {
+            "WAIT": 13,
+            "RESERVED": 2,
+            "ACTIVE": 3,
+            "record_aircraft": 78,
+            "controller_aircraft": 78,
+            "record_visible": 50,
+            "snapshot_uavs": 50,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 28,
+            "active_normal_finals": 0,
+            "ground_service": 3,
+            "future_pad_reservations": 4
+          }
+        }
+      ]
+    },
+    {
+      "scene": "stress",
+      "method": "rh_cp_sat",
+      "load": "PASS",
+      "time_bounds": [
+        0.0,
+        600.0
+      ],
+      "audit_status": "PASS",
+      "audit_issue_count": 0,
+      "queries": [
+        {
+          "requested_time": 0.0,
+          "sampled_time": 0.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 0,
+            "ACTIVE": 0,
+            "record_aircraft": 39,
+            "controller_aircraft": 39,
+            "record_visible": 39,
+            "snapshot_uavs": 39,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 0,
+            "active_normal_finals": 4,
+            "ground_service": 3,
+            "future_pad_reservations": 4
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 240.0,
+          "sampled_time": 240.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 0,
+            "ACTIVE": 0,
+            "record_aircraft": 56,
+            "controller_aircraft": 56,
+            "record_visible": 44,
+            "snapshot_uavs": 44,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "snapshot_completed": 12,
+            "active_normal_finals": 4,
+            "ground_service": 4,
+            "future_pad_reservations": 4
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 261.3310817930876,
+          "sampled_time": 261.3310817930876,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 1,
+            "ACTIVE": 0,
+            "record_aircraft": 60,
+            "controller_aircraft": 60,
+            "record_visible": 47,
+            "snapshot_uavs": 47,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 13,
+            "active_normal_finals": 4,
+            "ground_service": 3,
+            "future_pad_reservations": 4
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 262.3310817930876,
+          "sampled_time": 262.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 1,
+            "ACTIVE": 0,
+            "record_aircraft": 60,
+            "controller_aircraft": 60,
+            "record_visible": 47,
+            "snapshot_uavs": 47,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 13,
+            "active_normal_finals": 4,
+            "ground_service": 3,
+            "future_pad_reservations": 4
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 353.49999999999994,
+          "sampled_time": 353.49999999999994,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 2,
+            "ACTIVE": 1,
+            "record_aircraft": 64,
+            "controller_aircraft": 64,
+            "record_visible": 46,
+            "snapshot_uavs": 46,
+            "record_service": 2,
+            "snapshot_service": 2,
+            "snapshot_completed": 18,
+            "active_normal_finals": 5,
+            "ground_service": 2,
+            "future_pad_reservations": 7
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 354.49999999999994,
+          "sampled_time": 354.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 2,
+            "ACTIVE": 1,
+            "record_aircraft": 64,
+            "controller_aircraft": 64,
+            "record_visible": 46,
+            "snapshot_uavs": 46,
+            "record_service": 2,
+            "snapshot_service": 2,
+            "snapshot_completed": 18,
+            "active_normal_finals": 5,
+            "ground_service": 2,
+            "future_pad_reservations": 7
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 480.0,
+          "sampled_time": 480.0,
+          "counts": {
+            "WAIT": 3,
+            "RESERVED": 1,
+            "ACTIVE": 4,
+            "record_aircraft": 70,
+            "controller_aircraft": 70,
+            "record_visible": 45,
+            "snapshot_uavs": 45,
+            "record_service": 2,
+            "snapshot_service": 2,
+            "snapshot_completed": 25,
+            "active_normal_finals": 0,
+            "ground_service": 2,
+            "future_pad_reservations": 4
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 600.0,
+          "sampled_time": 600.0,
+          "counts": {
+            "WAIT": 12,
+            "RESERVED": 2,
+            "ACTIVE": 3,
+            "record_aircraft": 78,
+            "controller_aircraft": 78,
+            "record_visible": 48,
+            "snapshot_uavs": 48,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 30,
+            "active_normal_finals": 0,
+            "ground_service": 3,
+            "future_pad_reservations": 5
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        }
+      ],
+      "coexistence": {
+        "time": 261.3310817930876,
+        "sampled_time": 261.3310817930876,
+        "event": {
+          "aircraft_id": "req_000020",
+          "details": {},
+          "time": 261.3310817930876,
+          "type": "request_released"
+        },
+        "selected_id": "initial_middle_09"
+      },
+      "screenshots": []
+    },
+    {
+      "scene": "diagnostic",
+      "method": "energy_slack",
+      "load": "PASS",
+      "time_bounds": [
+        0.0,
+        600.0
+      ],
+      "audit_status": "PASS",
+      "audit_issue_count": 0,
+      "queries": [
+        {
+          "requested_time": 0.0,
+          "sampled_time": 0.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 0,
+            "ACTIVE": 0,
+            "record_aircraft": 21,
+            "controller_aircraft": 21,
+            "record_visible": 21,
+            "snapshot_uavs": 21,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 0,
+            "active_normal_finals": 5,
+            "ground_service": 3,
+            "future_pad_reservations": 5
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 240.0,
+          "sampled_time": 240.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 0,
+            "ACTIVE": 0,
+            "record_aircraft": 33,
+            "controller_aircraft": 33,
+            "record_visible": 22,
+            "snapshot_uavs": 22,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "snapshot_completed": 11,
+            "active_normal_finals": 7,
+            "ground_service": 4,
+            "future_pad_reservations": 7
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 369.06060103643887,
+          "sampled_time": 369.06060103643887,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 1,
+            "ACTIVE": 0,
+            "record_aircraft": 40,
+            "controller_aircraft": 40,
+            "record_visible": 21,
+            "snapshot_uavs": 21,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 19,
+            "active_normal_finals": 6,
+            "ground_service": 3,
+            "future_pad_reservations": 7
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 370.06060103643887,
+          "sampled_time": 370.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 1,
+            "ACTIVE": 0,
+            "record_aircraft": 40,
+            "controller_aircraft": 40,
+            "record_visible": 21,
+            "snapshot_uavs": 21,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 19,
+            "active_normal_finals": 6,
+            "ground_service": 3,
+            "future_pad_reservations": 7
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 468.49999999999994,
+          "sampled_time": 468.49999999999994,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 0,
+            "ACTIVE": 1,
+            "record_aircraft": 43,
+            "controller_aircraft": 43,
+            "record_visible": 20,
+            "snapshot_uavs": 20,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "snapshot_completed": 23,
+            "active_normal_finals": 5,
+            "ground_service": 4,
+            "future_pad_reservations": 5
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 469.49999999999994,
+          "sampled_time": 469.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 0,
+            "ACTIVE": 1,
+            "record_aircraft": 43,
+            "controller_aircraft": 43,
+            "record_visible": 20,
+            "snapshot_uavs": 20,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "snapshot_completed": 23,
+            "active_normal_finals": 5,
+            "ground_service": 4,
+            "future_pad_reservations": 5
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 480.0,
+          "sampled_time": 480.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 0,
+            "ACTIVE": 1,
+            "record_aircraft": 44,
+            "controller_aircraft": 44,
+            "record_visible": 21,
+            "snapshot_uavs": 21,
+            "record_service": 5,
+            "snapshot_service": 5,
+            "snapshot_completed": 23,
+            "active_normal_finals": 5,
+            "ground_service": 5,
+            "future_pad_reservations": 6
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 600.0,
+          "sampled_time": 600.0,
+          "counts": {
+            "WAIT": 1,
+            "RESERVED": 1,
+            "ACTIVE": 1,
+            "record_aircraft": 49,
+            "controller_aircraft": 49,
+            "record_visible": 21,
+            "snapshot_uavs": 21,
+            "record_service": 2,
+            "snapshot_service": 2,
+            "snapshot_completed": 28,
+            "active_normal_finals": 5,
+            "ground_service": 2,
+            "future_pad_reservations": 5
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        }
+      ],
+      "coexistence": {
+        "time": 369.06060103643887,
+        "sampled_time": 369.06060103643887,
+        "event": {
+          "aircraft_id": null,
+          "details": {
+            "trajectory_hash": "c622228500ad232e48c22bc63f1c57cdeba2b4a6e133bff4718b66621311a54d"
+          },
+          "time": 369.06060103643887,
+          "type": "source_slot_cleared"
+        },
+        "selected_id": "initial_outer_05"
+      },
+      "screenshots": []
+    },
+    {
+      "scene": "diagnostic",
+      "method": "rh_cp_sat",
+      "load": "PASS",
+      "time_bounds": [
+        0.0,
+        600.0
+      ],
+      "audit_status": "PASS",
+      "audit_issue_count": 0,
+      "queries": [
+        {
+          "requested_time": 0.0,
+          "sampled_time": 0.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 0,
+            "ACTIVE": 0,
+            "record_aircraft": 21,
+            "controller_aircraft": 21,
+            "record_visible": 21,
+            "snapshot_uavs": 21,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 0,
+            "active_normal_finals": 5,
+            "ground_service": 3,
+            "future_pad_reservations": 5
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 240.0,
+          "sampled_time": 240.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 0,
+            "ACTIVE": 0,
+            "record_aircraft": 33,
+            "controller_aircraft": 33,
+            "record_visible": 21,
+            "snapshot_uavs": 21,
+            "record_service": 2,
+            "snapshot_service": 2,
+            "snapshot_completed": 12,
+            "active_normal_finals": 5,
+            "ground_service": 2,
+            "future_pad_reservations": 2
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 314.9999999999999,
+          "sampled_time": 314.9999999999999,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 1,
+            "ACTIVE": 0,
+            "record_aircraft": 37,
+            "controller_aircraft": 37,
+            "record_visible": 20,
+            "snapshot_uavs": 20,
+            "record_service": 1,
+            "snapshot_service": 1,
+            "snapshot_completed": 17,
+            "active_normal_finals": 6,
+            "ground_service": 1,
+            "future_pad_reservations": 6
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 315.9999999999999,
+          "sampled_time": 315.99999999999983,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 1,
+            "ACTIVE": 0,
+            "record_aircraft": 37,
+            "controller_aircraft": 37,
+            "record_visible": 20,
+            "snapshot_uavs": 20,
+            "record_service": 1,
+            "snapshot_service": 1,
+            "snapshot_completed": 17,
+            "active_normal_finals": 6,
+            "ground_service": 1,
+            "future_pad_reservations": 6
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 368.49999999999966,
+          "sampled_time": 368.49999999999966,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 1,
+            "ACTIVE": 1,
+            "record_aircraft": 40,
+            "controller_aircraft": 40,
+            "record_visible": 22,
+            "snapshot_uavs": 22,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "snapshot_completed": 18,
+            "active_normal_finals": 2,
+            "ground_service": 4,
+            "future_pad_reservations": 3
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 369.49999999999966,
+          "sampled_time": 369.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 1,
+            "ACTIVE": 1,
+            "record_aircraft": 40,
+            "controller_aircraft": 40,
+            "record_visible": 22,
+            "snapshot_uavs": 22,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "snapshot_completed": 18,
+            "active_normal_finals": 2,
+            "ground_service": 4,
+            "future_pad_reservations": 3
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 480.0,
+          "sampled_time": 480.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 1,
+            "ACTIVE": 1,
+            "record_aircraft": 44,
+            "controller_aircraft": 44,
+            "record_visible": 22,
+            "snapshot_uavs": 22,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "snapshot_completed": 22,
+            "active_normal_finals": 4,
+            "ground_service": 4,
+            "future_pad_reservations": 6
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 600.0,
+          "sampled_time": 600.0,
+          "counts": {
+            "WAIT": 1,
+            "RESERVED": 1,
+            "ACTIVE": 2,
+            "record_aircraft": 49,
+            "controller_aircraft": 49,
+            "record_visible": 20,
+            "snapshot_uavs": 20,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 29,
+            "active_normal_finals": 5,
+            "ground_service": 3,
+            "future_pad_reservations": 7
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        }
+      ],
+      "coexistence": {
+        "time": 314.9999999999999,
+        "sampled_time": 314.9999999999999,
+        "event": {
+          "aircraft_id": "initial_outer_00",
+          "details": {
+            "alternative": 0,
+            "end_time": 373.4999999999999,
+            "pad_id": 0,
+            "pad_window_end": 433.4999999999999,
+            "pad_window_start": 359.9999999999999,
+            "reason": "RESOURCE_CONFLICT",
+            "start_time": 314.9999999999999,
+            "status": "REJECTED",
+            "trajectory_hash": "7a3b6cc0478f820eb6cda84af31821410653d252f2c8021d5b90681afb37749c",
+            "validation": {
+              "blocking_reservations": [
+                {
+                  "aircraft_id": "initial_middle_00",
+                  "committed": true,
+                  "dependencies": [],
+                  "end": 407.2340698242184,
+                  "kind": "final",
+                  "plan_hash": "b6021344cb536afaa3dada88f423f6a96214596ed48e0a02ba7e0f19e66ea061",
+                  "resource": 0,
+                  "start": 333.7340698242184
+                }
+              ],
+              "detail": "resource 0 already reserved"
+            }
+          },
+          "time": 314.9999999999999,
+          "type": "rescue_opportunity_attempt"
+        },
+        "selected_id": "initial_outer_00"
+      },
+      "screenshots": []
+    },
+    {
+      "scene": "medium",
+      "method": "energy_slack",
+      "load": "PASS",
+      "time_bounds": [
+        0.0,
+        600.0
+      ],
+      "audit_status": "FAIL",
+      "audit_issue_count": 2,
+      "queries": [
+        {
+          "requested_time": 0.0,
+          "sampled_time": 0.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 0,
+            "ACTIVE": 0,
+            "record_aircraft": 27,
+            "controller_aircraft": 27,
+            "record_visible": 27,
+            "snapshot_uavs": 27,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 0,
+            "active_normal_finals": 5,
+            "ground_service": 3,
+            "future_pad_reservations": 5
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 240.0,
+          "sampled_time": 240.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 0,
+            "ACTIVE": 0,
+            "record_aircraft": 41,
+            "controller_aircraft": 41,
+            "record_visible": 31,
+            "snapshot_uavs": 31,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "snapshot_completed": 10,
+            "active_normal_finals": 5,
+            "ground_service": 4,
+            "future_pad_reservations": 4
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 338.3941322676095,
+          "sampled_time": 338.3941322676095,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 1,
+            "ACTIVE": 0,
+            "record_aircraft": 48,
+            "controller_aircraft": 48,
+            "record_visible": 31,
+            "snapshot_uavs": 31,
+            "record_service": 1,
+            "snapshot_service": 1,
+            "snapshot_completed": 17,
+            "active_normal_finals": 6,
+            "ground_service": 1,
+            "future_pad_reservations": 4
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 339.3941322676095,
+          "sampled_time": 339.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 1,
+            "ACTIVE": 0,
+            "record_aircraft": 48,
+            "controller_aircraft": 48,
+            "record_visible": 31,
+            "snapshot_uavs": 31,
+            "record_service": 1,
+            "snapshot_service": 1,
+            "snapshot_completed": 17,
+            "active_normal_finals": 6,
+            "ground_service": 1,
+            "future_pad_reservations": 4
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 440.9674909652777,
+          "sampled_time": 440.9674909652777,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 1,
+            "ACTIVE": 1,
+            "record_aircraft": 53,
+            "controller_aircraft": 53,
+            "record_visible": 32,
+            "snapshot_uavs": 32,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 21,
+            "active_normal_finals": 5,
+            "ground_service": 3,
+            "future_pad_reservations": 5
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 441.9674909652777,
+          "sampled_time": 441.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 1,
+            "ACTIVE": 1,
+            "record_aircraft": 53,
+            "controller_aircraft": 53,
+            "record_visible": 32,
+            "snapshot_uavs": 32,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 21,
+            "active_normal_finals": 5,
+            "ground_service": 3,
+            "future_pad_reservations": 5
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 480.0,
+          "sampled_time": 480.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 2,
+            "ACTIVE": 1,
+            "record_aircraft": 55,
+            "controller_aircraft": 55,
+            "record_visible": 31,
+            "snapshot_uavs": 31,
+            "record_service": 2,
+            "snapshot_service": 2,
+            "snapshot_completed": 24,
+            "active_normal_finals": 3,
+            "ground_service": 2,
+            "future_pad_reservations": 6
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 600.0,
+          "sampled_time": 600.0,
+          "counts": {
+            "WAIT": 4,
+            "RESERVED": 2,
+            "ACTIVE": 3,
+            "record_aircraft": 60,
+            "controller_aircraft": 60,
+            "record_visible": 31,
+            "snapshot_uavs": 31,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 29,
+            "active_normal_finals": 1,
+            "ground_service": 3,
+            "future_pad_reservations": 6
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        }
+      ],
+      "coexistence": {
+        "time": 338.3941322676095,
+        "sampled_time": 338.3941322676095,
+        "event": {
+          "aircraft_id": "req_000015",
+          "details": {},
+          "time": 338.3941322676095,
+          "type": "transfer_completed"
+        },
+        "selected_id": "initial_outer_03"
+      },
+      "screenshots": []
+    },
+    {
+      "scene": "medium",
+      "method": "rh_cp_sat",
+      "load": "PASS",
+      "time_bounds": [
+        0.0,
+        600.0
+      ],
+      "audit_status": "FAIL",
+      "audit_issue_count": 2,
+      "queries": [
+        {
+          "requested_time": 0.0,
+          "sampled_time": 0.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 0,
+            "ACTIVE": 0,
+            "record_aircraft": 27,
+            "controller_aircraft": 27,
+            "record_visible": 27,
+            "snapshot_uavs": 27,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 0,
+            "active_normal_finals": 5,
+            "ground_service": 3,
+            "future_pad_reservations": 5
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 240.0,
+          "sampled_time": 240.0,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 0,
+            "ACTIVE": 0,
+            "record_aircraft": 41,
+            "controller_aircraft": 41,
+            "record_visible": 31,
+            "snapshot_uavs": 31,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "snapshot_completed": 10,
+            "active_normal_finals": 5,
+            "ground_service": 4,
+            "future_pad_reservations": 4
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 304.99999999999994,
+          "sampled_time": 304.99999999999994,
+          "counts": {
+            "WAIT": 1,
+            "RESERVED": 0,
+            "ACTIVE": 0,
+            "record_aircraft": 47,
+            "controller_aircraft": 47,
+            "record_visible": 34,
+            "snapshot_uavs": 34,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "snapshot_completed": 13,
+            "active_normal_finals": 4,
+            "ground_service": 4,
+            "future_pad_reservations": 3
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 305.99999999999994,
+          "sampled_time": 305.9999999999999,
+          "counts": {
+            "WAIT": 1,
+            "RESERVED": 0,
+            "ACTIVE": 0,
+            "record_aircraft": 47,
+            "controller_aircraft": 47,
+            "record_visible": 34,
+            "snapshot_uavs": 34,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "snapshot_completed": 13,
+            "active_normal_finals": 4,
+            "ground_service": 4,
+            "future_pad_reservations": 3
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 414.9999999999998,
+          "sampled_time": 414.9999999999998,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 3,
+            "ACTIVE": 1,
+            "record_aircraft": 51,
+            "controller_aircraft": 51,
+            "record_visible": 33,
+            "snapshot_uavs": 33,
+            "record_service": 5,
+            "snapshot_service": 5,
+            "snapshot_completed": 18,
+            "active_normal_finals": 1,
+            "ground_service": 5,
+            "future_pad_reservations": 5
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 415.9999999999998,
+          "sampled_time": 415.9999999999997,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 3,
+            "ACTIVE": 1,
+            "record_aircraft": 51,
+            "controller_aircraft": 51,
+            "record_visible": 33,
+            "snapshot_uavs": 33,
+            "record_service": 5,
+            "snapshot_service": 5,
+            "snapshot_completed": 18,
+            "active_normal_finals": 1,
+            "ground_service": 5,
+            "future_pad_reservations": 5
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 480.0,
+          "sampled_time": 480.0,
+          "counts": {
+            "WAIT": 2,
+            "RESERVED": 2,
+            "ACTIVE": 3,
+            "record_aircraft": 55,
+            "controller_aircraft": 55,
+            "record_visible": 32,
+            "snapshot_uavs": 32,
+            "record_service": 2,
+            "snapshot_service": 2,
+            "snapshot_completed": 23,
+            "active_normal_finals": 1,
+            "ground_service": 2,
+            "future_pad_reservations": 6
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        },
+        {
+          "requested_time": 600.0,
+          "sampled_time": 600.0,
+          "counts": {
+            "WAIT": 5,
+            "RESERVED": 5,
+            "ACTIVE": 2,
+            "record_aircraft": 60,
+            "controller_aircraft": 60,
+            "record_visible": 35,
+            "snapshot_uavs": 35,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "snapshot_completed": 25,
+            "active_normal_finals": 0,
+            "ground_service": 4,
+            "future_pad_reservations": 6
+          },
+          "checks": {
+            "controller_count_matches": true,
+            "visible_count_matches": true,
+            "service_count_matches": true,
+            "time_matches": true,
+            "sample_not_after_query": true
+          }
+        }
+      ],
+      "coexistence": {
+        "time": 304.99999999999994,
+        "sampled_time": 304.99999999999994,
+        "event": {
+          "aircraft_id": "initial_outer_00",
+          "details": {
+            "assessment_ring": "inner",
+            "assessment_soc": 0.24884679835381202,
+            "assessment_time": 304.99999999999994,
+            "deadline_basis": "necessary_normal_energy_bound",
+            "pending": false,
+            "q_e": null,
+            "reason": "NORMAL_RESERVE_IMPOSSIBLE",
+            "rescue_slack_seconds": null,
+            "rescue_wait_seconds": 0.0
+          },
+          "time": 304.99999999999994,
+          "type": "emergency_triggered"
+        },
+        "selected_id": "initial_outer_00"
+      },
+      "screenshots": [
+        {
+          "path": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261023\\v7_replay_checks\\medium_rh_cp_sat_coexist_wait_reserved_normal.png",
+          "time": 304.99999999999994,
+          "counts": {
+            "WAIT": 1,
+            "RESERVED": 0,
+            "ACTIVE": 0,
+            "record_aircraft": 47,
+            "controller_aircraft": 47,
+            "record_visible": 34,
+            "snapshot_uavs": 34,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "snapshot_completed": 13,
+            "active_normal_finals": 4,
+            "ground_service": 4,
+            "future_pad_reservations": 3
+          }
+        },
+        {
+          "path": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261023\\v7_replay_checks\\medium_rh_cp_sat_rescue_start_plus001.png",
+          "time": 415.00999999999976,
+          "counts": {
+            "WAIT": 0,
+            "RESERVED": 3,
+            "ACTIVE": 1,
+            "record_aircraft": 51,
+            "controller_aircraft": 51,
+            "record_visible": 33,
+            "snapshot_uavs": 33,
+            "record_service": 5,
+            "snapshot_service": 5,
+            "snapshot_completed": 18,
+            "active_normal_finals": 1,
+            "ground_service": 5,
+            "future_pad_reservations": 5
+          }
+        },
+        {
+          "path": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261023\\v7_replay_checks\\medium_rh_cp_sat_rescue_touchdown_plus001.png",
+          "time": 473.50999999999976,
+          "counts": {
+            "WAIT": 3,
+            "RESERVED": 2,
+            "ACTIVE": 2,
+            "record_aircraft": 55,
+            "controller_aircraft": 55,
+            "record_visible": 33,
+            "snapshot_uavs": 33,
+            "record_service": 3,
+            "snapshot_service": 3,
+            "snapshot_completed": 22,
+            "active_normal_finals": 1,
+            "ground_service": 3,
+            "future_pad_reservations": 5
+          }
+        },
+        {
+          "path": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261023\\v7_replay_checks\\medium_rh_cp_sat_end600.png",
+          "time": 600.0,
+          "counts": {
+            "WAIT": 5,
+            "RESERVED": 5,
+            "ACTIVE": 2,
+            "record_aircraft": 60,
+            "controller_aircraft": 60,
+            "record_visible": 35,
+            "snapshot_uavs": 35,
+            "record_service": 4,
+            "snapshot_service": 4,
+            "snapshot_completed": 25,
+            "active_normal_finals": 0,
+            "ground_service": 4,
+            "future_pad_reservations": 6
+          }
+        }
+      ]
+    }
+  ],
+  "missing_event_evidence": [
+    {
+      "scene": "stress",
+      "method": "energy_slack",
+      "audit_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_need_v7_stress_600s_20261023\\energy_slack\\audit_0600.json",
+      "audit_issue": {
+        "code": "EVENT_FRAME_MISSING",
+        "event_type": "rescue_warning",
+        "message": "exact event timestamp has no recorded frame",
+        "time": 340.1999999999998
+      },
+      "matching_events": [
+        {
+          "event": {
+            "aircraft_id": "initial_outer_03",
+            "details": {
+              "normal_margin": null,
+              "normal_status": "UNKNOWN",
+              "soc": 0.3271457152020465
+            },
+            "time": 340.1999999999998,
+            "type": "rescue_warning"
+          },
+          "exact_frame_present": false,
+          "adjacent_frames": [
+            {
+              "time": 339.99999999999983,
+              "aircraft": {
+                "id": "initial_outer_03",
+                "status": "TRANSFER_M_I",
+                "soc": 0.37039917578085946,
+                "emergency": {
+                  "charged": false,
+                  "deadline_missed": false,
+                  "declaration_ring": null,
+                  "declaration_time": null,
+                  "declared": false,
+                  "eligible": false,
+                  "normal_estimate_epoch": null,
+                  "normal_estimate_source": null,
+                  "normal_margin": 0.02074582761128352,
+                  "normal_path_soc": null,
+                  "normal_path_wait_seconds": 0.0,
+                  "normal_status": "UNKNOWN",
+                  "pending": false,
+                  "q_e": null,
+                  "reference_missing": false,
+                  "rescue_reason": null,
+                  "rescue_slack_seconds": null,
+                  "rescue_wait_seconds": null,
+                  "start_ring": null,
+                  "start_time": null,
+                  "state": "NONE",
+                  "warning": false
+                }
+              }
+            },
+            {
+              "time": 340.9999999999998,
+              "aircraft": {
+                "id": "initial_outer_03",
+                "status": "TRANSFER_M_I",
+                "soc": 0.36942971509691597,
+                "emergency": {
+                  "charged": false,
+                  "deadline_missed": false,
+                  "declaration_ring": null,
+                  "declaration_time": null,
+                  "declared": false,
+                  "eligible": false,
+                  "normal_estimate_epoch": null,
+                  "normal_estimate_source": null,
+                  "normal_margin": null,
+                  "normal_path_soc": null,
+                  "normal_path_wait_seconds": 0.0,
+                  "normal_status": "UNKNOWN",
+                  "pending": false,
+                  "q_e": null,
+                  "reference_missing": false,
+                  "rescue_reason": null,
+                  "rescue_slack_seconds": null,
+                  "rescue_wait_seconds": null,
+                  "start_ring": null,
+                  "start_time": null,
+                  "state": "NONE",
+                  "warning": true
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scene": "stress",
+      "method": "energy_slack",
+      "audit_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_need_v7_stress_600s_20261023\\energy_slack\\audit_0600.json",
+      "audit_issue": {
+        "code": "EVENT_FRAME_MISSING",
+        "event_type": "rescue_warning",
+        "message": "exact event timestamp has no recorded frame",
+        "time": 426.3999999999999
+      },
+      "matching_events": [
+        {
+          "event": {
+            "aircraft_id": "req_000007",
+            "details": {
+              "normal_margin": 0.027357339548440107,
+              "normal_status": "UNKNOWN",
+              "soc": 0.3496589008775207
+            },
+            "time": 426.3999999999999,
+            "type": "rescue_warning"
+          },
+          "exact_frame_present": false,
+          "adjacent_frames": [
+            {
+              "time": 425.99999999999994,
+              "aircraft": {
+                "id": "req_000007",
+                "status": "HOLD_INNER",
+                "soc": 0.3501401392241883,
+                "emergency": {
+                  "charged": false,
+                  "deadline_missed": false,
+                  "declaration_ring": null,
+                  "declaration_time": null,
+                  "declared": false,
+                  "eligible": false,
+                  "normal_estimate_epoch": 425.0,
+                  "normal_estimate_source": [
+                    "inner",
+                    13,
+                    3,
+                    425.0
+                  ],
+                  "normal_margin": 0.029041673761776632,
+                  "normal_path_soc": 0.07230156132908062,
+                  "normal_path_wait_seconds": 0.0,
+                  "normal_status": "UNKNOWN",
+                  "pending": false,
+                  "q_e": null,
+                  "reference_missing": false,
+                  "rescue_reason": null,
+                  "rescue_slack_seconds": null,
+                  "rescue_wait_seconds": null,
+                  "start_ring": null,
+                  "start_time": null,
+                  "state": "NONE",
+                  "warning": false
+                }
+              }
+            },
+            {
+              "time": 426.9999999999999,
+              "aircraft": {
+                "id": "req_000007",
+                "status": "HOLD_INNER",
+                "soc": 0.34893704335751935,
+                "emergency": {
+                  "charged": false,
+                  "deadline_missed": false,
+                  "declaration_ring": null,
+                  "declaration_time": null,
+                  "declared": false,
+                  "eligible": false,
+                  "normal_estimate_epoch": 425.0,
+                  "normal_estimate_source": [
+                    "inner",
+                    13,
+                    3,
+                    425.0
+                  ],
+                  "normal_margin": 0.027357339548440107,
+                  "normal_path_soc": 0.07230156132908062,
+                  "normal_path_wait_seconds": 0.0,
+                  "normal_status": "UNKNOWN",
+                  "pending": false,
+                  "q_e": null,
+                  "reference_missing": false,
+                  "rescue_reason": null,
+                  "rescue_slack_seconds": null,
+                  "rescue_wait_seconds": null,
+                  "start_ring": null,
+                  "start_time": null,
+                  "state": "NONE",
+                  "warning": true
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scene": "stress",
+      "method": "energy_slack",
+      "audit_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_need_v7_stress_600s_20261023\\energy_slack\\audit_0600.json",
+      "audit_issue": {
+        "code": "EVENT_FRAME_MISSING",
+        "event_type": "rescue_warning",
+        "message": "exact event timestamp has no recorded frame",
+        "time": 572.4000000000001
+      },
+      "matching_events": [
+        {
+          "event": {
+            "aircraft_id": "req_000018",
+            "details": {
+              "normal_margin": 0.013214175878795476,
+              "normal_status": "UNKNOWN",
+              "soc": 0.3978386186336154
+            },
+            "time": 572.4000000000001,
+            "type": "rescue_warning"
+          },
+          "exact_frame_present": false,
+          "adjacent_frames": [
+            {
+              "time": 572.0,
+              "aircraft": {
+                "id": "req_000018",
+                "status": "HOLD_OUTER",
+                "soc": 0.39819175697336423,
+                "emergency": {
+                  "charged": false,
+                  "deadline_missed": false,
+                  "declaration_ring": null,
+                  "declaration_time": null,
+                  "declared": false,
+                  "eligible": false,
+                  "normal_estimate_epoch": 570.0,
+                  "normal_estimate_source": [
+                    "outer",
+                    18,
+                    1,
+                    570.0
+                  ],
+                  "normal_margin": 0.015333005917288034,
+                  "normal_path_soc": 0.1346244427548199,
+                  "normal_path_wait_seconds": 0.0,
+                  "normal_status": "UNKNOWN",
+                  "pending": false,
+                  "q_e": null,
+                  "reference_missing": true,
+                  "rescue_reason": null,
+                  "rescue_slack_seconds": null,
+                  "rescue_wait_seconds": null,
+                  "start_ring": null,
+                  "start_time": null,
+                  "state": "NONE",
+                  "warning": false
+                }
+              }
+            },
+            {
+              "time": 573.0,
+              "aircraft": {
+                "id": "req_000018",
+                "status": "HOLD_OUTER",
+                "soc": 0.39730891112399236,
+                "emergency": {
+                  "charged": false,
+                  "deadline_missed": false,
+                  "declaration_ring": null,
+                  "declaration_time": null,
+                  "declared": false,
+                  "eligible": false,
+                  "normal_estimate_epoch": 570.0,
+                  "normal_estimate_source": [
+                    "outer",
+                    18,
+                    1,
+                    570.0
+                  ],
+                  "normal_margin": 0.013214175878795476,
+                  "normal_path_soc": 0.1346244427548199,
+                  "normal_path_wait_seconds": 0.0,
+                  "normal_status": "UNKNOWN",
+                  "pending": false,
+                  "q_e": null,
+                  "reference_missing": true,
+                  "rescue_reason": null,
+                  "rescue_slack_seconds": null,
+                  "rescue_wait_seconds": null,
+                  "start_ring": null,
+                  "start_time": null,
+                  "state": "NONE",
+                  "warning": true
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scene": "medium",
+      "method": "energy_slack",
+      "audit_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_need_v7_medium_600s_20261023\\energy_slack\\audit_0600.json",
+      "audit_issue": {
+        "code": "EVENT_FRAME_MISSING",
+        "event_type": "rescue_warning",
+        "message": "exact event timestamp has no recorded frame",
+        "time": 479.34282040907186
+      },
+      "matching_events": [
+        {
+          "event": {
+            "aircraft_id": "req_000013",
+            "details": {
+              "normal_margin": null,
+              "normal_status": "UNKNOWN",
+              "soc": 0.34748475250888833
+            },
+            "time": 479.34282040907186,
+            "type": "rescue_warning"
+          },
+          "exact_frame_present": false,
+          "adjacent_frames": [
+            {
+              "time": 479.1428204090719,
+              "aircraft": {
+                "id": "req_000013",
+                "status": "TRANSFER_M_I",
+                "soc": 0.40985898008264066,
+                "emergency": {
+                  "charged": false,
+                  "deadline_missed": false,
+                  "declaration_ring": null,
+                  "declaration_time": null,
+                  "declared": false,
+                  "eligible": false,
+                  "normal_estimate_epoch": null,
+                  "normal_estimate_source": null,
+                  "normal_margin": 0.06031760270960407,
+                  "normal_path_soc": null,
+                  "normal_path_wait_seconds": 0.0,
+                  "normal_status": "UNKNOWN",
+                  "pending": false,
+                  "q_e": null,
+                  "reference_missing": false,
+                  "rescue_reason": null,
+                  "rescue_slack_seconds": null,
+                  "rescue_wait_seconds": null,
+                  "start_ring": null,
+                  "start_time": null,
+                  "state": "NONE",
+                  "warning": false
+                }
+              }
+            },
+            {
+              "time": 480.0,
+              "aircraft": {
+                "id": "req_000013",
+                "status": "TRANSFER_M_I",
+                "soc": 0.40903429651292816,
+                "emergency": {
+                  "charged": false,
+                  "deadline_missed": false,
+                  "declaration_ring": null,
+                  "declaration_time": null,
+                  "declared": false,
+                  "eligible": false,
+                  "normal_estimate_epoch": 480.0,
+                  "normal_estimate_source": [
+                    "inner",
+                    16,
+                    3,
+                    529.1428204090719
+                  ],
+                  "normal_margin": 0.030313366086891558,
+                  "normal_path_soc": 0.06717138642199677,
+                  "normal_path_wait_seconds": 0.0,
+                  "normal_status": "UNKNOWN",
+                  "pending": false,
+                  "q_e": null,
+                  "reference_missing": false,
+                  "rescue_reason": null,
+                  "rescue_slack_seconds": null,
+                  "rescue_wait_seconds": null,
+                  "start_ring": null,
+                  "start_time": null,
+                  "state": "NONE",
+                  "warning": true
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scene": "medium",
+      "method": "energy_slack",
+      "audit_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_need_v7_medium_600s_20261023\\energy_slack\\audit_0600.json",
+      "audit_issue": {
+        "code": "EVENT_FRAME_MISSING",
+        "event_type": "rescue_warning",
+        "message": "exact event timestamp has no recorded frame",
+        "time": 564.3428204090719
+      },
+      "matching_events": [
+        {
+          "event": {
+            "aircraft_id": "req_000015",
+            "details": {
+              "normal_margin": null,
+              "normal_status": "UNKNOWN",
+              "soc": 0.32254301008381375
+            },
+            "time": 564.3428204090719,
+            "type": "rescue_warning"
+          },
+          "exact_frame_present": false,
+          "adjacent_frames": [
+            {
+              "time": 564.1428204090719,
+              "aircraft": {
+                "id": "req_000015",
+                "status": "TRANSFER_M_I",
+                "soc": 0.3913602052012554,
+                "emergency": {
+                  "charged": false,
+                  "deadline_missed": false,
+                  "declaration_ring": null,
+                  "declaration_time": null,
+                  "declared": false,
+                  "eligible": false,
+                  "normal_estimate_epoch": null,
+                  "normal_estimate_source": null,
+                  "normal_margin": 0.037003157827952715,
+                  "normal_path_soc": null,
+                  "normal_path_wait_seconds": 0.0,
+                  "normal_status": "UNKNOWN",
+                  "pending": false,
+                  "q_e": null,
+                  "reference_missing": false,
+                  "rescue_reason": null,
+                  "rescue_slack_seconds": null,
+                  "rescue_wait_seconds": null,
+                  "start_ring": null,
+                  "start_time": null,
+                  "state": "NONE",
+                  "warning": false
+                }
+              }
+            },
+            {
+              "time": 565.0,
+              "aircraft": {
+                "id": "req_000015",
+                "status": "TRANSFER_M_I",
+                "soc": 0.39052969510596475,
+                "emergency": {
+                  "charged": false,
+                  "deadline_missed": false,
+                  "declaration_ring": null,
+                  "declaration_time": null,
+                  "declared": false,
+                  "eligible": false,
+                  "normal_estimate_epoch": 565.0,
+                  "normal_estimate_source": [
+                    "inner",
+                    12,
+                    3,
+                    629.1428204090719
+                  ],
+                  "normal_margin": 0.007325349781401813,
+                  "normal_path_soc": 0.06521766030241193,
+                  "normal_path_wait_seconds": 0.0,
+                  "normal_status": "UNKNOWN",
+                  "pending": false,
+                  "q_e": null,
+                  "reference_missing": false,
+                  "rescue_reason": null,
+                  "rescue_slack_seconds": null,
+                  "rescue_wait_seconds": null,
+                  "start_ring": null,
+                  "start_time": null,
+                  "state": "NONE",
+                  "warning": true
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scene": "medium",
+      "method": "rh_cp_sat",
+      "audit_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_need_v7_medium_600s_20261023\\rh_cp_sat\\audit_0600.json",
+      "audit_issue": {
+        "code": "EVENT_FRAME_MISSING",
+        "event_type": "rescue_warning",
+        "message": "exact event timestamp has no recorded frame",
+        "time": 495.2
+      },
+      "matching_events": [
+        {
+          "event": {
+            "aircraft_id": "req_000012",
+            "details": {
+              "normal_margin": 0.021868669921767003,
+              "normal_status": "UNKNOWN",
+              "soc": 0.3499798622969015
+            },
+            "time": 495.2,
+            "type": "rescue_warning"
+          },
+          "exact_frame_present": false,
+          "adjacent_frames": [
+            {
+              "time": 495.0,
+              "aircraft": {
+                "id": "req_000012",
+                "status": "HOLD_INNER",
+                "soc": 0.35022048147023527,
+                "emergency": {
+                  "charged": false,
+                  "deadline_missed": false,
+                  "declaration_ring": null,
+                  "declaration_time": null,
+                  "declared": false,
+                  "eligible": false,
+                  "normal_estimate_epoch": 495.0,
+                  "normal_estimate_source": [
+                    "inner",
+                    9,
+                    3,
+                    495.0
+                  ],
+                  "normal_margin": 0.022109289095100793,
+                  "normal_path_soc": 0.07811119237513446,
+                  "normal_path_wait_seconds": 0.0,
+                  "normal_status": "UNKNOWN",
+                  "pending": false,
+                  "q_e": null,
+                  "reference_missing": false,
+                  "rescue_reason": null,
+                  "rescue_slack_seconds": null,
+                  "rescue_wait_seconds": null,
+                  "start_ring": null,
+                  "start_time": null,
+                  "state": "NONE",
+                  "warning": false
+                }
+              }
+            },
+            {
+              "time": 495.99999999999994,
+              "aircraft": {
+                "id": "req_000012",
+                "status": "HOLD_INNER",
+                "soc": 0.3490173856035663,
+                "emergency": {
+                  "charged": false,
+                  "deadline_missed": false,
+                  "declaration_ring": null,
+                  "declaration_time": null,
+                  "declared": false,
+                  "eligible": false,
+                  "normal_estimate_epoch": 495.0,
+                  "normal_estimate_source": [
+                    "inner",
+                    9,
+                    3,
+                    495.0
+                  ],
+                  "normal_margin": 0.021868669921767003,
+                  "normal_path_soc": 0.07811119237513446,
+                  "normal_path_wait_seconds": 0.0,
+                  "normal_status": "UNKNOWN",
+                  "pending": false,
+                  "q_e": null,
+                  "reference_missing": false,
+                  "rescue_reason": null,
+                  "rescue_slack_seconds": null,
+                  "rescue_wait_seconds": null,
+                  "start_ring": null,
+                  "start_time": null,
+                  "state": "NONE",
+                  "warning": true
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scene": "medium",
+      "method": "rh_cp_sat",
+      "audit_path": "D:\\7_codespace\\training_outputs\\terminal\\stage2_rescue_need_v7_medium_600s_20261023\\rh_cp_sat\\audit_0600.json",
+      "audit_issue": {
+        "code": "EVENT_FRAME_MISSING",
+        "event_type": "rescue_warning",
+        "message": "exact event timestamp has no recorded frame",
+        "time": 539.2
+      },
+      "matching_events": [
+        {
+          "event": {
+            "aircraft_id": "req_000013",
+            "details": {
+              "normal_margin": 0.030295437395684244,
+              "normal_status": "UNKNOWN",
+              "soc": 0.34683110763031233
+            },
+            "time": 539.2,
+            "type": "rescue_warning"
+          },
+          "exact_frame_present": false,
+          "adjacent_frames": [
+            {
+              "time": 539.0,
+              "aircraft": {
+                "id": "req_000013",
+                "status": "HOLD_INNER",
+                "soc": 0.3470717268036462,
+                "emergency": {
+                  "charged": false,
+                  "deadline_missed": false,
+                  "declaration_ring": null,
+                  "declaration_time": null,
+                  "declared": false,
+                  "eligible": false,
+                  "normal_estimate_epoch": 535.8713360340719,
+                  "normal_estimate_source": [
+                    "inner",
+                    14,
+                    3,
+                    535.8713360340719
+                  ],
+                  "normal_margin": 0.034300139254622275,
+                  "normal_path_soc": 0.0665356702346281,
+                  "normal_path_wait_seconds": 0.0,
+                  "normal_status": "UNKNOWN",
+                  "pending": false,
+                  "q_e": null,
+                  "reference_missing": false,
+                  "rescue_reason": null,
+                  "rescue_slack_seconds": null,
+                  "rescue_wait_seconds": null,
+                  "start_ring": null,
+                  "start_time": null,
+                  "state": "NONE",
+                  "warning": false
+                }
+              }
+            },
+            {
+              "time": 540.0,
+              "aircraft": {
+                "id": "req_000013",
+                "status": "HOLD_INNER",
+                "soc": 0.34586863093697723,
+                "emergency": {
+                  "charged": false,
+                  "deadline_missed": false,
+                  "declaration_ring": null,
+                  "declaration_time": null,
+                  "declared": false,
+                  "eligible": false,
+                  "normal_estimate_epoch": 540.0,
+                  "normal_estimate_source": [
+                    "inner",
+                    14,
+                    3,
+                    540.0
+                  ],
+                  "normal_margin": 0.028531586238168094,
+                  "normal_path_soc": 0.06733704469880912,
+                  "normal_path_wait_seconds": 0.0,
+                  "normal_status": "UNKNOWN",
+                  "pending": false,
+                  "q_e": 0.195378684924757,
+                  "reference_missing": false,
+                  "rescue_reason": null,
+                  "rescue_slack_seconds": 24.436787324164854,
+                  "rescue_wait_seconds": 100.64879411738491,
+                  "start_ring": null,
+                  "start_time": null,
+                  "state": "NONE",
+                  "warning": true
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "visual_limitations": [
+    "Existing HUD text overlaps central trajectory/aircraft labels in the production viewer. Images support qualitative coexistence checks; all annotations are not uniformly clear. Counts and full rescue/status/SOC records are available in the query JSON.",
+    "Offscreen load/render success is not human acceptance. HUMAN_PENDING retained."
+  ],
+  "launch_ps1": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261023\\v7_replay_checks\\launch_replays.ps1",
+  "launch_python_ast_parse_count": 6,
+  "contactsheet": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261023\\v7_replay_checks\\contactsheet.png"
+}

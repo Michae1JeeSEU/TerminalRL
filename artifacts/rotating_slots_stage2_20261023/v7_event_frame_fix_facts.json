@@ -1,0 +1,88 @@
+{
+  "scope": "future logging fix only; frozen official v7 audits unchanged",
+  "before_source": "217c1f4 unmodified local world.py",
+  "before_observed": {
+    "transfer_duration_seconds": 40.0,
+    "transfer_soc_cost": 0.03245523350826669,
+    "warning_time": 0.33,
+    "frame_times": [0.0, 0.13, 1.0, 1.4],
+    "decision_times": [0.0, 0.13],
+    "exact_warning_frame": false
+  },
+  "legacy_recording_replay_audit": {
+    "fixture": "same real world with only the new monitor-only forced recording call suppressed",
+    "path": "artifacts/rotating_slots_stage2_20261023/v7_event_frame_fix_tests_c/test_legacy_frame_omission_rep0/legacy_recording",
+    "status": "FAIL",
+    "state_frames": 4,
+    "energy_intervals": 3,
+    "physical_outcome": "IN_PROGRESS",
+    "issues": [{"code": "EVENT_FRAME_MISSING", "event_type": "rescue_warning", "time": 0.33}]
+  },
+  "fixed_local_replay_audits": [
+    {
+      "path": "artifacts/rotating_slots_stage2_20261023/v7_event_frame_fix_tests_c/test_off_tick_monitor_warning_0/bundle",
+      "recording": "memory",
+      "status": "PASS",
+      "state_frames": 5,
+      "energy_intervals": 4,
+      "physical_outcome": "IN_PROGRESS",
+      "issues": []
+    },
+    {
+      "path": "artifacts/rotating_slots_stage2_20261023/v7_event_frame_fix_tests_c/test_off_tick_monitor_warning_1/bundle",
+      "recording": "BufferedStateJSONLSink",
+      "status": "PASS",
+      "state_frames": 5,
+      "energy_intervals": 4,
+      "physical_outcome": "IN_PROGRESS",
+      "issues": []
+    },
+    {
+      "path": "artifacts/rotating_slots_stage2_20261023/v7_event_frame_fix_tests_c/test_off_tick_monitor_warning_1/after_flush",
+      "recording": "BufferedStateJSONLSink after same-time flush/record/flush",
+      "status": "PASS",
+      "state_frames": 5,
+      "energy_intervals": 4,
+      "physical_outcome": "IN_PROGRESS",
+      "issues": []
+    }
+  ],
+  "equivalence_checks": {
+    "compared": ["every executed integration interval snapshot", "SOC", "energy", "pose", "active plans", "soft plans", "slot reservations", "pad reservations", "dependencies", "costs", "targeted-energy ledger", "events", "decision callback inputs", "dispatch times", "final metrics"],
+    "equal": true,
+    "record_count_difference": 1,
+    "added_frame_time": 0.33,
+    "normal_reservation_unchanged": true,
+    "active_transfer_unchanged": true,
+    "persistent_warning_end_time": 11.4,
+    "persistent_warning_event_count": 1,
+    "persistent_warning_frame_count": 15,
+    "persistent_warning_off_tick_frames": [0.13, 0.33, 11.4]
+  },
+  "source_changes": {
+    "file": "terminal_marl/core/rotating_slots/world.py",
+    "added_lines": 5,
+    "deleted_lines": 0,
+    "behavior": "record a precise frame for newly emitted monitor events when the same iteration does not dispatch, before physical time advances",
+    "audit_modified": false,
+    "official_outputs_modified": false,
+    "server_operations": false,
+    "commit_or_push_performed": false
+  },
+  "tests": [
+    {
+      "command": ".\\venv\\Scripts\\python.exe -m pytest tests/test_rotating_slots_event_frames_v7.py -q --basetemp=artifacts/rotating_slots_stage2_20261023/v7_event_frame_fix_tests_c -p no:cacheprovider",
+      "exit_code": 0,
+      "passed": 5,
+      "wall_seconds": 3.88
+    },
+    {
+      "command": ".\\venv\\Scripts\\python.exe -m pytest tests/test_rotating_slots_rescue_declaration_v7.py tests/test_stage2_rescue_opportunity_v6.py tests/test_rotating_slots_replay.py tests/test_rotating_slots_replay_reservations.py tests/test_rotating_slots_practical_world.py tests/test_rotating_slots_stage2_audit.py -q --basetemp=artifacts/rotating_slots_stage2_20261023/v7_event_frame_fix_regression -p no:cacheprovider --junitxml=artifacts/rotating_slots_stage2_20261023/v7_event_frame_fix_regression_results.xml",
+      "exit_code": 0,
+      "passed": 91,
+      "wall_seconds": 19.61,
+      "junit_xml": "artifacts/rotating_slots_stage2_20261023/v7_event_frame_fix_regression_results.xml"
+    }
+  ],
+  "historical_boundary": "This local future logging repair does not alter or reclassify the frozen official v7 experiment source or its original FAIL audits."
+}

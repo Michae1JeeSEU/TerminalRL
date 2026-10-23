@@ -2233,6 +2233,7 @@ class RotatingSlotWorld:
                 if self._stage2_enabled():
                     self._pending_dispatch = self._pending_dispatch or triggers
                 break
+            monitor_event_count = len(self.events)
             monitor_wall, monitor_cpu = walltime.perf_counter(), walltime.process_time()
             triggers = self._update_emergency() or triggers
             monitor_wall, monitor_cpu = walltime.perf_counter()-monitor_wall, walltime.process_time()-monitor_cpu
@@ -2277,6 +2278,10 @@ class RotatingSlotWorld:
                     self._monitor_timing_pending = (0.,0.)
                     self._pending_dispatch = False
                 self.cpu["decision"] += walltime.perf_counter()-cpu
+                self._record(force=True)
+            elif len(self.events) > monitor_event_count:
+                # Monitor-only events need the exact pre-advance physical frame.
+                # Dispatch already records the final state at this timestamp.
                 self._record(force=True)
             descent_starts = [self._descent_start(p) for p in self.active.values()]
             descent_starts = [t for t in descent_starts if t is not None]
