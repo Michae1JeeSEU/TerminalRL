@@ -1,5 +1,12 @@
 # Equal linear speed profile
 
+The linear-speed wave has completed all three fresh 0-to-600 s scenarios for both
+methods. All six exported audits passed with zero issues and CERTIFIED continuous
+separation. All three fresh angular control campaigns have launched and their six
+method streams passed startup verification at 22:21:23 UTC+08:00 on 2026-10-23.
+Their completion, audits and matched rotation-profile comparison remain pending.
+The completed result table below describes the linear wave only.
+
 `rotation_profile` is independent of `service_profile`. The default
 `equal_angular` preserves the two existing frozen YAML payloads and their hashes.
 `equal_linear_21_v1` selects a full frozen baseline-service or half-service YAML
@@ -7,7 +14,10 @@ with common tangential speed 21 m/s. Clockwise angular speeds are outer 0.035,
 middle 21/450, and inner 0.07 rad/s. The old common-angular field remains as the
 unchanged legacy reference; runtime ring motion uses `ring_angular_speed`.
 The chosen 21 m/s preserves the existing outer-ring speed, 600*0.035=21 m/s,
-while changing the middle and inner ring clocks.
+while changing the middle and inner ring clocks. The user explicitly confirmed
+this choice of 21 m/s. The rotation comparison jointly changes relative-phase
+dynamics, middle/inner tangential speeds (15.75/10.5 to 21 m/s), and centripetal
+accelerations; it is not an isolated phase ablation.
 
 Only rotation fields differ from the corresponding old service payload. Ring
 geometry/capacity, vehicle and safety limits, SOC and arrival streams, service
@@ -92,14 +102,13 @@ and `artifacts/rotating_slots/equal_linear21/new_profile_final_tests.log` in the
 checkout. The local prepare serialization test uses the explicitly documented
 stubs; actual CP evidence comes from the server tiny-method runs.
 
-## Planned formal comparison
+## Formal comparison protocol and current status
 
-The three `equal_linear_21_v1` formal scenarios below are running, each freshly
-initialized at t=0 with a target of t=600 for both EnergySlack and RHCP. Startup
-has been verified; no t=600 results have been obtained. Matched fresh
-`equal_angular` controls have not been prepared or launched; they follow this
-wave using the same scenario inputs, CPU pairs and budgets after fresh resource
-preflight. All conditions retain
+The three `equal_linear_21_v1` formal scenarios below completed the requested
+t=600 boundary, each freshly initialized at t=0 for both EnergySlack and RHCP.
+Matched fresh `equal_angular` controls have launched using the same scenario
+inputs, CPU pairs and budgets after fresh resource preflight. Startup is verified;
+their t=600 results and audits remain pending. All conditions retain
 `service_half_v1`, `rescue_need_v7`, `quality_v5`, the frozen SOC/arrival streams,
 and the existing geometry, safety/vehicle limits, service durations and solver
 budgets.
@@ -110,16 +119,136 @@ budgets.
 | medium24_rate150_v1 | 24 | 150 | 8, 10 |
 | stress36_rate180_v1 | 36 | 180 | 0, 2 |
 
-Launch preflight confirmed these CPU assignments for the running linear wave,
-with no overlapping prior computation. The angular control wave must repeat
-preflight before reusing them. Each rotation/scenario combination has a new
+Launch preflight confirmed these CPU assignments for the completed linear wave,
+with no overlapping prior computation. The angular control wave subsequently
+repeated preflight and reused the same pairs. Each rotation/scenario combination has a new
 output root and matching locally frozen provenance. No historical checkpoint is
 an initialization source. The historical runs with an inherited v6 prefix and a
 v7 suffix, recorded in [the v7 status document](rescue_need_v7_status.md), do not
-supply a causal rotation-profile control. Formal comparison outcomes remain
-unobserved.
+supply a causal rotation-profile control. A matched rotation-profile comparison
+remains pending the fresh angular results.
 
-## Running linear wave: launch record
+## Completed linear wave: 600 s results
+
+Every campaign has `common_completed_time_s=600` and wrapper exit code 0. The
+campaign schema retains `target_s=3600` and therefore records
+`status=PARTIAL_REQUESTED_WINDOW`; this does not indicate an incomplete requested
+600-second run. At the 600-second cut, pending aircraft remain in the population
+accounting and are not counted as failures.
+
+| Scenario | Method | Normal landings | Emergency landings | Airborne pending | Offered | Energy (kWh) |
+|---|---|---:|---:|---:|---:|---:|
+| diagnostic 18 / 120 per hour | EnergySlack | 22 | 0 | 24 | 46 | 281.0471 |
+| diagnostic 18 / 120 per hour | RHCP | 24 | 0 | 22 | 46 | 265.9599 |
+| medium 24 / 150 per hour | EnergySlack | 16 | 0 | 41 | 57 | 386.2639 |
+| medium 24 / 150 per hour | RHCP | 14 | 0 | 43 | 57 | 389.8847 |
+| stress 36 / 180 per hour | EnergySlack | 6 | 0 | 69 | 75 | 588.7542 |
+| stress 36 / 180 per hour | RHCP | 6 | 0 | 69 | 75 | 588.4732 |
+
+All six summaries report `F_energy_total=0`, `N_upstream_pending=0`,
+`terminated_invalid=false` and `conservation=true`. No `invalid.json` or
+`error.json` marker is present in their method directories. Zero emergency
+landings does not mean no emergency declarations: the EnergySlack/RHCP declaration
+counts are 3/4, 10/11 and 19/22 for diagnostic, medium and stress respectively.
+
+Normal-scheduling callback wall times from `summary_0600.json.normal_timing`
+are below. These measure the normal scheduling callback, not every executor
+callback and not pure solver time.
+
+| Scenario | EnergySlack mean / P95 (s) | RHCP mean / P95 (s) | RHCP solver-entered callbacks |
+|---|---|---|---|
+| diagnostic | 15.0506 / 18.1960 | 17.6144 / 23.2966 | 320 / 320 |
+| medium | 18.9143 / 24.2285 | 21.7036 / 28.7400 | 308 / 308 |
+| stress | 21.0746 / 30.1384 | 24.2182 / 30.9865 | 261 / 261 |
+
+In stress, all 259 EnergySlack and all 261 RHCP normal callbacks recorded
+`CANDIDATE_WORK_CUTOFF`. These comparisons concern the specified planners under
+finite planning budgets; they do not establish an unconstrained physical landing
+capacity bound. Both stress methods landed six initial-cohort aircraft and none
+of the 39 new requests by 600 s, while each recorded 44 completed cross-ring
+transfers. Diagnostic RHCP recorded two actual `FINAL_EMERGENCY` starts but zero
+emergency touchdowns by 600 s. Starts, completed transfers and landings therefore
+refer to distinct events.
+
+The primary descriptive comparison is scenario-dependent: RHCP produced two more
+normal landings with 15.0872 kWh less energy in diagnostic, two fewer normal
+landings with 3.6208 kWh more energy in medium, and the same six landings with
+approximately 0.2810 kWh less energy in stress. These are one-seed outcomes within
+the linear profile. They establish neither general method dominance nor a causal
+rotation-profile effect; the matched angular comparison is still pending.
+
+| Scenario | End time, 2026-10-23 UTC+08:00 | Campaign wall time (s, including preparation credit) |
+|---|---|---:|
+| diagnostic | 20:20:46 | 8294.1698 |
+| medium | 21:12:37 | 11399.3593 |
+| stress | 21:55:12 | 13948.6680 |
+
+All six `audit_0600.json` files record `status=PASS`, `issue_count=0` and
+`continuous_separation=CERTIFIED`. Their count and derived-cost values agree
+with the corresponding direct `summary_0600.json` metrics. The audit scope is an
+independent state/event ledger using the shared frozen trajectory, energy and
+continuous-separation kernels; it is not an empirical energy oracle. It retains
+the existing additive peak-error envelope and does not reconstruct precision-switch
+events. The audit physical outcome remains IN_PROGRESS because aircraft are
+still airborne at the time cut; human visual review remains pending.
+
+The completed output roots are
+`/home/user/training_outputs/terminal/equal_linear21_diagnostic_600s_20261023`,
+`equal_linear21_medium_600s_20261023`, and `equal_linear21_stress_600s_20261023`
+under that same server parent. Their local synchronized counterparts are under
+`D:\7_codespace\training_outputs\terminal` with the same basenames. In each
+root, both `energy_slack` and `rh_cp_sat` contain `summary_0600.json`,
+`audit_0600.json`, `checkpoint_0600.json`, `replay_0600/`, and
+`archive_status.json`; root-level `campaign.json`, `exit_code.txt` and
+`end_timestamp.txt` record completion. No output was rerun or modified for this
+result update.
+
+## Angular controls: verified startup record
+
+All three fresh controls started on 2026-10-23 at 22:20:19 UTC+08:00. Startup was
+verified at 22:21:23: six state streams and checkpoints had been created, every
+stream had positive simulation time, and no error or terminal marker was present.
+Observed method-process CPU use was approximately 99.5%-99.9%. The PIDs and frame
+times below are historical startup observations, not claims about current process
+liveness or completion.
+
+All output roots below are under `/home/user/training_outputs/terminal/`.
+State-time pairs are EnergySlack / RHCP respectively. Method PIDs are omitted
+because their mapping to method order was not confirmed.
+
+| Control / output-root basename | Wrapper PID | Runner PID | CPUs | Startup state times (s) |
+|---|---:|---:|---|---|
+| equal_angular_control_diagnostic_600s_20261023 | 183635 | 183638 | 4 / 6 | 11 / 9 |
+| equal_angular_control_medium_600s_20261023 | 183636 | 183639 | 8 / 10 | 9 / 4 |
+| equal_angular_control_stress_600s_20261023 | 183634 | 183637 | 0 / 2 | 7 / 4 |
+
+The controls use the same pinned Python, numerical threads=1,
+`--preparation-wall-seconds 300 --campaign-wall-budget-seconds 36000
+--archive-reserve-seconds 1800`, and `run --target 600` with their paired CPUs.
+Locally frozen files are
+`artifacts/rotating_slots/equal_linear21/angular_diagnostic18_provenance.json`,
+`angular_medium24_provenance.json`, and `angular_stress36_provenance.json` in that
+same directory. They record revision bce1f90 and a clean freeze. Their source-file
+fingerprints and aggregate source hash
+`b89f59e4795ca7f1779a3ad43da16a00cc7ed911cb6ad31ebd7048d654812517` are identical
+to the linear wave's b7d0d24 source; the selected physical payload change is the
+rotation profile.
+
+Matched fixture comparisons passed for all three pairs: manifest bytes are
+identical; the 21/27/39 air-plus-ground aircraft records match on IDs, status,
+ring, slot, SOC, service class, pad and service-end time; and the pad/slot records
+are equal. Kinematics follow the selected profile, as specified above.
+
+Initial angular runtime estimates T0 are 9000 s (diagnostic), 12600 s (medium),
+and 18000 s (stress), based on prior observed angular throughput. Early startup
+fractions are not linearly extrapolated. Heartbeat `600` was successfully
+updated ACTIVE at 2026-10-23 22:23:53 UTC+08:00 with a 297-minute interval; both
+the tool result and saved TOML were verified. The next wake is approximately
+2026-10-24 03:20 UTC+08:00, after subtracting elapsed time from the maximum
+18000-second estimate. Completion checks, angular audits and the matched
+comparison remain pending. No general profile dominance is established.
+
+## Historical linear-wave launch record
 
 Implementation commit `b7d0d24b179317031b891f9da4814bfe85b7e8f5` was accepted and
 pushed before launch. Locally frozen provenance files are
@@ -147,7 +276,8 @@ preparation elapsed times were approximately 1.18, 1.59, and 2.35 s. Each run us
 `--target 600 --cpus` with its tabled pair and the frozen service/rotation/scenario/
 rescue selectors above.
 
-Startup checks around 45 seconds after launch observed six growing state streams
+The following startup observations are historical. Checks around 45 seconds
+after launch observed six growing state streams
 with positive simulation times and no error markers. The initial observations
 below are EnergySlack / RHCP respectively; byte counts refer to their
 `states.jsonl` files, not completed episodes.
@@ -164,15 +294,15 @@ runtime extrapolation. A current-chat heartbeat, ID `600`, was successfully
 created and verified ACTIVE around 18:12 with a 15-minute interval for the first
 complete 60-second block calibration. The initial creation attempt lacking a
 destination created no schedule; the successful retry and subsequent view
-confirmed this heartbeat. After a usable block observation, the same heartbeat
-is to be updated to the estimated remaining duration R; this initial calibration
-interval is not a repeated 15-minute polling policy. No sleeping monitoring
-worker is retained while waiting.
+confirmed this heartbeat. The launch-time plan was to update the same heartbeat
+to the estimated remaining duration R after a usable block observation; the
+initial calibration interval was not a repeated 15-minute polling policy.
 
-Remaining work is to verify full t=600 completion and both methods' output
-integrity, interpret the linear results, run and verify the matched fresh angular
-controls, and then compare the conditions. The startup observations do not
-establish any t=600 outcome or method/profile advantage.
+The linear wave is now complete and angular startup has been verified. The
+current control-wave heartbeat plan is recorded above. Remaining work is to verify
+the fresh angular runs, check their completed outputs, and compare matched conditions.
+The historical startup observations themselves establish no method/profile
+advantage.
 
 ## Fresh campaign commands
 
