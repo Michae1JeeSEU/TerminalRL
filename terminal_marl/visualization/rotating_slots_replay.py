@@ -54,6 +54,24 @@ def _time_text(value):
     return "unknown" if value is None else f"{value:.3f}s"
 
 
+def _recorded_rescue_status(aircraft, frame, plans):
+    """Show recorded need and actual rescue commitment without SOC inference."""
+    e = aircraft.get("emergency", {})
+    if not isinstance(e, dict) or not e.get("declared", False):
+        return None
+    status = aircraft.get("status")
+    if status == "FINAL_EMERGENCY" or status == "VERTICAL_DESCENT" and e.get("charged", False):
+        return "ACTIVE"
+    if status in _GROUNDED | _FROZEN | _INVISIBLE:
+        return None
+    for row in (*frame.get("slots", ()), *frame.get("pads", ())):
+        plan = plans.get(row.get("plan_hash"))
+        if (str(row.get("aircraft_id")) == str(aircraft["id"])
+                and plan is not None and plan.kind == "FINAL_EMERGENCY"):
+            return "RESERVED"
+    return "WAIT"
+
+
 def _hud_layout(window_size, line_count):
     """Pixel anchor for a top-aligned HUD below controls, above the timeline."""
     _, height = window_size
@@ -313,6 +331,11 @@ class ReplayController:
             selected = next((a for a in self.aircraft_at() if str(a["id"]) == self.selected_id), None)
             if selected:
                 lines.append(f'Selected UID={self.uid_by_id[self.selected_id]} {self.selected_id}: {selected.get("status")}; SOC={selected["soc"]:.4f}')
+                rescue_status = _recorded_rescue_status(selected, self.bundle.sampled_state(self.time), self._plans)
+                if rescue_status:
+                    lines.append(f'Emergency {rescue_status}: recorded declaration; ' +
+                                 {"WAIT": "no protected opportunity", "RESERVED": "protected rescue opportunity",
+                                  "ACTIVE": "rescue maneuver executing"}[rescue_status])
         rejections = overlay["diagnostic_rejections_not_executed"]
         if rejections:
             latest = rejections[-1]
@@ -362,7 +385,8 @@ class ReplayController:
             uavs.append(UAVRenderState(uid,uid,str(a.get("status","")),a.get("ring"),tuple(a["p"]),tuple(a.get("v",(0,0,0))),
                 math.sqrt(sum(v*v for v in a.get("v",(0,0,0)))),float(a["soc"]),float(a["soc"])*c.energy.derived_equivalent_capacity_kWh*3.6e6,
                 c.energy.derived_equivalent_capacity_kWh*3.6e6,str(a.get("service_class","")),1,0,a.get("pad_id"),h,None,
-                bool(h) and a.get("status") in _ACTIVE_MANEUVER,points,1.,None,None,declared,"emergency" if declared else "low_soc" if a["soc"]<.35 else "normal"))
+                bool(h) and a.get("status") in _ACTIVE_MANEUVER,points,1.,None,None,declared,"emergency" if declared else "low_soc" if a["soc"]<=.35 else "normal",
+                _recorded_rescue_status(a, frame, self._plans)))
         terminal = []
         for e in self.bundle.data["events"]:
             if e["time"] > self.time or str(e["type"]).lower() not in ("energy_failure","rerouted","touchdown","executed_hard_separation_violation"):

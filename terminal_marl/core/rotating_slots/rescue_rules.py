@@ -8,6 +8,7 @@ import math
 
 LEGACY_PROFILE = "legacy_v5"
 RESCUE_PROFILE_V6 = "rescue_opportunity_v6"
+RESCUE_PROFILE_V7 = "rescue_need_v7"
 MONITOR_SECONDS_V6 = 10.
 DISPATCH_SECONDS_V6 = 5.
 RESCUE_BUFFER_SECONDS_V6 = MONITOR_SECONDS_V6 + DISPATCH_SECONDS_V6
@@ -48,8 +49,9 @@ class RescueAssessment:
 def assess_rescue(soc, holding_soc_per_second, *, normal_energy_lower_bound=0.,
                   normal_completion_soc=None, normal_path_soc=None, normal_path_wait_seconds=0.,
                   rescue_soc=None, rescue_wait_seconds=0.,
-                  rescue_feasible=False, declared=False, pending=False):
-    """Assess v6 using only supplied, certified evidence.
+                  rescue_feasible=False, declared=False, pending=False,
+                  profile=RESCUE_PROFILE_V6):
+    """Assess using only supplied, certified evidence (v6 by default).
 
     ``rescue_soc`` is the validated flight cost, excluding the future holding
     interval. ``rescue_feasible`` certifies that exact opportunity including its
@@ -73,7 +75,7 @@ def assess_rescue(soc, holding_soc_per_second, *, normal_energy_lower_bound=0.,
     slack = ((soc-rescue_soc) / holding_soc_per_second - rescue_wait_seconds
              if known and rescue_feasible else None)
     reason = ("DECLARED" if declared else "PENDING" if pending else
-              "NORMAL_RESERVE_IMPOSSIBLE" if impossible and rescue_feasible else
+              "NORMAL_RESERVE_IMPOSSIBLE" if impossible and (rescue_feasible or profile == RESCUE_PROFILE_V7) else
               "LAST_RESCUE_START" if slack is not None and slack <= RESCUE_BUFFER_SECONDS_V6 else None)
     warning = (soc <= .35 or status == "INFEASIBLE"
                or (margin is not None and margin <= RESCUE_BUFFER_SECONDS_V6*holding_soc_per_second))

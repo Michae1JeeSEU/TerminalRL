@@ -60,6 +60,7 @@ class UAVRenderState:
     last_safety_decision: str | None
     emergency_landing: bool = False
     energy_alert: str = "normal"
+    rescue_status: str | None = None
 
 
 @dataclass(frozen=True)

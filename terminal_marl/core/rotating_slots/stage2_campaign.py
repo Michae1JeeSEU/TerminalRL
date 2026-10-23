@@ -16,6 +16,7 @@ import os
 from pathlib import Path
 import platform
 import random
+import shutil
 from statistics import NormalDist
 import subprocess
 import sys
@@ -36,8 +37,8 @@ failure_archive failure_resources_released dispatch_timings _pending_dispatch _r
 _monitor_timing_pending""".split())
 STAGE2_FIELDS = STAGE2_FIELDS | frozenset(("rescue_rule_profile",))
 DERIVED_RESCUE_FIELDS = frozenset(("_rescue_search_cache", "_rescue_monitor_v6"))
-SCENARIO_PROFILES = ("legacy_busy_v5", "stress36_rate180_v1", "diagnostic18_rate120_v1")
-RESCUE_RULE_PROFILES = ("legacy_v5", "rescue_opportunity_v6")
+SCENARIO_PROFILES = ("legacy_busy_v5", "stress36_rate180_v1", "diagnostic18_rate120_v1", "medium24_rate150_v1")
+RESCUE_RULE_PROFILES = ("legacy_v5", "rescue_opportunity_v6", "rescue_need_v7")
 RUNTIME_EXTRA = frozenset(("admission_callback",))
 ROOT = Path(__file__).resolve().parents[3]
 CONTRACT_DIR = ROOT / "new10.16/rotating_slots_stage2_baseline_v1_0"
@@ -113,7 +114,7 @@ class CampaignBudget:
 def frozen_manifest(scenario_profile="legacy_busy_v5"):
     if scenario_profile not in SCENARIO_PROFILES:
         raise ValueError("unknown scenario profile: "+scenario_profile)
-    rate = 120. if scenario_profile == "diagnostic18_rate120_v1" else 180.
+    rate = {"diagnostic18_rate120_v1":120., "medium24_rate150_v1":150.}.get(scenario_profile,180.)
     source = ArrivalManifest.generate(seed=71, rate_per_hour=rate, arrival_window=3600.)
     # Existing generator has a closed final test; Stage2 explicitly right-opens it.
     return ArrivalManifest(tuple(r for r in source.requests if r.release_time < 3600.), 71, rate, 3600.)
@@ -135,7 +136,9 @@ def busy_fixture(manifest=None, *, state_sink=None, config=None,
     soc_rng, service_rng = random.Random(2071), random.Random(2072)
     normal = NormalDist(.75, .08)
     lower, upper = normal.cdf(.60), normal.cdf(.90)
-    counts = (("outer",6), ("middle",6), ("inner",6)) if scenario_profile == "diagnostic18_rate120_v1" else (("outer",14), ("middle",12), ("inner",10))
+    counts = dict(diagnostic18_rate120_v1=(("outer",6),("middle",6),("inner",6)),
+                  medium24_rate150_v1=(("outer",8),("middle",8),("inner",8))).get(
+                      scenario_profile,(("outer",14),("middle",12),("inner",10)))
     for ring, count in counts:
         slots = next(r.slot_count for r in world.config.airspace.rings if r.id == ring)
         for k in range(count):
@@ -231,7 +234,7 @@ def source_provenance(service_profile="baseline", *, scenario_profile="legacy_bu
         numeric_backend_hash=digest({k:v for k,v in source.items() if k.endswith(("energy.py","safety.py","trajectory.py"))}),
         candidate_policy_id=CANDIDATE_POLICY_ID,planning_budget_profile=QUALITY_BUDGET_PROFILE,
         planning_budget=PlanningBudget.for_profile(QUALITY_BUDGET_PROFILE).settings(),
-        emergency_policy_id="rescue_opportunity_v6" if rescue_rule_profile=="rescue_opportunity_v6" else "energy_urgency_yield_v5",
+        emergency_policy_id=rescue_rule_profile if rescue_rule_profile in ("rescue_opportunity_v6","rescue_need_v7") else "energy_urgency_yield_v5",
         objective_id="reliability_throughput_progress_tail_v2")
 
 
@@ -650,6 +653,133 @@ def campaign_config(root, campaign):
     return config
 
 
+def branch_campaign(parent_root, root, from_time, *, provenance_path,
+                    preparation_wall_seconds=0., campaign_wall_budget_seconds=None,
+                    archive_reserve_seconds=None):
+    """Explicit v6 -> v7 continuation into a new root; parent bytes are read only.
+
+    This preserves the realised v6 prefix and existing commitments. It is never
+    evidence of a v7 policy run from t=0. Ordinary restore remains exact-identity.
+    """
+    from .stage2_planning import NormalSchedulerCallback
+    parent_root,root=Path(parent_root).resolve(),Path(root).resolve()
+    if root==parent_root or root.is_relative_to(parent_root) or parent_root.is_relative_to(root):
+        raise ValueError("branch roots must be disjoint; parent is read only")
+    if root.exists() and any(root.iterdir()):
+        raise ValueError("branch output must be new or empty")
+    if not math.isfinite(from_time) or from_time<=0 or from_time>3600 or from_time%60:
+        raise ValueError("branch time must be a positive complete 60s boundary <=3600")
+    boundary=int(from_time)
+    parent=load_json(parent_root/"campaign.json")
+    parent_config=campaign_config(parent_root,parent)
+    old=load_json(parent_root/"provenance.json")
+    new=load_json(provenance_path)
+    verify_source_provenance(new)
+    manifest=read_manifest(parent_root/"manifest.json")
+    if (digest(old["source_files"])!=old["source_hash"]
+        or checkpoint_identity(old,digest(manifest.to_dict()))!=parent["identity"]):
+        raise ValueError("parent provenance/manifest identity mismatch")
+    if (old.get("rescue_rule_profile")!="rescue_opportunity_v6"
+        or old.get("emergency_policy_id")!="rescue_opportunity_v6"
+        or new.get("rescue_rule_profile")!="rescue_need_v7"
+        or new.get("emergency_policy_id")!="rescue_need_v7"):
+        raise ValueError("only explicit rescue_opportunity_v6 -> rescue_need_v7 branching is supported")
+    # The changed-source allowlist is narrow; all frozen physical/configuration,
+    # normal objective, candidate policy, numerical backend and budget keys match.
+    mutable={"revision","workspace_status_short","tracked_diff","source_files","source_hash",
+             "rescue_rule_profile","emergency_policy_id"}
+    if {k:v for k,v in old.items() if k not in mutable}!={k:v for k,v in new.items() if k not in mutable}:
+        raise ValueError("branch changes frozen protocol/configuration/normal objective")
+    allowed={"terminal_marl/core/rotating_slots/"+name for name in
+             ("world.py","rescue_rules.py","stage2_planning.py","stage2_campaign.py","demand.py")}
+    allowed|={"scripts/server/run_rotating_slots_stage2.py","terminal_marl/visualization/rotating_slots_replay.py"}
+    changed={name for name in old["source_files"].keys()|new["source_files"].keys()
+             if old["source_files"].get(name)!=new["source_files"].get(name)}
+    if changed-allowed or old["source_files"].keys()!=new["source_files"].keys():
+        raise ValueError("branch changes source outside rescue/campaign/viewer allowlist")
+    required=("config.yaml","fixture.json","manifest.json","environment.lock.json")
+    for name in required:
+        if not (parent_root/name).is_file(): raise ValueError("missing frozen parent artifact: "+name)
+    if (sha256((parent_root/"fixture.json").read_bytes()).hexdigest()!=parent["fixture_sha256"]
+        or digest(load_json(parent_root/"environment.lock.json"))!=parent["environment_lock_sha256"]
+        or parent_config.raw_hash!=old["base_config_bytes_sha256"]):
+        raise ValueError("parent frozen fixture/environment/config content mismatch")
+    new_identity=checkpoint_identity(new,digest(manifest.to_dict()))
+    if {k:v for k,v in parent["identity"].items() if k not in ("source_hash","rescue_rule_profile")} != {
+            k:v for k,v in new_identity.items() if k not in ("source_hash","rescue_rule_profile")}:
+        raise ValueError("branch checkpoint identity changes physical/configuration/manifest fields")
+    # Validate complete markers for both methods before creating any branch files.
+    checkpoints={}
+    for method in METHODS:
+        path=parent_root/method/f"checkpoint_{boundary:04d}.json"
+        envelope=load_json(path);payload=envelope["payload"]
+        if (envelope["sha256"]!=digest(payload) or payload["schema"]!=SCHEMA
+            or payload["identity"]!=parent["identity"] or payload["time"]!=from_time
+            or not isinstance(payload.get("boundary_summary"),dict)
+            or payload["boundary_summary"].get("time")!=from_time):
+            raise CheckpointError("parent branch checkpoint is incomplete or corrupt")
+        for t in range(60,boundary+1,60):
+            summary=load_json(parent_root/method/f"summary_{t:04d}.json")
+            if summary.get("time")!=t or summary.get("method")!=method:
+                raise CheckpointError("parent prefix summary time/method mismatch")
+            if t==boundary and canonical(summary["metrics"])!=canonical(payload["boundary_summary"]["metrics"]):
+                raise CheckpointError("parent boundary summary/checkpoint metrics mismatch")
+        checkpoints[method]=(path,envelope)
+    root.mkdir(parents=True,exist_ok=True)
+    budget=CampaignBudget(root/"budget.json",preparation_wall_seconds,
+        total_seconds=21600. if campaign_wall_budget_seconds is None else campaign_wall_budget_seconds,
+        archive_reserve_seconds=archive_reserve_seconds)
+    for name in required:
+        shutil.copyfile(parent_root/name,root/name)
+    if (parent_root/"initial_references.json").exists():
+        shutil.copyfile(parent_root/"initial_references.json",root/"initial_references.json")
+    atomic_json(root/"provenance.json",new)
+    metadata=dict(schema="stage2_policy_branch_v1",interpretation="MIXED_POLICY_CONTINUATION_NOT_V7_FROM_ZERO",
+        parent_root=str(parent_root),parent_identity=parent["identity"],identity=new_identity,
+        boundary_s=from_time,prefix_profile="rescue_opportunity_v6",suffix_profile="rescue_need_v7",
+        source_files_changed=sorted(changed),parent_campaign_wall_s=parent.get("campaign_wall_s"),
+        parent_budget=load_json(parent_root/"budget.json"),methods={})
+    for method,(path,envelope) in checkpoints.items():
+        directory=root/method;directory.mkdir()
+        scheduler=NormalSchedulerCallback(method)
+        world=restore_checkpoint(path,scheduler,parent["identity"],stream_copy=directory/"states.jsonl")
+        try:
+            # The codec already excludes derived rescue fields; explicitly clear
+            # future compatible loaders without changing aircraft emergency state.
+            for name in DERIVED_RESCUE_FIELDS: world.__dict__.pop(name,None)
+            metrics=episode_metrics(world)
+            retained=dict(active={aid:p.trajectory_hash for aid,p in world.active.items()},
+                soft={aid:p.trajectory_hash for aid,p in world.soft.items()},dependencies=_plain(world.dependencies))
+            metadata["methods"][method]=dict(parent_checkpoint=str(path),
+                parent_checkpoint_bytes_sha256=sha256(path.read_bytes()).hexdigest(),
+                parent_checkpoint_payload_sha256=envelope["sha256"],inherited_metrics=metrics,
+                inherited_energy_j=metrics["energy_j"],inherited_energy_kwh=metrics["energy_kwh"],
+                retained_commitments=retained,prefix_decisions_count=len(scheduler.records),
+                prefix_state_count=world._record_count)
+            world.rescue_rule_profile="rescue_need_v7"
+            for t in range(60,boundary+1,60):
+                summary=load_json(parent_root/method/f"summary_{t:04d}.json")
+                summary.update(rescue_rule_profile="rescue_opportunity_v6",policy_segment="INHERITED_V6_PREFIX")
+                atomic_json(directory/f"summary_{t:04d}.json",summary)
+            boundary_summary=load_json(directory/f"summary_{boundary:04d}.json")
+            save_checkpoint(directory/f"checkpoint_{boundary:04d}.json",world,scheduler,new_identity,
+                            boundary_summary=boundary_summary)
+            save_checkpoint(directory/"checkpoint.json",world,scheduler,new_identity,boundary_summary=boundary_summary)
+            for filename,rows in (("decisions.jsonl",scheduler.records),("dispatch_timings.jsonl",world.dispatch_timings)):
+                (directory/filename).write_bytes(b"".join(canonical(r)+b"\n" for r in rows))
+        finally:
+            if world.state_sink is not None: world.state_sink.close()
+    atomic_json(root/"branch.json",metadata)
+    campaign=dict(parent,identity=new_identity,rescue_rule_profile="rescue_need_v7",status="BRANCHED_PREPARED",
+        preparation_wall_s=budget.elapsed,branch_metadata_path="branch.json",branch_from_time_s=from_time,
+        policy_interpretation=metadata["interpretation"],common_completed_time_s=from_time)
+    for name in ("campaign_wall_s","archive_status","requested_cpus","physical_cores","execution_mode","real_time_observation"):
+        campaign.pop(name,None)
+    atomic_json(root/"campaign.json",campaign)
+    budget.persist()
+    return campaign
+
+
 def run_episode_block(root, method, target, cpu=None, connection=None):
     """One bounded continuation; no initial reset after the first 60 seconds."""
     for name in ("OMP_NUM_THREADS","OPENBLAS_NUM_THREADS","MKL_NUM_THREADS","NUMEXPR_NUM_THREADS"):
@@ -659,6 +789,7 @@ def run_episode_block(root, method, target, cpu=None, connection=None):
     from .stage2_planning import NormalSchedulerCallback
     root=Path(root);directory=root/method;directory.mkdir(exist_ok=True)
     campaign=load_json(root/"campaign.json");identity=campaign["identity"]
+    branch=load_json(root/campaign["branch_metadata_path"]) if "branch_metadata_path" in campaign else None
     verify_source_provenance(load_json(root/"provenance.json"))
     config=campaign_config(root,campaign)
     budget=CampaignBudget(root/"budget.json")
@@ -748,6 +879,14 @@ def run_episode_block(root, method, target, cpu=None, connection=None):
                 dispatch_wall_per_sim_second=sum(r["dispatch_wall_s"] for r in dispatch)/world.time,
                 event_frequency_hz=len(world.events)/world.time,
                 post_failure_model="abstract_isolation_no_cascade",cpu_affinity=cpu)
+            if branch is not None:
+                inherited=branch["methods"][method]
+                suffix_energy=summary["metrics"]["energy_j"]-inherited["inherited_energy_j"]
+                summary.update(rescue_rule_profile=campaign["rescue_rule_profile"],
+                    policy_segment="V7_SUFFIX_WITH_INHERITED_V6_PREFIX",branch_from_time_s=branch["boundary_s"],
+                    policy_interpretation=branch["interpretation"],
+                    inherited_energy_j=inherited["inherited_energy_j"],
+                    suffix_energy_j=suffix_energy,suffix_energy_kwh=suffix_energy/3600000.)
             checkpoint_started=time.perf_counter()
             save_checkpoint(directory/f"checkpoint_{int(block_target):04d}.json",world,scheduler,identity,boundary_summary=summary)
             save_checkpoint(latest,world,scheduler,identity,boundary_summary=summary)
@@ -808,6 +947,9 @@ def export_episode(root, method, boundary):
             as_of=scheduler.records[-1]["time"] if scheduler.records else 0.,plans=[p.to_dict() for p in plans])
             for aid,plans in scheduler.provider.previous.items()]
         record["stage2_provenance"]=load_json(root/"provenance.json")
+        campaign=load_json(root/"campaign.json")
+        if "branch_metadata_path" in campaign:
+            record["stage2_provenance"]["policy_branch"]=load_json(root/campaign["branch_metadata_path"])
         ReplayBundle.write(archive,record=record,code_commit=record["stage2_provenance"]["revision"],
             config_path=config.path,command="run_rotating_slots_stage2.py",seed=71,eager=False)
     finally:

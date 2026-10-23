@@ -38,7 +38,7 @@ class ArrivalManifest:
 
     @classmethod
     def generate(cls, seed=11, rate_per_hour=60.0, arrival_window=3600.0):
-        if seed not in (11, 23, 47, 71, 101) or rate_per_hour not in (60, 120, 180):
+        if seed not in (11, 23, 47, 71, 101) or rate_per_hour not in (60, 120, 150, 180):
             raise ValueError("formal diagnostics use the frozen seeds and rates")
         if arrival_window <= 0:
             raise ValueError("arrival window must be positive")

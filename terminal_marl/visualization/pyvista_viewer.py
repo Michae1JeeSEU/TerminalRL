@@ -430,6 +430,7 @@ class Terminal3DViewer:
         else:
             energy = f"{uav.energy_remaining:.0f}/{uav.energy_capacity:.0f} ({uav.soc:.0%})"
             alert = _uav_alert(uav)
+            rescue_line = f"Emergency: {uav.rescue_status}\n" if getattr(uav, "rescue_status", None) else ""
             text = (
                 f"Selected UAV\n"
                 f"UID: {uav.uid}\n"
@@ -439,6 +440,7 @@ class Terminal3DViewer:
                 f"Speed: {uav.speed:.1f} m/s\n"
                 f"Energy: {energy}\n"
                 f"Energy alert: {alert}\n"
+                f"{rescue_line}"
                 f"Mission: {uav.mission_type}\n"
                 f"Base priority: {uav.base_priority}\n"
                 f"Dynamic priority: {uav.dynamic_priority:.2f}\n"
@@ -731,7 +733,8 @@ class Terminal3DViewer:
                     normal_uids.append(uav.uid)
             elif alert == "emergency":
                 emergency_points.append(point)
-                emergency_labels.append(f"EMERGENCY UID={uav.uid} SOC={uav.soc:.0%}")
+                rescue = getattr(uav, "rescue_status", None)
+                emergency_labels.append(f"EMERGENCY{(' ' + rescue) if rescue else ''} UID={uav.uid} SOC={uav.soc:.0%}")
                 emergency_uids.append(uav.uid)
             else:
                 low_soc_points.append(point)

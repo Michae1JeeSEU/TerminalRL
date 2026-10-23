@@ -43,8 +43,8 @@ MAX_BATCH_CONFLICTS = 16
 
 
 def _v6(snapshot):
-    from .rescue_rules import RESCUE_PROFILE_V6
-    return (getattr(snapshot,"emergency_monitor",None) or {}).get("rescue_rule_profile")==RESCUE_PROFILE_V6
+    from .rescue_rules import RESCUE_PROFILE_V6, RESCUE_PROFILE_V7
+    return (getattr(snapshot,"emergency_monitor",None) or {}).get("rescue_rule_profile") in (RESCUE_PROFILE_V6, RESCUE_PROFILE_V7)
 
 
 def _bounded_put(cache,key,value,limit=VALIDATION_CACHE_LIMIT):
@@ -715,6 +715,7 @@ class CandidateProvider:
             key=(snapshot.config.config_hash,node.ring,node.slot,node.time,node.version,a.id)
             reference=self.references.cache.get(key)
             assessment=assess_rescue(node.soc,rate,
+                profile=(snapshot.emergency_monitor or {}).get("rescue_rule_profile"),
                 normal_energy_lower_bound=normal_energy_lower_bound(snapshot.config,node.ring),
                 normal_path_soc=reference.soc_required if reference and reference.status=="KNOWN" else None)
             if assessment.rescue_required: return "RESCUE_REQUIRED"
