@@ -522,5 +522,114 @@
       "No restricted source was bypassed."
     ],
     "notes": "属于 U2U tactical deconfliction 方法邻域；其系统级动态空域构形和宏观反馈仍未展开。"
-  }
+  },
+{
+  "id": "A11",
+  "title": "Coordinated Dense Aerial Traffic with Self-Driving Drones",
+  "authors": [
+    "Boldizsár Balázs",
+    "Gábor Vásárhelyi"
+  ],
+  "year": 2018,
+  "venue": "2018 IEEE International Conference on Robotics and Automation (ICRA), pp. 6365–6372",
+  "doi": "10.1109/ICRA.2018.8461073",
+  "publication_status": "PUBLISHED_CONFERENCE",
+  "metadata_status": "VERIFIED",
+  "primary_url": "https://ieeexplore.ieee.org/document/8461073",
+  "fulltext_url": "https://hal.elte.hu/~vasarhelyi/doc/balazs2018coordinated.pdf",
+  "local_pdf": null,
+  "local_text": null,
+  "reading_status": "FULL_TEXT",
+  "version": "publisher",
+  "method": "分布式速度控制叠加各向异性排斥、选择性速度对齐、可调切向自驱与径向虚拟排队。参数A按同向/对向关系改变排斥方向，加速同向车道形成；自驱用近邻几何迭代改变期望速度。CMA-ES结合局部参数扫描和人工轨迹检查完成调参，再用密度扫描和户外实飞验证。",
+  "scenario": "二维开放水平空域；crosswalk为两侧往返交叉流，star为中心共同目标与边界目标交替。仿真含有限通信范围、时延、传感噪声和有限加速度；优化用100架、250 m方形区域，最终实飞为30架、150×150 m、期望速度6 m/s、无风晴天。",
+  "findings": "局部交互使同向链/车道、避让与虚拟排队形成，缓解振荡和共同目标拥堵；Fig.5给出有效速度、通量和碰撞风险随平均自由程变化，通量存在中间密度峰值。实飞在初始过渡后形成平稳交叉流。图中order parameters含目标方向有效速度和邻距，不等同于全局航向极化有序度。",
+  "quantitative_findings": [
+    "Crosswalk密度扫描用100架；每个测量点平均20次10 min仿真，Fig.5标最大通量0.096/s，位于平均自由程36 m；通量定义为有效速度/平均自由程，非城市网络完成出流。",
+    "Star场景在48个平均自由程值22–365 m上，每点20次仿真；到达中心的平均间隔约12±1 s，各次仿真报告零碰撞。",
+    "30架户外实飞在150×150 m区域、6 m/s期望速度下进行；Fig.8为15 min飞行日志，归一化目标方向有效速度约0.4–0.5。"
+  ],
+  "author_limitations": [
+    "作者指出量化fitness不能充分刻画轨迹平顺性等整体质量，最终参数经过人工检查、局部扫描和实飞调节；不能将其描述为全自动最优参数。",
+    "起飞间隔仅5–7 m、初始即处于排斥范围时出现不规则过渡运动；作者指出当前行为主要预防风险，并非专为从高风险初态恢复设计。",
+    "任意障碍物和飞行器异质性/层级被列为后续扩展；本篇实飞为空旷、无风、二维crosswalk场景。"
+  ],
+  "evidence_locations": [
+    "PDF p.1 / printed p.6365：标题、两名作者、IEEE ICRA 2018会议信息与摘要。",
+    "PDF pp.2–4, Sec. II-A–E, Eqs.2–10：各向异性参数A、选择性对齐、切向参数T、自驱和虚拟排队。",
+    "PDF pp.5–6, Sec. III, Table I, Figs.4–5：两种场景、CMA-ES与人工调参、密度曲线、0.096/s峰值及star的12±1 s。",
+    "PDF pp.6–8, Sec. IV–V, Figs.6–8：户外平台和30架实飞、初始过渡局限、全文讨论结尾与参考文献。"
+  ],
+  "abstract": "提出用各向异性排斥、选择性对齐、自驱和虚拟排队协调密集无人机自组织交通；用仿真参数优化、密度扫描及30架户外实飞展示效果。",
+  "access_attempts": [
+    "公开作者PDF由web工具成功读取，8页，全文文本行0–956已分段连续核对，含方法、实验、讨论、图注及参考文献。",
+    "本地普通沙箱下载遇WinError10013；获网络审批后的Python HTTPS遇SSL EOF，Windows Invoke-WebRequest重试仍SSL失败；同一已核作者站HTTP入口仅追加尝试一次，也返回请求发送错误；没有生成A11.pdf或A11.txt。",
+    "IEEE文档8461073页面返回JavaScript机器人检查；正式发表信息由带IEEE版权和页码的公开正文核实，DOI另由Springer正式A07参考文献核对；未绕过访问限制。"
+  ],
+  "notes": "2026-10-22补充。公开作者副本保留IEEE出版排版；FULL_TEXT表示本次已阅读全文8页，不表示本地PDF存在。local_pdf/local_text为空，因为本地下载失败；不虚构本地路径。",
+  "page_count": 8,
+  "reading_method": "阅读媒介为remote PDF（公开作者PDF），通过web全文文本分段覆盖全部8页，包括最终讨论、限制和参考文献；不是HTML阅读，也非仅核对相关摘要或局部段落。"
+},
+{
+  "id": "A12",
+  "title": "Metropolis II: Benefits of Centralised Separation Management in High-Density Urban Airspace",
+  "authors": [
+    "A. M. Veytia",
+    "C. A. Badea",
+    "J. Ellerbroek",
+    "J. Hoekstra",
+    "N. Patrinopoulou",
+    "I. Daramouskas",
+    "V. Lappas",
+    "V. Kostopoulos",
+    "V. de Vries",
+    "J. van Ham",
+    "E. Sunil",
+    "P. Menendez Ponte Alonso",
+    "J. Rodrigo Villazon Terrazas",
+    "D. Bereziat",
+    "A. Vidosavljevic",
+    "L. Sedov"
+  ],
+  "year": 2022,
+  "venue": "SESAR Innovation Days 2022",
+  "doi": null,
+  "publication_status": "PUBLISHED_CONFERENCE",
+  "metadata_status": "VERIFIED_PRIMARY",
+  "primary_url": "https://www.sesarju.eu/sites/default/files/documents/sid/2022/paper_88.pdf",
+  "fulltext_url": "https://www.sesarju.eu/sites/default/files/documents/sid/2022/paper_88.pdf",
+  "local_pdf": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/originals/A12.pdf",
+  "local_text": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/extracted/A12.txt",
+  "reading_status": "FULL_TEXT",
+  "version": "publisher",
+  "method": "在BlueSky中比较集中战略、集中战略加分布式战术的混合概念、分布式战术概念；同时采用不同水平网格、航向分层、航路规划和起飞延迟规则。分布式概念仍由中央实体监测约束空域交通并更新成本，单机可选择是否据此重规划。比较密度分布、冲突、侵入、效率、延误和延误分散。",
+  "scenario": "维也纳中心8 km宽、500 ft高的圆柱空域，包含街道约束空域、开放空域和地理围栏；16个垂直层。两类简化Matrice 600 Pro机型巡航20/30 kts，四类任务与四级优先级；5档交通水平，风速0/1/3/5 kts，非合作机0/33/66/100架，各设置9次随机重复。",
+  "findings": "混合概念在所测场景中侵入最少，但绕行和巡航空间减少导致效率下降、延误较大。集中与分布式概念侵入和需求延误相近，分布式延误分散较低。对照同时改变空域结构、分离职责与可巡航空间；作者明确不能把差异全归因于centralisation。环路提高方向一致性和空间分散，安全收益伴随路径效率代价。",
+  "quantitative_findings": [
+    "Table II将5档交通列为平均同时在飞机数1660/3340/4990/6650/8290；每设置9次重复。仅首小时安排起飞，仿真运行90–180 min直到全部到达；不得混同小时总架次。",
+    "高密度设置下，混合概念在约束空域的峰值密度约为另两概念一半，但消退更慢；高/极高需求下分布式每航班冲突数比其他概念高约一个数量级，侵入差异远小于冲突差异。",
+    "混合概念专用解脱层使可巡航垂直空间仅为集中概念一半；所有密度下其侵入最少，但需求延误较高，且高密度下延误分散也高于集中概念。"
+  ],
+  "author_limitations": [
+    "作者在Sec. V明确指出对照并非只改变中心化程度；水平空域结构、巡航/解脱层空间和航路偏好共同影响安全与容量。",
+    "风扰动仅取均匀风场沿航向分量来改变速度/时间，不含侧风；这是作者在Sec. III-E声明的有限风效应仿真。",
+    "结论提出改进混合方案的路径规划及放松战略规划以容纳更高密度；当前混合方案安全收益伴随路径效率和延误代价。"
+  ],
+  "evidence_locations": [
+    "PDF p.1：题名、16名作者及机构分列、摘要；官方SESAR路径sid/2022核验会议年份，未核到DOI。",
+    "PDF pp.2–3, Sec. II, Table I：三种组织概念、不同空域结构、航向分层、混合巡航/解脱层、中央交通成本与可选单机重规划。",
+    "PDF pp.3–4, Sec. III, Table II：空域/机型/任务、交通数量、9次重复、32 m与25 ft分离、10 s前视和仿真时长。",
+    "PDF pp.4–7, Sec. IV, Figs.2–13：密度/冲突/侵入/效率/延误/公平及异常条件结果。",
+    "PDF pp.7–8, Sec. V–VI：结构与职责的混杂、混合仅半数巡航空间、环路方向一致性与绕行代价、结论和改进建议；p.8参考文献。"
+  ],
+  "abstract": "比较维也纳高密度低空交通中的集中、混合和分布式分离管理；混合战略/战术组合减少侵入，但与其他概念不同的空域结构及可巡航空间也影响容量、效率和延误。",
+  "access_attempts": [
+    "官方SESAR PDF由web全文打开；Windows Invoke-WebRequest通过获准网络下载4,354,780 bytes。",
+    "本地PDF头为%PDF-，pypdf成功解析8页，逐页提取并完整阅读标题、方法、实验、结果、讨论、结论及参考文献。",
+    "PDF封面按作者行核验16名作者，机构行未混入作者；未核到DOI，故留空。"
+  ],
+  "notes": "2026-10-22补充；为SESAR Innovation Days 2022正式会议公开稿。对照同时改变结构、职责和可巡航空间，不能把效果全部归因中心化程度；本篇不是经方向有序度识别的MFD控制论文。",
+  "page_count": 8,
+  "reading_method": "本地8页PDF全部成功提取并连续阅读全文，含最终讨论、结论、限制及参考文献；未仅靠摘要或局部段落认定FULL_TEXT。"
+}
 ]

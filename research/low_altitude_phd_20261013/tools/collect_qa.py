@@ -41,6 +41,10 @@ def main() -> None:
         }
 
     workbook = ROOT / "04_literature_review.xlsx"
+    remote_read_without_local_file_count = manifest.get(
+        "remote_read_without_local_file_count",
+        manifest.get("html_read_without_local_file_count", 0),
+    )
     result = {
         "pdfs": pdfs,
         "xlsx": {
@@ -52,7 +56,7 @@ def main() -> None:
             "abstract_only_ids": manifest["abstract_only_ids"],
             "local_main_pdf_count": manifest["local_main_pdf_count"],
             "missing_sheet_row_count": manifest["missing_sheet_row_count"],
-            "html_read_without_local_file_count": manifest["html_read_without_local_file_count"],
+            "remote_read_without_local_file_count": remote_read_without_local_file_count,
             "zip_verify": zip_verify,
             "updated_row_visibility": updated_visibility,
             "preview_sizes_bytes": {

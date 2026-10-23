@@ -105,6 +105,7 @@ const makeWorkbookRelativeData = (records) => records.map((record) => ({
   author_limitations: asText(firstValue(record, ["author_limitations", "limitations"])),
   evidence_locations: asText(firstValue(record, ["evidence_locations", "evidence"])),
   access_attempts: asText(firstValue(record, ["access_attempts", "access_log"])),
+  reading_method: asText(firstValue(record, ["reading_method", "reading_medium", "read_by"])),
   notes: asText(firstValue(record, ["notes", "note"])),
 }));
 
@@ -199,20 +200,20 @@ const main = async () => {
   const rawRecords = [...a, ...b, ...c];
   const records = makeWorkbookRelativeData(rawRecords).sort((left, right) => left.id.localeCompare(right.id, undefined, { numeric: true }));
 
-  if (records.length !== 33) throw new Error(`Expected 33 records, found ${records.length}`);
+  if (records.length !== 35) throw new Error(`Expected 35 records, found ${records.length}`);
   const ids = records.map((record) => record.id);
   if (new Set(ids).size !== ids.length) throw new Error("Duplicate literature IDs found");
   const markerCount = records.reduce((count, record) => count + ((record.authors.match(/★/g) ?? []).length), 0);
   if (markerCount !== records.length) throw new Error(`First-author marker count ${markerCount} != ${records.length}`);
   const fullTextRecords = records.filter((record) => record.reading_status === "FULL_TEXT");
   const abstractOnlyRecords = records.filter((record) => record.reading_status === "ABSTRACT_ONLY");
-  if (fullTextRecords.length !== 31) throw new Error(`Expected 31 FULL_TEXT records, found ${fullTextRecords.length}`);
+  if (fullTextRecords.length !== 33) throw new Error(`Expected 33 FULL_TEXT records, found ${fullTextRecords.length}`);
   if (abstractOnlyRecords.length !== 2) throw new Error(`Expected 2 ABSTRACT_ONLY records, found ${abstractOnlyRecords.length}`);
   if (abstractOnlyRecords.map((record) => record.id).sort().join(",") !== "A06,C03") {
     throw new Error(`Unexpected ABSTRACT_ONLY IDs: ${abstractOnlyRecords.map((record) => record.id).join(",")}`);
   }
   const localPdfRecords = records.filter((record) => record.local_pdf_relative);
-  if (localPdfRecords.length !== 30) throw new Error(`Expected 30 local main PDF paths, found ${localPdfRecords.length}`);
+  if (localPdfRecords.length !== 31) throw new Error(`Expected 31 local main PDF paths, found ${localPdfRecords.length}`);
 
   const reviews = records.map((record) => {
     const current = critiqueText(critique[record.id]);
@@ -249,8 +250,7 @@ const main = async () => {
   ]);
 
   const notFull = records.filter((record) => record.reading_status !== "FULL_TEXT");
-  const a08 = records.find((record) => record.id === "A08");
-  const htmlReadWithoutPdf = a08 && !a08.local_pdf_relative ? [a08] : [];
+  const remoteReadWithoutLocal = records.filter((record) => record.reading_status === "FULL_TEXT" && !record.local_pdf_relative);
   const missingRows = [
     ...notFull.map((record) => [
       record.id,
@@ -263,7 +263,7 @@ const main = async () => {
       joinParts(addLabel("访问记录", record.access_attempts), addLabel("备注", record.notes)),
       "未阅读全文；按用户要求停止追索，不作为研究推进前提",
     ]),
-    ...htmlReadWithoutPdf.map((record) => [
+    ...remoteReadWithoutLocal.map((record) => [
       record.id,
       titleWithYear(record),
       record.reading_status,
@@ -271,8 +271,8 @@ const main = async () => {
       record.local_text_relative,
       record.primary_url,
       record.fulltext_url,
-      joinParts(addLabel("访问记录", record.access_attempts), addLabel("备注", record.notes)),
-      "公开 HTML 已读至正文结论，但本地 PDF/HTML 文件缺失；此行不计入未全文阅读数量",
+      joinParts(addLabel("阅读媒介", record.reading_method), addLabel("访问记录", record.access_attempts), addLabel("备注", record.notes)),
+      `已全文阅读（${record.reading_method || "远程全文"}），但本地 PDF/文本文件缺失；此行不计入未全文阅读数量`,
     ]),
   ];
 
@@ -320,8 +320,11 @@ const main = async () => {
   missingSheet.mergeCells("A2:I2");
   missingSheet.mergeCells("A3:I3");
   missingSheet.getRange("A1").values = [[`未全文阅读：${notFull.length}篇`]];
-  missingSheet.getRange("A2").values = [[`已读HTML但无本地文件：${htmlReadWithoutPdf.length}篇（A08）`]];
-  missingSheet.getRange("A3").values = [["说明：A08 公开 HTML 已读至正文结论，但本地 PDF/HTML 文件缺失；该项单独标注，不计入未全文阅读数量。"]];
+  const remoteReadSummary = remoteReadWithoutLocal
+    .map((record) => `${record.id}（${record.reading_method || "远程全文"}）`)
+    .join("、");
+  missingSheet.getRange("A2").values = [[`已读全文但无本地文件：${remoteReadWithoutLocal.length}篇`]];
+  missingSheet.getRange("A3").values = [[`说明：${remoteReadSummary} 已完成全文阅读，但因本地离线文件缺失而单独列示；不计入未全文阅读数量。`]];
   missingSheet.getRange("A1:I3").format.font = { name: FONT, size: 10, color: "#1F2937" };
   missingSheet.getRange("A1:I2").format.font = { name: FONT, size: 10, bold: true, color: "#1F2937" };
   missingSheet.getRange("A1:I3").format.wrapText = true;
@@ -343,9 +346,10 @@ const main = async () => {
   fitWrappedRows(missingSheet, tableStart + 1, missingRows, missingWidths, 72);
   const missingStatusRows = missingRows.map((row) => ({ reading_status: row[2] }));
   colorStatus(missingSheet, "C", tableStart + 1, missingStatusRows);
-  const htmlOnlyStart = tableStart + 1 + notFull.length;
-  if (htmlReadWithoutPdf.length > 0) {
-    missingSheet.getRange(`C${htmlOnlyStart}:I${htmlOnlyStart}`).format.fill = "#DDEBF7";
+  const remoteOnlyStart = tableStart + 1 + notFull.length;
+  if (remoteReadWithoutLocal.length > 0) {
+    const remoteOnlyEnd = remoteOnlyStart + remoteReadWithoutLocal.length - 1;
+    missingSheet.getRange(`C${remoteOnlyStart}:I${remoteOnlyEnd}`).format.fill = "#DDEBF7";
   }
   missingSheet.tabColor = "#C55A11";
 
@@ -388,7 +392,7 @@ const main = async () => {
     ["全文获取状态", `A1:I${Math.min(tableEnd, 12)}`, "missing_preview.png"],
   ];
 
-  const updatedIds = new Set(["A03", "B02", "B03", "B04", "B05", "B06", "B07", "B11", "B12", "C02", "C04", "C06"]);
+  const updatedIds = new Set(["A03", "A11", "A12", "B02", "B03", "B04", "B05", "B06", "B07", "B11", "B12", "C02", "C04", "C06"]);
   const updatedRows = records
     .map((record, index) => ({ id: record.id, row: index + 2 }))
     .filter(({ id }) => updatedIds.has(id));
@@ -419,7 +423,7 @@ const main = async () => {
     abstract_only_ids: abstractOnlyRecords.map((record) => record.id),
     local_main_pdf_count: localPdfRecords.length,
     not_full_count: notFull.length,
-    html_read_without_local_file_count: htmlReadWithoutPdf.length,
+    remote_read_without_local_file_count: remoteReadWithoutLocal.length,
     missing_sheet_row_count: missingRows.length,
     ids,
     first_author_marker_count: markerCount,

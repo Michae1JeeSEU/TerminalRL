@@ -80,9 +80,15 @@ def reference_text(entry: dict) -> tuple[str, str]:
     year = str(entry.get("year", ""))
     title = str(entry.get("title", ""))
     venue = str(entry.get("venue", ""))
-    doi = str(entry.get("doi", ""))
+    doi = str(entry.get("doi") or "").strip()
+    primary_url = str(entry.get("primary_url") or entry.get("fulltext_url") or "").strip()
     first = f"[{entry['id']}] {authors}. {year}. {title}. {venue}."
-    second = f"DOI: {doi}"
+    if doi:
+        second = f"DOI: {doi}"
+    elif primary_url:
+        second = f"来源URL: {primary_url}"
+    else:
+        second = ""
     return first, second
 
 
@@ -270,7 +276,10 @@ def build_one(source_path: Path, output_path: Path, document_index: int, docs: d
             if doc_id not in docs:
                 raise KeyError(f"Citation {doc_id} is absent from track JSON")
             first, second = reference_text(docs[doc_id])
-            story.append(KeepTogether([paragraph(first, styles["ref"]), paragraph(second, styles["ref"])]))
+            reference_lines = [paragraph(first, styles["ref"])]
+            if second:
+                reference_lines.append(paragraph(second, styles["ref"]))
+            story.append(KeepTogether(reference_lines))
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     doc = ReportDocument(output_path, styles)
@@ -289,7 +298,10 @@ def build_one(source_path: Path, output_path: Path, document_index: int, docs: d
     if document_index in (1, 2):
         selected_ids = sorted(docs) if document_index == 1 else sorted(source_ids)
         for doc_id in selected_ids:
-            if f"[{doc_id}]" not in extracted or str(docs[doc_id].get("doi", "")) not in extracted:
+            doi = str(docs[doc_id].get("doi") or "").strip()
+            source_url = str(docs[doc_id].get("primary_url") or docs[doc_id].get("fulltext_url") or "").strip()
+            reference_marker = doi or source_url
+            if f"[{doc_id}]" not in extracted or (reference_marker and reference_marker not in extracted):
                 missing_refs.append(doc_id)
     qa = {
         "source": str(source_path),

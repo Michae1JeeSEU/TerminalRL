@@ -6,7 +6,7 @@
     "B": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/evidence/track_B.json",
     "C": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/evidence/track_C.json"
   },
-  "record_count": 33,
+  "record_count": 35,
   "records": [
     {
       "id": "A01",
@@ -271,6 +271,7 @@
         "size_bytes": null,
         "char_count": null
       },
+      "reading_medium": "public HTML",
       "material_note": "Track A records FULL_TEXT from public HTML reading; no local PDF/TXT was observed. It is not placed in the unread list."
     },
     {
@@ -339,6 +340,76 @@
         "size_bytes": 57038,
         "char_count": 55158
       }
+    },
+    {
+      "id": "A11",
+      "source_track": "A",
+      "year": 2018,
+      "title": "Coordinated Dense Aerial Traffic with Self-Driving Drones",
+      "doi": "10.1109/ICRA.2018.8461073",
+      "doi_url": "https://doi.org/10.1109/ICRA.2018.8461073",
+      "primary_url": "https://ieeexplore.ieee.org/document/8461073",
+      "reading_status": "FULL_TEXT",
+      "publication_status": "PUBLISHED_CONFERENCE",
+      "metadata_status": "VERIFIED",
+      "version": "publisher",
+      "declared_local_pdf": null,
+      "declared_local_text": null,
+      "pdf": {
+        "status": "NOT_DECLARED",
+        "exists": false,
+        "resolved_path": null,
+        "package_relative_path": null,
+        "size_bytes": null,
+        "signature": null,
+        "parse_status": "REMOTE_READ",
+        "page_count": 8
+      },
+      "text": {
+        "status": "NOT_DECLARED",
+        "exists": false,
+        "resolved_path": null,
+        "package_relative_path": null,
+        "size_bytes": null,
+        "char_count": null
+      },
+      "reading_medium": "remote PDF",
+      "material_note": "Track A records FULL_TEXT from a public remote 8-page PDF; local PDF/TXT download failed and no local path is declared. It is not placed in the unread list."
+    },
+    {
+      "id": "A12",
+      "source_track": "A",
+      "year": 2022,
+      "title": "Metropolis II: Benefits of Centralised Separation Management in High-Density Urban Airspace",
+      "doi": null,
+      "doi_url": null,
+      "primary_url": "https://www.sesarju.eu/sites/default/files/documents/sid/2022/paper_88.pdf",
+      "reading_status": "FULL_TEXT",
+      "publication_status": "PUBLISHED_CONFERENCE",
+      "metadata_status": "VERIFIED_PRIMARY",
+      "version": "publisher",
+      "declared_local_pdf": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/originals/A12.pdf",
+      "declared_local_text": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/extracted/A12.txt",
+      "pdf": {
+        "status": "PRESENT",
+        "exists": true,
+        "resolved_path": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/originals/A12.pdf",
+        "package_relative_path": "originals/A12.pdf",
+        "size_bytes": 4354780,
+        "signature": "%PDF-",
+        "parse_status": "PARSED",
+        "page_count": 8
+      },
+      "text": {
+        "status": "PRESENT",
+        "exists": true,
+        "resolved_path": "D:/7_codespace/terminal/research/low_altitude_phd_20261013/extracted/A12.txt",
+        "package_relative_path": "extracted/A12.txt",
+        "size_bytes": 35828,
+        "char_count": 35070
+      },
+      "reading_medium": "local PDF",
+      "material_note": "A12 local 8-page PDF and extracted TXT are present and parsed; DOI was not found, so the primary URL is the source locator."
     },
     {
       "id": "B01",
@@ -1129,26 +1200,31 @@
   ],
   "summary": {
     "reading_status_counts": {
-      "FULL_TEXT": 31,
+      "FULL_TEXT": 33,
       "ABSTRACT_ONLY": 2
     },
-    "unique_id_count": 33,
-    "doi_missing_ids": [],
+    "unique_id_count": 35,
+    "doi_missing_ids": [
+      "A12"
+    ],
     "primary_url_missing_ids": [],
-    "primary_pdf_present_count": 30,
-    "primary_text_present_count": 30,
+    "primary_pdf_present_count": 31,
+    "primary_text_present_count": 31,
     "html_full_text_no_local_ids": [
       "A08"
+    ],
+    "remote_pdf_full_text_no_local_ids": [
+      "A11"
     ],
     "unread_ids": [
       "A06",
       "C03"
     ],
-    "physical_pdf_count": 31,
-    "physical_text_count": 31,
-    "physical_parsed_pdf_count": 31,
+    "physical_pdf_count": 32,
+    "physical_text_count": 32,
+    "physical_parsed_pdf_count": 32,
     "physical_pdf_count_by_directory": {
-      "originals": 19,
+      "originals": 20,
       "supplement": 12
     }
   }

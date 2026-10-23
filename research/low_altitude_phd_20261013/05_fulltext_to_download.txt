@@ -15,11 +15,15 @@ DOI：https://doi.org/10.1287/msom.2022.1148
 原证据状态：已核验出版元数据及摘要/可见节选，未取得本地可解析全文，reading_status保持ABSTRACT_ONLY；具体访问记录见evidence/track_C.json的access_attempts。设施规划层面的摘要结论不能扩展为战术执行、能量或闭环的完整作者边界。
 处理：停止追索；后续仅在摘要支持范围内使用。
 
-二、已读HTML而无本地全文文件
+二、已读全文而无本地全文文件
 
 A08 | Decentralized deconfliction of aerial robots in high intensity traffic structures
 DOI：https://doi.org/10.1002/rob.22340
-公开HTML正文已全文阅读，reading_status为FULL_TEXT；没有本地PDF/TXT不等于没有读过，不计为第三篇缺全文，也不要求额外下载。
+公开HTML正文已全文阅读，reading_status为FULL_TEXT；没有本地PDF/TXT不等于没有读过，不计入未全文阅读数量，也不要求额外下载。
+
+A11 | Coordinated Dense Aerial Traffic with Self-Driving Drones
+DOI：https://doi.org/10.1109/ICRA.2018.8461073
+公开作者远程PDF已连续阅读全文（8页），reading_status为FULL_TEXT；本地下载因TLS/SSL失败，local_pdf/local_text保持空值。A11不是HTML阅读，也不计入未全文阅读数量；不再要求用户下载。
 
 三、本次12篇已补齐全文：ID与本地PDF映射
 
@@ -38,6 +42,14 @@ C02 | supplement/1-s2.0-S0968090X21003302-main.pdf
 C04 | supplement/Urban air mobility  from complex tactical conflict resolution to network design and fairness insights.pdf
 C06 | supplement/1-s2.0-S0307904X23003062-main.pdf
 
+四、新增本地与远程记录
+
+A12 | originals/A12.pdf；extracted/A12.txt
+本地正式PDF共8页，已解析并全文阅读；DOI未核到，使用primary_url作为来源定位，不生成空DOI。
+
+A11 | 公开远程PDF（8页）；local_pdf/local_text为空
+已全文阅读但只保留远程来源；下载失败仅作为离线文件缺失记录，不作为未读。
+
 B07六页全部视觉读完；正文无法直接提取，TXT是可提取页眉加人工页码阅读笔记，非逐字全文。A09仍以originals/A09_article.pdf为主文，originals/A09.pdf为补充学位论文，不另增文献条目。
 
-当前总计：33条中31条FULL_TEXT（30篇本地主文PDF加A08公开HTML）、2条ABSTRACT_ONLY（A06、C03）。originals/19个PDF与supplement/12个PDF合计31个，覆盖30篇主文及1篇补充学位论文。
+当前总计：35条中33条FULL_TEXT（31篇主文有本地PDF，加A08公开HTML和A11公开远程PDF）、2条ABSTRACT_ONLY（A06、C03）。本地目录共32份PDF：originals/20个与supplement/12个，其中31份为主文PDF，另含A09学位论文补充材料；A08与A11均已读但无本地离线文件。

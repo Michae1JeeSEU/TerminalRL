@@ -58,3 +58,23 @@
 - Local PDFs downloaded and parsed: A01, A02, A04, A05, A07, A09, A10 (7 files).
 - Full-text evidence read: those 7 PDFs plus accessible publisher HTML sections for A08 (8 records). A03 and A06 remain ABSTRACT_ONLY.
 - Missing local PDF/text: A03, A06, A08. Reasons are recorded per record in `track_A.json`; no restricted copy was bypassed.
+
+## 2026-10-22 定向补充检索：局部规则、方向组织与宏观容量
+
+指定四组查询：
+1. `urban air mobility heading anisotropy macroscopic fundamental diagram`
+2. `self organized drone traffic directional guidance lanes order parameter`
+3. `low altitude air traffic guidance strength macroscopic control fundamental diagram`
+4. `urban air mobility adaptive airspace structure decentralized conflict resolution METROPOLIS`
+
+针对性核实（四次）：
+5. `"macroscopic fundamental diagram" air "conflict" heading`
+6. `"Traffic flow modeling and feedback control" "Low-Altitude" Haddad Safadi`
+7. `"Metropolis II" "capacity" "centralised" paper 2022`
+8. `"Coordinated dense aerial traffic with self-driving drones" DOI`
+
+- 去重：已有A01/A07/B11等保留，A06/C03未追加追索。新增A11（2018 ICRA）与A12（SID2022），元数据与机制逐条写入track_A.json。
+- A11：公开作者PDF的8页正文及图注、讨论、参考文献已通过web分段完整读完。本地下载先遇沙箱网络限制，获准网络后Python/Windows HTTPS均在作者站SSL失败；没有本地PDF/文本，local_pdf/local_text留空。IEEE网页为JS机器人检查，正式载体由带IEEE页码/版权的公开正文核实，DOI由Springer A07参考文献交叉核对。
+- A12：官方SESAR PDF下载4354780 bytes，%PDF-头验证通过，pypdf解析8页并全部读完，保留originals/A12.pdf与extracted/A12.txt；16名作者以封面作者行核验，DOI未核到而留空。
+- 本轮两篇共16页完整正文。A12讨论明确三概念同时改变结构、分离职责和可巡航空间，不能把结果差异全部归因中心化程度；未新增选题判断。
+- A11后续仅对同一已核作者站HTTP入口补试一次，返回请求发送错误；仍无本地PDF/文本。A11阅读媒介为remote PDF，A08为publisher HTML，两者不可合称HTML。最终35条=33 FULL_TEXT+2 ABSTRACT_ONLY；31份main PDF另加A09学位论文1份，共32份本地PDF。
