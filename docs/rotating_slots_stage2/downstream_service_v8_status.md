@@ -1,6 +1,6 @@
 # downstream_service_v8：medium 600 s 协议与状态
 
-状态：修复代码 `ecd49738f918d861125f4afee3814e2596c33176` 已提交并推送，provenance 已冻结；唯一有效 paired 600 s 实验 `_r1` 已正式启动。确认快照的完整共同 60 s 边界仍为 0，尚未完成 600 s，`HUMAN_PENDING` 保持。首次异常 root、其 provenance 与原始日志继续保留只读。
+状态：唯一有效 paired 实验 `_r1` 的两方法均已完成 0→600 s，请求窗口完整共同边界为 600 s，`campaign.exit=0`；campaign 状态为 `PARTIAL_REQUESTED_WINDOW`，不表示全部 manifest 请求已完成。两份终态 audit 均为 PASS、issue_count=0。主对话已复核六张截图和 comparison curves，load/seek/render 自动视觉检查通过，人工验收仍为 `HUMAN_PENDING`。修复代码 `ecd49738f918d861125f4afee3814e2596c33176` 及冻结 provenance 保持不变；首次异常 root、其 provenance 与原始日志继续保留只读。
 
 本轮将正常调度算法显式冻结为 `planning_profile=downstream_service_v8`；默认旧档案仍为 `progress_tail_v7`。candidate policy 与 objective schema 随 profile 保存到 provenance、campaign、checkpoint identity、summary 与 comparison。profile 独立于 `quality_v5` 预算：soft 30 s、solver 8 s、refinement 64 rounds 保持原样。新增下游服务预测与队列启发式不是可行性证明；执行仍需现有连续认证。
 
@@ -18,14 +18,14 @@
 
 每 60 s 及 600 s 终态报告各稳定环 warning、declared waiting、`soc-.25-normal_energy_lower_bound(ring)<=0` 积压和 UNKNOWN。warning onset/declaration 时间采用原 events，避免旧缺帧的偏移；world 没有 warning clear 事件，因此 warning 清除采用后续真实 state，积分仍标 approximate。lower-bound shortage 与 UNKNOWN 的时间积分按真实非均匀 states 左端近似并报告最大帧间隔。lower bound shortage 不是任意 SOC 阈值，也不证明可行。总能耗及 normal/emergency/F/pending/offered 直接取 600 s metrics，不相加累计摘要。另列分环转移、进入 inner 到开始 final/接地的时长与 censored，以及 normal/完整 dispatch 耗时。
 
-正式终态结果后再补充结论；当前不作性能收益声明。
+旧 medium 基线按上述口径只读提取到 [v8_medium_baseline_facts.json](../../artifacts/rotating_slots_stage2_20261023/v8_medium_baseline_facts.json)，为 preexisting_artifact；本轮实际 600 s 结果为 newly_run，紧凑事实见 [v8_medium_final_summary.json](../../artifacts/rotating_slots_stage2_20261023/v8_medium_final_summary.json)，规划器记录见 [v8_planner_final_facts.json](../../artifacts/rotating_slots_stage2_20261023/v8_planner_final_facts.json)。完整逐 dispatch 分析保留于本地约 38 MB 的 `v8_medium_final_facts.json`，不作为版本交付的大文件。下表 pending 为 airborne pending；四行 upstream pending 均为 0、offered 均为 57。holding 是所有飞机实际稳定 HOLD 时间之和，单位为 aircraft-seconds，包含未来预约实际开始前的等待，排除 transfer/final。
 
-旧 medium 基线已按上述口径只读提取到 `artifacts/rotating_slots_stage2_20261023/v8_medium_baseline_facts.json`。以下为 preexisting_artifact，非本轮新实验：
-
-| 方法 | normal / emergency / F / pending | 总能耗 kWh | O / M / I holding 秒 | O / M / I holding kWh |
-|---|---|---:|---|---|
-| energy_slack | 27 / 2 / 0 / 28 | 394.344077 | 342.110798 / 2153.095318 / 6803.744375 | 6.469506 / 44.744233 / 175.334625 |
-| rh_cp_sat | 22 / 4 / 0 / 31 | 406.652004 | 99.958602 / 2516.591876 / 7337.262313 | 1.890273 / 52.298183 / 189.083550 |
+| 档案 / 方法 | normal / emergency / total / F / pending | 总能耗 kWh | O / M / I holding aircraft-s | O / M / I holding kWh | normal wall mean / P95 s |
+|---|---|---:|---|---|---|
+| 旧 v7 / energy_slack | 27 / 2 / 29 / 0 / 28 | 394.344077 | 342.110798 / 2153.095318 / 6803.744375 | 6.469506 / 44.744233 / 175.334625 | 15.1332 / 16.1196 |
+| 新 v8 / energy_slack | 30 / 1 / 31 / 0 / 26 | 356.764083 | 2797.061330 / 2820.114789 / 4362.604979 | 52.893991 / 58.605800 / 112.425698 | 14.0233 / 15.1404 |
+| 旧 v7 / rh_cp_sat | 22 / 4 / 26 / 0 / 31 | 406.652004 | 99.958602 / 2516.591876 / 7337.262313 | 1.890273 / 52.298183 / 189.083550 | 17.4118 / 19.8636 |
+| 新 v8 / rh_cp_sat | 28 / 3 / 31 / 0 / 26 | 357.924250 | 2085.693772 / 2698.136173 / 4772.667912 | 39.441633 / 56.070919 / 122.993148 | 21.5410 / 26.7566 |
 
 两方法各环事件 holding 合计与 summary.holding_time 差均为 0 s；states 累计 holding counter 差均为 0 s；states 左端按环积分误差最大 1.42e-10 s。holding 能耗均小于总能耗；holding J 加已执行非稳定 ledger charge 与总能耗的差在 3.34e-6 J 内。旧 max state gap 约 1 s；warning 积分状态明确为 `APPROXIMATE_NO_CLEAR_EVENTS`。
 
@@ -51,8 +51,34 @@ CP 记录 `refinement_rounds=7`、16 个 phase 记录，solver 合计 1.676627 s
 
 `_r1` 已绑定 CPU 12 / 14（物理 core 6 / 7），各进程及数值库线程为 1。另一独立 `.worktrees/equal-linear-speed` 实验使用 CPU 0 / 2 / 4 / 6 / 8 / 10，应保持其运行与文件不受影响。物理核心分开仍共享机器内存、缓存与负载，因此 wall-time 比较保留并发环境限制。
 
-正式启动时间为服务器 UTC **2026-10-23T10:35:10.139Z**，launcher PID 178063、GNU time PID 178073、runner PID 178074、energy_slack spawn PID 178077（CPU 12）、rh_cp_sat spawn PID 178078（CPU 14）。本地与服务器物化 provenance 完全相同，source hash 为 `e9777021491e30aa1e7fbdbd2938f989f0968f4126acdf7c1cb18c741d425c17`；fixture、manifest、environment.lock 与旧 medium 字节相同。启动事实见 `artifacts/rotating_slots_stage2_20261023/v8_launch_facts.json`。
+以下启动、估时与 heartbeat 段落保留当时的历史快照，终态以本文开头及末尾记录为准。正式启动时间为服务器 UTC **2026-10-23T10:35:10.139Z**，launcher PID 178063、GNU time PID 178073、runner PID 178074、energy_slack spawn PID 178077（CPU 12）、rh_cp_sat spawn PID 178078（CPU 14）。本地与服务器物化 provenance 完全相同，source hash 为 `e9777021491e30aa1e7fbdbd2938f989f0968f4126acdf7c1cb18c741d425c17`；fixture、manifest、environment.lock 与旧 medium 字节相同。启动事实见 `artifacts/rotating_slots_stage2_20261023/v8_launch_facts.json`。
 
 采用 `startup_confirmed.json` 的服务器 UTC **10:39:53.661Z** 快照：runner elapsed 283.522 s，energy_slack 最新真实状态约 29 s、rh_cp_sat 18 s，两者 failed/invalid 均 false，无 error/invalid 文件，进程仍在运行。完整共同 60 s 边界为 **0 s**；18 s 只是 min latest state，不能当作完整共同窗口。本地 SSH 前后时间另记为 UTC 10:38:59.315Z / 10:39:06.035Z，不混作服务器观测时间。原 `startup_snapshot.json` 的错误标签不覆盖，以保留的 `startup_confirmed.json` 纠正。后续日志读取 `campaign.log`，耗时读取 `campaign.timing.txt`，终态退出标记读取 **`campaign.exit`**（不是 `exit_code.txt`）；该确认快照尚无终态退出标记。
 
 初始预计总耗时 T0 为 **12600 s**，依据旧 medium 约 9749 s 及新 CP callback 约 25–32 s；工作不均匀，估时不保证完成时间。确认快照的剩余估计为 12316.478 s。主对话随后在本地 UTC **10:41:25.614Z** 经工具确认当前 chat 的 heartbeat `stage2-v8-600` 为 ACTIVE、间隔 **203 min**：从 SSH 后时刻已过去 139.579 s，故采用 `12316.478-139.579=12176.899 s` 取整。首次调用因缺 destination 被拒、未创建，随后 `destination=thread` 成功，无重复调度。唤醒时检查实际退出状态和完整产物；完成或失败后删除 heartbeat，并继续既定分析交付；非终态且无变化时静默。
+
+正式终态核验：服务器 `campaign.exit=0`，GNU real 为 **9769.01 s**；原 launcher、time、runner 和两方法 PID 均已退出，未发现 error/invalid 文件。两方法 600 s summary、metrics、checkpoint、replay 与 audit 完整，common completed 为 **600 s**，两份 audit 均 PASS、0 issue。最终持久化 `campaign_wall_s=10932.100402692333`，包含冻结预算的历史 credit；不能用任务停止后检查时的 `now-started_epoch≈14143 s` 替代实际终态 cost。heartbeat `stage2-v8-600` 已经工具确认删除，不再安排监控。
+
+本轮 holding 闭合检查中，两方法 event 与 summary 的 holding 差均为 0 s；holding J 加已执行非稳定 ledger charge 减总能耗分别为 energy_slack **−2.98e−7 J**、rh_cp_sat **4.77e−7 J**。warning 清除没有独立事件，warning aircraft-seconds 仍为近似值；lower-bound shortage 与 UNKNOWN 使用真实非均匀帧的左端积分，新旧最大帧间隔约 1 s。旧两方法各有 2 个 warning 缺帧 audit issue，不能称旧 audit 为 PASS，也不能把日志补帧归为算法收益。
+
+相同 seed、输入及物理/应急协议的本次整体对照中，energy_slack 正常着陆由 27 增至 30、应急由 2 降至 1，总能耗下降 **9.5297%**；rh_cp_sat 正常由 22 增至 28、应急由 4 降至 3，总能耗下降 **11.9827%**。inner holding 分别下降 **35.8794% / 34.9530%**。总 holding 时间 ES 为 **9298.950491→9979.781099 aircraft-s（增加 7.3216%）**，CP 为 **9953.812790→9556.497857 aircraft-s（减少 3.9916%）**；inner 等候减少不等于所有等待总量都减少，ES 主要改变等待位置并减少飞行机动能耗。两方法 outer/middle holding 增加，但这两环累计 lower-bound shortage 均为 0 aircraft-s；旧 middle 分别为 38 / 23 aircraft-s。新 CP middle 仍有约 **78.115 aircraft-s warning**。UNKNOWN 仍多，零 shortage 只针对既定下界口径，不能视为完整正常可行性证明。
+
+energy_slack 的 holding 能耗由 **226.548365→223.925489 kWh**，仅减少 **2.622876 kWh**；非稳定执行 charge 由 **167.795712→132.838594 kWh**，减少 **34.957118 kWh**。CP 对应为 holding **243.272006→218.505701 kWh**、非稳定 **163.379998→139.418550 kWh**。因此不能把总节能全部归因于上游较低功率等待。实际完成的 M→I 转移由旧 ES/CP **36/37** 变为 **32/32**，O→M 由 **36/38** 变为 **30/33**；较少跨环而有更多正常着陆，支持减少提前推进的解释，但单次整体对照无法分离每项修改的因果贡献。
+
+新 normal wall 的 mean/P95 见表：ES 较旧略快，CP 由 **17.4118/19.8636 s** 增至 **21.5410/26.7566 s**。新完整 dispatch mean/P95 分别为 **15.6433/19.8988 s** 与 **24.3347/33.0058 s**；完整 dispatch 包含累计 monitor 工作，不能直接视为严格的在线连续响应延迟。旧新运行共享服务器环境，墙钟统计受到并发负载、内存及缓存影响。
+
+规划器原始记录中，CP **388/388** 次进入求解，**125/388（32.2%）** 的最终向量严格改善同一次调用的 hint；该比例不是相对完整 energy_slack 实验的优化增益。共 **1124 rounds**，平均 **2.897**、最大 **46**；3699 个 phase 中有 **3353 OPTIMAL / 305 FEASIBLE / 41 UNKNOWN**，这些有限目录及预算内状态不能宣称全局最优。平均 candidate/validation/solver wall 为 ES **10.6184/3.2521/0 s**、CP **10.1583/5.6435/5.5485 s**；CP solver 合计 **2152.822 s**，约占其 normal wall 的 **25.8%**，不能沿用旧实验约 0.2% 的描述。
+
+DELAYED 被选预测的重复 aircraft-dispatch 观察为 ES **152**、CP **361**，不能当作独立机数或执行动作数。其中 **15 / 20** 条记录与同一次 dispatch、同目标的 normal 提交匹配，提交 hash 有真实启动记录；其余 **137 / 341** 条未预约预测缺少可追踪的执行 signature，后续同目标动作只能作为 same-target proxy，不能宣称全部预测兑现。另有 **32 / 41** 个所有 normal 类型的未来启动预约（start>commit）均按原计划 epoch 实际开始；这一计数不专属于新 DELAYED 候选。预测能量不能跨 dispatch 求和当作物理能耗。
+
+回放证据见 [check.json](../../artifacts/rotating_slots_stage2_20261023/v8_replay_checks/check.json) 与 [check_replays.py](../../artifacts/rotating_slots_stage2_20261023/v8_replay_checks/check_replays.py)。两方法均实际 load/seek/render 300、450、600 s，六张图均为 1600×860 且图像读取通过。ES 450 s 的记录帧为 449.9999999999997 s，controller/snapshot 返回 450 s；其余记录帧等于请求时刻。截图：[ES 300](../../artifacts/rotating_slots_stage2_20261023/v8_replay_checks/energy_slack_0300.png)、[ES 450](../../artifacts/rotating_slots_stage2_20261023/v8_replay_checks/energy_slack_0450.png)、[ES 600](../../artifacts/rotating_slots_stage2_20261023/v8_replay_checks/energy_slack_0600.png)、[CP 300](../../artifacts/rotating_slots_stage2_20261023/v8_replay_checks/rh_cp_sat_0300.png)、[CP 450](../../artifacts/rotating_slots_stage2_20261023/v8_replay_checks/rh_cp_sat_0450.png)、[CP 600](../../artifacts/rotating_slots_stage2_20261023/v8_replay_checks/rh_cp_sat_0600.png)。600 s 显示的 rescue WAIT/RESERVED/ACTIVE 分别为 ES **0/0/3**、CP **0/1/5**；ES 在 450/600 s 的 P4 显示 FREE。单张图不能证明存在安全可执行的着陆机会，不能据此声称不存在 pad 闲置或所有低 SOC 飞机都没有错过最后机会。主对话已查看这些图及 comparison curves；人工验收状态保持 `HUMAN_PENDING`。
+
+在 PowerShell 中先进入仓库，再分别运行以下两条既有平台入口命令；关闭窗口即返回。命令实际调用 `ReplayController` 与 `RotatingSlotsReplayViewer.run()`：
+
+```powershell
+Set-Location -LiteralPath 'D:\7_codespace\terminal'
+& D:\7_codespace\terminal\venv\Scripts\python.exe -c "from terminal_marl.visualization.rotating_slots_replay import ReplayController, RotatingSlotsReplayViewer; RotatingSlotsReplayViewer(ReplayController(r'D:\7_codespace\training_outputs\terminal\stage2_downstream_service_v8_medium_600s_20261023_r1\energy_slack\replay_0600')).run()"
+& D:\7_codespace\terminal\venv\Scripts\python.exe -c "from terminal_marl.visualization.rotating_slots_replay import ReplayController, RotatingSlotsReplayViewer; RotatingSlotsReplayViewer(ReplayController(r'D:\7_codespace\training_outputs\terminal\stage2_downstream_service_v8_medium_600s_20261023_r1\rh_cp_sat\replay_0600')).run()"
+```
+
+这次固定 600 s medium 对照显示正常着陆增加、应急次数和总能耗下降，同时 CP 计算时间增加。两种方法终态仍有 **26** 架 airborne pending，较初始 **24** 架多 2，且仍有救援未完成；当前证据不足以证明长期持续稳定、长期无能源失败或所有剩余飞机正常可行。没有增加场景、种子或修改物理/应急协议来扩展这一结论。

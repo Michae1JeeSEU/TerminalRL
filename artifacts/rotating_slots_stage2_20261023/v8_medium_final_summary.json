@@ -1,0 +1,3729 @@
+{
+  "schema": "stage2_v8_medium_final_summary_v1",
+  "root": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023_r1",
+  "time_s": 600.0,
+  "planning_profile": "downstream_service_v8",
+  "full_local_analysis_path": "D:/7_codespace/terminal/artifacts/rotating_slots_stage2_20261023/v8_medium_final_facts.json",
+  "full_analysis_note": "Large local analysis retained separately; original per-dispatch records remain in the completed root.",
+  "human_review": "HUMAN_PENDING",
+  "methods": {
+    "energy_slack": {
+      "metrics": {
+        "L_normal": 30,
+        "L_emergency": 1,
+        "L_success": 31,
+        "F_energy_total": 0,
+        "N_airborne_pending": 26,
+        "N_upstream_pending": 0,
+        "N_offered": 57,
+        "energy_j": 1284350697.4699602,
+        "energy_kwh": 356.7640826305445,
+        "holding_time": 9979.781098663949
+      },
+      "holding": {
+        "seconds_by_ring": {
+          "outer": 2797.0613304451895,
+          "middle": 2820.114789300434,
+          "inner": 4362.604978918326
+        },
+        "battery_w_by_ring": {
+          "outer": 68078.00913676799,
+          "middle": 74812.86972039986,
+          "inner": 92773.12847058187
+        },
+        "joules_by_ring": {
+          "outer": 190418366.81014803,
+          "middle": 210980880.32850626,
+          "inner": 404732512.17559
+        },
+        "total_j": 806131759.3142443,
+        "kwh_by_ring": {
+          "outer": 52.893990780596674,
+          "middle": 58.60580009125174,
+          "inner": 112.42569782655278
+        },
+        "integration": "exact actual maneuver events; future reservations retain holding until actual start",
+        "executed_nonstable_ledger_charge_j": 478218938.15571564,
+        "ledger_note": "world._record_energy_charge excludes STABLE/GROUND; nonstable numerical ledger is not total terminal energy"
+      },
+      "checks": {
+        "event_vs_summary_holding_s": 0.0,
+        "state_counter_vs_summary_holding_s": 0.0,
+        "left_state_vs_event_by_ring_s": {
+          "outer": 4.774847184307873e-11,
+          "middle": 5.1386450650170445e-11,
+          "inner": 6.912159733474255e-11
+        },
+        "holding_energy_le_total": true,
+        "holding_plus_nonstable_ledger_minus_total_j": -2.980232238769531e-07,
+        "holding_plus_nonstable_ledger_matches_total": true,
+        "holding_integrals_match": true
+      },
+      "queues": {
+        "definition": "stable HOLD ring backlog only; maneuvers excluded; lower_bound_shortage = soc - .25 - normal_energy_lower_bound(ring) <= 0",
+        "every_60s": [
+          {
+            "time_s": 0,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 4,
+                "stable_backlog": 4
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 5,
+                "stable_backlog": 5
+              },
+              "inner": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 5,
+                "stable_backlog": 5
+              }
+            }
+          },
+          {
+            "time_s": 60,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 1,
+                "stable_backlog": 1
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 4,
+                "stable_backlog": 4
+              },
+              "inner": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 6,
+                "stable_backlog": 6
+              }
+            }
+          },
+          {
+            "time_s": 120,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 3,
+                "stable_backlog": 3
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 5,
+                "stable_backlog": 5
+              },
+              "inner": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 11,
+                "stable_backlog": 11
+              }
+            }
+          },
+          {
+            "time_s": 180,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 2,
+                "stable_backlog": 2
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 5,
+                "stable_backlog": 5
+              },
+              "inner": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 8,
+                "stable_backlog": 8
+              }
+            }
+          },
+          {
+            "time_s": 240,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 4,
+                "stable_backlog": 4
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 6,
+                "stable_backlog": 6
+              },
+              "inner": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 10,
+                "stable_backlog": 10
+              }
+            }
+          },
+          {
+            "time_s": 300,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 6,
+                "stable_backlog": 6
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 7,
+                "stable_backlog": 7
+              },
+              "inner": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 7,
+                "stable_backlog": 7
+              }
+            }
+          },
+          {
+            "time_s": 360,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 9,
+                "stable_backlog": 9
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 4,
+                "stable_backlog": 4
+              },
+              "inner": {
+                "warning": 1,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 7,
+                "stable_backlog": 7
+              }
+            }
+          },
+          {
+            "time_s": 420,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 6,
+                "stable_backlog": 6
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 2,
+                "stable_backlog": 2
+              },
+              "inner": {
+                "warning": 2,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 5,
+                "stable_backlog": 5
+              }
+            }
+          },
+          {
+            "time_s": 480,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 5,
+                "stable_backlog": 5
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 6,
+                "stable_backlog": 6
+              },
+              "inner": {
+                "warning": 4,
+                "declared_waiting": 1,
+                "lower_bound_shortage": 1,
+                "normal_status_unknown": 7,
+                "stable_backlog": 8
+              }
+            }
+          },
+          {
+            "time_s": 540,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 6,
+                "stable_backlog": 6
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 7,
+                "stable_backlog": 7
+              },
+              "inner": {
+                "warning": 4,
+                "declared_waiting": 2,
+                "lower_bound_shortage": 2,
+                "normal_status_unknown": 7,
+                "stable_backlog": 8
+              }
+            }
+          },
+          {
+            "time_s": 600,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 7,
+                "stable_backlog": 7
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 5,
+                "stable_backlog": 5
+              },
+              "inner": {
+                "warning": 3,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 5,
+                "stable_backlog": 5
+              }
+            }
+          }
+        ],
+        "terminal": {
+          "outer": {
+            "warning": 0,
+            "declared_waiting": 0,
+            "lower_bound_shortage": 0,
+            "normal_status_unknown": 7,
+            "stable_backlog": 7
+          },
+          "middle": {
+            "warning": 0,
+            "declared_waiting": 0,
+            "lower_bound_shortage": 0,
+            "normal_status_unknown": 5,
+            "stable_backlog": 5
+          },
+          "inner": {
+            "warning": 3,
+            "declared_waiting": 0,
+            "lower_bound_shortage": 0,
+            "normal_status_unknown": 5,
+            "stable_backlog": 5
+          }
+        },
+        "aircraft_seconds": {
+          "outer": {
+            "warning": 0.0,
+            "declared_waiting": 0.0,
+            "lower_bound_shortage": 0.0,
+            "normal_status_unknown": 2797.061330445189,
+            "stable_backlog": 2797.061330445189
+          },
+          "middle": {
+            "warning": 0.0,
+            "declared_waiting": 0.0,
+            "lower_bound_shortage": 0.0,
+            "normal_status_unknown": 2820.114789300428,
+            "stable_backlog": 2820.114789300428
+          },
+          "inner": {
+            "warning": 728.9123484301832,
+            "declared_waiting": 244.9680352143762,
+            "lower_bound_shortage": 227.60268183083355,
+            "normal_status_unknown": 4222.636943703942,
+            "stable_backlog": 4362.604978918318
+          }
+        },
+        "warning_integral_status": "APPROXIMATE_NO_CLEAR_EVENTS",
+        "integral_precision": {
+          "warning": "approximate clearing from left state flags, exact event onsets; no warning_clear event exists",
+          "declared_waiting": "exact event flags and stable boundaries",
+          "lower_bound_shortage": "approximate left state SOC, not a threshold crossing interpolation",
+          "normal_status_unknown": "approximate left state status",
+          "max_state_gap_s": 1.0000000000002274
+        }
+      },
+      "transfer_completed_by_route": {
+        "middle->inner": 32,
+        "outer->middle": 30
+      },
+      "inner_latency_summary": {
+        "inner_entry_count": 40,
+        "inner_to_final_s": {
+          "count": 35,
+          "mean": 105.67757040771109,
+          "p95": 411.6506053552718,
+          "min": 0.0,
+          "max": 446.5631279878134,
+          "sum": 3698.7149642698882
+        },
+        "inner_to_final_censored": 5,
+        "inner_to_touchdown_s": {
+          "count": 31,
+          "mean": 158.5199799846597,
+          "p95": 410.99999999999983,
+          "min": 48.5,
+          "max": 530.0631279878135,
+          "sum": 4914.119379524451
+        },
+        "inner_to_touchdown_censored": 9,
+        "note": "Statistics use uncensored durations only; censored counts remain separate, no survival extrapolation."
+      },
+      "timing": {
+        "normal_timing": {
+          "count": 374,
+          "max": 17.43908520799596,
+          "mean": 14.02334442557403,
+          "over_5s": 374,
+          "over_5s_fraction": 1.0,
+          "p50": 13.91818597400561,
+          "p95": 15.14035545233055,
+          "p99": 15.863924716972395,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "inner_algorithm_timing": {
+          "count": 374,
+          "max": 17.43867315701209,
+          "mean": 14.02204867670226,
+          "over_5s": 374,
+          "over_5s_fraction": 1.0,
+          "p50": 13.917106798529858,
+          "p95": 15.138949039284489,
+          "p99": 15.863479919635573,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "dispatch_timing": {
+          "count": 374,
+          "max": 22.8438261768315,
+          "mean": 15.643303505858603,
+          "over_5s": 374,
+          "over_5s_fraction": 1.0,
+          "p50": 14.530936379014747,
+          "p95": 19.89876910781313,
+          "p99": 21.68840067823126,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "dispatch_wall_sum_s": 5850.595511191117,
+        "executor_non_dispatch_wall_s": 5.958914447168354,
+        "episode_compute_wall_s": 6090.943402534933
+      },
+      "planner_timing_by_stage": {
+        "bounded_delayed_generation": {
+          "wall_s": 45.0609306616243,
+          "cpu_s": 45.058883561032204
+        },
+        "candidate_generation_and_single_vehicle": {
+          "wall_s": 2018.4277691307361,
+          "cpu_s": 2018.4051491679456
+        },
+        "commit": {
+          "wall_s": 22.70958016073564,
+          "cpu_s": 22.709811999991523
+        },
+        "delayed_reference_regeneration": {
+          "wall_s": 119.81802853674162,
+          "cpu_s": 119.81564240202106
+        },
+        "downstream_explanation": {
+          "wall_s": 1.5921454796334729,
+          "cpu_s": 1.592194850998773
+        },
+        "fallback": {
+          "wall_s": 0.0004660750273615122,
+          "cpu_s": 0.0004462860028979776
+        },
+        "geometry_template_screen": {
+          "wall_s": 96.56086848839186,
+          "cpu_s": 96.5640312390445
+        },
+        "normal_evidence_reporting": {
+          "wall_s": 3.7722718305303715,
+          "cpu_s": 3.772328990008994
+        },
+        "prefix_validation": {
+          "wall_s": 28.414771899580956,
+          "cpu_s": 28.414843591005912
+        },
+        "reference_seed_generation": {
+          "wall_s": 747.8663278824533,
+          "cpu_s": 747.862802515029
+        },
+        "safe_progress_generation": {
+          "wall_s": 943.5373332441086,
+          "cpu_s": 943.5290035479458
+        },
+        "selected_validation": {
+          "wall_s": 0.23977699381066486,
+          "cpu_s": 0.23953889099090375
+        },
+        "selection": {
+          "wall_s": 25.484132541692816,
+          "cpu_s": 25.46401456394894
+        },
+        "snapshot_and_uniform_refinement": {
+          "wall_s": 2.348923488461878,
+          "cpu_s": 2.349080446994838
+        },
+        "trajectory_validation": {
+          "wall_s": 1187.6140377128613,
+          "cpu_s": 1187.640991582034
+        }
+      },
+      "new_minus_v7_baseline": {
+        "metrics": {
+          "L_normal": {
+            "new": 30,
+            "baseline": 27,
+            "delta": 3,
+            "percent": 11.11111111111111
+          },
+          "L_emergency": {
+            "new": 1,
+            "baseline": 2,
+            "delta": -1,
+            "percent": -50.0
+          },
+          "L_success": {
+            "new": 31,
+            "baseline": 29,
+            "delta": 2,
+            "percent": 6.896551724137931
+          },
+          "F_energy_total": {
+            "new": 0,
+            "baseline": 0,
+            "delta": 0,
+            "percent": null
+          },
+          "N_airborne_pending": {
+            "new": 26,
+            "baseline": 28,
+            "delta": -2,
+            "percent": -7.142857142857143
+          },
+          "N_upstream_pending": {
+            "new": 0,
+            "baseline": 0,
+            "delta": 0,
+            "percent": null
+          },
+          "N_offered": {
+            "new": 57,
+            "baseline": 57,
+            "delta": 0,
+            "percent": 0.0
+          },
+          "energy_j": {
+            "new": 1284350697.4699602,
+            "baseline": 1419638675.6047559,
+            "delta": -135287978.13479567,
+            "percent": -9.529747284263298
+          },
+          "energy_kwh": {
+            "new": 356.7640826305445,
+            "baseline": 394.34407655687664,
+            "delta": -37.57999392633212,
+            "percent": -9.529747284263296
+          },
+          "holding_time": {
+            "new": 9979.781098663949,
+            "baseline": 9298.950490806623,
+            "delta": 680.830607857326,
+            "percent": 7.32158546849375
+          }
+        },
+        "holding_seconds_by_ring": {
+          "outer": {
+            "new": 2797.0613304451895,
+            "baseline": 342.11079801871875,
+            "delta": 2454.9505324264705,
+            "percent": 717.5893151119267
+          },
+          "middle": {
+            "new": 2820.114789300434,
+            "baseline": 2153.095317708535,
+            "delta": 667.0194715918992,
+            "percent": 30.979560733139536
+          },
+          "inner": {
+            "new": 4362.604978918326,
+            "baseline": 6803.74437507937,
+            "delta": -2441.139396161044,
+            "percent": -35.87935203889206
+          }
+        },
+        "holding_kwh_by_ring": {
+          "outer": {
+            "new": 52.893990780596674,
+            "baseline": 6.469506120362589,
+            "delta": 46.424484660234086,
+            "percent": 717.5893151119267
+          },
+          "middle": {
+            "new": 58.60580009125174,
+            "baseline": 44.74423319425877,
+            "delta": 13.861566896992969,
+            "percent": 30.979560733139518
+          },
+          "inner": {
+            "new": 112.42569782655278,
+            "baseline": 175.33462527506586,
+            "delta": -62.90892744851308,
+            "percent": -35.87935203889205
+          }
+        },
+        "transfers": {
+          "middle->inner": {
+            "new": 32,
+            "baseline": 36,
+            "delta": -4,
+            "percent": -11.11111111111111
+          },
+          "outer->middle": {
+            "new": 30,
+            "baseline": 36,
+            "delta": -6,
+            "percent": -16.666666666666668
+          }
+        },
+        "terminal_queues": {
+          "outer": {
+            "warning": {
+              "new": 0,
+              "baseline": 0,
+              "delta": 0,
+              "percent": null
+            },
+            "declared_waiting": {
+              "new": 0,
+              "baseline": 0,
+              "delta": 0,
+              "percent": null
+            },
+            "lower_bound_shortage": {
+              "new": 0,
+              "baseline": 0,
+              "delta": 0,
+              "percent": null
+            },
+            "normal_status_unknown": {
+              "new": 7,
+              "baseline": 0,
+              "delta": 7,
+              "percent": null
+            },
+            "stable_backlog": {
+              "new": 7,
+              "baseline": 0,
+              "delta": 7,
+              "percent": null
+            }
+          },
+          "middle": {
+            "warning": {
+              "new": 0,
+              "baseline": 1,
+              "delta": -1,
+              "percent": -100.0
+            },
+            "declared_waiting": {
+              "new": 0,
+              "baseline": 1,
+              "delta": -1,
+              "percent": -100.0
+            },
+            "lower_bound_shortage": {
+              "new": 0,
+              "baseline": 1,
+              "delta": -1,
+              "percent": -100.0
+            },
+            "normal_status_unknown": {
+              "new": 5,
+              "baseline": 1,
+              "delta": 4,
+              "percent": 400.0
+            },
+            "stable_backlog": {
+              "new": 5,
+              "baseline": 2,
+              "delta": 3,
+              "percent": 150.0
+            }
+          },
+          "inner": {
+            "warning": {
+              "new": 3,
+              "baseline": 7,
+              "delta": -4,
+              "percent": -57.142857142857146
+            },
+            "declared_waiting": {
+              "new": 0,
+              "baseline": 5,
+              "delta": -5,
+              "percent": -100.0
+            },
+            "lower_bound_shortage": {
+              "new": 0,
+              "baseline": 4,
+              "delta": -4,
+              "percent": -100.0
+            },
+            "normal_status_unknown": {
+              "new": 5,
+              "baseline": 8,
+              "delta": -3,
+              "percent": -37.5
+            },
+            "stable_backlog": {
+              "new": 5,
+              "baseline": 11,
+              "delta": -6,
+              "percent": -54.54545454545455
+            }
+          }
+        },
+        "every_60s_queues": [
+          {
+            "time_s": 0,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 4,
+                  "baseline": 0,
+                  "delta": 4,
+                  "percent": null
+                },
+                "stable_backlog": {
+                  "new": 4,
+                  "baseline": 0,
+                  "delta": 4,
+                  "percent": null
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 5,
+                  "baseline": 0,
+                  "delta": 5,
+                  "percent": null
+                },
+                "stable_backlog": {
+                  "new": 5,
+                  "baseline": 0,
+                  "delta": 5,
+                  "percent": null
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 5,
+                  "baseline": 3,
+                  "delta": 2,
+                  "percent": 66.66666666666667
+                },
+                "stable_backlog": {
+                  "new": 5,
+                  "baseline": 3,
+                  "delta": 2,
+                  "percent": 66.66666666666667
+                }
+              }
+            }
+          },
+          {
+            "time_s": 60,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 1,
+                  "baseline": 0,
+                  "delta": 1,
+                  "percent": null
+                },
+                "stable_backlog": {
+                  "new": 1,
+                  "baseline": 0,
+                  "delta": 1,
+                  "percent": null
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 4,
+                  "baseline": 1,
+                  "delta": 3,
+                  "percent": 300.0
+                },
+                "stable_backlog": {
+                  "new": 4,
+                  "baseline": 1,
+                  "delta": 3,
+                  "percent": 300.0
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 6,
+                  "baseline": 10,
+                  "delta": -4,
+                  "percent": -40.0
+                },
+                "stable_backlog": {
+                  "new": 6,
+                  "baseline": 10,
+                  "delta": -4,
+                  "percent": -40.0
+                }
+              }
+            }
+          },
+          {
+            "time_s": 120,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 3,
+                  "baseline": 0,
+                  "delta": 3,
+                  "percent": null
+                },
+                "stable_backlog": {
+                  "new": 3,
+                  "baseline": 0,
+                  "delta": 3,
+                  "percent": null
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 5,
+                  "baseline": 2,
+                  "delta": 3,
+                  "percent": 150.0
+                },
+                "stable_backlog": {
+                  "new": 5,
+                  "baseline": 2,
+                  "delta": 3,
+                  "percent": 150.0
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 11,
+                  "baseline": 15,
+                  "delta": -4,
+                  "percent": -26.666666666666668
+                },
+                "stable_backlog": {
+                  "new": 11,
+                  "baseline": 15,
+                  "delta": -4,
+                  "percent": -26.666666666666668
+                }
+              }
+            }
+          },
+          {
+            "time_s": 180,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 2,
+                  "baseline": 0,
+                  "delta": 2,
+                  "percent": null
+                },
+                "stable_backlog": {
+                  "new": 2,
+                  "baseline": 0,
+                  "delta": 2,
+                  "percent": null
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 5,
+                  "baseline": 1,
+                  "delta": 4,
+                  "percent": 400.0
+                },
+                "stable_backlog": {
+                  "new": 5,
+                  "baseline": 1,
+                  "delta": 4,
+                  "percent": 400.0
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 8,
+                  "baseline": 13,
+                  "delta": -5,
+                  "percent": -38.46153846153846
+                },
+                "stable_backlog": {
+                  "new": 8,
+                  "baseline": 13,
+                  "delta": -5,
+                  "percent": -38.46153846153846
+                }
+              }
+            }
+          },
+          {
+            "time_s": 240,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 4,
+                  "baseline": 0,
+                  "delta": 4,
+                  "percent": null
+                },
+                "stable_backlog": {
+                  "new": 4,
+                  "baseline": 0,
+                  "delta": 4,
+                  "percent": null
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 6,
+                  "baseline": 4,
+                  "delta": 2,
+                  "percent": 50.0
+                },
+                "stable_backlog": {
+                  "new": 6,
+                  "baseline": 4,
+                  "delta": 2,
+                  "percent": 50.0
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 10,
+                  "baseline": 12,
+                  "delta": -2,
+                  "percent": -16.666666666666668
+                },
+                "stable_backlog": {
+                  "new": 10,
+                  "baseline": 12,
+                  "delta": -2,
+                  "percent": -16.666666666666668
+                }
+              }
+            }
+          },
+          {
+            "time_s": 300,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 6,
+                  "baseline": 0,
+                  "delta": 6,
+                  "percent": null
+                },
+                "stable_backlog": {
+                  "new": 6,
+                  "baseline": 0,
+                  "delta": 6,
+                  "percent": null
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 7,
+                  "baseline": 3,
+                  "delta": 4,
+                  "percent": 133.33333333333334
+                },
+                "stable_backlog": {
+                  "new": 7,
+                  "baseline": 3,
+                  "delta": 4,
+                  "percent": 133.33333333333334
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 7,
+                  "baseline": 11,
+                  "delta": -4,
+                  "percent": -36.36363636363637
+                },
+                "stable_backlog": {
+                  "new": 7,
+                  "baseline": 11,
+                  "delta": -4,
+                  "percent": -36.36363636363637
+                }
+              }
+            }
+          },
+          {
+            "time_s": 360,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 9,
+                  "baseline": 1,
+                  "delta": 8,
+                  "percent": 800.0
+                },
+                "stable_backlog": {
+                  "new": 9,
+                  "baseline": 1,
+                  "delta": 8,
+                  "percent": 800.0
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 4,
+                  "baseline": 5,
+                  "delta": -1,
+                  "percent": -20.0
+                },
+                "stable_backlog": {
+                  "new": 4,
+                  "baseline": 5,
+                  "delta": -1,
+                  "percent": -20.0
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 1,
+                  "baseline": 1,
+                  "delta": 0,
+                  "percent": 0.0
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 1,
+                  "delta": -1,
+                  "percent": -100.0
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 7,
+                  "baseline": 14,
+                  "delta": -7,
+                  "percent": -50.0
+                },
+                "stable_backlog": {
+                  "new": 7,
+                  "baseline": 14,
+                  "delta": -7,
+                  "percent": -50.0
+                }
+              }
+            }
+          },
+          {
+            "time_s": 420,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 6,
+                  "baseline": 2,
+                  "delta": 4,
+                  "percent": 200.0
+                },
+                "stable_backlog": {
+                  "new": 6,
+                  "baseline": 2,
+                  "delta": 4,
+                  "percent": 200.0
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 2,
+                  "baseline": 6,
+                  "delta": -4,
+                  "percent": -66.66666666666667
+                },
+                "stable_backlog": {
+                  "new": 2,
+                  "baseline": 6,
+                  "delta": -4,
+                  "percent": -66.66666666666667
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 2,
+                  "baseline": 5,
+                  "delta": -3,
+                  "percent": -60.0
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 1,
+                  "delta": -1,
+                  "percent": -100.0
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 1,
+                  "delta": -1,
+                  "percent": -100.0
+                },
+                "normal_status_unknown": {
+                  "new": 5,
+                  "baseline": 13,
+                  "delta": -8,
+                  "percent": -61.53846153846154
+                },
+                "stable_backlog": {
+                  "new": 5,
+                  "baseline": 13,
+                  "delta": -8,
+                  "percent": -61.53846153846154
+                }
+              }
+            }
+          },
+          {
+            "time_s": 480,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 5,
+                  "baseline": 1,
+                  "delta": 4,
+                  "percent": 400.0
+                },
+                "stable_backlog": {
+                  "new": 5,
+                  "baseline": 1,
+                  "delta": 4,
+                  "percent": 400.0
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 1,
+                  "delta": -1,
+                  "percent": -100.0
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 6,
+                  "baseline": 5,
+                  "delta": 1,
+                  "percent": 20.0
+                },
+                "stable_backlog": {
+                  "new": 6,
+                  "baseline": 5,
+                  "delta": 1,
+                  "percent": 20.0
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 4,
+                  "baseline": 6,
+                  "delta": -2,
+                  "percent": -33.333333333333336
+                },
+                "declared_waiting": {
+                  "new": 1,
+                  "baseline": 2,
+                  "delta": -1,
+                  "percent": -50.0
+                },
+                "lower_bound_shortage": {
+                  "new": 1,
+                  "baseline": 2,
+                  "delta": -1,
+                  "percent": -50.0
+                },
+                "normal_status_unknown": {
+                  "new": 7,
+                  "baseline": 10,
+                  "delta": -3,
+                  "percent": -30.0
+                },
+                "stable_backlog": {
+                  "new": 8,
+                  "baseline": 11,
+                  "delta": -3,
+                  "percent": -27.272727272727273
+                }
+              }
+            }
+          },
+          {
+            "time_s": 540,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 6,
+                  "baseline": 1,
+                  "delta": 5,
+                  "percent": 500.0
+                },
+                "stable_backlog": {
+                  "new": 6,
+                  "baseline": 1,
+                  "delta": 5,
+                  "percent": 500.0
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 1,
+                  "delta": -1,
+                  "percent": -100.0
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 7,
+                  "baseline": 5,
+                  "delta": 2,
+                  "percent": 40.0
+                },
+                "stable_backlog": {
+                  "new": 7,
+                  "baseline": 5,
+                  "delta": 2,
+                  "percent": 40.0
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 4,
+                  "baseline": 8,
+                  "delta": -4,
+                  "percent": -50.0
+                },
+                "declared_waiting": {
+                  "new": 2,
+                  "baseline": 6,
+                  "delta": -4,
+                  "percent": -66.66666666666667
+                },
+                "lower_bound_shortage": {
+                  "new": 2,
+                  "baseline": 5,
+                  "delta": -3,
+                  "percent": -60.0
+                },
+                "normal_status_unknown": {
+                  "new": 7,
+                  "baseline": 8,
+                  "delta": -1,
+                  "percent": -12.5
+                },
+                "stable_backlog": {
+                  "new": 8,
+                  "baseline": 11,
+                  "delta": -3,
+                  "percent": -27.272727272727273
+                }
+              }
+            }
+          },
+          {
+            "time_s": 600,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 7,
+                  "baseline": 0,
+                  "delta": 7,
+                  "percent": null
+                },
+                "stable_backlog": {
+                  "new": 7,
+                  "baseline": 0,
+                  "delta": 7,
+                  "percent": null
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 1,
+                  "delta": -1,
+                  "percent": -100.0
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 1,
+                  "delta": -1,
+                  "percent": -100.0
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 1,
+                  "delta": -1,
+                  "percent": -100.0
+                },
+                "normal_status_unknown": {
+                  "new": 5,
+                  "baseline": 1,
+                  "delta": 4,
+                  "percent": 400.0
+                },
+                "stable_backlog": {
+                  "new": 5,
+                  "baseline": 2,
+                  "delta": 3,
+                  "percent": 150.0
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 3,
+                  "baseline": 7,
+                  "delta": -4,
+                  "percent": -57.142857142857146
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 5,
+                  "delta": -5,
+                  "percent": -100.0
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 4,
+                  "delta": -4,
+                  "percent": -100.0
+                },
+                "normal_status_unknown": {
+                  "new": 5,
+                  "baseline": 8,
+                  "delta": -3,
+                  "percent": -37.5
+                },
+                "stable_backlog": {
+                  "new": 5,
+                  "baseline": 11,
+                  "delta": -6,
+                  "percent": -54.54545454545455
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "rh_cp_sat": {
+      "metrics": {
+        "L_normal": 28,
+        "L_emergency": 3,
+        "L_success": 31,
+        "F_energy_total": 0,
+        "N_airborne_pending": 26,
+        "N_upstream_pending": 0,
+        "N_offered": 57,
+        "energy_j": 1288527301.566848,
+        "energy_kwh": 357.9242504352356,
+        "holding_time": 9556.497857286133
+      },
+      "holding": {
+        "seconds_by_ring": {
+          "outer": 2085.6937719237953,
+          "middle": 2698.1361729812816,
+          "inner": 4772.667912381056
+        },
+        "battery_w_by_ring": {
+          "outer": 68078.00913676799,
+          "middle": 74812.86972039986,
+          "inner": 92773.12847058187
+        },
+        "joules_by_ring": {
+          "outer": 141989879.66152823,
+          "middle": 201855309.99714687,
+          "inner": 442775333.3827515
+        },
+        "total_j": 786620523.0414267,
+        "kwh_by_ring": {
+          "outer": 39.4416332393134,
+          "middle": 56.07091944365191,
+          "inner": 122.99314816187542
+        },
+        "integration": "exact actual maneuver events; future reservations retain holding until actual start",
+        "executed_nonstable_ledger_charge_j": 501906778.52542186,
+        "ledger_note": "world._record_energy_charge excludes STABLE/GROUND; nonstable numerical ledger is not total terminal energy"
+      },
+      "checks": {
+        "event_vs_summary_holding_s": 0.0,
+        "state_counter_vs_summary_holding_s": 0.0,
+        "left_state_vs_event_by_ring_s": {
+          "outer": 2.5011104298755527e-11,
+          "middle": 5.1386450650170445e-11,
+          "inner": 7.185008144006133e-11
+        },
+        "holding_energy_le_total": true,
+        "holding_plus_nonstable_ledger_minus_total_j": 4.76837158203125e-07,
+        "holding_plus_nonstable_ledger_matches_total": true,
+        "holding_integrals_match": true
+      },
+      "queues": {
+        "definition": "stable HOLD ring backlog only; maneuvers excluded; lower_bound_shortage = soc - .25 - normal_energy_lower_bound(ring) <= 0",
+        "every_60s": [
+          {
+            "time_s": 0,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 4,
+                "stable_backlog": 4
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 5,
+                "stable_backlog": 5
+              },
+              "inner": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 5,
+                "stable_backlog": 5
+              }
+            }
+          },
+          {
+            "time_s": 60,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 3,
+                "stable_backlog": 3
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 5,
+                "stable_backlog": 5
+              },
+              "inner": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 6,
+                "stable_backlog": 6
+              }
+            }
+          },
+          {
+            "time_s": 120,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 1,
+                "stable_backlog": 1
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 3,
+                "stable_backlog": 3
+              },
+              "inner": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 8,
+                "stable_backlog": 8
+              }
+            }
+          },
+          {
+            "time_s": 180,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 0,
+                "stable_backlog": 0
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 5,
+                "stable_backlog": 5
+              },
+              "inner": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 7,
+                "stable_backlog": 7
+              }
+            }
+          },
+          {
+            "time_s": 240,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 3,
+                "stable_backlog": 3
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 6,
+                "stable_backlog": 6
+              },
+              "inner": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 7,
+                "stable_backlog": 7
+              }
+            }
+          },
+          {
+            "time_s": 300,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 2,
+                "stable_backlog": 2
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 4,
+                "stable_backlog": 4
+              },
+              "inner": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 10,
+                "stable_backlog": 10
+              }
+            }
+          },
+          {
+            "time_s": 360,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 5,
+                "stable_backlog": 5
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 2,
+                "stable_backlog": 2
+              },
+              "inner": {
+                "warning": 4,
+                "declared_waiting": 2,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 11,
+                "stable_backlog": 11
+              }
+            }
+          },
+          {
+            "time_s": 420,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 5,
+                "stable_backlog": 5
+              },
+              "middle": {
+                "warning": 1,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 5,
+                "stable_backlog": 5
+              },
+              "inner": {
+                "warning": 6,
+                "declared_waiting": 3,
+                "lower_bound_shortage": 3,
+                "normal_status_unknown": 11,
+                "stable_backlog": 12
+              }
+            }
+          },
+          {
+            "time_s": 480,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 7,
+                "stable_backlog": 7
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 4,
+                "stable_backlog": 4
+              },
+              "inner": {
+                "warning": 4,
+                "declared_waiting": 2,
+                "lower_bound_shortage": 1,
+                "normal_status_unknown": 6,
+                "stable_backlog": 7
+              }
+            }
+          },
+          {
+            "time_s": 540,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 5,
+                "stable_backlog": 5
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 5,
+                "stable_backlog": 5
+              },
+              "inner": {
+                "warning": 5,
+                "declared_waiting": 4,
+                "lower_bound_shortage": 3,
+                "normal_status_unknown": 4,
+                "stable_backlog": 6
+              }
+            }
+          },
+          {
+            "time_s": 600,
+            "rings": {
+              "outer": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 6,
+                "stable_backlog": 6
+              },
+              "middle": {
+                "warning": 0,
+                "declared_waiting": 0,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 6,
+                "stable_backlog": 6
+              },
+              "inner": {
+                "warning": 3,
+                "declared_waiting": 1,
+                "lower_bound_shortage": 0,
+                "normal_status_unknown": 3,
+                "stable_backlog": 3
+              }
+            }
+          }
+        ],
+        "terminal": {
+          "outer": {
+            "warning": 0,
+            "declared_waiting": 0,
+            "lower_bound_shortage": 0,
+            "normal_status_unknown": 6,
+            "stable_backlog": 6
+          },
+          "middle": {
+            "warning": 0,
+            "declared_waiting": 0,
+            "lower_bound_shortage": 0,
+            "normal_status_unknown": 6,
+            "stable_backlog": 6
+          },
+          "inner": {
+            "warning": 3,
+            "declared_waiting": 1,
+            "lower_bound_shortage": 0,
+            "normal_status_unknown": 3,
+            "stable_backlog": 3
+          }
+        },
+        "aircraft_seconds": {
+          "outer": {
+            "warning": 0.0,
+            "declared_waiting": 0.0,
+            "lower_bound_shortage": 0.0,
+            "normal_status_unknown": 2085.693771923794,
+            "stable_backlog": 2085.693771923794
+          },
+          "middle": {
+            "warning": 78.11502114927464,
+            "declared_waiting": 0.0,
+            "lower_bound_shortage": 0.0,
+            "normal_status_unknown": 2698.1361729812843,
+            "stable_backlog": 2698.1361729812843
+          },
+          "inner": {
+            "warning": 1279.974518350049,
+            "declared_waiting": 796.119331761202,
+            "lower_bound_shortage": 575.4708272813621,
+            "normal_status_unknown": 4412.6214293592275,
+            "stable_backlog": 4772.667912381061
+          }
+        },
+        "warning_integral_status": "APPROXIMATE_NO_CLEAR_EVENTS",
+        "integral_precision": {
+          "warning": "approximate clearing from left state flags, exact event onsets; no warning_clear event exists",
+          "declared_waiting": "exact event flags and stable boundaries",
+          "lower_bound_shortage": "approximate left state SOC, not a threshold crossing interpolation",
+          "normal_status_unknown": "approximate left state status",
+          "max_state_gap_s": 1.0000000000001137
+        }
+      },
+      "transfer_completed_by_route": {
+        "middle->inner": 32,
+        "outer->middle": 33
+      },
+      "inner_latency_summary": {
+        "inner_entry_count": 40,
+        "inner_to_final_s": {
+          "count": 37,
+          "mean": 117.87445982158556,
+          "p95": 382.41872065268416,
+          "min": 0.0,
+          "max": 423.9456459394845,
+          "sum": 4361.3550133986655
+        },
+        "inner_to_final_censored": 3,
+        "inner_to_touchdown_s": {
+          "count": 31,
+          "mean": 164.43572940893196,
+          "p95": 503.6297293059379,
+          "min": 48.5,
+          "max": 552.4456459394845,
+          "sum": 5097.5076116768905
+        },
+        "inner_to_touchdown_censored": 9,
+        "note": "Statistics use uncensored durations only; censored counts remain separate, no survival extrapolation."
+      },
+      "timing": {
+        "normal_timing": {
+          "count": 388,
+          "max": 31.944825635990128,
+          "mean": 21.540985346909046,
+          "over_5s": 388,
+          "over_5s_fraction": 1.0,
+          "p50": 22.652427796507254,
+          "p95": 26.756632267707026,
+          "p99": 30.127194288593017,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "inner_algorithm_timing": {
+          "count": 388,
+          "max": 31.944458438025322,
+          "mean": 21.539528758764494,
+          "over_5s": 388,
+          "over_5s_fraction": 1.0,
+          "p50": 22.651534402481047,
+          "p95": 26.755781477934214,
+          "p99": 30.126238042828042,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "dispatch_timing": {
+          "count": 388,
+          "max": 38.648358245089184,
+          "mean": 24.334723934685282,
+          "over_5s": 388,
+          "over_5s_fraction": 1.0,
+          "p50": 24.33869436738314,
+          "p95": 33.00584461130202,
+          "p99": 36.37137821418291,
+          "small_sample_notice": "descriptive quantiles; unstable for small N"
+        },
+        "dispatch_wall_sum_s": 9441.87288665789,
+        "executor_non_dispatch_wall_s": 7.380032321671024,
+        "episode_compute_wall_s": 9689.422952516994
+      },
+      "planner_timing_by_stage": {
+        "bounded_delayed_generation": {
+          "wall_s": 50.75712816690793,
+          "cpu_s": 50.75310468709065
+        },
+        "candidate_generation_and_single_vehicle": {
+          "wall_s": 2073.817930399149,
+          "cpu_s": 2073.7791493421614
+        },
+        "commit": {
+          "wall_s": 22.56303561612731,
+          "cpu_s": 22.563117022000565
+        },
+        "cp_solve": {
+          "wall_s": 2152.834528672858,
+          "cpu_s": 2152.819219083003
+        },
+        "delayed_reference_regeneration": {
+          "wall_s": 112.1803724776255,
+          "cpu_s": 112.17637281483853
+        },
+        "downstream_explanation": {
+          "wall_s": 1.3576744710444473,
+          "cpu_s": 1.3577257630080695
+        },
+        "geometry_template_screen": {
+          "wall_s": 99.73358824424213,
+          "cpu_s": 99.73554080712076
+        },
+        "hint_construction": {
+          "wall_s": 24.41274714434985,
+          "cpu_s": 24.39154493918787
+        },
+        "model_build": {
+          "wall_s": 12.910581751959398,
+          "cpu_s": 12.905061877033834
+        },
+        "normal_evidence_reporting": {
+          "wall_s": 2.934956531273201,
+          "cpu_s": 2.935051677981967
+        },
+        "prefix_validation": {
+          "wall_s": 254.1373330714414,
+          "cpu_s": 254.13690009899946
+        },
+        "reference_seed_generation": {
+          "wall_s": 665.8376118995948,
+          "cpu_s": 665.8301601490916
+        },
+        "resource_conflict_build": {
+          "wall_s": 1.6767028792528436,
+          "cpu_s": 1.6767161529980008
+        },
+        "safe_progress_generation": {
+          "wall_s": 939.1025810231222,
+          "cpu_s": 939.0871330558371
+        },
+        "selected_validation": {
+          "wall_s": 13.045689441496506,
+          "cpu_s": 13.026547934865215
+        },
+        "selection": {
+          "wall_s": 4.142598077596631,
+          "cpu_s": 4.139455699964824
+        },
+        "snapshot_and_uniform_refinement": {
+          "wall_s": 2.5386471243109554,
+          "cpu_s": 2.538744233000709
+        },
+        "trajectory_validation": {
+          "wall_s": 1922.4959943736903,
+          "cpu_s": 1922.5448945207954
+        }
+      },
+      "new_minus_v7_baseline": {
+        "metrics": {
+          "L_normal": {
+            "new": 28,
+            "baseline": 22,
+            "delta": 6,
+            "percent": 27.272727272727273
+          },
+          "L_emergency": {
+            "new": 3,
+            "baseline": 4,
+            "delta": -1,
+            "percent": -25.0
+          },
+          "L_success": {
+            "new": 31,
+            "baseline": 26,
+            "delta": 5,
+            "percent": 19.23076923076923
+          },
+          "F_energy_total": {
+            "new": 0,
+            "baseline": 0,
+            "delta": 0,
+            "percent": null
+          },
+          "N_airborne_pending": {
+            "new": 26,
+            "baseline": 31,
+            "delta": -5,
+            "percent": -16.129032258064516
+          },
+          "N_upstream_pending": {
+            "new": 0,
+            "baseline": 0,
+            "delta": 0,
+            "percent": null
+          },
+          "N_offered": {
+            "new": 57,
+            "baseline": 57,
+            "delta": 0,
+            "percent": 0.0
+          },
+          "energy_j": {
+            "new": 1288527301.566848,
+            "baseline": 1463947215.0410452,
+            "delta": -175419913.47419715,
+            "percent": -11.98266656556185
+          },
+          "energy_kwh": {
+            "new": 357.9242504352356,
+            "baseline": 406.6520041780681,
+            "delta": -48.72775374283253,
+            "percent": -11.982666565561848
+          },
+          "holding_time": {
+            "new": 9556.497857286133,
+            "baseline": 9953.812790373837,
+            "delta": -397.31493308770405,
+            "percent": -3.991585349806263
+          }
+        },
+        "holding_seconds_by_ring": {
+          "outer": {
+            "new": 2085.6937719237953,
+            "baseline": 99.95860166831608,
+            "delta": 1985.7351702554793,
+            "percent": 1986.5575719482063
+          },
+          "middle": {
+            "new": 2698.1361729812816,
+            "baseline": 2516.591875676041,
+            "delta": 181.54429730524043,
+            "percent": 7.213895072138844
+          },
+          "inner": {
+            "new": 4772.667912381056,
+            "baseline": 7337.26231302948,
+            "delta": -2564.5944006484233,
+            "percent": -34.95301505159802
+          }
+        },
+        "holding_kwh_by_ring": {
+          "outer": {
+            "new": 39.4416332393134,
+            "baseline": 1.8902729437983814,
+            "delta": 37.55136029551502,
+            "percent": 1986.557571948207
+          },
+          "middle": {
+            "new": 56.07091944365191,
+            "baseline": 52.29818337065789,
+            "delta": 3.7727360729940216,
+            "percent": 7.213895072138836
+          },
+          "inner": {
+            "new": 122.99314816187542,
+            "baseline": 189.08354977473405,
+            "delta": -66.09040161285863,
+            "percent": -34.95301505159802
+          }
+        },
+        "transfers": {
+          "middle->inner": {
+            "new": 32,
+            "baseline": 37,
+            "delta": -5,
+            "percent": -13.513513513513514
+          },
+          "outer->middle": {
+            "new": 33,
+            "baseline": 38,
+            "delta": -5,
+            "percent": -13.157894736842104
+          }
+        },
+        "terminal_queues": {
+          "outer": {
+            "warning": {
+              "new": 0,
+              "baseline": 0,
+              "delta": 0,
+              "percent": null
+            },
+            "declared_waiting": {
+              "new": 0,
+              "baseline": 0,
+              "delta": 0,
+              "percent": null
+            },
+            "lower_bound_shortage": {
+              "new": 0,
+              "baseline": 0,
+              "delta": 0,
+              "percent": null
+            },
+            "normal_status_unknown": {
+              "new": 6,
+              "baseline": 1,
+              "delta": 5,
+              "percent": 500.0
+            },
+            "stable_backlog": {
+              "new": 6,
+              "baseline": 1,
+              "delta": 5,
+              "percent": 500.0
+            }
+          },
+          "middle": {
+            "warning": {
+              "new": 0,
+              "baseline": 2,
+              "delta": -2,
+              "percent": -100.0
+            },
+            "declared_waiting": {
+              "new": 0,
+              "baseline": 1,
+              "delta": -1,
+              "percent": -100.0
+            },
+            "lower_bound_shortage": {
+              "new": 0,
+              "baseline": 1,
+              "delta": -1,
+              "percent": -100.0
+            },
+            "normal_status_unknown": {
+              "new": 6,
+              "baseline": 7,
+              "delta": -1,
+              "percent": -14.285714285714286
+            },
+            "stable_backlog": {
+              "new": 6,
+              "baseline": 8,
+              "delta": -2,
+              "percent": -25.0
+            }
+          },
+          "inner": {
+            "warning": {
+              "new": 3,
+              "baseline": 10,
+              "delta": -7,
+              "percent": -70.0
+            },
+            "declared_waiting": {
+              "new": 1,
+              "baseline": 9,
+              "delta": -8,
+              "percent": -88.88888888888889
+            },
+            "lower_bound_shortage": {
+              "new": 0,
+              "baseline": 7,
+              "delta": -7,
+              "percent": -100.0
+            },
+            "normal_status_unknown": {
+              "new": 3,
+              "baseline": 11,
+              "delta": -8,
+              "percent": -72.72727272727273
+            },
+            "stable_backlog": {
+              "new": 3,
+              "baseline": 17,
+              "delta": -14,
+              "percent": -82.3529411764706
+            }
+          }
+        },
+        "every_60s_queues": [
+          {
+            "time_s": 0,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 4,
+                  "baseline": 2,
+                  "delta": 2,
+                  "percent": 100.0
+                },
+                "stable_backlog": {
+                  "new": 4,
+                  "baseline": 2,
+                  "delta": 2,
+                  "percent": 100.0
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 5,
+                  "baseline": 3,
+                  "delta": 2,
+                  "percent": 66.66666666666667
+                },
+                "stable_backlog": {
+                  "new": 5,
+                  "baseline": 3,
+                  "delta": 2,
+                  "percent": 66.66666666666667
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 5,
+                  "baseline": 3,
+                  "delta": 2,
+                  "percent": 66.66666666666667
+                },
+                "stable_backlog": {
+                  "new": 5,
+                  "baseline": 3,
+                  "delta": 2,
+                  "percent": 66.66666666666667
+                }
+              }
+            }
+          },
+          {
+            "time_s": 60,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 3,
+                  "baseline": 0,
+                  "delta": 3,
+                  "percent": null
+                },
+                "stable_backlog": {
+                  "new": 3,
+                  "baseline": 0,
+                  "delta": 3,
+                  "percent": null
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 5,
+                  "baseline": 2,
+                  "delta": 3,
+                  "percent": 150.0
+                },
+                "stable_backlog": {
+                  "new": 5,
+                  "baseline": 2,
+                  "delta": 3,
+                  "percent": 150.0
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 6,
+                  "baseline": 8,
+                  "delta": -2,
+                  "percent": -25.0
+                },
+                "stable_backlog": {
+                  "new": 6,
+                  "baseline": 8,
+                  "delta": -2,
+                  "percent": -25.0
+                }
+              }
+            }
+          },
+          {
+            "time_s": 120,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 1,
+                  "baseline": 0,
+                  "delta": 1,
+                  "percent": null
+                },
+                "stable_backlog": {
+                  "new": 1,
+                  "baseline": 0,
+                  "delta": 1,
+                  "percent": null
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 3,
+                  "baseline": 2,
+                  "delta": 1,
+                  "percent": 50.0
+                },
+                "stable_backlog": {
+                  "new": 3,
+                  "baseline": 2,
+                  "delta": 1,
+                  "percent": 50.0
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 8,
+                  "baseline": 14,
+                  "delta": -6,
+                  "percent": -42.857142857142854
+                },
+                "stable_backlog": {
+                  "new": 8,
+                  "baseline": 14,
+                  "delta": -6,
+                  "percent": -42.857142857142854
+                }
+              }
+            }
+          },
+          {
+            "time_s": 180,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "stable_backlog": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 5,
+                  "baseline": 3,
+                  "delta": 2,
+                  "percent": 66.66666666666667
+                },
+                "stable_backlog": {
+                  "new": 5,
+                  "baseline": 3,
+                  "delta": 2,
+                  "percent": 66.66666666666667
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 7,
+                  "baseline": 12,
+                  "delta": -5,
+                  "percent": -41.666666666666664
+                },
+                "stable_backlog": {
+                  "new": 7,
+                  "baseline": 12,
+                  "delta": -5,
+                  "percent": -41.666666666666664
+                }
+              }
+            }
+          },
+          {
+            "time_s": 240,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 3,
+                  "baseline": 0,
+                  "delta": 3,
+                  "percent": null
+                },
+                "stable_backlog": {
+                  "new": 3,
+                  "baseline": 0,
+                  "delta": 3,
+                  "percent": null
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 6,
+                  "baseline": 3,
+                  "delta": 3,
+                  "percent": 100.0
+                },
+                "stable_backlog": {
+                  "new": 6,
+                  "baseline": 3,
+                  "delta": 3,
+                  "percent": 100.0
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 1,
+                  "delta": -1,
+                  "percent": -100.0
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 7,
+                  "baseline": 12,
+                  "delta": -5,
+                  "percent": -41.666666666666664
+                },
+                "stable_backlog": {
+                  "new": 7,
+                  "baseline": 12,
+                  "delta": -5,
+                  "percent": -41.666666666666664
+                }
+              }
+            }
+          },
+          {
+            "time_s": 300,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 2,
+                  "baseline": 0,
+                  "delta": 2,
+                  "percent": null
+                },
+                "stable_backlog": {
+                  "new": 2,
+                  "baseline": 0,
+                  "delta": 2,
+                  "percent": null
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 4,
+                  "baseline": 4,
+                  "delta": 0,
+                  "percent": 0.0
+                },
+                "stable_backlog": {
+                  "new": 4,
+                  "baseline": 4,
+                  "delta": 0,
+                  "percent": 0.0
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 1,
+                  "delta": -1,
+                  "percent": -100.0
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 10,
+                  "baseline": 15,
+                  "delta": -5,
+                  "percent": -33.333333333333336
+                },
+                "stable_backlog": {
+                  "new": 10,
+                  "baseline": 15,
+                  "delta": -5,
+                  "percent": -33.333333333333336
+                }
+              }
+            }
+          },
+          {
+            "time_s": 360,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 5,
+                  "baseline": 0,
+                  "delta": 5,
+                  "percent": null
+                },
+                "stable_backlog": {
+                  "new": 5,
+                  "baseline": 0,
+                  "delta": 5,
+                  "percent": null
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 2,
+                  "baseline": 5,
+                  "delta": -3,
+                  "percent": -60.0
+                },
+                "stable_backlog": {
+                  "new": 2,
+                  "baseline": 5,
+                  "delta": -3,
+                  "percent": -60.0
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 4,
+                  "baseline": 5,
+                  "delta": -1,
+                  "percent": -20.0
+                },
+                "declared_waiting": {
+                  "new": 2,
+                  "baseline": 3,
+                  "delta": -1,
+                  "percent": -33.333333333333336
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 1,
+                  "delta": -1,
+                  "percent": -100.0
+                },
+                "normal_status_unknown": {
+                  "new": 11,
+                  "baseline": 11,
+                  "delta": 0,
+                  "percent": 0.0
+                },
+                "stable_backlog": {
+                  "new": 11,
+                  "baseline": 12,
+                  "delta": -1,
+                  "percent": -8.333333333333334
+                }
+              }
+            }
+          },
+          {
+            "time_s": 420,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 5,
+                  "baseline": 0,
+                  "delta": 5,
+                  "percent": null
+                },
+                "stable_backlog": {
+                  "new": 5,
+                  "baseline": 0,
+                  "delta": 5,
+                  "percent": null
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 1,
+                  "baseline": 0,
+                  "delta": 1,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 5,
+                  "baseline": 6,
+                  "delta": -1,
+                  "percent": -16.666666666666668
+                },
+                "stable_backlog": {
+                  "new": 5,
+                  "baseline": 6,
+                  "delta": -1,
+                  "percent": -16.666666666666668
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 6,
+                  "baseline": 7,
+                  "delta": -1,
+                  "percent": -14.285714285714286
+                },
+                "declared_waiting": {
+                  "new": 3,
+                  "baseline": 3,
+                  "delta": 0,
+                  "percent": 0.0
+                },
+                "lower_bound_shortage": {
+                  "new": 3,
+                  "baseline": 3,
+                  "delta": 0,
+                  "percent": 0.0
+                },
+                "normal_status_unknown": {
+                  "new": 11,
+                  "baseline": 15,
+                  "delta": -4,
+                  "percent": -26.666666666666668
+                },
+                "stable_backlog": {
+                  "new": 12,
+                  "baseline": 15,
+                  "delta": -3,
+                  "percent": -20.0
+                }
+              }
+            }
+          },
+          {
+            "time_s": 480,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 7,
+                  "baseline": 0,
+                  "delta": 7,
+                  "percent": null
+                },
+                "stable_backlog": {
+                  "new": 7,
+                  "baseline": 0,
+                  "delta": 7,
+                  "percent": null
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 1,
+                  "delta": -1,
+                  "percent": -100.0
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 4,
+                  "baseline": 5,
+                  "delta": -1,
+                  "percent": -20.0
+                },
+                "stable_backlog": {
+                  "new": 4,
+                  "baseline": 5,
+                  "delta": -1,
+                  "percent": -20.0
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 4,
+                  "baseline": 8,
+                  "delta": -4,
+                  "percent": -50.0
+                },
+                "declared_waiting": {
+                  "new": 2,
+                  "baseline": 4,
+                  "delta": -2,
+                  "percent": -50.0
+                },
+                "lower_bound_shortage": {
+                  "new": 1,
+                  "baseline": 4,
+                  "delta": -3,
+                  "percent": -75.0
+                },
+                "normal_status_unknown": {
+                  "new": 6,
+                  "baseline": 9,
+                  "delta": -3,
+                  "percent": -33.333333333333336
+                },
+                "stable_backlog": {
+                  "new": 7,
+                  "baseline": 13,
+                  "delta": -6,
+                  "percent": -46.15384615384615
+                }
+              }
+            }
+          },
+          {
+            "time_s": 540,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 5,
+                  "baseline": 0,
+                  "delta": 5,
+                  "percent": null
+                },
+                "stable_backlog": {
+                  "new": 5,
+                  "baseline": 0,
+                  "delta": 5,
+                  "percent": null
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 1,
+                  "delta": -1,
+                  "percent": -100.0
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 5,
+                  "baseline": 7,
+                  "delta": -2,
+                  "percent": -28.571428571428573
+                },
+                "stable_backlog": {
+                  "new": 5,
+                  "baseline": 7,
+                  "delta": -2,
+                  "percent": -28.571428571428573
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 5,
+                  "baseline": 8,
+                  "delta": -3,
+                  "percent": -37.5
+                },
+                "declared_waiting": {
+                  "new": 4,
+                  "baseline": 3,
+                  "delta": 1,
+                  "percent": 33.333333333333336
+                },
+                "lower_bound_shortage": {
+                  "new": 3,
+                  "baseline": 3,
+                  "delta": 0,
+                  "percent": 0.0
+                },
+                "normal_status_unknown": {
+                  "new": 4,
+                  "baseline": 11,
+                  "delta": -7,
+                  "percent": -63.63636363636363
+                },
+                "stable_backlog": {
+                  "new": 6,
+                  "baseline": 14,
+                  "delta": -8,
+                  "percent": -57.142857142857146
+                }
+              }
+            }
+          },
+          {
+            "time_s": 600,
+            "rings": {
+              "outer": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 0,
+                  "delta": 0,
+                  "percent": null
+                },
+                "normal_status_unknown": {
+                  "new": 6,
+                  "baseline": 1,
+                  "delta": 5,
+                  "percent": 500.0
+                },
+                "stable_backlog": {
+                  "new": 6,
+                  "baseline": 1,
+                  "delta": 5,
+                  "percent": 500.0
+                }
+              },
+              "middle": {
+                "warning": {
+                  "new": 0,
+                  "baseline": 2,
+                  "delta": -2,
+                  "percent": -100.0
+                },
+                "declared_waiting": {
+                  "new": 0,
+                  "baseline": 1,
+                  "delta": -1,
+                  "percent": -100.0
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 1,
+                  "delta": -1,
+                  "percent": -100.0
+                },
+                "normal_status_unknown": {
+                  "new": 6,
+                  "baseline": 7,
+                  "delta": -1,
+                  "percent": -14.285714285714286
+                },
+                "stable_backlog": {
+                  "new": 6,
+                  "baseline": 8,
+                  "delta": -2,
+                  "percent": -25.0
+                }
+              },
+              "inner": {
+                "warning": {
+                  "new": 3,
+                  "baseline": 10,
+                  "delta": -7,
+                  "percent": -70.0
+                },
+                "declared_waiting": {
+                  "new": 1,
+                  "baseline": 9,
+                  "delta": -8,
+                  "percent": -88.88888888888889
+                },
+                "lower_bound_shortage": {
+                  "new": 0,
+                  "baseline": 7,
+                  "delta": -7,
+                  "percent": -100.0
+                },
+                "normal_status_unknown": {
+                  "new": 3,
+                  "baseline": 11,
+                  "delta": -8,
+                  "percent": -72.72727272727273
+                },
+                "stable_backlog": {
+                  "new": 3,
+                  "baseline": 17,
+                  "delta": -14,
+                  "percent": -82.3529411764706
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

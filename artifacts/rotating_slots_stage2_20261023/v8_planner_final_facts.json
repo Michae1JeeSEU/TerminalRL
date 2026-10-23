@@ -1,0 +1,1075 @@
+{
+  "schema": "stage2_v8_planner_final_compact_v1",
+  "root": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023_r1",
+  "time_s": 600.0,
+  "human_review": "HUMAN_PENDING",
+  "methods": {
+    "energy_slack": {
+      "dispatch_count": 374,
+      "normal_record_count": 374,
+      "timing": {
+        "total_normal_wall_s": {
+          "count": 374,
+          "mean": 14.02334442557403,
+          "p95": 15.14035545233055,
+          "min": 12.649210046045482,
+          "max": 17.43908520799596,
+          "sum": 5244.730815164687
+        },
+        "full_dispatch_wall_s": {
+          "count": 374,
+          "mean": 15.643303505858603,
+          "p95": 19.89876910781313,
+          "min": 13.031525295926258,
+          "max": 22.8438261768315,
+          "sum": 5850.595511191117
+        },
+        "algorithm_record_wall_s": {
+          "count": 374,
+          "mean": 14.02204867670226,
+          "p95": 15.138949039284489,
+          "min": 12.647260476020165,
+          "max": 17.43867315701209,
+          "sum": 5244.246205086645
+        },
+        "candidate_reported_exclusive_stage_sum_s": {
+          "count": 374,
+          "mean": 10.618372347444,
+          "p95": 11.51545094952453,
+          "min": 9.028431029058993,
+          "max": 12.921820203773677,
+          "sum": 3971.271257944056
+        },
+        "validation_reported_exclusive_stage_sum_s": {
+          "count": 374,
+          "mean": 3.2520550444017458,
+          "p95": 4.55258203150297,
+          "min": 1.690214200585615,
+          "max": 5.675757596385665,
+          "sum": 1216.268586606253
+        },
+        "solver_wall_s": {
+          "count": 374,
+          "mean": 0.0,
+          "p95": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "sum": 0.0
+        },
+        "stages": {
+          "bounded_delayed_generation": {
+            "count": 374,
+            "mean": 0.12048377182252486,
+            "p95": 0.7494561185594639,
+            "min": 0.0001565340207889676,
+            "max": 1.5394652073155157,
+            "sum": 45.0609306616243
+          },
+          "candidate_generation_and_single_vehicle": {
+            "count": 374,
+            "mean": 5.396865692862931,
+            "p95": 6.922144134042901,
+            "min": 0.0712796269217506,
+            "max": 8.707183150516357,
+            "sum": 2018.4277691307361
+          },
+          "commit": {
+            "count": 374,
+            "mean": 0.06072080256881188,
+            "p95": 0.2855614875501482,
+            "min": 0.005122286034747958,
+            "max": 1.5852636600029655,
+            "sum": 22.70958016073564
+          },
+          "delayed_reference_regeneration": {
+            "count": 374,
+            "mean": 0.32036906025866746,
+            "p95": 1.5348481007356884,
+            "min": 0.00018200499471276999,
+            "max": 4.358807239332236,
+            "sum": 119.81802853674162
+          },
+          "downstream_explanation": {
+            "count": 374,
+            "mean": 0.00425707347495581,
+            "p95": 0.005546348591451533,
+            "min": 0.0027430870104581118,
+            "max": 0.006054882018361241,
+            "sum": 1.5921454796334729
+          },
+          "fallback": {
+            "count": 30,
+            "mean": 1.5535834245383738e-05,
+            "p95": 1.889726554509252e-05,
+            "min": 1.3631011825054884e-05,
+            "max": 2.319103805348277e-05,
+            "sum": 0.0004660750273615122
+          },
+          "geometry_template_screen": {
+            "count": 374,
+            "mean": 0.25818414034329373,
+            "p95": 0.4253990099590737,
+            "min": 0.10150252759922296,
+            "max": 0.5403652178356424,
+            "sum": 96.56086848839186
+          },
+          "normal_evidence_reporting": {
+            "count": 374,
+            "mean": 0.010086288316926127,
+            "p95": 0.00911505728436168,
+            "min": 0.002218007983174175,
+            "max": 0.23343778599519283,
+            "sum": 3.7722718305303715
+          },
+          "prefix_validation": {
+            "count": 374,
+            "mean": 0.07597532593470843,
+            "p95": 0.30356879964820105,
+            "min": 0.001232010021340102,
+            "max": 1.5784869780181907,
+            "sum": 28.414771899580956
+          },
+          "reference_seed_generation": {
+            "count": 374,
+            "mean": 1.9996425879209982,
+            "p95": 3.239744547187001,
+            "min": 0.2518848547479138,
+            "max": 4.536977995943744,
+            "sum": 747.8663278824533
+          },
+          "safe_progress_generation": {
+            "count": 374,
+            "mean": 2.5228270942355846,
+            "p95": 2.774603645139723,
+            "min": 0.7093405487830751,
+            "max": 3.004172361223027,
+            "sum": 943.5373332441086
+          },
+          "selected_validation": {
+            "count": 374,
+            "mean": 0.0006411149567130077,
+            "p95": 0.0008171279216185213,
+            "min": 0.00043216097401455045,
+            "max": 0.001012758002616465,
+            "sum": 0.23977699381066486
+          },
+          "selection": {
+            "count": 374,
+            "mean": 0.06813939182270806,
+            "p95": 0.09104767207754774,
+            "min": 0.04248900309903547,
+            "max": 0.12542013864731416,
+            "sum": 25.484132541692816
+          },
+          "snapshot_and_uniform_refinement": {
+            "count": 374,
+            "mean": 0.006280544086796466,
+            "p95": 0.00924176835687831,
+            "min": 0.0005124760209582746,
+            "max": 0.2453414429910481,
+            "sum": 2.348923488461878
+          },
+          "trajectory_validation": {
+            "count": 374,
+            "mean": 3.1754386035103246,
+            "p95": 4.503355528082464,
+            "min": 1.6865065546007827,
+            "max": 5.313415608310606,
+            "sum": 1187.6140377128613
+          }
+        },
+        "definition": "mean/p95/count across real dispatches; p95 linear interpolation; grouped candidate/validation sum only recorded exclusive stage counters, inactive/unrecorded keys contribute zero."
+      },
+      "candidate_coverage": {
+        "outer": {
+          "aircraft_dispatch_observations": 2464,
+          "with_full_chain": 1538,
+          "without_full_chain": 926,
+          "full_chain_columns_reported": 1555,
+          "candidate_insufficiency_reasons": {
+            "BOUNDED_CATALOG_INCOMPLETE": 2464,
+            "NO_COMPLETE_NORMAL_CHAIN_OBSERVED": 926,
+            "NO_SAFE_MOVE_OBSERVED": 1
+          },
+          "only_keep_wait": 1
+        },
+        "middle": {
+          "aircraft_dispatch_observations": 2579,
+          "with_full_chain": 1156,
+          "without_full_chain": 1423,
+          "full_chain_columns_reported": 1632,
+          "candidate_insufficiency_reasons": {
+            "BOUNDED_CATALOG_INCOMPLETE": 2579,
+            "NO_COMPLETE_NORMAL_CHAIN_OBSERVED": 1423,
+            "NO_SAFE_MOVE_OBSERVED": 408
+          },
+          "only_keep_wait": 408
+        },
+        "inner": {
+          "aircraft_dispatch_observations": 2584,
+          "with_full_chain": 488,
+          "without_full_chain": 2096,
+          "full_chain_columns_reported": 735,
+          "candidate_insufficiency_reasons": {
+            "BOUNDED_CATALOG_INCOMPLETE": 2584,
+            "NO_SAFE_MOVE_OBSERVED": 2096,
+            "NO_COMPLETE_NORMAL_CHAIN_OBSERVED": 2096
+          },
+          "only_keep_wait": 2096
+        }
+      },
+      "catalog_statistics": {
+        "columns_per_dispatch": {
+          "count": 374,
+          "mean": 109.2192513368984,
+          "p95": 125.0,
+          "min": 82.0,
+          "max": 137.0,
+          "sum": 40848.0
+        },
+        "incomplete_aircraft_per_dispatch": {
+          "count": 374,
+          "mean": 22.331550802139038,
+          "p95": 24.349999999999966,
+          "min": 19.0,
+          "max": 25.0,
+          "sum": 8352.0
+        }
+      },
+      "cp": {
+        "entered_count": 0,
+        "hint_comparable_calls": 0,
+        "strict_improvement_reported_true": 0,
+        "final_vector_less_than_hint": 0,
+        "rounds": {
+          "count": 374,
+          "mean": 0.0,
+          "p95": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "sum": 0.0
+        },
+        "phase_record_count": 0,
+        "phase_status_counts": {},
+        "cuts": {},
+        "cuts_definition": "Sum per-dispatch/per-uniform-restart maxima of cumulative cut counters; do not sum cumulative phase values."
+      },
+      "fallback": {
+        "count": 30,
+        "status_counts": {
+          "FEASIBLE": 344,
+          "PREFIX_NOT_EXECUTABLE": 30
+        },
+        "skip_reasons": {
+          "METHOD_ENERGY_SLACK": 374
+        },
+        "truncations": {
+          "CANDIDATE_WORK_CUTOFF": 374,
+          "MOVING_COLUMN_LIMIT": 46
+        }
+      },
+      "cache": {
+        "reference_hits_per_call_sum": 51200,
+        "move_energy_cumulative_last": {
+          "hits": 142412,
+          "misses": 53072
+        },
+        "validation_per_call_sums": {
+          "protection_misses": 35252,
+          "pair_misses": 555600,
+          "single_hits": 275864,
+          "energy_hits": 173491,
+          "snapshot_invalidations": 373,
+          "batch_conflicts": 3710,
+          "energy_misses": 65732,
+          "protection_hits": 632303,
+          "pair_hits": 2356935,
+          "single_misses": 65644
+        },
+        "note": "Move energy cache is cumulative: last recorded counters retained, not summed across callbacks."
+      },
+      "selected_observations": {
+        "counts": {
+          "selected_kind_MOVE": 886,
+          "MOVE_IMMEDIATE": 734,
+          "selected_kind_KEEP": 7466,
+          "MOVE_DELAYED": 152,
+          "DELAYED_action_FUTURE_PREDICTION_NO_RESERVATION": 137,
+          "DELAYED_action_IMMEDIATE_PREFIX_SUBMITTED": 15
+        },
+        "note": "Repeated aircraft-dispatch predictions; not distinct aircraft, reservations, or actual landings."
+      },
+      "predicted_snapshot_statistics": {
+        "energy_j": {
+          "window_j": {
+            "count": 374,
+            "mean": 410184028.2727706,
+            "p95": 450644700.9080339,
+            "min": 355867955.4758287,
+            "max": 472869227.37638396,
+            "sum": 153408826574.0162
+          },
+          "tail_j": {
+            "count": 374,
+            "mean": 267002519.63099793,
+            "p95": 327695410.51484185,
+            "min": 185848219.46875185,
+            "max": 356544455.6052079,
+            "sum": 99858942341.99323
+          },
+          "tail_motion_j": {
+            "count": 374,
+            "mean": 155198604.57137224,
+            "p95": 187864424.54624322,
+            "min": 116432833.74015032,
+            "max": 201198354.0693969,
+            "sum": 58044278109.69322
+          },
+          "tail_wait_j": {
+            "count": 374,
+            "mean": 111803915.05962567,
+            "p95": 154901270.0,
+            "min": 45328483.0,
+            "max": 183439544.0,
+            "sum": 41814664232.3
+          },
+          "total_j": {
+            "count": 374,
+            "mean": 677186547.9245989,
+            "p95": 776553440.3950001,
+            "min": 555340183.3000001,
+            "max": 829413683.1,
+            "sum": 253267768923.80002
+          }
+        },
+        "estimated_wait_seconds_by_ring": {
+          "outer": {
+            "count": 374,
+            "mean": 1982.9324823973086,
+            "p95": 3448.6587020448956,
+            "min": 522.0,
+            "max": 3578.1560914011593,
+            "sum": 741616.7484165934
+          },
+          "middle": {
+            "count": 374,
+            "mean": 1933.7850861308373,
+            "p95": 2673.744668166782,
+            "min": 850.1611151762493,
+            "max": 2834.4746025470954,
+            "sum": 723235.6222129331
+          },
+          "inner": {
+            "count": 374,
+            "mean": 2350.135422759745,
+            "p95": 3546.556588107554,
+            "min": 1164.9999999999998,
+            "max": 3868.6919387237313,
+            "sum": 878950.6481121446
+          }
+        },
+        "predicted_touchdown_absolute_s": {
+          "count": 8375,
+          "mean": 661.1735402985075,
+          "p95": 975.2199999999997,
+          "min": 48.5,
+          "max": 1114.0,
+          "sum": 5537328.4
+        },
+        "predicted_touchdown_offset_from_dispatch_s": {
+          "count": 8375,
+          "mean": 371.9037257407591,
+          "p95": 544.0,
+          "min": 48.5,
+          "max": 587.538042608349,
+          "sum": 3114693.7030788576
+        },
+        "reference_status_counts": {
+          "KNOWN": 714,
+          "ESTIMATED": 7638,
+          "UNKNOWN": 23
+        },
+        "note": "Snapshot sums then distribution over dispatches; these are predictions with KNOWN/ESTIMATED/UNKNOWN, never integrate/sum them into physical terminal energy."
+      },
+      "delayed_selection_fulfillment": {
+        "selected_delayed_move_observations": 152,
+        "same_dispatch_committed_hash_started": 15,
+        "selected_delayed_unreserved_matching_commit_absent": 137,
+        "selected_delayed_definition": "Repeated selected candidate_timing=DELAYED observations. Only matching same-dispatch aircraft/first-target commit hashes subsequently seen in actual maneuver_started support same_dispatch_committed_hash_started; this does not establish that every selected DELAYED prediction executed.",
+        "later_same_target_proxy_count": 109,
+        "exact_identity_unavailable_for_unreserved_predictions": true,
+        "note": "Unreserved future selected signatures are absent from logs. Later same-target starts are a proxy only, not proof that the predicted plan was executed.",
+        "actual_delayed_committed_unique_plans": 32,
+        "actual_delayed_committed_started": 32,
+        "actual_delayed_committed_definition": "All unique normal plan hashes with planned start_time later than their commit event time. May include different normal candidate types; selected candidate_timing=DELAYED membership is not required. This is not a fulfillment count for selected-DELAYED observations.",
+        "actual_delayed_starts_match_planned": 32,
+        "actual_delayed_censored_future_start": 0,
+        "examples": [
+          {
+            "dispatch_time_s": 5.0,
+            "aircraft_id": "initial_middle_04",
+            "source_ring": "middle",
+            "first_target": [
+              "inner",
+              8,
+              null
+            ],
+            "actual_action": "FUTURE_PREDICTION_NO_RESERVATION",
+            "predicted_touchdown_s": 298.5,
+            "reference_status": "ESTIMATED",
+            "committed_hash_at_same_dispatch": false,
+            "same_dispatch_committed_hash_started": false,
+            "later_same_target_start_proxy": false,
+            "first_same_target_start_s": null
+          },
+          {
+            "dispatch_time_s": 5.0,
+            "aircraft_id": "initial_outer_05",
+            "source_ring": "outer",
+            "first_target": [
+              "middle",
+              17,
+              null
+            ],
+            "actual_action": "FUTURE_PREDICTION_NO_RESERVATION",
+            "predicted_touchdown_s": 147.8,
+            "reference_status": "KNOWN",
+            "committed_hash_at_same_dispatch": false,
+            "same_dispatch_committed_hash_started": false,
+            "later_same_target_start_proxy": true,
+            "first_same_target_start_s": 75.0
+          },
+          {
+            "dispatch_time_s": 9.388737514630813,
+            "aircraft_id": "initial_outer_05",
+            "source_ring": "outer",
+            "first_target": [
+              "middle",
+              18,
+              null
+            ],
+            "actual_action": "FUTURE_PREDICTION_NO_RESERVATION",
+            "predicted_touchdown_s": 337.9,
+            "reference_status": "ESTIMATED",
+            "committed_hash_at_same_dispatch": false,
+            "same_dispatch_committed_hash_started": false,
+            "later_same_target_start_proxy": false,
+            "first_same_target_start_s": null
+          }
+        ],
+        "actual_delayed_committed_examples": [
+          {
+            "aircraft_id": "initial_outer_07",
+            "committed_at_s": 14.999999999999982,
+            "planned_start_s": 17.587890625,
+            "started": true,
+            "actual_start_s": 17.587890625,
+            "start_matches": true,
+            "censored_future_start": false
+          },
+          {
+            "aircraft_id": "initial_outer_00",
+            "committed_at_s": 35.0,
+            "planned_start_s": 40.0,
+            "started": true,
+            "actual_start_s": 40.0,
+            "start_matches": true,
+            "censored_future_start": false
+          },
+          {
+            "aircraft_id": "initial_outer_02",
+            "committed_at_s": 35.0,
+            "planned_start_s": 40.0,
+            "started": true,
+            "actual_start_s": 40.0,
+            "start_matches": true,
+            "censored_future_start": false
+          }
+        ]
+      },
+      "representative_replay_times": [
+        {
+          "reason": "maximum_selected_delayed_moves",
+          "time_s": 120.0,
+          "count": 3
+        },
+        {
+          "reason": "maximum_60s_lower_bound_shortage",
+          "time_s": 540,
+          "count": 2
+        },
+        {
+          "reason": "terminal",
+          "time_s": 600.0
+        }
+      ],
+      "source_files": {
+        "decisions.jsonl": {
+          "path": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023_r1/energy_slack/decisions.jsonl",
+          "sha256": "84cfc4dc5579b0a249baf000b5706665f42dfb17ca2c2631aa01b4fd5de3f10a"
+        },
+        "dispatch_timings.jsonl": {
+          "path": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023_r1/energy_slack/dispatch_timings.jsonl",
+          "sha256": "1e1fbfa18d2cbfaa7ac888a45348436c6aa6d60c61e23449f5dd5c6375712801"
+        },
+        "summary_0600.json": {
+          "path": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023_r1/energy_slack/summary_0600.json",
+          "sha256": "45aded8c95f9662bfda00fc1306c0af7a85ebb89bfe7b55aa901d0d14496a02c"
+        }
+      }
+    },
+    "rh_cp_sat": {
+      "dispatch_count": 388,
+      "normal_record_count": 388,
+      "timing": {
+        "total_normal_wall_s": {
+          "count": 388,
+          "mean": 21.540985346909046,
+          "p95": 26.756632267707026,
+          "min": 14.252364983025473,
+          "max": 31.944825635990128,
+          "sum": 8357.90231460071
+        },
+        "full_dispatch_wall_s": {
+          "count": 388,
+          "mean": 24.334723934685282,
+          "p95": 33.00584461130202,
+          "min": 14.252921508974396,
+          "max": 38.648358245089184,
+          "sum": 9441.87288665789
+        },
+        "algorithm_record_wall_s": {
+          "count": 388,
+          "mean": 21.539528758764494,
+          "p95": 26.755781477934214,
+          "min": 14.25158250995446,
+          "max": 31.944458438025322,
+          "sum": 8357.337158400624
+        },
+        "candidate_reported_exclusive_stage_sum_s": {
+          "count": 388,
+          "mean": 10.158322711883097,
+          "p95": 11.247416252963012,
+          "min": 7.5136200445122086,
+          "max": 12.881750943430234,
+          "sum": 3941.4292122106417
+        },
+        "validation_reported_exclusive_stage_sum_s": {
+          "count": 388,
+          "mean": 5.643502620841826,
+          "p95": 8.5758960252424,
+          "min": 2.8284418549737893,
+          "max": 17.26028663525358,
+          "sum": 2189.6790168866282
+        },
+        "solver_wall_s": {
+          "count": 388,
+          "mean": 5.548511312069994,
+          "p95": 8.00122699921485,
+          "min": 0.19166281895013526,
+          "max": 8.013707195001189,
+          "sum": 2152.8223890831578
+        },
+        "stages": {
+          "bounded_delayed_generation": {
+            "count": 388,
+            "mean": 0.13081734063636066,
+            "p95": 0.7671142488223265,
+            "min": 0.00016422499902546406,
+            "max": 1.2974026104202494,
+            "sum": 50.75712816690793
+          },
+          "candidate_generation_and_single_vehicle": {
+            "count": 388,
+            "mean": 5.344891573193683,
+            "p95": 6.9633362541964745,
+            "min": 1.2647141860798001,
+            "max": 8.712194016377907,
+            "sum": 2073.817930399149
+          },
+          "commit": {
+            "count": 388,
+            "mean": 0.05815215364981265,
+            "p95": 0.2763332329195689,
+            "min": 0.005579366988968104,
+            "max": 1.5794469119864516,
+            "sum": 22.56303561612731
+          },
+          "cp_solve": {
+            "count": 388,
+            "mean": 5.548542599672315,
+            "p95": 8.00128396054206,
+            "min": 0.19167880393797532,
+            "max": 8.013722135860007,
+            "sum": 2152.834528672858
+          },
+          "delayed_reference_regeneration": {
+            "count": 388,
+            "mean": 0.2891246713340863,
+            "p95": 1.256690104704466,
+            "min": 0.00017321505583822727,
+            "max": 3.8720030214753933,
+            "sum": 112.1803724776255
+          },
+          "downstream_explanation": {
+            "count": 388,
+            "mean": 0.0034991610078465136,
+            "p95": 0.004720370829454623,
+            "min": 0.002069155976641923,
+            "max": 0.005484137975145131,
+            "sum": 1.3576744710444473
+          },
+          "geometry_template_screen": {
+            "count": 388,
+            "mean": 0.2570453305263972,
+            "p95": 0.4297391447878907,
+            "min": 0.08680514770094305,
+            "max": 0.6197877722443081,
+            "sum": 99.73358824424213
+          },
+          "hint_construction": {
+            "count": 388,
+            "mean": 0.06291945140296354,
+            "p95": 0.08956173017795663,
+            "min": 0.03246617369586602,
+            "max": 0.12803656904725358,
+            "sum": 24.41274714434985
+          },
+          "model_build": {
+            "count": 388,
+            "mean": 0.03327469523700876,
+            "p95": 0.05586839829047674,
+            "min": 0.015236076258588582,
+            "max": 0.3103221310302615,
+            "sum": 12.910581751959398
+          },
+          "normal_evidence_reporting": {
+            "count": 388,
+            "mean": 0.007564320956889694,
+            "p95": 0.009446892203413881,
+            "min": 0.0024888530024327338,
+            "max": 0.22775235498556867,
+            "sum": 2.934956531273201
+          },
+          "prefix_validation": {
+            "count": 388,
+            "mean": 0.6549931264727871,
+            "p95": 2.6627594341989576,
+            "min": 0.01118571899132803,
+            "max": 12.646990557026584,
+            "sum": 254.1373330714414
+          },
+          "reference_seed_generation": {
+            "count": 388,
+            "mean": 1.7160763193288524,
+            "p95": 2.6587693799840046,
+            "min": 0.4748131499509327,
+            "max": 4.464797969150823,
+            "sum": 665.8376118995948
+          },
+          "resource_conflict_build": {
+            "count": 388,
+            "mean": 0.004321399173332071,
+            "p95": 0.006477129401173439,
+            "min": 0.002270266995765269,
+            "max": 0.00855224602855742,
+            "sum": 1.6767028792528436
+          },
+          "safe_progress_generation": {
+            "count": 388,
+            "mean": 2.420367476863717,
+            "p95": 2.744564404155244,
+            "min": 0.9576396489865147,
+            "max": 2.894939025340136,
+            "sum": 939.1025810231222
+          },
+          "selected_validation": {
+            "count": 388,
+            "mean": 0.03362291093169203,
+            "p95": 0.06512428636196999,
+            "min": 0.005763854249380529,
+            "max": 0.1610898005310446,
+            "sum": 13.045689441496506
+          },
+          "selection": {
+            "count": 388,
+            "mean": 0.010676799169063481,
+            "p95": 0.01976714354532305,
+            "min": 0.0037500959588214755,
+            "max": 0.13793277402874082,
+            "sum": 4.142598077596631
+          },
+          "snapshot_and_uniform_refinement": {
+            "count": 388,
+            "mean": 0.006542904959564318,
+            "p95": 0.00836010413768235,
+            "min": 0.0005176680278964341,
+            "max": 0.44860661099664867,
+            "sum": 2.5386471243109554
+          },
+          "trajectory_validation": {
+            "count": 388,
+            "mean": 4.954886583437347,
+            "p95": 7.06585676902323,
+            "min": 2.779481044388376,
+            "max": 9.331424333853647,
+            "sum": 1922.4959943736903
+          }
+        },
+        "definition": "mean/p95/count across real dispatches; p95 linear interpolation; grouped candidate/validation sum only recorded exclusive stage counters, inactive/unrecorded keys contribute zero."
+      },
+      "candidate_coverage": {
+        "outer": {
+          "aircraft_dispatch_observations": 2163,
+          "with_full_chain": 1159,
+          "without_full_chain": 1004,
+          "full_chain_columns_reported": 1194,
+          "candidate_insufficiency_reasons": {
+            "BOUNDED_CATALOG_INCOMPLETE": 2163,
+            "NO_COMPLETE_NORMAL_CHAIN_OBSERVED": 1004,
+            "NO_SAFE_MOVE_OBSERVED": 1
+          },
+          "only_keep_wait": 1
+        },
+        "middle": {
+          "aircraft_dispatch_observations": 2641,
+          "with_full_chain": 1015,
+          "without_full_chain": 1626,
+          "full_chain_columns_reported": 1504,
+          "candidate_insufficiency_reasons": {
+            "BOUNDED_CATALOG_INCOMPLETE": 2641,
+            "NO_COMPLETE_NORMAL_CHAIN_OBSERVED": 1626,
+            "NO_SAFE_MOVE_OBSERVED": 477
+          },
+          "only_keep_wait": 477
+        },
+        "inner": {
+          "aircraft_dispatch_observations": 2609,
+          "with_full_chain": 313,
+          "without_full_chain": 2296,
+          "full_chain_columns_reported": 429,
+          "candidate_insufficiency_reasons": {
+            "BOUNDED_CATALOG_INCOMPLETE": 2609,
+            "NO_SAFE_MOVE_OBSERVED": 2296,
+            "NO_COMPLETE_NORMAL_CHAIN_OBSERVED": 2296
+          },
+          "only_keep_wait": 2296
+        }
+      },
+      "catalog_statistics": {
+        "columns_per_dispatch": {
+          "count": 388,
+          "mean": 102.25773195876289,
+          "p95": 123.0,
+          "min": 76.0,
+          "max": 144.0,
+          "sum": 39676.0
+        },
+        "incomplete_aircraft_per_dispatch": {
+          "count": 388,
+          "mean": 21.067010309278352,
+          "p95": 24.0,
+          "min": 16.0,
+          "max": 25.0,
+          "sum": 8174.0
+        }
+      },
+      "cp": {
+        "entered_count": 388,
+        "hint_comparable_calls": 388,
+        "strict_improvement_reported_true": 125,
+        "final_vector_less_than_hint": 125,
+        "rounds": {
+          "count": 388,
+          "mean": 2.8969072164948453,
+          "p95": 6.0,
+          "min": 1.0,
+          "max": 46.0,
+          "sum": 1124.0
+        },
+        "phase_record_count": 3699,
+        "phase_status_counts": {
+          "OPTIMAL": 3353,
+          "FEASIBLE": 305,
+          "UNKNOWN": 41
+        },
+        "cuts": {
+          "cumulative_pair_cuts": 36201,
+          "cumulative_single_cuts": 0,
+          "cumulative_prefix_nogoods": 41
+        },
+        "cuts_definition": "Sum per-dispatch/per-uniform-restart maxima of cumulative cut counters; do not sum cumulative phase values."
+      },
+      "fallback": {
+        "count": 0,
+        "status_counts": {
+          "LEX_LIMITED": 306,
+          "CATALOG_LEX_OPTIMAL": 82
+        },
+        "skip_reasons": {
+          "None": 388
+        },
+        "truncations": {
+          "CANDIDATE_WORK_CUTOFF": 388,
+          "CP_PREPARATION_CUTOFF": 22,
+          "SOFT_BUDGET": 4,
+          "MOVING_COLUMN_LIMIT": 53,
+          "HINT_VALIDATION_RESERVE": 3
+        }
+      },
+      "cache": {
+        "reference_hits_per_call_sum": 52135,
+        "move_energy_cumulative_last": {
+          "hits": 146571,
+          "misses": 54785
+        },
+        "validation_per_call_sums": {
+          "protection_misses": 37034,
+          "pair_misses": 800568,
+          "single_hits": 351570,
+          "energy_hits": 175883,
+          "snapshot_invalidations": 387,
+          "batch_conflicts": 3895,
+          "energy_misses": 70411,
+          "protection_hits": 788892,
+          "pair_hits": 2667244,
+          "single_misses": 78440
+        },
+        "note": "Move energy cache is cumulative: last recorded counters retained, not summed across callbacks."
+      },
+      "selected_observations": {
+        "counts": {
+          "selected_kind_MOVE": 1306,
+          "MOVE_IMMEDIATE": 945,
+          "selected_kind_KEEP": 6184,
+          "selected_kind_WAIT": 684,
+          "MOVE_DELAYED": 361,
+          "DELAYED_action_FUTURE_PREDICTION_NO_RESERVATION": 341,
+          "DELAYED_action_IMMEDIATE_PREFIX_SUBMITTED": 20
+        },
+        "note": "Repeated aircraft-dispatch predictions; not distinct aircraft, reservations, or actual landings."
+      },
+      "predicted_snapshot_statistics": {
+        "energy_j": {
+          "window_j": {
+            "count": 388,
+            "mean": 384488720.3913369,
+            "p95": 451822635.77335376,
+            "min": 277445293.9011478,
+            "max": 468799449.5852342,
+            "sum": 149181623511.8387
+          },
+          "tail_j": {
+            "count": 388,
+            "mean": 218109451.18434498,
+            "p95": 280349377.5086731,
+            "min": 121027650.96824762,
+            "max": 324466152.0688393,
+            "sum": 84626467059.52585
+          },
+          "tail_motion_j": {
+            "count": 388,
+            "mean": 134243834.42171612,
+            "p95": 159379264.53086978,
+            "min": 94727223.96824762,
+            "max": 169235103.19030052,
+            "sum": 52086607755.625854
+          },
+          "tail_wait_j": {
+            "count": 388,
+            "mean": 83865616.76262887,
+            "p95": 130707431.445,
+            "min": 20128808.8,
+            "max": 155441007.5,
+            "sum": 32539859303.9
+          },
+          "total_j": {
+            "count": 388,
+            "mean": 602598171.5703609,
+            "p95": 731723986.3599999,
+            "min": 398472944.90000004,
+            "max": 792157154.2,
+            "sum": 233808090569.30002
+          }
+        },
+        "estimated_wait_seconds_by_ring": {
+          "outer": {
+            "count": 388,
+            "mean": 1444.9514234432627,
+            "p95": 2537.3003317906678,
+            "min": 240.0,
+            "max": 2762.8666453306314,
+            "sum": 560641.152295986
+          },
+          "middle": {
+            "count": 388,
+            "mean": 1647.0545155753903,
+            "p95": 2743.1908571215517,
+            "min": 718.2703701987725,
+            "max": 2917.8671188172243,
+            "sum": 639057.1520432514
+          },
+          "inner": {
+            "count": 388,
+            "mean": 2303.411900793027,
+            "p95": 3533.776690211348,
+            "min": 684.5217266590721,
+            "max": 3898.765899759742,
+            "sum": 893723.8175076945
+          }
+        },
+        "predicted_touchdown_absolute_s": {
+          "count": 8308,
+          "mean": 630.5030332209918,
+          "p95": 959.8249999999998,
+          "min": 48.5,
+          "max": 1097.1,
+          "sum": 5238219.2
+        },
+        "predicted_touchdown_offset_from_dispatch_s": {
+          "count": 8308,
+          "mean": 345.247501155042,
+          "p95": 508.98715547666416,
+          "min": 48.5,
+          "max": 597.5189713970053,
+          "sum": 2868316.239596089
+        },
+        "reference_status_counts": {
+          "KNOWN": 1101,
+          "ESTIMATED": 7073,
+          "UNKNOWN": 134
+        },
+        "note": "Snapshot sums then distribution over dispatches; these are predictions with KNOWN/ESTIMATED/UNKNOWN, never integrate/sum them into physical terminal energy."
+      },
+      "delayed_selection_fulfillment": {
+        "selected_delayed_move_observations": 361,
+        "same_dispatch_committed_hash_started": 20,
+        "selected_delayed_unreserved_matching_commit_absent": 341,
+        "selected_delayed_definition": "Repeated selected candidate_timing=DELAYED observations. Only matching same-dispatch aircraft/first-target commit hashes subsequently seen in actual maneuver_started support same_dispatch_committed_hash_started; this does not establish that every selected DELAYED prediction executed.",
+        "later_same_target_proxy_count": 140,
+        "exact_identity_unavailable_for_unreserved_predictions": true,
+        "note": "Unreserved future selected signatures are absent from logs. Later same-target starts are a proxy only, not proof that the predicted plan was executed.",
+        "actual_delayed_committed_unique_plans": 41,
+        "actual_delayed_committed_started": 41,
+        "actual_delayed_committed_definition": "All unique normal plan hashes with planned start_time later than their commit event time. May include different normal candidate types; selected candidate_timing=DELAYED membership is not required. This is not a fulfillment count for selected-DELAYED observations.",
+        "actual_delayed_starts_match_planned": 41,
+        "actual_delayed_censored_future_start": 0,
+        "examples": [
+          {
+            "dispatch_time_s": 5.0,
+            "aircraft_id": "initial_outer_05",
+            "source_ring": "outer",
+            "first_target": [
+              "middle",
+              17,
+              null
+            ],
+            "actual_action": "FUTURE_PREDICTION_NO_RESERVATION",
+            "predicted_touchdown_s": 147.8,
+            "reference_status": "KNOWN",
+            "committed_hash_at_same_dispatch": false,
+            "same_dispatch_committed_hash_started": false,
+            "later_same_target_start_proxy": true,
+            "first_same_target_start_s": 84.28784770469451
+          },
+          {
+            "dispatch_time_s": 43.308061276268795,
+            "aircraft_id": "initial_middle_00",
+            "source_ring": "middle",
+            "first_target": [
+              "inner",
+              17,
+              null
+            ],
+            "actual_action": "FUTURE_PREDICTION_NO_RESERVATION",
+            "predicted_touchdown_s": 154.1,
+            "reference_status": "KNOWN",
+            "committed_hash_at_same_dispatch": false,
+            "same_dispatch_committed_hash_started": false,
+            "later_same_target_start_proxy": true,
+            "first_same_target_start_s": 66.99292582969451
+          },
+          {
+            "dispatch_time_s": 43.308061276268795,
+            "aircraft_id": "initial_outer_00",
+            "source_ring": "middle",
+            "first_target": [
+              "inner",
+              0,
+              null
+            ],
+            "actual_action": "FUTURE_PREDICTION_NO_RESERVATION",
+            "predicted_touchdown_s": 331.8,
+            "reference_status": "ESTIMATED",
+            "committed_hash_at_same_dispatch": false,
+            "same_dispatch_committed_hash_started": false,
+            "later_same_target_start_proxy": true,
+            "first_same_target_start_s": 68.5
+          }
+        ],
+        "actual_delayed_committed_examples": [
+          {
+            "aircraft_id": "initial_outer_02",
+            "committed_at_s": 35.0,
+            "planned_start_s": 40.0,
+            "started": true,
+            "actual_start_s": 40.0,
+            "start_matches": true,
+            "censored_future_start": false
+          },
+          {
+            "aircraft_id": "initial_middle_01",
+            "committed_at_s": 40.0,
+            "planned_start_s": 45.0,
+            "started": true,
+            "actual_start_s": 45.0,
+            "start_matches": true,
+            "censored_future_start": false
+          },
+          {
+            "aircraft_id": "initial_outer_04",
+            "committed_at_s": 44.38873751463081,
+            "planned_start_s": 49.38873751463081,
+            "started": true,
+            "actual_start_s": 49.38873751463081,
+            "start_matches": true,
+            "censored_future_start": false
+          }
+        ]
+      },
+      "representative_replay_times": [
+        {
+          "reason": "maximum_selected_delayed_moves",
+          "time_s": 505.0,
+          "count": 5
+        },
+        {
+          "reason": "maximum_60s_lower_bound_shortage",
+          "time_s": 420,
+          "count": 3
+        },
+        {
+          "reason": "terminal",
+          "time_s": 600.0
+        }
+      ],
+      "source_files": {
+        "decisions.jsonl": {
+          "path": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023_r1/rh_cp_sat/decisions.jsonl",
+          "sha256": "80340a87ae466cc5f4b99456e0e87d30f6908ad98d733d990ec33162d4d459e0"
+        },
+        "dispatch_timings.jsonl": {
+          "path": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023_r1/rh_cp_sat/dispatch_timings.jsonl",
+          "sha256": "54ead9451cc9bd6a70d549eb2f99caf45f318b3b546420bb207c85dd4d4fc45b"
+        },
+        "summary_0600.json": {
+          "path": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023_r1/rh_cp_sat/summary_0600.json",
+          "sha256": "dcfc895e1f8fc27bd4ae62cdf5a8e4438507ba54cd4759910612d226cf2169b8"
+        }
+      }
+    }
+  },
+  "analysis_path": "D:/7_codespace/terminal/artifacts/rotating_slots_stage2_20261023/v8_medium_final_facts.json",
+  "physical_summary_path": "D:/7_codespace/terminal/artifacts/rotating_slots_stage2_20261023/v8_medium_final_summary.json",
+  "interpretation": "Mechanical observed statistics and prediction diagnostics only; no causal attribution or global optimality claim."
+}
