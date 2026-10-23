@@ -203,6 +203,40 @@ root, both `energy_slack` and `rh_cp_sat` contain `summary_0600.json`,
 `end_timestamp.txt` record completion. No output was rerun or modified for this
 result update.
 
+## Historical reference comparison at 600 s
+
+The following table compares the completed linear wave with the historical
+angular-speed results in [the rescue_need_v7 status document](rescue_need_v7_status.md).
+It is a historical reference comparison, not the pending same-version matched
+control comparison. Historical diagnostic and stress combine a v6 0-240 s prefix
+with a v7 240-600 s suffix; historical medium is v7 from t=0 but uses the older
+code. Landing entries show normal + emergency = total; total differences are
+linear minus historical angular.
+
+| Scenario | Method | Historical angular landings | Linear landings | Historical angular kWh | Linear kWh | Total landing difference |
+|---|---|---|---|---:|---:|---:|
+| diagnostic | EnergySlack | 27 + 0 = 27 | 22 + 0 = 22 | 262.148928 | 281.047077 | -5 |
+| diagnostic | RHCP | 27 + 2 = 29 | 24 + 0 = 24 | 263.016853 | 265.959891 | -5 |
+| medium | EnergySlack | 27 + 2 = 29 | 16 + 0 = 16 | 394.344077 | 386.263858 | -13 |
+| medium | RHCP | 22 + 4 = 26 | 14 + 0 = 14 | 406.652004 | 389.884678 | -12 |
+| stress | EnergySlack | 24 + 4 = 28 | 6 + 0 = 6 | 579.993689 | 588.754220 | -22 |
+| stress | RHCP | 25 + 5 = 30 | 6 + 0 = 6 | 572.083134 | 588.473194 | -24 |
+
+Against this historical reference, normal and total landings are lower in all
+six linear rows, with the largest total reductions in stress. Energy differences
+have mixed directions. These are single-seed observations under differing code
+and, for diagnostic/stress, mixed policy protocols; formal profile comparison
+awaits the fresh same-version angular controls. The rotation change also changes
+middle/inner tangential speeds and centripetal accelerations, so this table
+cannot attribute the differences solely to phase dynamics or establish a physical
+capacity optimum.
+
+The original historical audits remain 3 PASS / 3 FAIL, with seven
+`EVENT_FRAME_MISSING` issues for `rescue_warning`; their continuous-separation
+status is CERTIFIED in all six cases. The new linear audits are 6 PASS with zero
+issues. The historical FAIL results are preserved and are not reclassified by
+this comparison.
+
 ## Angular controls: verified startup record
 
 All three fresh controls started on 2026-10-23 at 22:20:19 UTC+08:00. Startup was
@@ -243,9 +277,19 @@ Initial angular runtime estimates T0 are 9000 s (diagnostic), 12600 s (medium),
 and 18000 s (stress), based on prior observed angular throughput. Early startup
 fractions are not linearly extrapolated. Heartbeat `600` was successfully
 updated ACTIVE at 2026-10-23 22:23:53 UTC+08:00 with a 297-minute interval; both
-the tool result and saved TOML were verified. The next wake is approximately
-2026-10-24 03:20 UTC+08:00, after subtracting elapsed time from the maximum
-18000-second estimate. Completion checks, angular audits and the matched
+the tool result and saved TOML were verified. Its initial next-wake estimate of
+2026-10-24 03:20 UTC+08:00 was subsequently superseded.
+
+At the 2026-10-23 23:36:13 UTC+08:00 snapshot, all three runners and six method
+processes were alive with no error or terminal markers; EnergySlack/RHCP frame
+times were diagnostic 473/460.08 s, medium 360/353.5 s and stress 288/287 s, with
+common completed summaries at 420/300/240 s respectively. The latest complete
+stress RHCP 60-second block took 933.6015 wall seconds (previous block 901.2268);
+its throughput projected approximately 4870 wall seconds for the remaining 313
+simulation seconds. Around 23:37, the tool confirmed heartbeat `600` ACTIVE with
+an updated 80-minute interval, giving the current next-wake estimate near
+2026-10-24 00:58 UTC+08:00 after allowing for scheduling delay. This is an estimate,
+not a completion guarantee. Completion checks, angular audits and the matched
 comparison remain pending. No general profile dominance is established.
 
 ## Historical linear-wave launch record
