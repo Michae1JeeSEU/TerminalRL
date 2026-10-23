@@ -40,3 +40,41 @@ The fresh medium checks each executed one real callback at t=0:
 | `rh_cp_sat` | 33.4349310650141 s | `LEX_LIMITED` | `ACCEPTED` | 19 |
 
 The medium CP callback entered the solver and retained a certified hint; its final objective equalled the hint objective, so this callback showed no strict improvement. Both checks kept the frozen 30 s soft budget, 8 s solver budget and 64 maximum refinement rounds. The soft budget is cooperative rather than a hard preemptive cutoff: the observed CP callback took 33.4349310650141 s, exceeding 30 s without a budget increase. These one-callback measurements do not represent completion of the requested 600 s experiments. Formal campaign outcomes remain to be added after execution and result verification.
+
+The three formal pairs were subsequently launched and observed advancing. The single startup record is preserved in [v7 launch facts](../../artifacts/rotating_slots_stage2_20261023/v7_launch_facts.json), based on the synced validation root's `launch_facts.json` and `startup_snapshot.json`. Frozen code commit `4da4f3852290f73b6369e67589d3f8d54ad0b80e` was pushed; its source hash is `848437c22063d408e55267d03fcb444febf0e15191715b2c11c21342de1da0c7`. Subsequent documentation-only delivery does not change that frozen source. Stress and diagnostic retain their v6 0–240 s prefixes; medium starts at t=0 under v7.
+
+The snapshot has local anchor `2026-10-23T04:22:57.0794840Z` and server timestamp `2026-10-23T04:23:37Z`. Worker PIDs below are listed in CPU order; the latest state times are recorded simulation times rather than completed comparison boundaries.
+
+| Pair | Launch UTC, 2026-10-23 | Wrapper / runner PID | Method worker PID @ CPU | Latest EnergySlack / CP state time |
+|---|---|---|---|---|
+| stress | 04:17:14Z | 163894 / 163897 | 163906 @ 0; 163907 @ 2 | 273 / 255.11254882812494 s |
+| diagnostic | 04:17:21Z | 163955 / 163958 | 163967 @ 4; 163968 @ 6 | 281 / 273.49999999999994 s |
+| medium | 04:17:28Z | 164016 / 164019 | 164028 @ 8; 164029 @ 10 | 29 / 20.166015625 s |
+
+All six method workers had one thread. `OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS`, `MKL_NUM_THREADS` and `NUMEXPR_NUM_THREADS` were each set to `1`. The actual runner commands and output roots were:
+
+```bash
+/home/user/envs/terminal_stage2_v1/bin/python -u /home/user/projects/terminal/scripts/server/run_rotating_slots_stage2.py run --output /home/user/training_outputs/terminal/stage2_rescue_need_v7_stress_600s_20261023 --target 600 --cpus 0 2
+/home/user/envs/terminal_stage2_v1/bin/python -u /home/user/projects/terminal/scripts/server/run_rotating_slots_stage2.py run --output /home/user/training_outputs/terminal/stage2_rescue_need_v7_diagnostic_600s_20261023 --target 600 --cpus 4 6
+/home/user/envs/terminal_stage2_v1/bin/python -u /home/user/projects/terminal/scripts/server/run_rotating_slots_stage2.py run --output /home/user/training_outputs/terminal/stage2_rescue_need_v7_medium_600s_20261023 --target 600 --cpus 8 10
+```
+
+The startup snapshot contained no method `error.json` or `invalid.json`. Synced campaign metadata was `RUNNING` with human review `HUMAN_PENDING`; neither method in any pair yet had a `checkpoint_0600.json` or `summary_0600.json` marker. This establishes normal startup and progression, not completion or visual acceptance.
+
+The actual frozen arrival inputs were checked separately from the validation checksum manifest:
+
+| Pair | Arrival requests | Arrival `manifest.json` SHA256 |
+|---|---:|---|
+| stress | 172 | `10b97225bde7992af59c79857b0c387bde69ec3b1153e36867a9d42406ad4bc6` |
+| diagnostic | 118 | `b827cae3e8d961a3e94102378c6a9c552bf20f1b12fd30d0445b5fce8cb52743` |
+| medium | 146 | `d972c45754727f3ac7266e934b04293cdcf62c637dd98311b34a294b7cd6f7b5` |
+
+The counts 172 / 118 / 146 cover each frozen 3600 s arrival window in full, not the requests actually offered by 600 s. The terminal report must count offered arrivals from the realised events.
+
+All three environment-lock files had SHA256 `b15a7e9c1debc9e91cffa8029e48706f7fd917382d7be05b873f64a61348eba2`. The startup snapshot's `provenance.manifest_sha256` instead identifies `validation_manifest.json` (`c7825adf095d26365fbffff86629658f1677b7c163cfb07691150fd90337d0e7`); it is not an arrival-manifest hash. The three formal provenance file hashes are retained in the launch facts.
+
+Each pair retains a 21600 s total allocation with a cumulative compute-stop threshold at 19800 s, including prior credit and preparation elapsed, and an 1800 s archive reserve. Its 600 s credited prior allocation is a conservative allowance, not a measured 600 s preparation duration. Existing parent budgets remain recorded history and are not modified. The primary initial total-time estimates are 12600 s for stress, 9000 s for diagnostic and 12600 s for medium, informed by the v6 480 s pair wall times of 9153 / 4903 s and the new medium callbacks of 20.22 / 33.43 s. Uneven later density and phase costs limit these estimates.
+
+The previous direct runner-elapsed observation at server 04:21:24Z was 250 / 242 / 235 s for stress / diagnostic / medium. Adding the 133 s server-clock difference gives **derived**, not directly measured, latest elapsed estimates of 383 / 375 / 368 s. The largest estimated remainder was 12232 s at the local startup anchor. The primary successfully created the sole active thread heartbeat `stage2-v7-600` with a 201-minute interval after deducting approximately 172.9 s already elapsed at local 04:25:50Z. The resulting approximately 07:46:50Z recheck is an estimate, not a scheduler-returned next-run field. The initial creation request omitted `destination` and was rejected without creating a schedule; the corrected thread request created one schedule. The monitoring worker exited, with no sleeping worker retained.
+
+After terminal-state verification, the authorised follow-up is to compare complete 600 s results and the common 480 s window, report cumulative terminal energy without re-adding inherited prefix energy and report suffix deltas separately, inspect rescue waiting and CP limits under the stated policy labels, audit replay/images while human acceptance remains `HUMAN_PENDING`, and complete documentation and Git delivery. No terminal results are supplied by this startup record.

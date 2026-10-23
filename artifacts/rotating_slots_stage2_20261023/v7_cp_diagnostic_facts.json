@@ -1,0 +1,2009 @@
+{
+  "schema": "stage2_v7_cp_diagnostic_facts_v1",
+  "recorded_utc": "2026-10-23T03:43:57.905Z",
+  "evidence_type": "preexisting_v6_artifacts_plus_new_local_read_only_aggregation",
+  "observation_window_s": 480,
+  "inputs": {
+    "repo_head_observed": "ba6cee5",
+    "frozen_code_commit": "9cfb781",
+    "v6_final_facts_path": "D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261022\\v6_final_0480_facts.json",
+    "diagnostic_root": "D:/7_codespace/training_outputs/terminal/stage2_rescue_opportunity_v6_diagnostic_480s_20261022",
+    "method": "rh_cp_sat",
+    "decisions_path": "D:/7_codespace/training_outputs/terminal/stage2_rescue_opportunity_v6_diagnostic_480s_20261022/rh_cp_sat/decisions.jsonl",
+    "decisions_record_count": 287
+  },
+  "objective": {
+    "horizon_s": 240,
+    "tuple_order": [
+      "f",
+      "-l",
+      "u",
+      "tau",
+      "joules"
+    ],
+    "optimization_direction": "lexicographic minimize",
+    "terms": [
+      {
+        "position": 1,
+        "name": "f",
+        "definition": "int(soc_h <= 0 or peak_h > 120.)",
+        "meaning": "predicted energy/peak failure indicator",
+        "source": "terminal_marl/core/rotating_slots/stage2_planning.py:762"
+      },
+      {
+        "position": 2,
+        "name": "-l",
+        "definition": "-int(landed and allplans[-1].end_time <= snapshot.time + HORIZON)",
+        "meaning": "negative within-horizon landing indicator",
+        "source": "terminal_marl/core/rotating_slots/stage2_planning.py:756-764"
+      },
+      {
+        "position": 3,
+        "name": "u",
+        "definition": "0 when not urgent; when urgent, 1 for inner, 2 for middle, 3 for outer if tail reference is known, otherwise 3",
+        "meaning": "urgency/unknown-tail rank",
+        "source": "terminal_marl/core/rotating_slots/stage2_planning.py:774-780"
+      },
+      {
+        "position": 4,
+        "name": "tau",
+        "definition": "min(900, landing_end - snapshot.time) when landed; min(900, HORIZON + ref.duration) when known partial tail; 901 + remaining_lower(snapshot, ring) when unknown",
+        "meaning": "predicted completion time proxy",
+        "source": "terminal_marl/core/rotating_slots/stage2_planning.py:763-781"
+      },
+      {
+        "position": 5,
+        "name": "joules",
+        "definition": "qh[0] from context.energy_portions(portions)",
+        "meaning": "predicted energy",
+        "source": "terminal_marl/core/rotating_slots/stage2_planning.py:760-784"
+      }
+    ],
+    "solver_coefficients": "(int(f), int(l), int(u), int(round(tau*10)), int(round(joules/3600))); l is the second objective component -landing",
+    "coefficient_source": "terminal_marl/core/rotating_slots/stage2_planning.py:238-241"
+  },
+  "hint_scoring_and_incumbent": {
+    "hint": {
+      "construction": "EnergySlackScheduler().plan(snapshot, candidates, context, budget, validation_reserve_seconds=budget.hint_validation_reserve_seconds) inside hint_construction and HINT_BUDGET stage limit.",
+      "certified_key": "hint.objective if hint.certified else None",
+      "incumbent_initialization": "incumbent = hint if hint.certified else None",
+      "source": "terminal_marl/core/rotating_slots/stage2_planning.py:1252-1267"
+    },
+    "model_and_scoring": {
+      "exact_one": "one BoolVar per candidate column with AddExactlyOne per aircraft",
+      "hint_application": "AddHint(v, int(key in chosen)) for each model variable when a certified incumbent exists",
+      "phase_scoring": "for phase, expression is sum(solver_coefficients(column)[phase] * variable); model.Minimize(expression); after certified feasible validation, model.Add(expression == rounded solver objective)",
+      "source": "terminal_marl/core/rotating_slots/stage2_planning.py:1294-1338,1376-1383"
+    },
+    "selected_verification": {
+      "batch": "check_batch_conflicts(selected) when available; otherwise check_batch(selected)",
+      "prefix": "check_commit_prefix(selected) only when batch result is accepted and watchdog is available",
+      "source": "terminal_marl/core/rotating_slots/stage2_planning.py:1343-1357,648-696"
+    },
+    "cuts": {
+      "pair": "explicit two-column conflicts add sorted signature pair exclusions",
+      "single": "explicit one-column conflicts add single-column exclusions",
+      "prefix_nogood": "accepted batch with rejected committed prefix adds the selected signature tuple",
+      "unknown": "UNKNOWN batch or prefix validation stops refinement and does not add cuts",
+      "source": "terminal_marl/core/rotating_slots/stage2_planning.py:1357-1375"
+    },
+    "final_incumbent": {
+      "update": "verified proposal replaces incumbent only when proposal.objective < incumbent.objective",
+      "fallback": "if no incumbent exists, KEEP columns are checked and recorded as NO_VERIFIED_INCUMBENT",
+      "completion_check": "CATALOG_LEX_OPTIMAL requires all_optimal, resource_complete, model_complete, final phase 4 OPTIMAL and solver-key equality; otherwise LEX_LIMITED",
+      "logged_fields": [
+        "hint_objective",
+        "hint_certified",
+        "final_objective",
+        "strict_improvement_over_hint",
+        "solver_entered",
+        "solver_stop_reason",
+        "pair_cuts",
+        "single_cuts",
+        "prefix_nogoods"
+      ],
+      "source": "terminal_marl/core/rotating_slots/stage2_planning.py:1376-1412"
+    },
+    "commitment_logging": {
+      "committed_prefix": "result.prefix when commit is accepted",
+      "submitted_count": "len(result.prefix) when commit is accepted",
+      "source": "terminal_marl/core/rotating_slots/stage2_planning.py:1497-1499,1545-1582"
+    }
+  },
+  "observed_calls": {
+    "first_three": [
+      {
+        "call_index": 1,
+        "source_line": 1,
+        "time_s": 0,
+        "status": "LEX_LIMITED",
+        "commit_status": "ACCEPTED",
+        "solver_entered": true,
+        "solver_stop_reason": null,
+        "solver_record_count": 16,
+        "solver_statuses": [
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL"
+        ],
+        "hint_objective": [
+          0,
+          -6,
+          36,
+          11880,
+          291068276.0708492
+        ],
+        "selected_objective": [
+          0,
+          -6,
+          36,
+          11700,
+          287459120.6988814
+        ],
+        "final_objective": [
+          0,
+          -6,
+          36,
+          11700,
+          287459120.6988814
+        ],
+        "strict_improvement_over_hint": true,
+        "move_aircraft_count": 18,
+        "catalog_columns": 129,
+        "move_columns": 93,
+        "complete_chain_columns": 37,
+        "predicted_landing_columns": 37,
+        "partial_progress_columns": 56,
+        "selected_kind_counts": {
+          "MOVE": 17,
+          "WAIT": 1
+        },
+        "committed_actions": 17,
+        "keep_count": 0,
+        "wait_count": 1,
+        "solver_records": [
+          {
+            "round": 1,
+            "phase": 0,
+            "status": "OPTIMAL",
+            "objective": 0,
+            "validation_status": "UNSAFE",
+            "prefix_status": "NOT_CHECKED",
+            "cumulative_pair_cuts": 232,
+            "cumulative_single_cuts": 0,
+            "cumulative_prefix_nogoods": 0
+          },
+          {
+            "round": 2,
+            "phase": 0,
+            "status": "OPTIMAL",
+            "objective": 0,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 2,
+            "phase": 1,
+            "status": "OPTIMAL",
+            "objective": -9,
+            "validation_status": "UNSAFE",
+            "prefix_status": "NOT_CHECKED",
+            "cumulative_pair_cuts": 235,
+            "cumulative_single_cuts": 0,
+            "cumulative_prefix_nogoods": 0
+          },
+          {
+            "round": 3,
+            "phase": 0,
+            "status": "OPTIMAL",
+            "objective": 0,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 3,
+            "phase": 1,
+            "status": "OPTIMAL",
+            "objective": -9,
+            "validation_status": "UNSAFE",
+            "prefix_status": "NOT_CHECKED",
+            "cumulative_pair_cuts": 238,
+            "cumulative_single_cuts": 0,
+            "cumulative_prefix_nogoods": 0
+          },
+          {
+            "round": 4,
+            "phase": 0,
+            "status": "OPTIMAL",
+            "objective": 0,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 4,
+            "phase": 1,
+            "status": "OPTIMAL",
+            "objective": -6,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 4,
+            "phase": 2,
+            "status": "OPTIMAL",
+            "objective": 36,
+            "validation_status": "UNSAFE",
+            "prefix_status": "NOT_CHECKED",
+            "cumulative_pair_cuts": 240,
+            "cumulative_single_cuts": 0,
+            "cumulative_prefix_nogoods": 0
+          },
+          {
+            "round": 5,
+            "phase": 0,
+            "status": "OPTIMAL",
+            "objective": 0,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 5,
+            "phase": 1,
+            "status": "OPTIMAL",
+            "objective": -6,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 5,
+            "phase": 2,
+            "status": "OPTIMAL",
+            "objective": 36,
+            "validation_status": "UNSAFE",
+            "prefix_status": "NOT_CHECKED",
+            "cumulative_pair_cuts": 241,
+            "cumulative_single_cuts": 0,
+            "cumulative_prefix_nogoods": 0
+          },
+          {
+            "round": 6,
+            "phase": 0,
+            "status": "OPTIMAL",
+            "objective": 0,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 6,
+            "phase": 1,
+            "status": "OPTIMAL",
+            "objective": -6,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 6,
+            "phase": 2,
+            "status": "OPTIMAL",
+            "objective": 36,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 6,
+            "phase": 3,
+            "status": "OPTIMAL",
+            "objective": 117000,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 6,
+            "phase": 4,
+            "status": "OPTIMAL",
+            "objective": 79850,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          }
+        ]
+      },
+      {
+        "call_index": 2,
+        "source_line": 2,
+        "time_s": 5,
+        "status": "CATALOG_LEX_OPTIMAL",
+        "commit_status": "ACCEPTED",
+        "solver_entered": true,
+        "solver_stop_reason": null,
+        "solver_record_count": 5,
+        "solver_statuses": [
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL"
+        ],
+        "hint_objective": [
+          0,
+          -1,
+          36,
+          11462.5,
+          264324798.11978808
+        ],
+        "selected_objective": [
+          0,
+          -1,
+          36,
+          11422.5,
+          260369509.11144012
+        ],
+        "final_objective": [
+          0,
+          -1,
+          36,
+          11422.5,
+          260369509.11144012
+        ],
+        "strict_improvement_over_hint": true,
+        "move_aircraft_count": 8,
+        "catalog_columns": 76,
+        "move_columns": 50,
+        "complete_chain_columns": 5,
+        "predicted_landing_columns": 5,
+        "partial_progress_columns": 45,
+        "selected_kind_counts": {
+          "MOVE": 7,
+          "WAIT": 6
+        },
+        "committed_actions": 0,
+        "keep_count": 0,
+        "wait_count": 6,
+        "solver_records": [
+          {
+            "round": 1,
+            "phase": 0,
+            "status": "OPTIMAL",
+            "objective": 0,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 1,
+            "phase": 1,
+            "status": "OPTIMAL",
+            "objective": -1,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 1,
+            "phase": 2,
+            "status": "OPTIMAL",
+            "objective": 36,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 1,
+            "phase": 3,
+            "status": "OPTIMAL",
+            "objective": 114225,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 1,
+            "phase": 4,
+            "status": "OPTIMAL",
+            "objective": 72324,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          }
+        ]
+      },
+      {
+        "call_index": 3,
+        "source_line": 3,
+        "time_s": 9.999999999999993,
+        "status": "LEX_LIMITED",
+        "commit_status": "ACCEPTED",
+        "solver_entered": true,
+        "solver_stop_reason": null,
+        "solver_record_count": 19,
+        "solver_statuses": [
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL",
+          "OPTIMAL"
+        ],
+        "hint_objective": [
+          0,
+          -1,
+          36,
+          11457.5,
+          265504919.9376649
+        ],
+        "selected_objective": [
+          0,
+          -1,
+          36,
+          11417.5,
+          261549630.9293169
+        ],
+        "final_objective": [
+          0,
+          -1,
+          36,
+          11417.5,
+          261549630.9293169
+        ],
+        "strict_improvement_over_hint": true,
+        "move_aircraft_count": 9,
+        "catalog_columns": 79,
+        "move_columns": 53,
+        "complete_chain_columns": 6,
+        "predicted_landing_columns": 6,
+        "partial_progress_columns": 47,
+        "selected_kind_counts": {
+          "MOVE": 7,
+          "WAIT": 6
+        },
+        "committed_actions": 0,
+        "keep_count": 0,
+        "wait_count": 6,
+        "solver_records": [
+          {
+            "round": 1,
+            "phase": 0,
+            "status": "OPTIMAL",
+            "objective": 0,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 1,
+            "phase": 1,
+            "status": "OPTIMAL",
+            "objective": -2,
+            "validation_status": "UNSAFE",
+            "prefix_status": "NOT_CHECKED",
+            "cumulative_pair_cuts": 80,
+            "cumulative_single_cuts": 0,
+            "cumulative_prefix_nogoods": 0
+          },
+          {
+            "round": 2,
+            "phase": 0,
+            "status": "OPTIMAL",
+            "objective": 0,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 2,
+            "phase": 1,
+            "status": "OPTIMAL",
+            "objective": -2,
+            "validation_status": "UNSAFE",
+            "prefix_status": "NOT_CHECKED",
+            "cumulative_pair_cuts": 81,
+            "cumulative_single_cuts": 0,
+            "cumulative_prefix_nogoods": 0
+          },
+          {
+            "round": 3,
+            "phase": 0,
+            "status": "OPTIMAL",
+            "objective": 0,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 3,
+            "phase": 1,
+            "status": "OPTIMAL",
+            "objective": -1,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 3,
+            "phase": 2,
+            "status": "OPTIMAL",
+            "objective": 36,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 3,
+            "phase": 3,
+            "status": "OPTIMAL",
+            "objective": 114175,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 3,
+            "phase": 4,
+            "status": "OPTIMAL",
+            "objective": 72501,
+            "validation_status": "UNSAFE",
+            "prefix_status": "NOT_CHECKED",
+            "cumulative_pair_cuts": 82,
+            "cumulative_single_cuts": 0,
+            "cumulative_prefix_nogoods": 0
+          },
+          {
+            "round": 4,
+            "phase": 0,
+            "status": "OPTIMAL",
+            "objective": 0,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 4,
+            "phase": 1,
+            "status": "OPTIMAL",
+            "objective": -1,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 4,
+            "phase": 2,
+            "status": "OPTIMAL",
+            "objective": 36,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 4,
+            "phase": 3,
+            "status": "OPTIMAL",
+            "objective": 114175,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 4,
+            "phase": 4,
+            "status": "OPTIMAL",
+            "objective": 72501,
+            "validation_status": "UNSAFE",
+            "prefix_status": "NOT_CHECKED",
+            "cumulative_pair_cuts": 83,
+            "cumulative_single_cuts": 0,
+            "cumulative_prefix_nogoods": 0
+          },
+          {
+            "round": 5,
+            "phase": 0,
+            "status": "OPTIMAL",
+            "objective": 0,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 5,
+            "phase": 1,
+            "status": "OPTIMAL",
+            "objective": -1,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 5,
+            "phase": 2,
+            "status": "OPTIMAL",
+            "objective": 36,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 5,
+            "phase": 3,
+            "status": "OPTIMAL",
+            "objective": 114175,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          },
+          {
+            "round": 5,
+            "phase": 4,
+            "status": "OPTIMAL",
+            "objective": 72653,
+            "validation_status": "SAFE",
+            "prefix_status": "ACCEPTED"
+          }
+        ]
+      }
+    ],
+    "first_strict_improvement_call": {
+      "call_index": 1,
+      "source_line": 1,
+      "time_s": 0,
+      "status": "LEX_LIMITED",
+      "commit_status": "ACCEPTED",
+      "solver_entered": true,
+      "solver_stop_reason": null,
+      "solver_record_count": 16,
+      "solver_statuses": [
+        "OPTIMAL",
+        "OPTIMAL",
+        "OPTIMAL",
+        "OPTIMAL",
+        "OPTIMAL",
+        "OPTIMAL",
+        "OPTIMAL",
+        "OPTIMAL",
+        "OPTIMAL",
+        "OPTIMAL",
+        "OPTIMAL",
+        "OPTIMAL",
+        "OPTIMAL",
+        "OPTIMAL",
+        "OPTIMAL",
+        "OPTIMAL"
+      ],
+      "hint_objective": [
+        0,
+        -6,
+        36,
+        11880,
+        291068276.0708492
+      ],
+      "selected_objective": [
+        0,
+        -6,
+        36,
+        11700,
+        287459120.6988814
+      ],
+      "final_objective": [
+        0,
+        -6,
+        36,
+        11700,
+        287459120.6988814
+      ],
+      "strict_improvement_over_hint": true,
+      "move_aircraft_count": 18,
+      "catalog_columns": 129,
+      "move_columns": 93,
+      "complete_chain_columns": 37,
+      "predicted_landing_columns": 37,
+      "partial_progress_columns": 56,
+      "selected_kind_counts": {
+        "MOVE": 17,
+        "WAIT": 1
+      },
+      "committed_actions": 17,
+      "keep_count": 0,
+      "wait_count": 1,
+      "solver_records": [
+        {
+          "round": 1,
+          "phase": 0,
+          "status": "OPTIMAL",
+          "objective": 0,
+          "validation_status": "UNSAFE",
+          "prefix_status": "NOT_CHECKED",
+          "cumulative_pair_cuts": 232,
+          "cumulative_single_cuts": 0,
+          "cumulative_prefix_nogoods": 0
+        },
+        {
+          "round": 2,
+          "phase": 0,
+          "status": "OPTIMAL",
+          "objective": 0,
+          "validation_status": "SAFE",
+          "prefix_status": "ACCEPTED"
+        },
+        {
+          "round": 2,
+          "phase": 1,
+          "status": "OPTIMAL",
+          "objective": -9,
+          "validation_status": "UNSAFE",
+          "prefix_status": "NOT_CHECKED",
+          "cumulative_pair_cuts": 235,
+          "cumulative_single_cuts": 0,
+          "cumulative_prefix_nogoods": 0
+        },
+        {
+          "round": 3,
+          "phase": 0,
+          "status": "OPTIMAL",
+          "objective": 0,
+          "validation_status": "SAFE",
+          "prefix_status": "ACCEPTED"
+        },
+        {
+          "round": 3,
+          "phase": 1,
+          "status": "OPTIMAL",
+          "objective": -9,
+          "validation_status": "UNSAFE",
+          "prefix_status": "NOT_CHECKED",
+          "cumulative_pair_cuts": 238,
+          "cumulative_single_cuts": 0,
+          "cumulative_prefix_nogoods": 0
+        },
+        {
+          "round": 4,
+          "phase": 0,
+          "status": "OPTIMAL",
+          "objective": 0,
+          "validation_status": "SAFE",
+          "prefix_status": "ACCEPTED"
+        },
+        {
+          "round": 4,
+          "phase": 1,
+          "status": "OPTIMAL",
+          "objective": -6,
+          "validation_status": "SAFE",
+          "prefix_status": "ACCEPTED"
+        },
+        {
+          "round": 4,
+          "phase": 2,
+          "status": "OPTIMAL",
+          "objective": 36,
+          "validation_status": "UNSAFE",
+          "prefix_status": "NOT_CHECKED",
+          "cumulative_pair_cuts": 240,
+          "cumulative_single_cuts": 0,
+          "cumulative_prefix_nogoods": 0
+        },
+        {
+          "round": 5,
+          "phase": 0,
+          "status": "OPTIMAL",
+          "objective": 0,
+          "validation_status": "SAFE",
+          "prefix_status": "ACCEPTED"
+        },
+        {
+          "round": 5,
+          "phase": 1,
+          "status": "OPTIMAL",
+          "objective": -6,
+          "validation_status": "SAFE",
+          "prefix_status": "ACCEPTED"
+        },
+        {
+          "round": 5,
+          "phase": 2,
+          "status": "OPTIMAL",
+          "objective": 36,
+          "validation_status": "UNSAFE",
+          "prefix_status": "NOT_CHECKED",
+          "cumulative_pair_cuts": 241,
+          "cumulative_single_cuts": 0,
+          "cumulative_prefix_nogoods": 0
+        },
+        {
+          "round": 6,
+          "phase": 0,
+          "status": "OPTIMAL",
+          "objective": 0,
+          "validation_status": "SAFE",
+          "prefix_status": "ACCEPTED"
+        },
+        {
+          "round": 6,
+          "phase": 1,
+          "status": "OPTIMAL",
+          "objective": -6,
+          "validation_status": "SAFE",
+          "prefix_status": "ACCEPTED"
+        },
+        {
+          "round": 6,
+          "phase": 2,
+          "status": "OPTIMAL",
+          "objective": 36,
+          "validation_status": "SAFE",
+          "prefix_status": "ACCEPTED"
+        },
+        {
+          "round": 6,
+          "phase": 3,
+          "status": "OPTIMAL",
+          "objective": 117000,
+          "validation_status": "SAFE",
+          "prefix_status": "ACCEPTED"
+        },
+        {
+          "round": 6,
+          "phase": 4,
+          "status": "OPTIMAL",
+          "objective": 79850,
+          "validation_status": "SAFE",
+          "prefix_status": "ACCEPTED"
+        }
+      ]
+    },
+    "source": "D:/7_codespace/training_outputs/terminal/stage2_rescue_opportunity_v6_diagnostic_480s_20261022/rh_cp_sat/decisions.jsonl:1-3 and first row with strict_improvement_over_hint=true"
+  },
+  "candidate_and_commit_counts": {
+    "decision_aggregates": {
+      "normal_calls": 287,
+      "move_eligible_calls": 287,
+      "solver_entered_calls": 287,
+      "strict_improvement_over_hint_counts": {
+        "false": 171,
+        "true": 116
+      },
+      "solver_phase_calls": 7560,
+      "solver_phase_status_counts": {
+        "OPTIMAL": 7560
+      },
+      "submitted_actions_sum": 86,
+      "keep_sum": 1537,
+      "wait_sum": 882,
+      "catalog_columns_sum": 19066,
+      "move_aircraft_count_sum": 2236
+    },
+    "candidate_counts": {
+      "aircraft_call_observations": 3697,
+      "only_keep_wait_observations": 1461,
+      "move_columns": 11672,
+      "complete_chain_columns": 2618,
+      "predicted_landing_columns": 2618,
+      "partial_progress_columns": 9054,
+      "full_chain_over_move_columns": 0.22429746401644962
+    },
+    "candidate_count_field_definition": "full_normal_chain_count is the count of MOVE columns whose last plan has pad_id != null; this is the recorded predicted_landing_columns alias.",
+    "v6_planning_summary": {
+      "normal_calls": 287,
+      "move_eligible_calls": 287,
+      "solver_entered_calls": 287,
+      "solver_entered_when_move_eligible": 287,
+      "strict_improvement_over_hint_counts": {
+        "False": 171,
+        "True": 116
+      },
+      "skip_reason_counts": {
+        "None": 287
+      },
+      "solver_stop_reason_counts": {
+        "None": 286,
+        "SOFT_BUDGET": 1
+      },
+      "solver_phase_calls": 7560,
+      "solver_phase_status_counts": {
+        "OPTIMAL": 7560
+      },
+      "logged_batch_conflicts": 4255,
+      "sum_per_call_restart_max_cumulative_cuts": {
+        "cumulative_pair_cuts": 32090,
+        "cumulative_single_cuts": 0,
+        "cumulative_prefix_nogoods": 0
+      },
+      "cut_count_scope": "Logged cumulative counters include initial resource cuts; maxima are taken once per call/restart, then summed.",
+      "unknown_validation_phase_records": 0,
+      "unknown_validation_phase_samples": [],
+      "unknown_cut_proof_in_run_logs": "UNKNOWN: absent cumulative counters cannot establish a zero-cut proof",
+      "validation_cache_sum_logged_context_counters": {
+        "batch_conflicts": 9979,
+        "energy_hits": 15092,
+        "energy_misses": 69000,
+        "pair_hits": 993426,
+        "pair_misses": 531744,
+        "protection_hits": 695942,
+        "protection_misses": 32376,
+        "single_hits": 240728,
+        "single_misses": 72697,
+        "snapshot_invalidations": 286
+      },
+      "move_energy_cache_final_cumulative": {
+        "hits": 108187,
+        "misses": 57174
+      },
+      "candidate_reference_cache_hits_sum_logged_catalog_deltas": 37400,
+      "geometry_screening_sum_logged": {
+        "cache_hits": 15941,
+        "descriptors_queued": 319547,
+        "grid_calls": 27697,
+        "progress_attempts": 26756,
+        "progress_columns_checked": 16092,
+        "progress_existing_reservation_skipped": 55629,
+        "progress_retained": 708,
+        "templates": 10668996,
+        "witness_rejected": 5286272,
+        "previous_chain_hits": 1216,
+        "previous_prefix_trimmed": 0,
+        "progress_pass_cutoff": 184,
+        "progress_energy_rejected": 8540,
+        "seed_energy_rejected": 126,
+        "previous_safety_invalidations": 2
+      },
+      "candidate_coverage": {
+        "aircraft_call_observations": 3697,
+        "only_keep_wait_observations": 1461,
+        "only_keep_wait_fraction": 0.3951852853665134,
+        "observations_with_full_chain": 1318,
+        "observations_with_full_chain_fraction": 0.35650527454692993,
+        "move_columns": 11672,
+        "full_chain_columns": 2618,
+        "partial_progress_columns": 9054,
+        "full_chain_over_move_columns": 0.22429746401644962
+      },
+      "candidate_coverage_by_ring": {
+        "outer": {
+          "aircraft_call_observations": 684,
+          "only_keep_wait_observations": 7,
+          "only_keep_wait_fraction": 0.01023391812865497,
+          "observations_with_full_chain": 185,
+          "observations_with_full_chain_fraction": 0.27046783625730997,
+          "move_columns": 4831,
+          "full_chain_columns": 299,
+          "partial_progress_columns": 4532,
+          "full_chain_over_move_columns": 0.06189194783688677
+        },
+        "middle": {
+          "aircraft_call_observations": 912,
+          "only_keep_wait_observations": 280,
+          "only_keep_wait_fraction": 0.30701754385964913,
+          "observations_with_full_chain": 447,
+          "observations_with_full_chain_fraction": 0.4901315789473684,
+          "move_columns": 2778,
+          "full_chain_columns": 1432,
+          "partial_progress_columns": 1346,
+          "full_chain_over_move_columns": 0.515478761699064
+        },
+        "inner": {
+          "aircraft_call_observations": 1568,
+          "only_keep_wait_observations": 1174,
+          "only_keep_wait_fraction": 0.7487244897959183,
+          "observations_with_full_chain": 394,
+          "observations_with_full_chain_fraction": 0.2512755102040816,
+          "move_columns": 583,
+          "full_chain_columns": 583,
+          "partial_progress_columns": 0,
+          "full_chain_over_move_columns": 1
+        }
+      },
+      "candidate_coverage_per_aircraft_source": "summary_0480.json:rescue_observations.candidate_coverage"
+    },
+    "recorded_event_counts": {
+      "admission_waiting": 1,
+      "admitted": 23,
+      "emergency_declared": 2,
+      "emergency_priority_selected": 2,
+      "emergency_triggered": 2,
+      "inbound_completed": 21,
+      "maneuver_started": 86,
+      "normal_path_estimate": 3562,
+      "pad_service_completed": 23,
+      "plan_committed": 40,
+      "request_released": 23,
+      "rescue_opportunity_attempt": 5660,
+      "rescue_opportunity_protected": 2,
+      "rescue_opportunity_search_exhausted": 125,
+      "rescue_warning": 7,
+      "soft_plan_reserved": 48,
+      "source_slot_cleared": 82,
+      "touchdown": 23,
+      "transfer_completed": 53
+    },
+    "final_metrics": {
+      "L_normal": 23,
+      "L_emergency": 0,
+      "L_success": 23,
+      "F_energy_total": 0,
+      "F_battery": 0,
+      "F_peak": 0,
+      "N_offered": 41,
+      "N_admitted_total": 41,
+      "N_airborne_pending": 18,
+      "N_upstream_pending": 0,
+      "N_rerouted": 0,
+      "manifest_offered": 23,
+      "initial_airborne_count": 18,
+      "initial_ground_count": 3,
+      "emergency_declared": 2,
+      "emergency_trigger_count": 2,
+      "emergency_unresolved": 2,
+      "protected_rescue_opportunities": 2,
+      "rescue_warning": 6,
+      "rescue_search_exhausted": 125,
+      "landing_below_reserve": 0,
+      "cost_emergency": 1200,
+      "energy_j": 743742362.4552761,
+      "holding_time": 2991.9629501005656,
+      "pad_utilization_seconds": 1873.2794256834784,
+      "decision_count": 287,
+      "conservation": true,
+      "terminated_invalid": false
+    },
+    "committed_action_count_views": {
+      "submitted_actions_sum_from_decisions": 86,
+      "plan_committed_event_count": 40,
+      "soft_plan_reserved_event_count": 48,
+      "maneuver_started_event_count": 86
+    },
+    "source": "D:/7_codespace/training_outputs/terminal/stage2_rescue_opportunity_v6_diagnostic_480s_20261022/rh_cp_sat/decisions.jsonl:1-287; D:\\7_codespace\\terminal\\artifacts\\rotating_slots_stage2_20261022\\v6_final_0480_facts.json:1; terminal_marl/core/rotating_slots/stage2_planning.py:1507-1516,1537-1544,1571-1573"
+  },
+  "final_normal_landing_set_comparison": {
+    "definition": "normal landed ID = touchdown event with details.emergency === false in the method's replay_0480/events.jsonl",
+    "energy_slack_normal_landed_ids": [
+      "initial_inner_00",
+      "initial_inner_01",
+      "initial_inner_02",
+      "initial_inner_03",
+      "initial_inner_04",
+      "initial_inner_05",
+      "initial_middle_00",
+      "initial_middle_01",
+      "initial_middle_02",
+      "initial_middle_03",
+      "initial_middle_04",
+      "initial_middle_05",
+      "initial_outer_00",
+      "initial_outer_01",
+      "initial_outer_02",
+      "initial_outer_03",
+      "initial_outer_04",
+      "req_000000",
+      "req_000001",
+      "req_000002",
+      "req_000003",
+      "req_000004",
+      "req_000005",
+      "req_000007",
+      "req_000008"
+    ],
+    "rh_cp_sat_normal_landed_ids": [
+      "initial_inner_00",
+      "initial_inner_01",
+      "initial_inner_02",
+      "initial_inner_03",
+      "initial_inner_04",
+      "initial_inner_05",
+      "initial_middle_00",
+      "initial_middle_01",
+      "initial_middle_02",
+      "initial_middle_03",
+      "initial_middle_04",
+      "initial_middle_05",
+      "initial_outer_01",
+      "initial_outer_02",
+      "initial_outer_03",
+      "initial_outer_04",
+      "initial_outer_05",
+      "req_000001",
+      "req_000002",
+      "req_000003",
+      "req_000005",
+      "req_000006",
+      "req_000010"
+    ],
+    "energy_slack_count": 25,
+    "rh_cp_sat_count": 23,
+    "energy_slack_only_ids": [
+      "initial_outer_00",
+      "req_000000",
+      "req_000004",
+      "req_000007",
+      "req_000008"
+    ],
+    "rh_cp_sat_only_ids": [
+      "initial_outer_05",
+      "req_000006",
+      "req_000010"
+    ],
+    "differing_ids": [
+      "initial_outer_00",
+      "initial_outer_05",
+      "req_000000",
+      "req_000004",
+      "req_000006",
+      "req_000007",
+      "req_000008",
+      "req_000010"
+    ],
+    "per_differing_id": {
+      "initial_outer_00": {
+        "energy_slack": {
+          "first_recorded_action": {
+            "source_line": 1,
+            "time_s": 0,
+            "type": "plan_committed",
+            "details": {
+              "end_time": 40,
+              "start_time": 0,
+              "trajectory_hash": "c3ab14653ce75a2404fee91c8badd26d9fc933a15d0a9955cd942cbc65ea1f9d"
+            }
+          },
+          "first_maneuver_started": {
+            "source_line": 29,
+            "time_s": 0,
+            "type": "maneuver_started",
+            "details": {
+              "dependencies": [],
+              "maneuver_kind": "TRANSFER",
+              "trajectory_hash": "c3ab14653ce75a2404fee91c8badd26d9fc933a15d0a9955cd942cbc65ea1f9d"
+            }
+          },
+          "normal_touchdown": {
+            "source_line": 1301,
+            "time_s": 153.5,
+            "type": "touchdown",
+            "details": {
+              "below_reserve": false,
+              "emergency": false,
+              "soc": 0.43027516401672505
+            }
+          },
+          "last480_status": {
+            "source_line": 692,
+            "observed": true,
+            "time_s": 480,
+            "status": "CLEARED",
+            "ring": null,
+            "soc": 0.43027516401672505,
+            "touchdown_time": 153.5
+          }
+        },
+        "rh_cp_sat": {
+          "first_recorded_action": {
+            "source_line": 1,
+            "time_s": 0,
+            "type": "plan_committed",
+            "details": {
+              "end_time": 40,
+              "start_time": 0,
+              "trajectory_hash": "c3ab14653ce75a2404fee91c8badd26d9fc933a15d0a9955cd942cbc65ea1f9d"
+            }
+          },
+          "first_maneuver_started": {
+            "source_line": 29,
+            "time_s": 0,
+            "type": "maneuver_started",
+            "details": {
+              "dependencies": [],
+              "maneuver_kind": "TRANSFER",
+              "trajectory_hash": "c3ab14653ce75a2404fee91c8badd26d9fc933a15d0a9955cd942cbc65ea1f9d"
+            }
+          },
+          "normal_touchdown": null,
+          "last480_status": {
+            "source_line": 684,
+            "observed": true,
+            "time_s": 480,
+            "status": "FINAL_EMERGENCY",
+            "ring": "inner",
+            "soc": 0.0323667692220753,
+            "touchdown_time": null
+          }
+        }
+      },
+      "initial_outer_05": {
+        "energy_slack": {
+          "first_recorded_action": {
+            "source_line": 6,
+            "time_s": 0,
+            "type": "plan_committed",
+            "details": {
+              "end_time": 40,
+              "start_time": 0,
+              "trajectory_hash": "409d6c74b9279aae150792ce8c3be8427f3f2fe932cba3fc2580fd265b0faff3"
+            }
+          },
+          "first_maneuver_started": {
+            "source_line": 34,
+            "time_s": 0,
+            "type": "maneuver_started",
+            "details": {
+              "dependencies": [],
+              "maneuver_kind": "TRANSFER",
+              "trajectory_hash": "409d6c74b9279aae150792ce8c3be8427f3f2fe932cba3fc2580fd265b0faff3"
+            }
+          },
+          "normal_touchdown": null,
+          "last480_status": {
+            "source_line": 692,
+            "observed": true,
+            "time_s": 480,
+            "status": "HOLD_INNER",
+            "ring": "inner",
+            "soc": 0.20276765658046708,
+            "touchdown_time": null
+          }
+        },
+        "rh_cp_sat": {
+          "first_recorded_action": {
+            "source_line": 6,
+            "time_s": 0,
+            "type": "plan_committed",
+            "details": {
+              "end_time": 40,
+              "start_time": 0,
+              "trajectory_hash": "fa16d8c14aa9edc95f33d476a03c74ae0504d53b49253418cfcd7e48adcf4942"
+            }
+          },
+          "first_maneuver_started": {
+            "source_line": 34,
+            "time_s": 0,
+            "type": "maneuver_started",
+            "details": {
+              "dependencies": [
+                "6f205c1ff0b3ad3f77d3762828f10ef8e7ddb7d50eda457b4759806a6bfda536"
+              ],
+              "maneuver_kind": "TRANSFER",
+              "trajectory_hash": "fa16d8c14aa9edc95f33d476a03c74ae0504d53b49253418cfcd7e48adcf4942"
+            }
+          },
+          "normal_touchdown": {
+            "source_line": 1915,
+            "time_s": 230.23592189328852,
+            "type": "touchdown",
+            "details": {
+              "below_reserve": false,
+              "emergency": false,
+              "soc": 0.4779132332763053
+            }
+          },
+          "last480_status": {
+            "source_line": 684,
+            "observed": true,
+            "time_s": 480,
+            "status": "CLEARED",
+            "ring": null,
+            "soc": 0.4779132332763053,
+            "touchdown_time": 230.23592189328852
+          }
+        }
+      },
+      "req_000000": {
+        "energy_slack": {
+          "first_recorded_action": {
+            "source_line": 62,
+            "time_s": 11.735921893288516,
+            "type": "request_released",
+            "details": {}
+          },
+          "first_maneuver_started": {
+            "source_line": 585,
+            "time_s": 66.73592189328852,
+            "type": "maneuver_started",
+            "details": {
+              "dependencies": [],
+              "maneuver_kind": "TRANSFER",
+              "trajectory_hash": "c81c4c06a0bd4f9656ce781213a0ec5ce07826d126a320e74f36765b4239b38d"
+            }
+          },
+          "normal_touchdown": {
+            "source_line": 2037,
+            "time_s": 232,
+            "type": "touchdown",
+            "details": {
+              "below_reserve": false,
+              "emergency": false,
+              "soc": 0.4760631260777659
+            }
+          },
+          "last480_status": {
+            "source_line": 692,
+            "observed": true,
+            "time_s": 480,
+            "status": "CLEARED",
+            "ring": null,
+            "soc": 0.4760631260777659,
+            "touchdown_time": 232
+          }
+        },
+        "rh_cp_sat": {
+          "first_recorded_action": {
+            "source_line": 62,
+            "time_s": 11.735921893288516,
+            "type": "request_released",
+            "details": {}
+          },
+          "first_maneuver_started": {
+            "source_line": 586,
+            "time_s": 66.73592189328852,
+            "type": "maneuver_started",
+            "details": {
+              "dependencies": [],
+              "maneuver_kind": "TRANSFER",
+              "trajectory_hash": "71d7f62b09084f1a24803e027d3507e37df964ffe6c83ebcfec65cc9081e0d84"
+            }
+          },
+          "normal_touchdown": null,
+          "last480_status": {
+            "source_line": 684,
+            "observed": true,
+            "time_s": 480,
+            "status": "HOLD_INNER",
+            "ring": "inner",
+            "soc": 0.1739184345590592,
+            "touchdown_time": null
+          }
+        }
+      },
+      "req_000004": {
+        "energy_slack": {
+          "first_recorded_action": {
+            "source_line": 667,
+            "time_s": 83.74115728711814,
+            "type": "request_released",
+            "details": {}
+          },
+          "first_maneuver_started": {
+            "source_line": 907,
+            "time_s": 113.74115728711814,
+            "type": "maneuver_started",
+            "details": {
+              "dependencies": [],
+              "maneuver_kind": "TRANSFER",
+              "trajectory_hash": "c0ebfd739912d0bfece2d0c069bc884faf1c1c94863ff2fe66ae00bc3fb172a9"
+            }
+          },
+          "normal_touchdown": {
+            "source_line": 3301,
+            "time_s": 362,
+            "type": "touchdown",
+            "details": {
+              "below_reserve": false,
+              "emergency": false,
+              "soc": 0.44610518070611727
+            }
+          },
+          "last480_status": {
+            "source_line": 692,
+            "observed": true,
+            "time_s": 480,
+            "status": "CLEARED",
+            "ring": null,
+            "soc": 0.44610518070611727,
+            "touchdown_time": 362
+          }
+        },
+        "rh_cp_sat": {
+          "first_recorded_action": {
+            "source_line": 659,
+            "time_s": 83.74115728711814,
+            "type": "request_released",
+            "details": {}
+          },
+          "first_maneuver_started": {
+            "source_line": 908,
+            "time_s": 113.74115728711814,
+            "type": "maneuver_started",
+            "details": {
+              "dependencies": [],
+              "maneuver_kind": "TRANSFER",
+              "trajectory_hash": "4020281bc9caed0f10dea5f873c878f4c70c3950afa2a03bd33c6a58280c5bd7"
+            }
+          },
+          "normal_touchdown": null,
+          "last480_status": {
+            "source_line": 684,
+            "observed": true,
+            "time_s": 480,
+            "status": "HOLD_INNER",
+            "ring": "inner",
+            "soc": 0.3260371248327644,
+            "touchdown_time": null
+          }
+        }
+      },
+      "req_000006": {
+        "energy_slack": {
+          "first_recorded_action": {
+            "source_line": 1027,
+            "time_s": 127.71081308031825,
+            "type": "request_released",
+            "details": {}
+          },
+          "first_maneuver_started": {
+            "source_line": 1548,
+            "time_s": 177.71081308031825,
+            "type": "maneuver_started",
+            "details": {
+              "dependencies": [],
+              "maneuver_kind": "TRANSFER",
+              "trajectory_hash": "f261165b5b797a965a353195c10a84983821b3eca7d9a09bc2a82f6df5be7424"
+            }
+          },
+          "normal_touchdown": null,
+          "last480_status": {
+            "source_line": 692,
+            "observed": true,
+            "time_s": 480,
+            "status": "HOLD_INNER",
+            "ring": "inner",
+            "soc": 0.5086725502290723,
+            "touchdown_time": null
+          }
+        },
+        "rh_cp_sat": {
+          "first_recorded_action": {
+            "source_line": 1027,
+            "time_s": 127.71081308031825,
+            "type": "request_released",
+            "details": {}
+          },
+          "first_maneuver_started": {
+            "source_line": 1471,
+            "time_s": 177.71081308031825,
+            "type": "maneuver_started",
+            "details": {
+              "dependencies": [],
+              "maneuver_kind": "TRANSFER",
+              "trajectory_hash": "f261165b5b797a965a353195c10a84983821b3eca7d9a09bc2a82f6df5be7424"
+            }
+          },
+          "normal_touchdown": {
+            "source_line": 3322,
+            "time_s": 306.21081308031825,
+            "type": "touchdown",
+            "details": {
+              "below_reserve": false,
+              "emergency": false,
+              "soc": 0.6996437500663697
+            }
+          },
+          "last480_status": {
+            "source_line": 684,
+            "observed": true,
+            "time_s": 480,
+            "status": "CLEARED",
+            "ring": null,
+            "soc": 0.6996437500663697,
+            "touchdown_time": 306.21081308031825
+          }
+        }
+      },
+      "req_000007": {
+        "energy_slack": {
+          "first_recorded_action": {
+            "source_line": 1154,
+            "time_s": 136.33030541674026,
+            "type": "request_released",
+            "details": {}
+          },
+          "first_maneuver_started": {
+            "source_line": 1657,
+            "time_s": 191.33030541674026,
+            "type": "maneuver_started",
+            "details": {
+              "dependencies": [],
+              "maneuver_kind": "TRANSFER",
+              "trajectory_hash": "5900eb0f0c2fe3ac899674275f4a3600a07935e7e52aa51fe48479c80a2b57e4"
+            }
+          },
+          "normal_touchdown": {
+            "source_line": 6330,
+            "time_s": 463.49999999999994,
+            "type": "touchdown",
+            "details": {
+              "below_reserve": false,
+              "emergency": false,
+              "soc": 0.27822609924897695
+            }
+          },
+          "last480_status": {
+            "source_line": 692,
+            "observed": true,
+            "time_s": 480,
+            "status": "LANDED_SERVICE",
+            "ring": null,
+            "soc": 0.27822609924897695,
+            "touchdown_time": 463.49999999999994
+          }
+        },
+        "rh_cp_sat": {
+          "first_recorded_action": {
+            "source_line": 1096,
+            "time_s": 136.33030541674026,
+            "type": "request_released",
+            "details": {}
+          },
+          "first_maneuver_started": {
+            "source_line": 1552,
+            "time_s": 191.33030541674026,
+            "type": "maneuver_started",
+            "details": {
+              "dependencies": [],
+              "maneuver_kind": "TRANSFER",
+              "trajectory_hash": "cf91b556f1bf39b9dedfd52143c309e687002d038c76205360f630b0172704ef"
+            }
+          },
+          "normal_touchdown": null,
+          "last480_status": {
+            "source_line": 684,
+            "observed": true,
+            "time_s": 480,
+            "status": "HOLD_INNER",
+            "ring": "inner",
+            "soc": 0.29700689566699984,
+            "touchdown_time": null
+          }
+        }
+      },
+      "req_000008": {
+        "energy_slack": {
+          "first_recorded_action": {
+            "source_line": 1740,
+            "time_s": 198.20402507834314,
+            "type": "request_released",
+            "details": {}
+          },
+          "first_maneuver_started": {
+            "source_line": 2197,
+            "time_s": 253.20402507834314,
+            "type": "maneuver_started",
+            "details": {
+              "dependencies": [],
+              "maneuver_kind": "TRANSFER",
+              "trajectory_hash": "bc48fcf0a57299b2b6484e31e434905af4114fd723c0b59ba0c7fc968a864200"
+            }
+          },
+          "normal_touchdown": {
+            "source_line": 6714,
+            "time_s": 479.71081308031825,
+            "type": "touchdown",
+            "details": {
+              "below_reserve": false,
+              "emergency": false,
+              "soc": 0.3897692451771987
+            }
+          },
+          "last480_status": {
+            "source_line": 692,
+            "observed": true,
+            "time_s": 480,
+            "status": "LANDED_SERVICE",
+            "ring": null,
+            "soc": 0.3897692451771987,
+            "touchdown_time": 479.71081308031825
+          }
+        },
+        "rh_cp_sat": {
+          "first_recorded_action": {
+            "source_line": 1605,
+            "time_s": 198.20402507834314,
+            "type": "request_released",
+            "details": {}
+          },
+          "first_maneuver_started": {
+            "source_line": 2172,
+            "time_s": 253.20402507834314,
+            "type": "maneuver_started",
+            "details": {
+              "dependencies": [],
+              "maneuver_kind": "TRANSFER",
+              "trajectory_hash": "a40552c1be84d2411aa4537ac91a75d5184cd11ed5cfcfdf1ff660764f7cb745"
+            }
+          },
+          "normal_touchdown": null,
+          "last480_status": {
+            "source_line": 684,
+            "observed": true,
+            "time_s": 480,
+            "status": "FINAL_NORMAL",
+            "ring": "inner",
+            "soc": 0.4154565445054463,
+            "touchdown_time": null
+          }
+        }
+      },
+      "req_000010": {
+        "energy_slack": {
+          "first_recorded_action": {
+            "source_line": 1884,
+            "time_s": 214.2781635940264,
+            "type": "request_released",
+            "details": {}
+          },
+          "first_maneuver_started": {
+            "source_line": 2312,
+            "time_s": 269.2781635940264,
+            "type": "maneuver_started",
+            "details": {
+              "dependencies": [],
+              "maneuver_kind": "TRANSFER",
+              "trajectory_hash": "3ba304277e3ce66cf55f6716192ce5ea99080250938f4b09190117e880eca6ea"
+            }
+          },
+          "normal_touchdown": null,
+          "last480_status": {
+            "source_line": 692,
+            "observed": true,
+            "time_s": 480,
+            "status": "FINAL_NORMAL",
+            "ring": "inner",
+            "soc": 0.4473675998349697,
+            "touchdown_time": null
+          }
+        },
+        "rh_cp_sat": {
+          "first_recorded_action": {
+            "source_line": 1768,
+            "time_s": 214.2781635940264,
+            "type": "request_released",
+            "details": {}
+          },
+          "first_maneuver_started": {
+            "source_line": 2284,
+            "time_s": 269.2781635940264,
+            "type": "maneuver_started",
+            "details": {
+              "dependencies": [],
+              "maneuver_kind": "TRANSFER",
+              "trajectory_hash": "3ba304277e3ce66cf55f6716192ce5ea99080250938f4b09190117e880eca6ea"
+            }
+          },
+          "normal_touchdown": {
+            "source_line": 5870,
+            "time_s": 397.7781635940264,
+            "type": "touchdown",
+            "details": {
+              "below_reserve": false,
+              "emergency": false,
+              "soc": 0.5499623774166905
+            }
+          },
+          "last480_status": {
+            "source_line": 684,
+            "observed": true,
+            "time_s": 480,
+            "status": "CLEARED",
+            "ring": null,
+            "soc": 0.5499623774166905,
+            "touchdown_time": 397.7781635940264
+          }
+        }
+      }
+    },
+    "source": "D:/7_codespace/training_outputs/terminal/stage2_rescue_opportunity_v6_diagnostic_480s_20261022/energy_slack/replay_0480/events.jsonl and D:/7_codespace/training_outputs/terminal/stage2_rescue_opportunity_v6_diagnostic_480s_20261022/rh_cp_sat/replay_0480/events.jsonl (event-specific source_line); D:/7_codespace/training_outputs/terminal/stage2_rescue_opportunity_v6_diagnostic_480s_20261022/energy_slack/states.jsonl and D:/7_codespace/training_outputs/terminal/stage2_rescue_opportunity_v6_diagnostic_480s_20261022/rh_cp_sat/states.jsonl (last-state source_line)"
+  },
+  "existing_tests": [
+    {
+      "path": "tests/test_stage2_quality_budget.py",
+      "commit": "9cfb781",
+      "lines": "167-178",
+      "tests": [
+        "test_real_cp_enters_nontrivial_catalog_and_reports_true_improvement"
+      ],
+      "covers": [
+        "certified CP result",
+        "all solver records OPTIMAL",
+        "strict improvement",
+        "final objective equals selected objective and is below hint objective",
+        "selected MOVE",
+        "solver budget"
+      ]
+    },
+    {
+      "path": "tests/test_stage2_quality_budget.py",
+      "commit": "9cfb781",
+      "lines": "180-188",
+      "tests": [
+        "test_real_cp_zero_options_reports_reason_without_solver_calls"
+      ],
+      "covers": [
+        "empty/no-MOVE skip",
+        "no solver records",
+        "strict improvement false"
+      ]
+    },
+    {
+      "path": "tests/test_stage2_quality_budget.py",
+      "commit": "9cfb781",
+      "lines": "191-199",
+      "tests": [
+        "test_real_cp_hint_cap_does_not_starve_solver"
+      ],
+      "covers": [
+        "hint wall cap",
+        "solver entered",
+        "hint objective absent after cap"
+      ]
+    },
+    {
+      "path": "tests/test_stage2_quality_budget.py",
+      "commit": "9cfb781",
+      "lines": "202-223",
+      "tests": [
+        "test_real_cp_truncated_resource_model_never_claims_catalog_optimal",
+        "test_real_cp_unknown_retains_verified_safe_hint"
+      ],
+      "covers": [
+        "LEX_LIMITED under incomplete model",
+        "UNKNOWN solver status",
+        "verified hint retained",
+        "strict improvement false"
+      ]
+    },
+    {
+      "path": "tests/test_stage2_quality_budget.py",
+      "commit": "9cfb781",
+      "lines": "226-232",
+      "tests": [
+        "test_real_cp_solver_allowance_is_not_recreated_on_reentry"
+      ],
+      "covers": [
+        "solver allocation exhausted",
+        "no solver records",
+        "allowance retained"
+      ]
+    },
+    {
+      "path": "tests/test_stage2_quality_budget.py",
+      "commit": "9cfb781",
+      "lines": "267-297",
+      "tests": [
+        "test_real_cp_refines_more_than_three_proven_conflicts_or_logs_limit",
+        "test_real_cp_unknown_validation_is_not_a_conflict_cut"
+      ],
+      "covers": [
+        "refinement rounds",
+        "pair conflict refinement",
+        "REFINEMENT_LIMIT",
+        "UNKNOWN validation does not become a cut",
+        "hint objective retained"
+      ]
+    },
+    {
+      "path": "tests/test_stage2_quality_budget.py",
+      "commit": "9cfb781",
+      "lines": "300-306",
+      "tests": [
+        "test_real_cp_refinement_allowance_is_not_recreated_on_reentry"
+      ],
+      "covers": [
+        "reentry refinement limit",
+        "no solver records"
+      ]
+    },
+    {
+      "path": "tests/test_stage2_quality_budget.py",
+      "commit": "9cfb781",
+      "lines": "309-328",
+      "tests": [
+        "test_real_cp_physical_prefix_accepted_with_quality_budget"
+      ],
+      "covers": [
+        "physical prefix",
+        "hint certified",
+        "solver entered",
+        "commit accepted"
+      ]
+    },
+    {
+      "path": "tests/test_stage2_candidate_validation_v6.py",
+      "commit": "9cfb781",
+      "lines": "27-46",
+      "tests": [
+        "test_batch_collects_multiple_explicit_conflicts_in_one_pass",
+        "test_batch_collects_single_and_pair_conflicts_and_is_bounded"
+      ],
+      "covers": [
+        "pair/single conflict collection",
+        "MAX_BATCH_CONFLICTS bound"
+      ]
+    },
+    {
+      "path": "tests/test_stage2_candidate_validation_v6.py",
+      "commit": "9cfb781",
+      "lines": "48-69",
+      "tests": [
+        "test_unknown_produces_no_explicit_conflict_and_is_not_cached",
+        "test_single_unknown_is_retried_and_definite_results_reused"
+      ],
+      "covers": [
+        "UNKNOWN produces no cut/conflict cache",
+        "retry and definite-result reuse"
+      ]
+    },
+    {
+      "path": "tests/test_stage2_candidate_validation_v6.py",
+      "commit": "9cfb781",
+      "lines": "127-139",
+      "tests": [
+        "test_retention_keeps_complete_and_partial_chains_with_target_diversity"
+      ],
+      "covers": [
+        "complete and partial MOVE chain retention"
+      ]
+    },
+    {
+      "path": "tests/test_stage2_candidate_validation_v6.py",
+      "commit": "9cfb781",
+      "lines": "224-256",
+      "tests": [
+        "test_real_cp_adds_multiple_conflicts_together_and_unknown_creates_no_cuts"
+      ],
+      "covers": [
+        "batched pair cuts",
+        "cumulative_pair_cuts",
+        "refinement rounds",
+        "UNKNOWN leaves pair/single/prefix cuts at zero"
+      ]
+    }
+  ],
+  "consistency_checks": [
+    {
+      "name": "decision_count",
+      "computed": 287,
+      "v6_final_facts": 287,
+      "equal": true
+    },
+    {
+      "name": "move_eligible_calls",
+      "computed": 287,
+      "v6_final_facts": 287,
+      "equal": true
+    },
+    {
+      "name": "solver_entered_calls",
+      "computed": 287,
+      "v6_final_facts": 287,
+      "equal": true
+    },
+    {
+      "name": "candidate_observations",
+      "computed": 3697,
+      "v6_final_facts": 3697,
+      "equal": true
+    },
+    {
+      "name": "move_columns",
+      "computed": 11672,
+      "v6_final_facts": 11672,
+      "equal": true
+    },
+    {
+      "name": "complete_chain_columns",
+      "computed": 2618,
+      "v6_final_facts": 2618,
+      "equal": true
+    },
+    {
+      "name": "partial_progress_columns",
+      "computed": 9054,
+      "v6_final_facts": 9054,
+      "equal": true
+    },
+    {
+      "name": "solver_phase_calls",
+      "computed": 7560,
+      "v6_final_facts": 7560,
+      "equal": true
+    },
+    {
+      "name": "strict_improvement_true",
+      "computed": 116,
+      "v6_final_facts": 116,
+      "equal": true
+    },
+    {
+      "name": "strict_improvement_false",
+      "computed": 171,
+      "v6_final_facts": 171,
+      "equal": true
+    },
+    {
+      "name": "plan_committed_events",
+      "computed": 40,
+      "v6_final_facts": 40,
+      "equal": true
+    }
+  ],
+  "source_refs": [
+    {
+      "path": "terminal_marl/core/rotating_slots/stage2_planning.py",
+      "commit": "9cfb781",
+      "lines": "29,234-241,737-784",
+      "contents": "HORIZON and PredictionColumn objective tuple plus CP coefficient quantization."
+    },
+    {
+      "path": "terminal_marl/core/rotating_slots/stage2_planning.py",
+      "commit": "9cfb781",
+      "lines": "648-696",
+      "contents": "Batch single/pair validation and commit-prefix validation."
+    },
+    {
+      "path": "terminal_marl/core/rotating_slots/stage2_planning.py",
+      "commit": "9cfb781",
+      "lines": "1246-1317",
+      "contents": "CP-SAT planner, EnergySlack hint, certified hint incumbent, exactly-one model and AddHint."
+    },
+    {
+      "path": "terminal_marl/core/rotating_slots/stage2_planning.py",
+      "commit": "9cfb781",
+      "lines": "1319-1412",
+      "contents": "Lexicographic phases, selected validation, explicit cuts, verified incumbent update, fallback and optimality scope."
+    },
+    {
+      "path": "terminal_marl/core/rotating_slots/stage2_planning.py",
+      "commit": "9cfb781",
+      "lines": "1497-1584",
+      "contents": "Committed-prefix retention, candidate count fields, decision record fields and submitted count."
+    },
+    {
+      "path": "D:/7_codespace/terminal/artifacts/rotating_slots_stage2_20261022/v6_final_0480_facts.json",
+      "commit": "preexisting artifact",
+      "lines": "1",
+      "contents": "Frozen v6 diagnostic summary, CP planning aggregates, event counts and final metrics."
+    },
+    {
+      "path": "D:/7_codespace/training_outputs/terminal/stage2_rescue_opportunity_v6_diagnostic_480s_20261022/rh_cp_sat/decisions.jsonl",
+      "commit": "preexisting artifact",
+      "lines": "1-287",
+      "contents": "287 recorded CP-SAT planning calls; first three are lines 1-3 and first strict-improvement call is line 1."
+    },
+    {
+      "path": "D:/7_codespace/training_outputs/terminal/stage2_rescue_opportunity_v6_diagnostic_480s_20261022/energy_slack/replay_0480/events.jsonl",
+      "commit": "preexisting artifact",
+      "lines": "event-specific source_line values",
+      "contents": "Energy-slack touchdown and first-action evidence."
+    },
+    {
+      "path": "D:/7_codespace/training_outputs/terminal/stage2_rescue_opportunity_v6_diagnostic_480s_20261022/rh_cp_sat/replay_0480/events.jsonl",
+      "commit": "preexisting artifact",
+      "lines": "event-specific source_line values",
+      "contents": "CP-SAT touchdown and first-action evidence."
+    },
+    {
+      "path": "D:/7_codespace/training_outputs/terminal/stage2_rescue_opportunity_v6_diagnostic_480s_20261022/energy_slack/states.jsonl",
+      "commit": "preexisting artifact",
+      "lines": "692",
+      "contents": "Energy-slack last recorded state at 480 s."
+    },
+    {
+      "path": "D:/7_codespace/training_outputs/terminal/stage2_rescue_opportunity_v6_diagnostic_480s_20261022/rh_cp_sat/states.jsonl",
+      "commit": "preexisting artifact",
+      "lines": "684",
+      "contents": "CP-SAT last recorded state at 480 s."
+    },
+    {
+      "path": "tests/test_stage2_quality_budget.py",
+      "commit": "9cfb781",
+      "lines": "167-178,180-188,191-223,226-232,267-297,300-306,309-328",
+      "contents": "CP objective improvement, no-option behavior, hint budget, truncated scope, UNKNOWN handling, incumbent retention, refinement cuts and physical prefix commit."
+    },
+    {
+      "path": "tests/test_stage2_candidate_validation_v6.py",
+      "commit": "9cfb781",
+      "lines": "27-69,127-139,224-256",
+      "contents": "Batch conflict collection, UNKNOWN no-cut behavior, complete/partial chain retention and CP batch cut accounting."
+    }
+  ]
+}
