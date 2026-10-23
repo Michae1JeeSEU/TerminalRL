@@ -9,8 +9,8 @@ from functools import lru_cache
 import math
 import sys
 import numpy as np
-from .config import load_config, digest
-from .geometry import slot_phase, slot_state, ring_config, pad_position
+from .config import load_config, digest, config_for_hash
+from .geometry import slot_phase, slot_state, ring_config, pad_position, ring_angular_speed
 from .models import KinematicState, CandidateResult
 
 def poly(c,u,k=0):
@@ -258,7 +258,7 @@ class TrajectoryPlan:
     @classmethod
     def from_dict(cls,data,config=None):
         d=dict(data); d['segments']=tuple(Segment(**s) for s in d['segments']); plan=cls(**d)
-        if config is not None and plan.profile_hash != config.profile_hash: raise ValueError('profile hash mismatch')
+        if config is not None and (plan.profile_hash != config.profile_hash or plan.config_hash != config.config_hash): raise ValueError('profile hash mismatch')
         return plan
     def _segment(self,t):
         for s in self.segments:
@@ -266,22 +266,22 @@ class TrajectoryPlan:
         return self.segments[-1]
     def state(self,t):
         if t<self.start_time and self.source_ring is not None:
-            return slot_state(self.source_ring,self.source_slot,t)
+            return slot_state(self.source_ring,self.source_slot,t,config_for_hash(self.config_hash))
         if t<=self.end_time: return self._segment(t).state(t)
-        if self.target_ring is not None: return slot_state(self.target_ring,self.target_slot,t)
+        if self.target_ring is not None: return slot_state(self.target_ring,self.target_slot,t,config_for_hash(self.config_hash))
         return KinematicState(self.segments[-1].state(self.end_time).p)
     def intervals(self,start,end):
         """Segments including physical continuation beyond the maneuver endpoint."""
         if start<self.start_time:
             if self.source_ring is not None:
-                yield _stable_segment(self.source_ring,self.source_slot,start,min(end,self.start_time))
+                yield _stable_segment(self.source_ring,self.source_slot,start,min(end,self.start_time),config_for_hash(self.config_hash))
             else:
                 raise ValueError('inbound state before admission is undefined')
         for s in self.segments:
             if s.start_time<end and s.end_time>start: yield s
         if end>self.end_time:
             begin=max(start,self.end_time)
-            if self.target_ring is not None: yield _stable_segment(self.target_ring,self.target_slot,begin,end)
+            if self.target_ring is not None: yield _stable_segment(self.target_ring,self.target_slot,begin,end,config_for_hash(self.config_hash))
             else:
                 p=self.state(self.end_time).p
                 yield Segment(begin,end-begin,(math.hypot(*p[:2]),),(math.atan2(p[1],p[0]),),(p[2],),'GROUND')
@@ -292,7 +292,7 @@ class TrajectoryPlan:
 
 def _stable_segment(ring,slot,start,end,config=None):
     c=config or load_config(); r=ring_config(ring,c)
-    return Segment(start,end-start,(r.radius_m,),(slot_phase(ring,slot,start,c),-c.airspace.common_angular_speed_radps*(end-start)),(r.height_agl_m,),'STABLE')
+    return Segment(start,end-start,(r.radius_m,),(slot_phase(ring,slot,start,c),-ring_angular_speed(ring,c)*(end-start)),(r.height_agl_m,),'STABLE')
 
 def make_stable_plan(aircraft_id,ring,slot,start_time=0.,end_time=240.,source_version=0,config=None):
     c=config or load_config(); s=_stable_segment(ring,slot,start_time,end_time,c)
@@ -337,7 +337,7 @@ def screen_normal_templates(source_ring, source_slot, start_time, config=None):
     final = source_ring == 'inner'
     durations = tuple(range(20, 301 if final else 181, 5))
     phase = slot_phase(source_ring, source_slot, start_time, c) if final else None
-    key = (c.config_hash, source_ring, source_slot, phase)
+    key = (c.config_hash, source_ring, source_slot, phase, start_time if c.rotation_profile != "equal_angular" else None)
     if key in _NORMAL_TEMPLATE_SCREENS:
         return _NORMAL_TEMPLATE_SCREENS[key], True
     target_ring = None if final else {'outer': 'middle', 'middle': 'inner'}[source_ring]
@@ -349,7 +349,7 @@ def screen_normal_templates(source_ring, source_slot, start_time, config=None):
                              for k in range(count)])[:, None, None]
         delta = (angles-phase) % (2*math.pi)-2*math.pi
         r = hermite(source.radius_m, 0., 0., c.pads.layout_radius_m, 0., 0., T)
-        theta = hermite(phase, -c.airspace.common_angular_speed_radps, 0., phase+delta, 0., 0., T)
+        theta = hermite(phase, -ring_angular_speed(source_ring,c), 0., phase+delta, 0., 0., T)
         # final_height has duration-dependent degree; pad-independent vertical
         # jets below use exactly the existing scalar polynomial builder.
         heights = tuple(final_height(source.height_agl_m, t) for t in durations)
@@ -358,7 +358,13 @@ def screen_normal_templates(source_ring, source_slot, start_time, config=None):
                           for k in range(count)])[:, None, None] % (2*math.pi)
         delta = np.concatenate((np.where(raw <= math.pi, raw, raw-2*math.pi), raw-2*math.pi), axis=2)
         r = hermite(source.radius_m, 0., 0., target.radius_m, 0., 0., T)
-        theta = (0., -c.airspace.common_angular_speed_radps*T, 0., 10*delta, -15*delta, 6*delta)
+        ws=ring_angular_speed(source_ring,c); wt=ring_angular_speed(target_ring,c)
+        if ws==wt:
+            theta = (0., -ws*T, 0., 10*delta, -15*delta, 6*delta)
+        else:
+            raw=(raw+(ws-wt)*(start_time+T)) % (2*math.pi)
+            delta=np.concatenate((np.where(raw<=math.pi,raw,raw-2*math.pi),raw-2*math.pi),axis=2)
+            theta=hermite(0.,-ws,0.,-ws*T+delta,-wt,0.,T)
         z = hermite(source.height_agl_m, 0., 0., target.height_agl_m, 0., 0., T)
     shape = (count, len(durations), 1 if final else 2)
     failed = np.zeros(shape, dtype=bool)
@@ -445,16 +451,17 @@ def generate_transfer(aircraft_id,source_ring,source_slot,target_slot,start_time
         if source_ring not in targets: return CandidateResult('INVALID_INPUT',reason='normal transfers require adjacent inward rings')
         target=targets[source_ring]; a=ring_config(source_ring,c); b=ring_config(target,c)
         th0=slot_phase(source_ring,source_slot,start_time,c); slot_phase(target,target_slot,start_time,c)
-        w=c.airspace.common_angular_speed_radps
+        w=ring_angular_speed(source_ring,c); wt=ring_angular_speed(target,c)
         def builder(T):
-            # The shared slot clock cancels exactly. Build local angular
-            # coefficients independently of absolute epoch/rotation so the
-            # single-aircraft certificate and energy tables are reusable.
+            # Preserve the original arithmetic when clocks match. Otherwise
+            # target phase at t+T drifts relative to the continuing source clock;
+            # both endpoint angular velocities enter the Hermite polynomial.
             raw=slot_phase(target,target_slot,0.,c)-slot_phase(source_ring,source_slot,0.,c)
             # Nearest clockwise phase offset; also a neighboring unwrapped offset.
-            delta=raw%(2*math.pi)
+            delta=(raw if w==wt else raw+(w-wt)*(start_time+T))%(2*math.pi)
             for d in (delta if delta<=math.pi else delta-2*math.pi,delta-2*math.pi):
-                s=Segment(start_time,T,hermite(a.radius_m,0,0,b.radius_m,0,0,T),(th0,-w*T,0.,10*d,-15*d,6*d),hermite(a.height_agl_m,0,0,b.height_agl_m,0,0,T))
+                theta=((th0,-w*T,0.,10*d,-15*d,6*d) if w==wt else hermite(th0,-w,0.,th0-w*T+d,-wt,0.,T))
+                s=Segment(start_time,T,hermite(a.radius_m,0,0,b.radius_m,0,0,T),theta,hermite(a.height_agl_m,0,0,b.height_agl_m,0,0,T))
                 yield _candidate(aircraft_id,'TRANSFER',start_time,source_ring,source_slot,target,target_slot,None,source_version,(s,),c)
         return _search(builder,durations,c,_transfer_cache_context=(source_ring,source_slot,target,target_slot))
     except (ValueError,TypeError,IndexError) as exc: return CandidateResult('INVALID_INPUT',reason=str(exc))
@@ -465,7 +472,7 @@ def generate_inbound(aircraft_id,gate_id,target_slot,start_time,source_version=0
         if not isinstance(gate_id,int) or not 0<=gate_id<4: raise ValueError('invalid gate')
         th0=c.entry.gate_angles_rad[gate_id]; r0=c.entry.radius_m; speed=c.entry.initial_horizontal_speed_mps
         rd=-speed/math.sqrt(2); td=-speed/math.sqrt(2)/r0; rdd=r0*td*td; tdd=-2*rd*td/r0
-        slot_phase('outer',target_slot,start_time,c); w=c.airspace.common_angular_speed_radps
+        slot_phase('outer',target_slot,start_time,c); w=ring_angular_speed('outer',c)
         def builder(T):
             raw=slot_phase('outer',target_slot,start_time+T,c)
             end=th0+(raw-th0)%(2*math.pi)-2*math.pi
@@ -479,7 +486,7 @@ def generate_final(aircraft_id,source_ring,source_slot,pad_id,start_time,emergen
     c=config or load_config()
     try:
         if not emergency and source_ring!='inner': return CandidateResult('INVALID_INPUT',reason='normal final requires inner ring')
-        r=ring_config(source_ring,c); th0=slot_phase(source_ring,source_slot,start_time,c); p=pad_position(pad_id,c); w=c.airspace.common_angular_speed_radps
+        r=ring_config(source_ring,c); th0=slot_phase(source_ring,source_slot,start_time,c); p=pad_position(pad_id,c); w=ring_angular_speed(source_ring,c)
         target=math.atan2(p[1],p[0]); delta=(target-th0)%(2*math.pi)-2*math.pi
         def builder(T):
             # One clockwise passage only; no resource-waiting loops.

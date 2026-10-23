@@ -207,7 +207,7 @@ def environment_lock():
         numerical_threads=1,cp_workers=1,solver_seed=71)
 
 
-def source_provenance(service_profile="baseline", *, scenario_profile="legacy_busy_v5", rescue_rule_profile="legacy_v5"):
+def source_provenance(service_profile="baseline", *, rotation_profile="equal_angular", scenario_profile="legacy_busy_v5", rescue_rule_profile="legacy_v5"):
     """Local-only freeze operation; campaign execution never runs Git."""
     from .stage2_planning import CANDIDATE_POLICY_ID, QUALITY_BUDGET_PROFILE, PlanningBudget
     files = sorted((ROOT/"terminal_marl/core/rotating_slots").glob("*.py"))
@@ -219,7 +219,7 @@ def source_provenance(service_profile="baseline", *, scenario_profile="legacy_bu
         return subprocess.check_output(["git",*args],cwd=ROOT,stderr=subprocess.DEVNULL).decode().strip()
     if scenario_profile not in SCENARIO_PROFILES or rescue_rule_profile not in RESCUE_RULE_PROFILES:
         raise ValueError("unknown scenario/rescue rule profile")
-    config=load_service_profile(service_profile)
+    config=load_service_profile(service_profile,rotation_profile)
     original=load_service_profile("baseline")
     return dict(revision=git("rev-parse","HEAD"),workspace_status_short=git("status","--short"),
         tracked_diff=git("diff","--binary","HEAD","--",
@@ -228,7 +228,7 @@ def source_provenance(service_profile="baseline", *, scenario_profile="legacy_bu
         contract_sha256=sha256((CONTRACT_DIR/"rotating_slots_stage2_baseline_contract_v1_0.md").read_bytes()).hexdigest(),
         overlay_sha256=sha256((CONTRACT_DIR/"stage2_baseline_config_v1_0.yaml").read_bytes()).hexdigest(),
         base_config_hash=config.config_hash,base_config_bytes_sha256=config.raw_hash,
-        service_profile=config.service_profile,scenario_profile=scenario_profile,rescue_rule_profile=rescue_rule_profile,
+        service_profile=config.service_profile,rotation_profile=config.rotation_profile,scenario_profile=scenario_profile,rescue_rule_profile=rescue_rule_profile,
         effective_config_path=Path(config.path).relative_to(ROOT).as_posix(),
         original_config_hash=original.config_hash,original_config_bytes_sha256=original.raw_hash,
         numeric_backend_hash=digest({k:v for k,v in source.items() if k.endswith(("energy.py","safety.py","trajectory.py"))}),
@@ -252,7 +252,7 @@ def verify_source_provenance(provenance):
             raise RuntimeError("source differs from local frozen provenance: "+relative)
     if digest(provenance["source_files"]) != provenance["source_hash"]:
         raise RuntimeError("source provenance aggregate mismatch")
-    config=load_service_profile(provenance.get("service_profile","baseline"))
+    config=load_service_profile(provenance.get("service_profile","baseline"),provenance.get("rotation_profile","equal_angular"))
     original=load_service_profile("baseline")
     if (provenance["base_config_hash"] != config.config_hash
         or provenance["base_config_bytes_sha256"] != config.raw_hash
@@ -278,7 +278,7 @@ def checkpoint_identity(provenance, manifest_hash):
         base_config_hash=provenance["base_config_hash"],overlay_sha256=provenance["overlay_sha256"],
         manifest_sha256=manifest_hash)
     if "service_profile" in provenance: identity["service_profile"]=provenance["service_profile"]
-    for name in ("scenario_profile", "rescue_rule_profile"):
+    for name in ("rotation_profile", "scenario_profile", "rescue_rule_profile"):
         if name in provenance: identity[name]=provenance[name]
     return identity
 
@@ -290,7 +290,8 @@ def save_checkpoint(path, world, scheduler, identity, *, boundary_summary=None):
     if world.rescue_rule_profile != identity.get("rescue_rule_profile","legacy_v5"):
         raise CheckpointError("Stage2 checkpoint rescue rule profile mismatch")
     if (world.config.config_hash != identity["base_config_hash"]
-        or world.config.service_profile != identity.get("service_profile",world.config.service_profile)):
+        or world.config.service_profile != identity.get("service_profile",world.config.service_profile)
+        or world.config.rotation_profile != identity.get("rotation_profile","equal_angular")):
         raise CheckpointError("Stage2 checkpoint configuration identity mismatch")
     codec = Stage2Codec()
     state = {k:v for k,v in vars(world).items() if k not in RUNTIME_FIELDS|RUNTIME_EXTRA|DERIVED_RESCUE_FIELDS}
@@ -318,7 +319,8 @@ def restore_checkpoint(path, scheduler, identity, *, stream_copy=None):
     if state["rescue_rule_profile"] != identity.get("rescue_rule_profile","legacy_v5"):
         raise CheckpointError("Stage2 checkpoint rescue rule profile mismatch")
     if (state["config"].config_hash != identity["base_config_hash"] or state["time"] != payload["time"]
-        or state["config"].service_profile != identity.get("service_profile",state["config"].service_profile)):
+        or state["config"].service_profile != identity.get("service_profile",state["config"].service_profile)
+        or state["config"].rotation_profile != identity.get("rotation_profile","equal_angular")):
         raise CheckpointError("Stage2 checkpoint configuration/time mismatch")
     if digest(state["manifest"].to_dict()) != identity["manifest_sha256"]:
         raise CheckpointError("Stage2 checkpoint manifest mismatch")
@@ -582,7 +584,7 @@ def physical_cores():
     return list(groups.values())
 
 
-def prepare_campaign(root, preparation_wall_seconds=0., *, provenance_path=None, service_profile="baseline",
+def prepare_campaign(root, preparation_wall_seconds=0., *, provenance_path=None, service_profile="baseline", rotation_profile="equal_angular",
                      campaign_wall_budget_seconds=None, archive_reserve_seconds=None,
                      scenario_profile="legacy_busy_v5", rescue_rule_profile="legacy_v5"):
     root=Path(root);root.mkdir(parents=True,exist_ok=True)
@@ -599,8 +601,9 @@ def prepare_campaign(root, preparation_wall_seconds=0., *, provenance_path=None,
     if not provenance_file.is_file():
         raise ValueError("prepare requires locally frozen provenance JSON; use local freeze-provenance first")
     provenance=load_json(provenance_file);verify_source_provenance(provenance)
-    config=load_service_profile(service_profile)
-    if (provenance.get("service_profile","baseline") != service_profile
+    config=load_service_profile(service_profile,rotation_profile)
+    if (provenance.get("rotation_profile","equal_angular") != rotation_profile
+        or provenance.get("service_profile","baseline") != service_profile
         or provenance["base_config_hash"] != config.config_hash):
         raise ValueError("requested service profile differs from frozen provenance")
     for name,value,default in (("scenario_profile",scenario_profile,"legacy_busy_v5"),
@@ -622,7 +625,7 @@ def prepare_campaign(root, preparation_wall_seconds=0., *, provenance_path=None,
     budget.persist()
     if budget.elapsed > budget.data["preparation_limit_s"]: raise RuntimeError("preparation exceeded campaign allocation")
     campaign=dict(schema="stage2_first_campaign_v1",identity=checkpoint_identity(provenance,digest(manifest.to_dict())),
-        service_profile=service_profile,scenario_profile=scenario_profile,rescue_rule_profile=rescue_rule_profile,
+        service_profile=service_profile,rotation_profile=rotation_profile,scenario_profile=scenario_profile,rescue_rule_profile=rescue_rule_profile,
         config_path="config.yaml",config_bytes_sha256=config.raw_hash,
         preparation_wall_s=budget.elapsed,environment_lock_sha256=digest(lock),
         fixture_sha256=sha256((root/"fixture.json").read_bytes()).hexdigest(),
@@ -639,11 +642,13 @@ def campaign_config(root, campaign):
             raise ValueError("campaign configuration path escapes campaign")
         config=load_config(path)
     else:
-        config=load_service_profile(campaign.get("service_profile","baseline"))
+        config=load_service_profile(campaign.get("service_profile","baseline"),campaign.get("rotation_profile","equal_angular"))
     if (config.config_hash != campaign["identity"]["base_config_hash"]
         or config.raw_hash != campaign.get("config_bytes_sha256",config.raw_hash)
         or config.service_profile != campaign.get("service_profile","baseline")
-        or config.service_profile != campaign["identity"].get("service_profile",config.service_profile)):
+        or config.service_profile != campaign["identity"].get("service_profile",config.service_profile)
+        or config.rotation_profile != campaign.get("rotation_profile","equal_angular")
+        or config.rotation_profile != campaign["identity"].get("rotation_profile","equal_angular")):
         raise ValueError("campaign configuration identity/content mismatch")
     for name,default,allowed in (("scenario_profile","legacy_busy_v5",SCENARIO_PROFILES),
                                  ("rescue_rule_profile","legacy_v5",RESCUE_RULE_PROFILES)):

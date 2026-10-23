@@ -19,7 +19,7 @@ import hashlib
 
 from .energy import integrate_energy, stable_power, practical_numeric_stats
 from .config import service_duration
-from .geometry import ring_config
+from .geometry import ring_config, maximum_ring_period
 from .models import ValidationResult
 from .resources import Reservation
 from .safety import validate_separation
@@ -502,7 +502,7 @@ class EvaluationContext:
             self.cache_stats["protection_hits"]+=1
             return self.protection[key]
         self.cache_stats["protection_misses"]+=1
-        horizon = p.end_time+2*math.pi/.035
+        horizon = p.end_time+maximum_ring_period(self.snapshot.config)
         clear, capture = p.start_time, p.start_time
         if p.source_ring is not None:
             base = make_stable_plan("source", p.source_ring, p.source_slot, p.start_time, horizon, config=self.snapshot.config)
@@ -586,13 +586,14 @@ class EvaluationContext:
             result = ValidationResult(False,"CONFLICT","RESOURCE_CONFLICT")
         else:
             ta, tb = self.traffic(a), self.traffic(b)
-            # Include every maneuver/service endpoint, then one full common
-            # rotation of retained stable tails.  Ground entities end at service.
+            # Include every maneuver/service endpoint and the longest ring
+            # period. Stable cross-ring tails have a radial/vertical proof.
+            # Ground entities end at service.
             endpoints = [self.snapshot.time+HORIZON]
             for t in (ta,tb):
                 endpoints.extend(p.end_time for p in t.plans)
                 if math.isfinite(t.end_time): endpoints.append(t.end_time)
-            end = max(endpoints)+2*math.pi/.035
+            end = max(endpoints)+maximum_ring_period(self.snapshot.config)
             end = min(end,ta.end_time,tb.end_time)
             if end>self.snapshot.time:
                 with (self.budget.measure("trajectory_validation") if self.budget else nullcontext()):
@@ -968,9 +969,9 @@ class CandidateProvider:
             if start!=base and start not in aligned and len(aligned)>=2: continue
             if (target,start,duration) in seen: continue
             seen.add((target,start,duration))
-            # Transfer geometry is epoch invariant. Aligned final epochs
-            # remain UNKNOWN; every retained item uses the original generator.
-            if (start==base or node.ring!="inner") and cursor["screen"][(target,duration)] is not None: continue
+            # Only shared-clock transfers are epoch invariant. Other aligned
+            # epochs remain UNKNOWN and use the actual-epoch generator.
+            if (start==base or (node.ring!="inner" and snapshot.config.rotation_profile=="equal_angular")) and cursor["screen"][(target,duration)] is not None: continue
             budget.screening["descriptors_queued"]+=1
             return target,start,duration,base
         return None

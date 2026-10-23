@@ -184,6 +184,7 @@ class ReplayBundle:
         (root / "screenshots").mkdir()
         index = {"schema": "FT-RS-S1-1.0-ReplayBundle", "code_commit": code_commit,
                  "seed": seed, "command": command, "config_hash": config.config_hash,
+                 "rotation_profile":config.rotation_profile,"service_profile":config.service_profile,
                  "config_bytes_sha256": sha256(config_bytes).hexdigest(),
                  "trajectory_hashes": sorted(source.get("trajectories", {})),
                  "files": hashes,
@@ -221,7 +222,9 @@ class ReplayBundle:
             if _file_hash(root / name) != expected:
                 raise ValueError("replay content hash mismatch: " + name)
         config = load_config(root / "config.yaml")
-        if config.config_hash != index["config_hash"] or config.raw_hash != index["config_bytes_sha256"]:
+        if (config.config_hash != index["config_hash"] or config.raw_hash != index["config_bytes_sha256"]
+            or config.rotation_profile != index.get("rotation_profile","equal_angular")
+            or config.service_profile != index.get("service_profile",config.service_profile)):
             raise ValueError("configuration provenance mismatch")
         trajectories = json.loads((root / "trajectories.json").read_bytes())
         cls._validate_plans(trajectories, config)
@@ -276,7 +279,9 @@ class ReplayBundle:
                 raise ValueError("replay content hash mismatch: " + name)
             payloads[name] = content
         config = load_config(root / "config.yaml")
-        if config.config_hash != index["config_hash"] or config.raw_hash != index["config_bytes_sha256"]:
+        if (config.config_hash != index["config_hash"] or config.raw_hash != index["config_bytes_sha256"]
+            or config.rotation_profile != index.get("rotation_profile","equal_angular")
+            or config.service_profile != index.get("service_profile",config.service_profile)):
             raise ValueError("configuration provenance mismatch")
         data = {}
         for name, content in payloads.items():

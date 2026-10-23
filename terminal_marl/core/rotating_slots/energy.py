@@ -449,9 +449,9 @@ def _stable_power_cached(radius,angular_speed,config_key):
 
 def stable_power(ring,config=None):
     """Power for a canonical slot; invariant under slot phase and absolute time."""
-    from .geometry import ring_config
+    from .geometry import ring_angular_speed, ring_config
     c=config or load_config(); _numeric_count('stable_power_calls')
-    return _stable_power_cached(ring_config(ring,c).radius_m,-c.airspace.common_angular_speed_radps,_ConfigIdentity(c))
+    return _stable_power_cached(ring_config(ring,c).radius_m,-ring_angular_speed(ring,c),_ConfigIdentity(c))
 
 def _coverage(intervals):
     merged=[]
@@ -522,11 +522,12 @@ def integrate_energy(plan,start,end,max_dt=1.0,config=None,*,fine=False):
     fine uses independent tighter tables, without changing the physical clock.
     """
     _numeric_count('integrate_energy_calls')
-    c=config or load_config()
+    from .trajectory import TrajectoryPlan
+    from .config import config_for_hash
+    c=config or (config_for_hash(plan.config_hash) if isinstance(plan,TrajectoryPlan) else load_config())
     if not 0<max_dt<=1.: raise ValueError('energy initial segment must be in (0,1]')
     if type(fine) is not bool: raise TypeError('fine must be bool')
     if not math.isfinite(start) or not math.isfinite(end) or end<start: raise ValueError('invalid integration interval')
-    from .trajectory import TrajectoryPlan
     if isinstance(plan,TrajectoryPlan):
         validity=_integrable_plan(plan,_ConfigIdentity(c))
         if not validity.accepted: return EnergyResult(0.,0.,0.,False,validity.status,validity.reason)
@@ -552,8 +553,7 @@ def integrate_energy(plan,start,end,max_dt=1.0,config=None,*,fine=False):
             if s.kind=='STABLE':
                 if len(s.r)==1 and len(s.z)==1 and len(s.theta)==2:
                     _numeric_count('stable_power_calls')
-                    omega=(-c.airspace.common_angular_speed_radps if isinstance(plan,TrajectoryPlan)
-                           else s.theta[1]/s.duration)
+                    omega=(-c.airspace.common_angular_speed_radps if isinstance(plan,TrajectoryPlan) and c.rotation_profile=='equal_angular' else s.theta[1]/s.duration)
                     result=_stable_power_cached(s.r[0],omega,_ConfigIdentity(c))
                 else:
                     st=s.state((lo+hi)/2); result=evaluate_power(st.v,st.a,c)

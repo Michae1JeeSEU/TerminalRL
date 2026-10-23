@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 import time as walltime
 
+from .geometry import ring_angular_speed, maximum_ring_period
 from .config import freeze, load_config, thaw, service_duration
 from .demand import ArrivalManifest, ArrivalRequest
 from .models import ValidationResult
@@ -991,7 +992,7 @@ class RotatingSlotWorld:
     def _protect_times(self, plan):
         """Continuous suffix/prefix certificates define conservative clear/capture events."""
         clear, capture = plan.start_time, plan.start_time
-        horizon = plan.end_time + 2 * math.pi / .035
+        horizon = plan.end_time + maximum_ring_period(self.config)
         if plan.source_ring is not None:
             source = make_stable_plan("source_reference", plan.source_ring, plan.source_slot,
                                       start_time=plan.start_time, end_time=horizon, config=self.config)
@@ -1286,7 +1287,7 @@ class RotatingSlotWorld:
             if x.aircraft_id not in changed and y.aircraft_id not in changed:
                 continue
             horizon = max([self.time, *(p.end_time for p in self.active.values()),
-                           *(p.end_time for p in soft.values())]) + 2*math.pi/.035
+                           *(p.end_time for p in soft.values())]) + maximum_ring_period(self.config)
             end = min(horizon, x.end_time, y.end_time)
             if end > self.time:
                 result = validate_separation(x, y, self.time, end, config=self.config)
@@ -1728,7 +1729,7 @@ class RotatingSlotWorld:
             # representative is independent of the first caller's aircraft,
             # time, phase, cache mode, and the order in which bins are visited.
             phase=(phase_bin+.5)*2*math.pi/self.REFERENCE_PHASE_BINS
-            representative_time=phase/self.config.airspace.common_angular_speed_radps
+            representative_time=phase/ring_angular_speed(ring,self.config)
             cpu=walltime.perf_counter()
             candidate=generate_final("canonical_reference",ring,0,0,representative_time,
                                      emergency=True,config=self.config)
@@ -1802,7 +1803,7 @@ class RotatingSlotWorld:
                 samples = []
                 for fraction in (0., .5, 1.):
                     # Clockwise slot0 angle=-omega*t, relative pad0 phase=+omega*t.
-                    sample_t = ((cell+fraction)*width)/self.config.airspace.common_angular_speed_radps
+                    sample_t = ((cell+fraction)*width)/ring_angular_speed(ring,self.config)
                     q, plan = self._reference_pad(ring, 0, 0, sample_t)
                     samples.append([q, None if plan is None else plan.segments[0].duration])
                     counts["table_samples"] += 1
@@ -2459,7 +2460,7 @@ class RotatingSlotWorld:
             conflict = None
             conflict_pair = None
             horizon = max([p.end_time, *(x.end_time for x in self.active.values()),
-                           *(x.end_time for x in self.soft.values())])+2*math.pi/.035
+                           *(x.end_time for x in self.soft.values())])+maximum_ring_period(self.config)
             for b in self.aircraft.values():
                 if b.status not in AIRBORNE and b.status != "LANDED_SERVICE":
                     continue

@@ -6,7 +6,7 @@ import numpy as np
 from collections import OrderedDict
 from fractions import Fraction
 from .config import load_config
-from .geometry import slot_state, slot_phase, ring_config, pad_position
+from .geometry import ring_angular_speed, slot_state, slot_phase, ring_config, pad_position
 from .models import ValidationResult, KinematicState
 from .trajectory import Interval, digest, poly, _intrinsic_bounds_from_polar, TrajectoryPlan
 from .energy import evaluate_power, power_bounds, _numeric_count
@@ -267,16 +267,23 @@ def validate_separation_original(plan_a,plan_b,start,end,config=None,max_depth=3
     if exact is not None:
         distance=abs(exact); safe=distance>=Fraction(hard)
         return ValidationResult(safe,'SAFE' if safe else 'UNSAFE','' if safe else 'HARD_SEPARATION',{'lower_bound_m':float(distance),'upper_bound_m':float(distance),'method':'identical_horizontal_polynomials_exact_vertical_offset'})
-    # All canonical stable slots share one angular clock; the relative rotation
-    # is orthogonal so this distance is constant for an unlimited horizon.
+    # Equal clocks retain constant distance. Different clocks use the
+    # concentric radial/vertical lower bound, or the continuous checker.
     if _canonical_stable(plan_a,c) and _canonical_stable(plan_b,c):
         ra=ring_config(plan_a.target_ring,c); rb=ring_config(plan_b.target_ring,c)
-        delta=slot_phase(ra.id,plan_a.target_slot,0,c)-slot_phase(rb.id,plan_b.target_slot,0,c)
-        dsq=(ra.radius_m-rb.radius_m)**2+4*ra.radius_m*rb.radius_m*math.sin(delta/2)**2+(ra.height_agl_m-rb.height_agl_m)**2
-        d=math.sqrt(dsq); low=math.nextafter(d-1e-10,-math.inf); high=math.nextafter(d+1e-10,math.inf)
-        if low>=hard or high<hard:
-            safe=low>=hard
-            return ValidationResult(safe,'SAFE' if safe else 'UNSAFE','' if safe else 'HARD_SEPARATION',{'minimum_distance_m':d,'lower_bound_m':low,'upper_bound_m':high,'method':'common_rotation_structure_with_roundoff_enclosure'})
+        if ring_angular_speed(ra.id,c)!=ring_angular_speed(rb.id,c):
+            # Concentric circles retain this bound for every relative phase.
+            lower=math.nextafter(math.hypot(ra.radius_m-rb.radius_m,ra.height_agl_m-rb.height_agl_m)-1e-10,-math.inf)
+            if lower>=hard:
+                witness=math.dist(plan_a.state(start).p,plan_b.state(start).p)
+                return ValidationResult(True,'SAFE','',{'lower_bound_m':lower,'upper_bound_m':math.nextafter(witness+1e-10,math.inf),'method':'concentric_ring_radial_vertical_bound','checked_until':end})
+        else:
+            delta=slot_phase(ra.id,plan_a.target_slot,0,c)-slot_phase(rb.id,plan_b.target_slot,0,c)
+            dsq=(ra.radius_m-rb.radius_m)**2+4*ra.radius_m*rb.radius_m*math.sin(delta/2)**2+(ra.height_agl_m-rb.height_agl_m)**2
+            d=math.sqrt(dsq); low=math.nextafter(d-1e-10,-math.inf); high=math.nextafter(d+1e-10,math.inf)
+            if low>=hard or high<hard:
+                safe=low>=hard
+                return ValidationResult(safe,'SAFE' if safe else 'UNSAFE','' if safe else 'HARD_SEPARATION',{'minimum_distance_m':d,'lower_bound_m':low,'upper_bound_m':high,'method':'common_rotation_structure_with_roundoff_enclosure'})
     best_upper=math.inf; min_lower=math.inf; count=0
     def check(a,b,depth):
         _numeric_count('separation_fine_intervals')

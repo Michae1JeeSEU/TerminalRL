@@ -13,6 +13,9 @@ DEFAULT_CONFIG = Path(__file__).resolve().parents[3] / 'new10.16' / 'fixed_termi
 CANONICAL_CONFIG_HASH = '0c7cce0c0c019d50f7bba5aecd5e8340925d0d16867f8f06eb51e89102343d53'
 SERVICE_HALF_CONFIG = DEFAULT_CONFIG.with_name('fixed_terminal_rotating_slots_stage2_service_half_v1.yaml')
 SERVICE_HALF_CONFIG_HASH = '5582b671279c0162dd3f6f72da12368a5b2ecffd12d97f5d59eaf945a47ecf87'
+LINEAR_CONFIG_HASHES = {'baseline': '5709a991fb61af9ce2ed572e29cb10b7152c42bfe2e3659bd657cf74a38f9664', 'service_half_v1': '96a28b68491a4705af9943e0f4dd8b1dfde94956745a4635c8e144e147121c38'}
+ROTATION_PROFILES = ('equal_angular', 'equal_linear_21_v1')
+LINEAR_PROFILE_PATHS = {name: DEFAULT_CONFIG.with_name('fixed_terminal_rotating_slots_stage2_equal_linear_21_'+suffix+'_v1.yaml') for name,suffix in (('baseline','baseline'),('service_half_v1','service_half'))}
 SERVICE_PROFILE_PATHS = {'baseline': DEFAULT_CONFIG, 'service_half_v1': SERVICE_HALF_CONFIG}
 
 def digest(value):
@@ -54,7 +57,10 @@ class Config:
     path: str
     @property
     def service_profile(self):
-        return 'service_half_v1' if self.config_hash == SERVICE_HALF_CONFIG_HASH else 'baseline'
+        return 'service_half_v1' if self.config_hash in (SERVICE_HALF_CONFIG_HASH, LINEAR_CONFIG_HASHES['service_half_v1']) else 'baseline'
+    @property
+    def rotation_profile(self):
+        return self.airspace.get('rotation_profile', 'equal_angular')
     def __getattr__(self, key): return getattr(self.sections, key)
     def __getitem__(self, key): return self.sections[key]
     def to_dict(self): return self.sections.to_dict()
@@ -99,8 +105,8 @@ def _parse_config(path):
         if isinstance(v,list): return all(finite(x) for x in v)
         return not isinstance(v,float) or math.isfinite(v)
     if not finite(data): raise ValueError('nonfinite configuration')
-    if digest(data) not in (CANONICAL_CONFIG_HASH, SERVICE_HALF_CONFIG_HASH):
-        raise ValueError('configuration differs from frozen FT-RS-S1-1.0 payload or authorized service_half_v1 variant')
+    if digest(data) not in (CANONICAL_CONFIG_HASH, SERVICE_HALF_CONFIG_HASH, *LINEAR_CONFIG_HASHES.values()):
+        raise ValueError('configuration differs from frozen FT-RS-S1-1.0 payload or authorized service/rotation variant')
     return Config(Section(data),sha256(raw).hexdigest(),digest(data),digest({k:data[k] for k in ('vehicle','energy','coordinates')}),str(path.resolve()))
 
 @lru_cache(maxsize=1)
@@ -112,12 +118,25 @@ def load_config(path=None):
     return _default_config() if path is None else _parse_config(path)
 
 
-def load_service_profile(profile='baseline'):
+def load_service_profile(profile='baseline', rotation_profile='equal_angular'):
     """Select one complete frozen payload; the canonical default is unchanged."""
     if profile not in SERVICE_PROFILE_PATHS:
         raise ValueError('unknown service profile: '+str(profile))
-    return load_config(SERVICE_PROFILE_PATHS[profile])
+    if rotation_profile not in ROTATION_PROFILES:
+        raise ValueError('unknown rotation profile: '+str(rotation_profile))
+    return load_config((LINEAR_PROFILE_PATHS if rotation_profile == 'equal_linear_21_v1' else SERVICE_PROFILE_PATHS)[profile])
 
 
 def service_duration(config, service_class):
     return float(config.pads.service_classes[service_class].duration_s)
+
+
+@lru_cache(maxsize=4)
+def config_for_hash(config_hash):
+    """Resolve frozen payloads without changing the original plan payload."""
+    if config_hash == CANONICAL_CONFIG_HASH: return load_config()
+    for path in (*SERVICE_PROFILE_PATHS.values(), *LINEAR_PROFILE_PATHS.values()):
+        config=load_config(path)
+        if config.config_hash==config_hash: return config
+    if not config_hash: return load_config()  # original fixture plans
+    raise ValueError('unknown frozen configuration hash: '+str(config_hash))
