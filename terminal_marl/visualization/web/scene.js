@@ -33,7 +33,7 @@ export default class Scene {
       projection: "perspective",
       heightScale: 1.6,
     };
-    this.palette = ["#5aa8ff", "#25d3c6", "#f5b64e", "#c68bff", "#ec7592", "#6bdd9a", "#77d9e9", "#ff9d66"];
+    this.palette = ["#2864b7", "#008579", "#b26b11", "#8553ad", "#b43f68", "#39824f", "#247f9d", "#c05a29"];
     this.metrics = { cssWidth: 0, cssHeight: 0, dpr: 1, scale: 1, extent: 100 };
     this.onSelect = typeof options.onSelect === "function" ? options.onSelect : () => {};
     this.onHover = typeof options.onHover === "function" ? options.onHover : () => {};
@@ -259,8 +259,8 @@ export default class Scene {
     ctx.save();
     const step = this._gridStep(extent);
     const limit = Math.ceil(extent / step) * step;
-    for (let x = -limit; x <= limit; x += step) this._path([[x, -limit, 0], [x, limit, 0]], x === 0 ? "rgba(103,159,201,.27)" : "rgba(79,125,162,.14)", x === 0 ? 1 : .65);
-    for (let y = -limit; y <= limit; y += step) this._path([[-limit, y, 0], [limit, y, 0]], y === 0 ? "rgba(103,159,201,.27)" : "rgba(79,125,162,.14)", y === 0 ? 1 : .65);
+    for (let x = -limit; x <= limit; x += step) this._path([[x, -limit, 0], [x, limit, 0]], x === 0 ? "rgba(90,90,90,.28)" : "rgba(110,110,110,.16)", x === 0 ? 1 : .65);
+    for (let y = -limit; y <= limit; y += step) this._path([[-limit, y, 0], [limit, y, 0]], y === 0 ? "rgba(90,90,90,.28)" : "rgba(110,110,110,.16)", y === 0 ? 1 : .65);
     ctx.restore();
   }
 
@@ -276,7 +276,7 @@ export default class Scene {
     const height = Number(ring.height) || 0;
     const targetRadius = Math.max(0, Number(ring.target_radius) || 0);
     const targetHeight = Number(ring.target_height) || 0;
-    const color = this.palette[index % this.palette.length];
+    const color = "#7c8288";
     const outer = this._circlePoints(radius + Math.max(2, radius * .035), height);
     const inner = this._circlePoints(Math.max(0, radius - Math.max(2, radius * .035)), height);
     const ctx = this.ctx;
@@ -288,7 +288,7 @@ export default class Scene {
       projectedOuter.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
       projectedInner.slice().reverse().forEach((p) => ctx.lineTo(p.x, p.y));
       ctx.closePath();
-      ctx.fillStyle = `${color}18`;
+      ctx.fillStyle = `${color}16`;
       ctx.fill();
       ctx.restore();
       this._path(this._circlePoints(radius, height), color, 1.35);
@@ -296,14 +296,14 @@ export default class Scene {
       this._path([[radius, 0, 0], [radius, 0, height]], `${color}7a`, .75, false, [2, 4]);
     }
     if (this.layers.targetRings && targetRadius > 0 && (Math.abs(targetRadius - radius) > .01 || Math.abs(targetHeight - height) > .01)) {
-      this._path(this._circlePoints(targetRadius, targetHeight), "#f5b64eaa", 1, false, [5, 4]);
-      this._path(this._circlePoints(targetRadius, 0), "#f5b64e4a", .6, false, [2, 5]);
+      this._path(this._circlePoints(targetRadius, targetHeight), "#686e74aa", 1, false, [5, 4]);
+      this._path(this._circlePoints(targetRadius, 0), "#686e744a", .6, false, [2, 5]);
     }
     if (this.layers.labels) {
       const p = this._project([radius, 0, height]);
       ctx.save();
       ctx.font = "10px Inter, system-ui, sans-serif";
-      ctx.fillStyle = color;
+      ctx.fillStyle = "#484d52";
       ctx.globalAlpha = .95;
       ctx.fillText(`${String(ring.role ?? "ring")}  ${Number(ring.occupancy) || 0}/${Number(ring.capacity) || 0}`, p.x + 6, p.y - 6);
       ctx.restore();
@@ -313,44 +313,74 @@ export default class Scene {
   _drawGate(gate) {
     const a = gate.spawn_position, b = gate.gate_position;
     if (!this._finitePoint(a) || !this._finitePoint(b)) return;
-    this._path([a, b], "#849bb0c9", 1.2, false, [4, 4]);
+    this._path([a, b], "#70767cc9", 1.2, false, [4, 4]);
     const p = this._project(b);
     const ctx = this.ctx;
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.rotate(Math.atan2(p.y - this._project(a).y, p.x - this._project(a).x));
-    ctx.fillStyle = "#a7bfd3";
+    ctx.fillStyle = "#646a70";
     ctx.beginPath(); ctx.moveTo(7, 0); ctx.lineTo(-4, -4); ctx.lineTo(-2, 0); ctx.lineTo(-4, 4); ctx.closePath(); ctx.fill();
     ctx.restore();
-    if (this.layers.labels) { ctx.save(); ctx.font = "9px Inter, system-ui, sans-serif"; ctx.fillStyle = "#9db4c8"; ctx.fillText(`GATE ${gate.gate_id ?? "—"}`, p.x + 8, p.y - 6); ctx.restore(); }
+    if (this.layers.labels) { ctx.save(); ctx.font = "9px Inter, system-ui, sans-serif"; ctx.fillStyle = "#50565c"; ctx.fillText(`GATE ${gate.gate_id ?? "—"}`, p.x + 8, p.y - 6); ctx.restore(); }
+  }
+
+  _landingZoneState(zone) {
+    const pad = (this.frame?.rotating_slots?.pads || []).find((candidate) => zone.lz_id != null && String(candidate.id) === String(zone.lz_id));
+    const normalize = (state) => {
+      const value = String(state || "").toLowerCase();
+      return value === "soft_pending" ? "soft" : ["free", "occupied", "reserved", "soft"].includes(value) ? value : "unknown";
+    };
+    const zoneState = normalize(zone.status);
+    const padState = normalize(pad?.state);
+    // The recorded occupant is an actual service, while reserved/soft states
+    // may describe future intervals. Do not derive occupancy from calendars.
+    if (pad?.occupant_id != null || zoneState === "occupied" || padState === "occupied") return "occupied";
+    return zoneState !== "unknown" ? zoneState : padState;
   }
 
   _drawLandingZone(zone) {
     if (!this._finitePoint(zone.position)) return;
     const p = this._project(zone.position);
-    const status = String(zone.status || "unknown").toLowerCase();
-    const color = status === "free" ? "#52d99b" : status === "occupied" ? "#fc6f78" : "#f5b64e";
-    const size = Math.max(4, Math.min(10, this.metrics.scale * 2.4));
+    const colors = { free: "#a4c3ac", occupied: "#d39898", reserved: "#dcc080", soft: "#b8a4ce", unknown: "#b5b8bc" };
+    const color = colors[this._landingZoneState(zone)];
+    const size = Math.max(14, Math.min(19, this.metrics.scale * 2.4));
     const ctx = this.ctx;
     ctx.save();
     ctx.translate(p.x, p.y);
-    ctx.rotate(Math.PI / 4);
-    ctx.fillStyle = `${color}26`;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.25;
-    ctx.fillRect(-size, -size, size * 2, size * 2);
-    ctx.strokeRect(-size, -size, size * 2, size * 2);
+    ctx.fillStyle = color;
+    ctx.strokeStyle = "#45494d";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, 0, size, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.restore();
-    if (this.layers.labels) { ctx.save(); ctx.font = "9px Inter, system-ui, sans-serif"; ctx.fillStyle = color; ctx.fillText(`LZ ${zone.lz_id ?? "—"} · ${status}`, p.x + 8, p.y + 3); ctx.restore(); }
+  }
+
+  _drawLandingZoneLabel(zone) {
+    if (!this._finitePoint(zone.position)) return;
+    const p = this._project(zone.position);
+    const size = Math.max(14, Math.min(19, this.metrics.scale * 2.4));
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.fillStyle = "#222629";
+    ctx.strokeStyle = "#f7f7f7";
+    ctx.lineWidth = 3;
+    ctx.lineJoin = "round";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "700 10px Inter, system-ui, sans-serif";
+    const label = `P${zone.lz_id ?? "?"}`;
+    ctx.strokeText(label, p.x, p.y + size + 1);
+    ctx.fillText(label, p.x, p.y + size + 1);
+    ctx.restore();
   }
 
   _drawSlots() {
-    const colors = { FREE: "#52d99b", OCCUPIED: "#5aa8ff", RESERVED: "#f5b64e", DEPARTING: "#fc6f78", SOFT: "#c68bff" };
+    const colors = { FREE: "#4c8059", OCCUPIED: "#2864b7", RESERVED: "#a87517", DEPARTING: "#b64a4a", SOFT: "#8553ad" };
     const selected = (this.frame?.uavs || []).find((uav) => String(uav.uid) === String(this.selectedUid));
     for (const slot of this.frame?.rotating_slots?.slots || []) {
       if (!this._finitePoint(slot.position)) continue;
       const p = this._project(slot.position);
-      const color = colors[String(slot.state).toUpperCase()] || "#839db4";
+      const color = colors[String(slot.state).toUpperCase()] || "#72787e";
       const owned = selected?.aircraft_id != null && String(slot.occupant_id) === String(selected.aircraft_id);
       const ctx = this.ctx; ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = `${color}55`; ctx.lineWidth = owned ? 2 : 1;
       ctx.beginPath(); ctx.arc(p.x, p.y, owned ? 5 : 3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -409,7 +439,7 @@ export default class Scene {
     const refs = Array.isArray(frame.uavs) ? frame.uavs.slice().sort((a, b) => this._depth(a.position) - this._depth(b.position)) : [];
     refs.forEach((uav) => this._drawReferenceUav(uav));
     if (refs.length) {
-      ctx.save(); ctx.fillStyle = "#f5b64e"; ctx.font = "8px Inter, system-ui, sans-serif"; ctx.fillText("REF", 12, 24); ctx.restore();
+      ctx.save(); ctx.fillStyle = "#7c5d20"; ctx.font = "8px Inter, system-ui, sans-serif"; ctx.fillText("REF", 12, 24); ctx.restore();
     }
   }
 
@@ -422,11 +452,11 @@ export default class Scene {
       const ctx = this.ctx;
       ctx.save();
       ctx.translate(p.x, p.y);
-      ctx.strokeStyle = "#fc6f78";
+      ctx.strokeStyle = "#b23c43";
       ctx.lineWidth = 2;
       ctx.lineCap = "round";
       ctx.beginPath(); ctx.moveTo(-6, -6); ctx.lineTo(6, 6); ctx.moveTo(6, -6); ctx.lineTo(-6, 6); ctx.stroke();
-      if (this.layers.labels) { ctx.font = "8px Inter, system-ui, sans-serif"; ctx.fillStyle = "#ffb1b6"; ctx.fillText(String(event.outcome || event.reason || "failed"), 9, 3); }
+      if (this.layers.labels) { ctx.font = "8px Inter, system-ui, sans-serif"; ctx.fillStyle = "#9b3037"; ctx.fillText(String(event.outcome || event.reason || "failed"), 9, 3); }
       ctx.restore();
     }
   }
@@ -441,27 +471,27 @@ export default class Scene {
     const size = selected || hovered ? 9 : 7;
     const ctx = this.ctx;
     if (["ENERGY_FAILURE", "ENERGY_MISSION_FAILED", "CENSORED_DUE_TO_FAILURE", "EXECUTED_HARD_SEPARATION_VIOLATION"].includes(String(uav.status ?? uav.original_status ?? uav.phase).toUpperCase())) {
-      ctx.save(); ctx.translate(p.x, p.y); ctx.strokeStyle = "#fc6f78"; ctx.lineWidth = selected ? 3 : 2;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.strokeStyle = "#b23c43"; ctx.lineWidth = selected ? 3 : 2;
       ctx.beginPath(); ctx.moveTo(-6, -6); ctx.lineTo(6, 6); ctx.moveTo(6, -6); ctx.lineTo(-6, 6); ctx.stroke();
       if (selected) { ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.stroke(); }
-      if (this.layers.labels && (showLabel || selected || hovered)) { ctx.font = "9px Inter, system-ui, sans-serif"; ctx.fillStyle = "#ffb1b6"; ctx.fillText(`${uav.aircraft_id ?? `U${uav.uid}`} · ${uav.status ?? uav.original_status ?? uav.phase}`, 10, -9); }
+      if (this.layers.labels && (showLabel || selected || hovered)) { ctx.font = "9px Inter, system-ui, sans-serif"; ctx.fillStyle = "#9b3037"; ctx.fillText(`${uav.aircraft_id ?? `U${uav.uid}`} · ${uav.status ?? uav.original_status ?? uav.phase}`, 10, -9); }
       ctx.restore(); return;
     }
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.rotate(heading);
-    if (selected) { ctx.strokeStyle = "#e9ffff"; ctx.globalAlpha = .95; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(0, 0, size + 6, 0, Math.PI * 2); ctx.stroke(); }
-    if (conflict && this.layers.conflicts) { ctx.strokeStyle = "#fc6f78"; ctx.globalAlpha = .88; ctx.lineWidth = 1.4; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.arc(0, 0, size + 4, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
+    if (selected) { ctx.strokeStyle = "#202428"; ctx.globalAlpha = .95; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(0, 0, size + 6, 0, Math.PI * 2); ctx.stroke(); }
+    if (conflict && this.layers.conflicts) { ctx.strokeStyle = "#b23c43"; ctx.globalAlpha = .88; ctx.lineWidth = 1.4; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.arc(0, 0, size + 4, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
     ctx.strokeStyle = color; ctx.globalAlpha = .82; ctx.lineWidth = 1.5;
     const arm = size * .85;
     ctx.beginPath(); ctx.moveTo(-arm, -arm); ctx.lineTo(arm, arm); ctx.moveTo(-arm, arm); ctx.lineTo(arm, -arm); ctx.stroke();
     ctx.fillStyle = `${color}32`;
     for (const [x, y] of [[-arm, -arm], [arm, arm], [-arm, arm], [arm, -arm]]) { ctx.beginPath(); ctx.arc(x, y, size * .48, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
     ctx.fillStyle = color; ctx.beginPath(); ctx.arc(0, 0, 2.6, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#eefaff"; ctx.beginPath(); ctx.moveTo(size + 5, 0); ctx.lineTo(size - 1, -3); ctx.lineTo(size - 1, 3); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#25292d"; ctx.beginPath(); ctx.moveTo(size + 5, 0); ctx.lineTo(size - 1, -3); ctx.lineTo(size - 1, 3); ctx.closePath(); ctx.fill();
     ctx.restore();
     if (showLabel || selected || hovered) {
-      ctx.save(); ctx.font = `${selected ? "600 " : ""}10px Inter, system-ui, sans-serif`; ctx.fillStyle = selected ? "#f2ffff" : "#b3c8dc"; ctx.fillText(String(uav.aircraft_id ?? `U${uav.uid}`), p.x + 12, p.y - 9); ctx.restore();
+      ctx.save(); ctx.font = `${selected ? "600 " : ""}10px Inter, system-ui, sans-serif`; ctx.fillStyle = selected ? "#171a1d" : "#444a50"; ctx.fillText(String(uav.aircraft_id ?? `U${uav.uid}`), p.x + 12, p.y - 9); ctx.restore();
     }
   }
 
@@ -479,7 +509,7 @@ export default class Scene {
     const baseX = 44, baseY = this.metrics.cssHeight - 45, len = 28;
     const ctx = this.ctx;
     ctx.save(); ctx.lineWidth = 1.1; ctx.font = "9px Inter, system-ui, sans-serif";
-    const axis = [["X", this.camera.yaw, "#f27886"], ["Y", this.camera.yaw - Math.PI / 2, "#5fd9a0"], ["Z", -Math.PI / 2 - this.camera.pitch, "#64a9ff"]];
+    const axis = [["X", this.camera.yaw, "#666b70"], ["Y", this.camera.yaw - Math.PI / 2, "#666b70"], ["Z", -Math.PI / 2 - this.camera.pitch, "#3f454b"]];
     axis.forEach(([label, angle, color]) => { ctx.strokeStyle = color; ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(baseX, baseY); ctx.lineTo(baseX + Math.cos(angle) * len, baseY + Math.sin(angle) * len); ctx.stroke(); ctx.fillText(label, baseX + Math.cos(angle) * (len + 6) - 2, baseY + Math.sin(angle) * (len + 6) + 3); });
     ctx.restore();
   }
@@ -488,8 +518,7 @@ export default class Scene {
     const { width, height } = this._resize();
     const ctx = this.ctx;
     ctx.clearRect(0, 0, width, height);
-    const gradient = ctx.createRadialGradient(width * .52, height * .4, 5, width * .52, height * .48, Math.max(width, height) * .76);
-    gradient.addColorStop(0, "#112a42"); gradient.addColorStop(1, "#071420"); ctx.fillStyle = gradient; ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = "#f7f7f7"; ctx.fillRect(0, 0, width, height);
     if (!this.frame) { this._drawAxis(); this.lastRender = performance.now(); return; }
     const bounds = this._bounds(this.frame);
     this.metrics.extent = bounds.extent;
@@ -508,6 +537,7 @@ export default class Scene {
     if (this.layers.committed) uavs.forEach((uav) => this._drawCommitted(uav));
     const showUavLabels = this.layers.labels && uavs.length <= 8;
     uavs.sort((a, b) => this._depth(a.position) - this._depth(b.position)).forEach((uav) => this._drawUav(uav, conflicts.has(Number(uav.uid)), showUavLabels));
+    if (this.layers.landingZones) (this.frame.landing_zones || []).forEach((zone) => this._drawLandingZoneLabel(zone));
     if (this.layers.labels) this._drawAxis();
     this.lastRender = performance.now();
   }

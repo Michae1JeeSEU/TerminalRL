@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="color-scheme" content="dark">
+  <meta name="color-scheme" content="light">
   <title>TERMINAL / AIRSPACE LAB</title>
   <link rel="stylesheet" href="./console.css">
 </head>
 <body>
-  <div class="app-shell">
+  <div class="app-shell drawer-collapsed">
     <header class="topbar">
       <div class="brand-block">
         <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
@@ -33,8 +33,14 @@
       </div>
     </header>
 
+    <nav class="workspace-toolbar" aria-label="工作区面板">
+      <button id="settingsToggleButton" class="tool-button" type="button" aria-controls="settingsRail" aria-expanded="false">场景设置</button>
+      <button id="detailsToggleButton" class="tool-button" type="button" aria-controls="detailsRail" aria-expanded="false">飞机详情</button>
+      <button id="compareToggleButton" class="tool-button" type="button" aria-controls="comparisonPanel" aria-expanded="false">对比面板</button>
+      <button id="focusViewButton" class="text-button" type="button" title="收起设置、详情和底部面板，扩大场景">专注场景</button>
+    </nav>
     <main class="workspace">
-      <aside class="left-rail panel" aria-label="场景设置">
+      <aside class="left-rail panel" id="settingsRail" aria-label="场景设置" hidden>
         <div class="rail-heading">
           <div>
             <span class="eyebrow">CONFIGURATION</span>
@@ -141,11 +147,6 @@
             <div class="canvas-hud hud-top-right"><span class="fps-chip" id="fpsChip">FPS —</span></div>
             <div class="canvas-hud hud-bottom-left"><span class="height-chip" id="heightChip">Z 显示 ×1.6</span><span class="scale-bar" id="scaleBar"><i></i><b id="scaleBarText">— m</b></span></div>
             <div class="canvas-hud hud-bottom-right"><span class="legend-dot uav-dot"></span><span>UAV</span><span class="legend-dot ring-dot"></span><span>实际环</span><span class="legend-dot committed-dot"></span><span>承诺轨迹</span></div>
-            <div class="reference-compare" id="referenceCompare" hidden aria-live="polite">
-              <div class="reference-compare-head"><span>REFERENCE COMPARE</span><button id="removeReferenceButton" type="button" title="移除参考回放" aria-label="移除参考回放">×</button></div>
-              <div class="compare-grid"><span>指标</span><span>当前</span><span>参考</span><span>Δ</span><b>active</b><strong id="compareActive">—</strong><em id="compareActiveRef">—</em><i id="compareActiveDelta">—</i><b>queue</b><strong id="compareQueue">—</strong><em id="compareQueueRef">—</em><i id="compareQueueDelta">—</i><b>completed</b><strong id="compareCompleted">—</strong><em id="compareCompletedRef">—</em><i id="compareCompletedDelta">—</i><b>最低 SOC</b><strong id="compareSoc">—</strong><em id="compareSocRef">—</em><i id="compareSocDelta">—</i></div>
-              <div class="reference-coverage" id="referenceCoverage">按绝对 simulation time 对齐</div>
-            </div>
             <div class="north-compass" id="northCompass" aria-label="北向罗盘"><span>N</span><i></i></div>
           </div>
           <div class="camera-toolbar" aria-label="相机工具">
@@ -154,6 +155,7 @@
             <button id="resetCameraButton" class="tool-button" type="button" title="重置相机方向和缩放" aria-label="重置相机">重置相机</button>
             <button id="followCameraButton" class="tool-button" type="button" title="跟随选中的 UAV" aria-label="跟随选中的 UAV">F 跟随</button>
             <span class="toolbar-separator"></span>
+            <span class="pad-legend" aria-label="降落 pad 状态图例" title="Pad 图形有最小屏幕尺寸，用于状态识别；不表示真实物理占地。"><span class="pad-free">空闲</span><span class="pad-occupied">服务中</span><span class="pad-reserved">已预留</span><span class="pad-soft">软预约</span><span class="pad-unknown">未知</span></span>
             <span class="camera-hint">拖拽旋转 · Shift+拖拽平移 · 滚轮缩放 · 空格播放 · ←/→ 步进</span>
           </div>
         </div>
@@ -164,9 +166,10 @@
             <button class="drawer-tab" data-panel="eventsPanel" type="button">事件 <span id="eventCountBadge" class="tab-badge">0</span></button>
             <button class="drawer-tab" data-panel="telemetryPanel" type="button">遥测</button>
             <button class="drawer-tab" data-panel="resourcesPanel" type="button">资源诊断</button>
-            <button id="drawerToggleButton" class="drawer-toggle" type="button" title="收起或展开底部面板" aria-label="收起或展开底部面板">⌄</button>
+            <button class="drawer-tab" data-panel="comparisonPanel" type="button">策略对比</button>
+            <button id="drawerToggleButton" class="drawer-toggle collapsed" type="button" title="收起或展开底部面板" aria-label="展开底部面板" aria-controls="drawerContent" aria-expanded="false">⌄</button>
           </div>
-          <div class="drawer-content" id="drawerContent">
+          <div class="drawer-content" id="drawerContent" hidden>
             <div class="drawer-panel active" id="flightsPanel">
               <div class="table-tools"><label class="search-field"><span aria-hidden="true">⌕</span><input id="flightSearch" type="search" placeholder="搜索飞机 ID" aria-label="搜索飞机 ID"></label><select id="phaseFilter" class="compact-select" aria-label="按 phase 过滤"><option value="">全部 phase</option></select><select id="flightSort" class="compact-select" aria-label="航班表排序"><option value="uid">按 ID</option><option value="soc">按 SOC</option></select><span class="table-note" id="flightTableNote">—</span></div>
               <div class="table-scroll"><table class="data-table" id="flightTable"><thead><tr><th>飞机 ID</th><th>PHASE</th><th>环</th><th>SOC</th><th>速度</th><th>目标 LZ</th><th>状态</th></tr></thead><tbody></tbody></table></div>
@@ -181,11 +184,19 @@
               <div class="telemetry-grid" id="telemetryGrid"><div class="table-empty">暂无遥测数据</div></div>
             </div>
             <div class="drawer-panel" id="resourcesPanel"><div class="table-tools"><span id="resourceEvidence" class="resource-evidence">仅显示记录中的资源与时间证据</span></div><div class="resource-content" id="resourceContent"><div class="table-empty">当前记录无资源诊断</div></div></div>
+            <div class="drawer-panel comparison-panel" id="comparisonPanel">
+              <p class="compare-empty" id="compareEmpty">加载参考回放后，在这里查看按绝对仿真时间对齐的指标。可从顶部“参考”导入，或在场景设置中“设为参考”。</p>
+              <div class="reference-compare" id="referenceCompare" hidden aria-live="polite">
+                <div class="reference-compare-head"><span>策略对比 · 当前 / 参考</span><button id="removeReferenceButton" type="button" title="移除参考回放" aria-label="移除参考回放">×</button></div>
+                <div class="compare-grid"><span>指标</span><span>当前</span><span>参考</span><span>Δ</span><b>active</b><strong id="compareActive">—</strong><em id="compareActiveRef">—</em><i id="compareActiveDelta">—</i><b>queue</b><strong id="compareQueue">—</strong><em id="compareQueueRef">—</em><i id="compareQueueDelta">—</i><b>completed</b><strong id="compareCompleted">—</strong><em id="compareCompletedRef">—</em><i id="compareCompletedDelta">—</i><b>最低 SOC</b><strong id="compareSoc">—</strong><em id="compareSocRef">—</em><i id="compareSocDelta">—</i></div>
+                <div class="reference-coverage" id="referenceCoverage">按绝对 simulation time 对齐</div>
+              </div>
+            </div>
           </div>
         </section>
       </section>
 
-      <aside class="right-rail panel" aria-label="选中飞机详情">
+      <aside class="right-rail panel" id="detailsRail" aria-label="选中飞机详情" hidden>
         <div class="detail-heading"><div><span class="eyebrow">SELECTED AIRCRAFT</span><h2 id="selectedTitle">未选择 UAV</h2></div><span class="selection-pulse" id="selectionPulse"></span></div>
         <div class="selected-state" id="selectedState">点击场景中的 UAV 或航班表行查看详情。</div>
         <div class="selected-actions">

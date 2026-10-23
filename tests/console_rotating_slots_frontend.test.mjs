@@ -7,13 +7,14 @@ function consoleHarness(overrides = {}) {
   const elements = new Map();
   const element = () => ({ value: "", options: [], textContent: "", hidden: false, disabled: false });
   const context = vm.createContext({
-    window: {}, console, Headers, URLSearchParams, ...overrides,
+    window: {}, console, Headers, URLSearchParams,
     document: { getElementById(id) { if (!elements.has(id)) elements.set(id, element()); return elements.get(id); } },
+    ...overrides,
   });
   const source = readFileSync(new URL("../terminal_marl/visualization/web/console.js", import.meta.url), "utf8")
     .replace(/^import Scene from .*;\r?\n/, "")
     .replace(/\binitialize\(\);\s*$/, "");
-  vm.runInContext(`${source}\nglobalThis.harness = {state, sameAircraft, discreteReplay, interpolateFrame, appendServerPayload, metricsForFrame, referenceAtTime, validateReplayPayload, formatSoc, requestJson};`, context);
+  vm.runInContext(`${source}\nglobalThis.harness = {state, sameAircraft, discreteReplay, interpolateFrame, displayFrame, renderFlights, appendServerPayload, metricsForFrame, referenceAtTime, validateReplayPayload, formatSoc, requestJson};`, context);
   return context.harness;
 }
 
@@ -21,6 +22,64 @@ function frame(time, extra = {}) {
   return { time, step_count: time, external_queue_size: 0, service_count: 0, completed_count: 0,
     rings: [], gates: [], landing_zones: [], uavs: [], recent_conflict_uids: [], terminal_events: [], telemetry: {}, ...extra };
 }
+
+test("paused flight rows remain connected until frame, selection or table controls change", () => {
+  const elements = new Map();
+  const node = (tagName = "DIV") => ({
+    tagName, children: [], value: "", listeners: {}, attributes: {},
+    classList: { values: new Set(), add(value) { this.values.add(value); }, contains(value) { return this.values.has(value); } },
+    append(...items) { this.children.push(...items); },
+    replaceChildren(...items) { this.children = items; if (this.tagName === "SELECT") this.value = items[0]?.value ?? ""; },
+    setAttribute(name, value) { this.attributes[name] = value; },
+    addEventListener(name, handler) { this.listeners[name] = handler; },
+  });
+  const body = node("TBODY");
+  elements.set("flightTable", { querySelector: () => body });
+  elements.set("phaseFilter", node("SELECT"));
+  const document = { createElement: (tag) => node(tag.toUpperCase()), getElementById(id) { if (!elements.has(id)) elements.set(id, node()); return elements.get(id); } };
+  const h = consoleHarness({ document, Option: function(text, value) { this.textContent = text; this.value = value; } });
+  const first = frame(0, { uavs: [
+    { uid: 1, aircraft_id: "A-1", phase: "HOLD", soc: .8, speed: 10, position: [0, 0, 0] },
+    { uid: 2, aircraft_id: "A-2", phase: "FINAL", soc: .3, speed: 12, position: [5, 0, 0] },
+  ] });
+  h.state.frames = [first];
+  h.renderFlights(h.displayFrame());
+  const initialRow = body.children[0];
+  const phaseOption = elements.get("phaseFilter").children[1];
+  h.renderFlights(h.displayFrame());
+  assert.equal(body.children[0], initialRow);
+  assert.equal(initialRow.tabIndex, 0);
+  assert.equal(typeof initialRow.listeners.keydown, "function");
+
+  h.state.selectedUid = 1; h.renderFlights(first);
+  assert.notEqual(body.children[0], initialRow);
+  assert.equal(body.children[0].attributes["aria-selected"], "true");
+  assert.equal(elements.get("phaseFilter").children[1], phaseOption);
+  elements.get("flightSearch").value = "A-2"; h.renderFlights(first);
+  assert.equal(body.children.length, 1);
+  assert.equal(body.children[0].children[0].textContent, "A-2");
+  elements.get("flightSearch").value = "";
+  elements.get("phaseFilter").value = "HOLD"; h.renderFlights(first);
+  assert.equal(body.children.length, 1);
+  assert.equal(body.children[0].children[0].textContent, "A-1");
+  elements.get("phaseFilter").value = ""; elements.get("flightSort").value = "soc"; h.renderFlights(first);
+  assert.equal(body.children[0].children[0].textContent, "A-2");
+
+  const replacement = frame(0, { uavs: [{ ...first.uavs[0], speed: 22 }] });
+  h.state.frames = [replacement]; // Different replay, same frame index and timestamp.
+  h.renderFlights(h.displayFrame());
+  assert.equal(body.children.length, 1);
+  assert.equal(body.children[0].children[4].textContent, "22.0 m/s");
+  const replacementRow = body.children[0];
+  h.renderFlights(h.displayFrame()); assert.equal(body.children[0], replacementRow);
+
+  h.state.frames = [first, frame(1, { uavs: first.uavs.map((uav) => ({ ...uav, position: [10, 0, 0] })) })];
+  h.state.playing = true; h.state.playheadTime = .25;
+  const interpolated = h.displayFrame();
+  h.state.playheadTime = .75;
+  assert.notEqual(h.displayFrame(), interpolated);
+  assert.notEqual(h.displayFrame().uavs[0].position[0], interpolated.uavs[0].position[0]);
+});
 
 test("cross-run identity uses original aircraft strings before compatibility IDs", () => {
   const h = consoleHarness();

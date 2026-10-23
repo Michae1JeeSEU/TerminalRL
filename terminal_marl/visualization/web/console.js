@@ -64,6 +64,7 @@ const state = {
   },
   heightScale: 1.6,
   historyCache: { index: -1, map: new Map() },
+  flightTableCache: null,
   uiDirty: true,
   lastUiAt: 0,
   lastDisplaySignature: "",
@@ -722,6 +723,7 @@ function referenceAtTime(time) {
 
 function updateCompare(frame, reference) {
   const box = $("referenceCompare");
+  $("compareEmpty").hidden = Boolean(state.reference);
   if (!state.reference) { box.hidden = true; return; }
   box.hidden = false;
   const coverage = $("referenceCoverage");
@@ -824,23 +826,35 @@ function updateSceneHeader(frame) {
 }
 
 function renderFlights(frame) {
+  const search = $("flightSearch").value.trim().toLowerCase();
+  const filter = $("phaseFilter");
+  let phase = filter.value;
+  const sort = $("flightSort").value;
+  const previous = state.flightTableCache;
+  // Frame objects are replaced by live arrivals, replay switches and interpolation.
+  // Preserve paused rows while unrelated telemetry and FPS continue to refresh.
+  if (previous && previous.frame === frame && previous.selectedUid === state.selectedUid && previous.search === search && previous.phase === phase && previous.sort === sort) return;
+  const phases = [...new Set(safeArray(frame?.uavs).map((uav) => String(uav.phase ?? "")).filter(Boolean))].sort();
+  if (!previous || phases.length !== previous.phases.length || phases.some((value, index) => value !== previous.phases[index])) {
+    filter.replaceChildren(new Option("全部 phase", ""));
+    phases.forEach((value) => filter.append(new Option(value, value)));
+    filter.value = phases.includes(phase) ? phase : "";
+    phase = filter.value;
+  }
   const body = $("flightTable").querySelector("tbody");
   body.replaceChildren();
-  const search = $("flightSearch").value.trim().toLowerCase();
-  const phase = $("phaseFilter").value;
-  const sort = $("flightSort").value;
   const uavs = safeArray(frame?.uavs).filter((uav) => (!phase || String(uav.phase ?? "") === phase) && (!search || `${aircraftIdentity(uav)} ${uav.uid}`.toLowerCase().includes(search)));
   uavs.sort((a, b) => sort === "soc" ? (finiteNumber(a.soc, 0) - finiteNumber(b.soc, 0)) : aircraftIdentity(a).localeCompare(aircraftIdentity(b), undefined, { numeric: true }));
-  const phases = [...new Set(safeArray(frame?.uavs).map((uav) => String(uav.phase ?? "")).filter(Boolean))].sort();
-  const filter = $("phaseFilter");
-  const previous = filter.value;
-  filter.replaceChildren(new Option("全部 phase", ""));
-  phases.forEach((value) => filter.append(new Option(value, value)));
-  if (phases.includes(previous)) filter.value = previous; else if (!previous) filter.value = "";
   for (const uav of uavs) {
     const row = document.createElement("tr");
+    row.tabIndex = 0;
+    row.setAttribute("aria-selected", String(state.selectedUid != null && Number(uav.uid) === Number(state.selectedUid)));
     if (state.selectedUid != null && Number(uav.uid) === Number(state.selectedUid)) row.classList.add("selected");
     row.addEventListener("click", () => selectUid(uav.uid));
+    row.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault(); event.stopPropagation(); selectUid(uav.uid);
+    });
     const conflict = safeArray(frame?.recent_conflict_uids).map(Number).includes(Number(uav.uid));
     const cells = [
       aircraftIdentity(uav), String(uav.phase ?? "—"), String(uav.ring_role ?? "—"), formatSoc(uav.soc), `${formatNumber(uav.speed, 1)} m/s`, uav.assigned_lz == null ? "—" : `LZ ${uav.assigned_lz}`, uav.status ?? uav.original_status ?? (conflict ? "冲突关注" : uav.committed ? "已承诺" : "等待"),
@@ -851,6 +865,7 @@ function renderFlights(frame) {
   $("flightTableEmpty").hidden = uavs.length > 0;
   $("flightCountBadge").textContent = String(safeArray(frame?.uavs).length);
   $("flightTableNote").textContent = `${uavs.length} / ${safeArray(frame?.uavs).length} 架`;
+  state.flightTableCache = { frame, selectedUid: state.selectedUid, search, phase, sort, phases };
 }
 
 function renderEvents(frame) {
@@ -953,19 +968,19 @@ function drawHistoryChart(uid, index) {
   const width = Math.max(20, Math.round(rect.width * dpr)), height = Math.max(20, Math.round(rect.height * dpr));
   canvas.width = width; canvas.height = height;
   const ctx = canvas.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, rect.width, rect.height);
-  ctx.fillStyle = "#091928"; ctx.fillRect(0, 0, rect.width, rect.height);
+  ctx.fillStyle = "#fafafa"; ctx.fillRect(0, 0, rect.width, rect.height);
   const rows = state.frames.slice(0, index + 1).map((frame) => {
     const uav = safeArray(frame.uavs).find((candidate) => Number(candidate.uid) === Number(uid));
     return uav && finiteNumber(frame.time) !== null && finiteNumber(uav.soc) !== null && finitePoint(uav.position) ? { time: Number(frame.time), soc: Number(uav.soc), altitude: Number(uav.position[2]) } : null;
   }).filter(Boolean);
-  if (rows.length < 2) { ctx.fillStyle = "#5f7892"; ctx.font = "9px Inter, system-ui, sans-serif"; ctx.fillText("等待两帧历史样本", 8, rect.height / 2 + 3); return; }
+  if (rows.length < 2) { ctx.fillStyle = "#666666"; ctx.font = "11px Inter, system-ui, sans-serif"; ctx.fillText("等待两帧历史样本", 8, rect.height / 2 + 3); return; }
   const pad = { x: 8, y: 8, right: 6, bottom: 9 }, chartW = rect.width - pad.x - pad.right, chartH = rect.height - pad.y - pad.bottom;
-  ctx.strokeStyle = "rgba(149,187,224,.12)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(pad.x, pad.y); ctx.lineTo(pad.x, pad.y + chartH); ctx.lineTo(pad.x + chartW, pad.y + chartH); ctx.stroke();
+  ctx.strokeStyle = "#dddddd"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(pad.x, pad.y); ctx.lineTo(pad.x, pad.y + chartH); ctx.lineTo(pad.x + chartW, pad.y + chartH); ctx.stroke();
   const minAlt = Math.min(...rows.map((row) => row.altitude)), maxAlt = Math.max(...rows.map((row) => row.altitude));
   const minTime = rows[0].time, maxTime = rows[rows.length - 1].time;
   const point = (row, value, low, high) => [pad.x + (maxTime > minTime ? (row.time - minTime) / (maxTime - minTime) : 1) * chartW, pad.y + chartH - (high > low ? (value - low) / (high - low) : .5) * chartH];
   const drawLine = (color, getter, low, high) => { ctx.strokeStyle = color; ctx.lineWidth = 1.3; ctx.beginPath(); rows.forEach((row, i) => { const [x, y] = point(row, getter(row), low, high); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke(); };
-  drawLine("#25d3c6", (row) => row.soc, 0, 1); drawLine("#f5b64e", (row) => row.altitude, minAlt, maxAlt);
+  drawLine("#333333", (row) => row.soc, 0, 1); drawLine("#a66b13", (row) => row.altitude, minAlt, maxAlt);
 }
 
 function renderDetails(frame) {
@@ -1029,6 +1044,7 @@ function renderUI(force = false) {
 
 function selectUid(uid) {
   state.selectedUid = uid == null ? null : Number(uid);
+  if (state.selectedUid !== null) setRailOpen("details", true);
   state.selectedEvent = null;
   state.followLost = false;
   state.uiDirty = true;
@@ -1168,6 +1184,7 @@ async function importFile(file, reference = false) {
     const payload = parseReplayText(await file.text(), file.name);
     if (reference) {
       state.reference = payload;
+      openDrawerPanel("comparisonPanel");
       toast(`参考回放已加载：${payload.frames.length} 帧`, "");
     } else {
       setReplayFrames(payload, "import", "记录回放");
@@ -1194,6 +1211,7 @@ async function openLocalReplay(reference = false) {
     const payload = await requestJson("/replay", { method: "POST", body: JSON.stringify({ path, reference }) });
     if (reference) {
       state.reference = validateReplayPayload(payload);
+      openDrawerPanel("comparisonPanel");
       notice.textContent = `参考已加载 · ${state.reference.title} · ${state.reference.frames.length} 帧`;
     } else {
       const frames = []; let cursor = 0; let metadata = payload.metadata || {}; let batch;
@@ -1281,6 +1299,36 @@ function disableOfflineControls() {
   $("rebuildNotice").hidden = false; $("rebuildNotice").textContent = "离线记录回放：不请求后端，启动/控制已禁用。";
 }
 
+function setRailOpen(name, open) {
+  const isOpen = Boolean(open);
+  $(`${name}Rail`).hidden = !isOpen;
+  $(`${name}ToggleButton`).setAttribute("aria-expanded", String(isOpen));
+  document.querySelector(".workspace").classList.toggle(`${name}-open`, isOpen);
+  state.uiDirty = true;
+}
+
+function setDrawerOpen(open) {
+  const isOpen = Boolean(open);
+  $("drawerContent").hidden = !isOpen;
+  document.querySelector(".app-shell").classList.toggle("drawer-collapsed", !isOpen);
+  $("drawerToggleButton").classList.toggle("collapsed", !isOpen);
+  $("drawerToggleButton").setAttribute("aria-expanded", String(isOpen));
+  $("drawerToggleButton").setAttribute("aria-label", isOpen ? "收起底部面板" : "展开底部面板");
+  const comparing = document.querySelector('.drawer-tab[data-panel="comparisonPanel"]').classList.contains("active");
+  $("compareToggleButton").setAttribute("aria-expanded", String(isOpen && comparing));
+  document.querySelectorAll(".drawer-tab").forEach((tab) => {
+    tab.setAttribute("aria-controls", tab.dataset.panel);
+    tab.setAttribute("aria-expanded", String(isOpen && tab.classList.contains("active")));
+  });
+  state.uiDirty = true;
+}
+
+function openDrawerPanel(panelId) {
+  document.querySelectorAll(".drawer-tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.panel === panelId));
+  document.querySelectorAll(".drawer-panel").forEach((panel) => panel.classList.toggle("active", panel.id === panelId));
+  setDrawerOpen(true);
+}
+
 function wireControls() {
   $("openReplayButton").addEventListener("click", () => openLocalReplay(false));
   $("referenceReplayButton").addEventListener("click", () => openLocalReplay(true));
@@ -1298,8 +1346,18 @@ function wireControls() {
   $("heightScaleInput").addEventListener("input", (event) => { state.heightScale = finiteNumber(event.target.value, 1.6) || 1.6; $("heightScaleOutput").textContent = `${state.heightScale.toFixed(1)}×`; state.scene.setHeightScale(state.heightScale); state.uiDirty = true; });
   const layerIds = { slots: "layerSlots", rings: "layerRings", targetRings: "layerTargetRings", gates: "layerGates", landingZones: "layerLandingZones", grid: "layerGrid", labels: "layerLabels", trails: "layerTrails", committed: "layerCommitted", conflicts: "layerConflicts" }; Object.entries(layerIds).forEach(([key, id]) => $(id).addEventListener("change", (event) => { state.layers[key] = event.target.checked; state.scene.setLayers(state.layers); state.uiDirty = true; })); $("resetLayersButton").addEventListener("click", resetLayers);
   $("flightSearch").addEventListener("input", () => { state.uiDirty = true; renderUI(true); }); $("phaseFilter").addEventListener("change", () => { state.uiDirty = true; renderUI(true); }); $("flightSort").addEventListener("change", () => { state.uiDirty = true; renderUI(true); });
-  document.querySelectorAll(".drawer-tab").forEach((tab) => tab.addEventListener("click", () => { document.querySelectorAll(".drawer-tab").forEach((item) => item.classList.toggle("active", item === tab)); document.querySelectorAll(".drawer-panel").forEach((panel) => panel.classList.toggle("active", panel.id === tab.dataset.panel)); })); $("drawerToggleButton").addEventListener("click", () => { document.querySelector(".app-shell").classList.toggle("drawer-collapsed"); $("drawerToggleButton").classList.toggle("collapsed"); });
-  window.addEventListener("keydown", (event) => { const target = event.target; if (target && ["INPUT", "SELECT", "TEXTAREA"].includes(target.tagName)) return; if (event.key === " ") { event.preventDefault(); handlePlay(); } else if (event.key === "ArrowLeft") { event.preventDefault(); handleStep(-1); } else if (event.key === "ArrowRight") { event.preventDefault(); handleStep(1); } else if (event.key.toLowerCase() === "f") { event.preventDefault(); toggleFollow(); } });
+  document.querySelectorAll(".drawer-tab").forEach((tab) => tab.addEventListener("click", () => openDrawerPanel(tab.dataset.panel)));
+  $("drawerToggleButton").addEventListener("click", () => setDrawerOpen($("drawerContent").hidden));
+  $("settingsToggleButton").addEventListener("click", () => setRailOpen("settings", $("settingsRail").hidden));
+  $("detailsToggleButton").addEventListener("click", () => setRailOpen("details", $("detailsRail").hidden));
+  $("compareToggleButton").addEventListener("click", () => {
+    const current = document.querySelector('.drawer-tab[data-panel="comparisonPanel"]').classList.contains("active");
+    if (current && !$("drawerContent").hidden) setDrawerOpen(false);
+    else openDrawerPanel("comparisonPanel");
+  });
+  $("focusViewButton").addEventListener("click", () => { setRailOpen("settings", false); setRailOpen("details", false); setDrawerOpen(false); });
+  setDrawerOpen(false);
+  window.addEventListener("keydown", (event) => { const target = event.target; if (target && (["INPUT", "SELECT", "TEXTAREA", "BUTTON"].includes(target.tagName) || target.isContentEditable)) return; if (event.key === " ") { event.preventDefault(); handlePlay(); } else if (event.key === "ArrowLeft") { event.preventDefault(); handleStep(-1); } else if (event.key === "ArrowRight") { event.preventDefault(); handleStep(1); } else if (event.key.toLowerCase() === "f") { event.preventDefault(); toggleFollow(); } });
 }
 
 async function initialize() {
