@@ -260,8 +260,15 @@ class ReplayBundle:
                     raise ValueError("authoritative trajectory hash mismatch")
 
     @classmethod
-    def load(cls, path):
+    def load(cls, path, *, stage3_trace_types=None):
+        """Load a verified archive, optionally projecting Stage3 record types.
+
+        ``None`` retains every Stage3 record. A projection changes only the
+        in-memory trace; the complete original file is still hash verified.
+        """
         root = Path(path)
+        if stage3_trace_types is not None:
+            stage3_trace_types = frozenset(stage3_trace_types)
         index = json.loads((root / "replay.json").read_bytes())
         if index.get("schema") != "FT-RS-S1-1.0-ReplayBundle":
             raise ValueError("unsupported replay schema; legacy replay is not imported")
@@ -274,6 +281,12 @@ class ReplayBundle:
         for name, expected in index["files"].items():
             if Path(name).name != name:
                 raise ValueError("invalid replay file name")
+            if name == "stage3_trace.jsonl":
+                # Feature arrays can dominate this file. Verify every byte,
+                # then parse one line at a time without retaining its bytes.
+                if _file_hash(root / name) != expected:
+                    raise ValueError("replay content hash mismatch: " + name)
+                continue
             content = (root / name).read_bytes()
             if sha256(content).hexdigest() != expected:
                 raise ValueError("replay content hash mismatch: " + name)
@@ -287,6 +300,20 @@ class ReplayBundle:
                 data[name[:-6]] = [json.loads(line) for line in content.splitlines() if line]
             elif name.endswith(".json"):
                 data[name[:-5]] = json.loads(content)
+        if "stage3_trace.jsonl" in index["files"]:
+            trace = []
+            trace_digest = sha256()
+            with (root / "stage3_trace.jsonl").open("rb") as stream:
+                for line in stream:
+                    trace_digest.update(line)
+                    if not line.strip():
+                        continue
+                    row = json.loads(line)
+                    if stage3_trace_types is None or row.get("record_type") in stage3_trace_types:
+                        trace.append(row)
+            if trace_digest.hexdigest() != index["files"]["stage3_trace.jsonl"]:
+                raise ValueError("replay content hash mismatch: stage3_trace.jsonl")
+            data["stage3_trace"] = trace
         states = data["states"]
         if not states or any(not math.isfinite(float(s["time"])) for s in states) or any(
                 float(a["time"]) >= float(b["time"]) for a, b in zip(states, states[1:])):

@@ -23,6 +23,7 @@ _ACTIVE_MANEUVER = {"INBOUND", "TRANSFER_O_M", "TRANSFER_M_I", "FINAL_NORMAL",
                     "FINAL_EMERGENCY", "VERTICAL_DESCENT"}
 _UPSTREAM_POLICY = "upstream_capacity_only_pad_arrival_v1_20261018"
 _UPSTREAM_POLICIES = {_UPSTREAM_POLICY,"rs_s2_loss_continue_throughput_v1_0"}
+_STAGE3_OVERLAY_TYPES = frozenset(("WorkDescriptor", "FactualResult", "Rank"))
 
 
 def _separation_evidence(metrics):
@@ -85,7 +86,8 @@ class ReplayController:
     speeds = (.25, 1., 4., 10.)
 
     def __init__(self, bundle):
-        self.bundle = bundle if isinstance(bundle, ReplayBundle) else ReplayBundle.load(bundle)
+        self.bundle = bundle if isinstance(bundle, ReplayBundle) else ReplayBundle.load(
+            bundle, stage3_trace_types=_STAGE3_OVERLAY_TYPES)
         self.config = self.bundle.config
         self._sample_times = tuple(float(row["time"]) for row in self.bundle.data["states"])
         self.time = self.bundle.time_bounds[0]
@@ -244,7 +246,8 @@ class ReplayController:
         upstream = _plain(frame.get("upstream", ()))
         dispatch = [r for r in self.bundle.data.get("dispatch_timings", ()) if r["time"] <= self.time]
         predictions = [r for r in self.bundle.data.get("tentative_predictions", ()) if r.get("as_of",0.)<=self.time]
-        stage3 = [_plain(r) for r in self.bundle.data.get("stage3_trace", ()) if r.get("as_of",0.)<=self.time]
+        stage3 = [_plain(r) for r in self.bundle.data.get("stage3_trace", ())
+                  if r.get("record_type") in _STAGE3_OVERLAY_TYPES and r.get("as_of",0.)<=self.time]
         return {"minimum_current_3d_pair": current_min, "minimum_current_time": self.time,
             "latest_dispatch_timing": _plain(dispatch[-1]) if dispatch else None,
             "tentative_predictions": _plain(predictions),

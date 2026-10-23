@@ -153,3 +153,18 @@ commit-conflict checks. Automatic tests are intentionally not executed by this
 implementation worker; the campaign owner accounts for their wall time. This
 document does not declare infrastructure, learning signal or online benefit
 verified.
+
+## Replay reading after experiment completion
+
+The viewer loads only `WorkDescriptor`, `FactualResult` and `Rank` computation
+records for its Stage3 overlay. It still verifies the SHA-256 of the complete
+original trace, all other indexed archive members, configuration and authoritative
+plans. Training feature arrays are not needed for these display fields. The full
+raw trace remains in the archive, and `ReplayBundle.load()` without the optional
+`stage3_trace_types` projection retains all record types. Passing an existing
+bundle to the controller preserves that bundle; unused record types are filtered
+before conversion to display dictionaries. Proposal and attempt counts, rank
+order and actual commits retain their recorded meanings.
+
+This is a replay reading repair after the experiment ended. It does not change
+the frozen experiment numbers, source archive, index or visual acceptance record.
