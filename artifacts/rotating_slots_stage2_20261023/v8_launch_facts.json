@@ -1,0 +1,212 @@
+{
+  "schema": "stage2_v8_r1_launch_facts_v1",
+  "status": "RUNNING_AT_CONFIRMED_SNAPSHOT",
+  "human_review": "HUMAN_PENDING",
+  "source_revision": "ecd49738f918d861125f4afee3814e2596c33176",
+  "source_revision_pushed": true,
+  "local_head_and_upstream_revision": "ecd49738f918d861125f4afee3814e2596c33176",
+  "source_hash": "e9777021491e30aa1e7fbdbd2938f989f0968f4126acdf7c1cb18c741d425c17",
+  "root": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023_r1",
+  "server_root": "/home/user/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023_r1",
+  "failed_original_root_preserved": "/home/user/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023",
+  "baseline_root": "D:/7_codespace/training_outputs/terminal/stage2_rescue_need_v7_medium_600s_20261023",
+  "requested_target_s": 600,
+  "campaign_metadata_target_s": 3600.0,
+  "formal_600s_complete": false,
+  "campaign_start_utc": "2026-10-23T10:35:10.139Z",
+  "observed_server_utc": "2026-10-23T10:39:53.661Z",
+  "runner_elapsed_s": 283.522,
+  "local_utc_before_ssh": "2026-10-23T10:38:59.315Z",
+  "local_utc_after_ssh": "2026-10-23T10:39:06.035Z",
+  "local_utc_after_ssh_source": "primary agent supplied SSH observation record; startup_confirmed contains before only",
+  "processes": {
+    "launcher": {
+      "pid": 178063,
+      "ppid": 1,
+      "threads": 1
+    },
+    "runner": {
+      "pid": 178074,
+      "ppid": 178073,
+      "threads": 1
+    },
+    "time": {
+      "pid": 178073,
+      "ppid": 178063,
+      "threads": 1
+    }
+  },
+  "method_processes": {
+    "energy_slack": {
+      "pid": 178077,
+      "ppid": 178074,
+      "cpu": 12,
+      "threads": 1,
+      "physical_core": 6,
+      "socket": 0
+    },
+    "rh_cp_sat": {
+      "pid": 178078,
+      "ppid": 178074,
+      "cpu": 14,
+      "threads": 1,
+      "physical_core": 7,
+      "socket": 0
+    }
+  },
+  "numeric_environment": {
+    "MKL_NUM_THREADS": "1",
+    "NUMEXPR_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "methods": {
+    "energy_slack": {
+      "latest_state": {
+        "failed": false,
+        "states_lines": 43,
+        "terminated_invalid": false,
+        "time_s": 28.999999999999993
+      },
+      "valid_common_boundaries_s": []
+    },
+    "rh_cp_sat": {
+      "latest_state": {
+        "failed": false,
+        "states_lines": 25,
+        "terminated_invalid": false,
+        "time_s": 18.0
+      },
+      "valid_common_boundaries_s": []
+    }
+  },
+  "error_invalid_files": [],
+  "common_complete_60s_boundary_s": 0.0,
+  "min_latest_state_s": 18.0,
+  "boundary_interpretation": "Common complete boundary is 0s; min latest state 18s is only raw state progress and is not a completed shared 60s window.",
+  "startup_evidence_precedence": {
+    "authoritative": "startup_confirmed.json",
+    "original_retained": "startup_snapshot.json",
+    "correction": "Original startup_snapshot time label retained untouched; startup_confirmed separates server UTC, local SSH time, raw state progress and complete common boundaries."
+  },
+  "preparation": {
+    "invocations": 1,
+    "exit_code": 0,
+    "gnu_real_s": 1.86,
+    "credited_tests_wall_s": 963.6366401958512,
+    "persisted_elapsed_floor_s": 965.147096157074,
+    "campaign_preparation_wall_s": 965.1487749022199
+  },
+  "budget": {
+    "total_s": 21600.0,
+    "compute_stop_s": 19800.0,
+    "archive_reserve_s": 1800.0,
+    "started_epoch": 1792750547.0599353,
+    "elapsed_floor_s": 965.147096157074,
+    "credited_tests_wall_s": 963.6366401958512,
+    "elapsed_rule": "max(persisted_elapsed_floor_s, now_epoch-started_epoch, monotonic_guard); do not add floor to the epoch difference",
+    "parent_carried_s": 663.6366401958512,
+    "additional_recovery_credit_s": 300.0,
+    "old_600_credit_already_in_parent": true,
+    "manual_waiting_excluded": true,
+    "old_root_unchanged": true,
+    "budget_frozen_on_prepare": true,
+    "runtime_budget_mutation_permitted": false
+  },
+  "frozen_input_bytes": {
+    "fixture.json": {
+      "sha256": "fa7e6f18034d147953dd87eca6925d5b15c915d3efbe7e371e424fa481fdd8f5",
+      "same_bytes_as_baseline": true
+    },
+    "manifest.json": {
+      "sha256": "d972c45754727f3ac7266e934b04293cdcf62c637dd98311b34a294b7cd6f7b5",
+      "same_bytes_as_baseline": true
+    },
+    "environment.lock.json": {
+      "sha256": "b15a7e9c1debc9e91cffa8029e48706f7fd917382d7be05b873f64a61348eba2",
+      "same_bytes_as_baseline": true
+    }
+  },
+  "local_frozen_provenance_equals_materialized": true,
+  "run_paths": {
+    "log": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023_r1/campaign.log",
+    "timing": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023_r1/campaign.timing.txt",
+    "exit": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023_r1/campaign.exit",
+    "campaign_exit_at_snapshot": null,
+    "actual_exit_filename": "campaign.exit",
+    "incorrect_exit_filename": "exit_code.txt"
+  },
+  "timing_estimate": {
+    "initial_total_s": 12600,
+    "basis": "Old medium about 9749s plus observed new CP callbacks about 25-32s; uneven workload, no completion-time guarantee.",
+    "estimate_observation_utc": "2026-10-23T10:39:53.661Z",
+    "elapsed_at_observation_s": 283.522,
+    "remaining_at_observation_s": 12316.478
+  },
+  "heartbeat": {
+    "status": "ACTIVE",
+    "name": "stage2-v8-600",
+    "destination": "thread",
+    "target": "current chat",
+    "interval_minutes": 203,
+    "confirmed_by": "primary conversation automation tool result",
+    "scheduled_local_utc": "2026-10-23T10:41:25.614Z",
+    "local_after_ssh_utc": "2026-10-23T10:39:06.035Z",
+    "elapsed_since_local_after_ssh_s": 139.579,
+    "remaining_at_startup_snapshot_s": 12316.478,
+    "adjusted_remaining_s": 12176.899,
+    "first_attempt": {
+      "status": "rejected_missing_destination",
+      "created": false
+    },
+    "second_attempt": {
+      "destination": "thread",
+      "status": "success",
+      "duplicate_created": false
+    },
+    "wake_instructions": "Check actual terminal status and complete artifacts; delete heartbeat on completion/failure and continue authorized analysis/delivery. Stay quiet when unchanged and nonterminal."
+  },
+  "concurrent_environment": {
+    "other_checkout": ".worktrees/equal-linear-speed",
+    "other_cpus": [
+      0,
+      2,
+      4,
+      6,
+      8,
+      10
+    ],
+    "r1_cpus": [
+      12,
+      14
+    ],
+    "limitation": "Different physical cores share machine memory/cache/load; wall comparisons retain concurrency limitation; independent experiment left untouched."
+  },
+  "evidence_files": {
+    "startup_confirmed.json": {
+      "path": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023_r1/startup_confirmed.json",
+      "sha256": "f8f0c34a2b0ef22917ee3155e0f542cb237bbe9e58eeb1c9b42e38cd545f1381"
+    },
+    "campaign.json": {
+      "path": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023_r1/campaign.json",
+      "sha256": "bd4f441119a1858db0957f7315294d10a94b1012830f9240d159970ec14dbd94"
+    },
+    "budget.json": {
+      "path": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023_r1/budget.json",
+      "sha256": "c06eafc8025574a7eb9330ae4b2ae2361cd909946be1639157d7cc7f65d297d5"
+    },
+    "recovery_accounting.json": {
+      "path": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023_r1/recovery_accounting.json",
+      "sha256": "98bd8eb2733932e32c1e12f3ad35fa7aca9f20e381e4c98cd804a80819fb0c96"
+    },
+    "provenance.json": {
+      "path": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023_r1/provenance.json",
+      "sha256": "95b7e6b70cdd83a6ff3517fd6945467c21350eaae1c18b92fd7f65d06668ee29"
+    }
+  },
+  "local_frozen_provenance": {
+    "path": "D:/7_codespace/terminal/artifacts/rotating_slots_stage2_20261023/v8_medium_r1_provenance.json",
+    "sha256": "95b7e6b70cdd83a6ff3517fd6945467c21350eaae1c18b92fd7f65d06668ee29"
+  }
+}

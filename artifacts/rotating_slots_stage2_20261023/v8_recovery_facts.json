@@ -1,0 +1,309 @@
+{
+  "schema": "stage2_v8_fractional_screen_recovery_v1",
+  "status": "formal_r1_running_human_pending",
+  "failed_formal_attempt": {
+    "root": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023",
+    "preserved_read_only": true,
+    "campaign_status": "INVALID_STOP",
+    "common_completed_time_s": 0,
+    "complete_60s_windows": 0,
+    "campaign_exit_code": 1,
+    "gnu_real_s": 41.19,
+    "methods": {
+      "energy_slack": {
+        "last_recorded_time_s": 9.388737514630813,
+        "states_count": 11,
+        "summary_count": 0
+      },
+      "rh_cp_sat": {
+        "last_recorded_time_s": 4.0,
+        "states_count": 5,
+        "summary_count": 0
+      }
+    },
+    "error_evidence": "energy_slack/error.json",
+    "error_type": "KeyError",
+    "error_key": [
+      0,
+      34
+    ],
+    "error_function": "CandidateProvider._delayed_reference_seed",
+    "interpretation": "Software exception before a shared complete observation window; not usable physical outcome evidence and no prefix window will be spliced into recovery."
+  },
+  "reproduced_numeric_case": {
+    "duration_expression": "97.8887375146308 - 49.38873751463081 - 13.5",
+    "duration_float": 34.99999999999999,
+    "old_int_duration": 34,
+    "screen_duration_grid_step_s": 5,
+    "old_lookup": "screen[(0, 34)]",
+    "old_lookup_key_present": false
+  },
+  "bounded_fix": {
+    "file": "terminal_marl/core/rotating_slots/stage2_planning.py",
+    "sha256": "3534521894fdc4d4f2790a81cd89335caba1e7a3ca61a3553018e497f265d3b3",
+    "selection": "Enumerate actual screen.items() keys; retain d >= duration - 1e-8 and witness is None; order by (d, pad).",
+    "scope": "Legal-key enumeration only; no algorithm/profile/objective/budget or generation/energy/safety relaxation."
+  },
+  "server_recovery_tests": {
+    "evidence_root": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_validation_20261023/recovery",
+    "log": "pytest.log",
+    "junit": "pytest.junit.xml",
+    "passed": 16,
+    "display_elapsed_s": 10.99,
+    "wrapper_elapsed_s": 11.192204,
+    "start_utc": "2026-10-23T10:23:38.783Z",
+    "end_utc": "2026-10-23T10:23:49.975Z",
+    "exit_code": 0,
+    "cpu": 12
+  },
+  "continuous_12s_validation": {
+    "status": "completed",
+    "helper": "artifacts/rotating_slots_stage2_20261023/v8_fractional_runtime_validation.py",
+    "baseline_root": "stage2_rescue_need_v7_medium_600s_20261023",
+    "target_s": 12,
+    "methods": [
+      "energy_slack",
+      "rh_cp_sat"
+    ],
+    "expected_fractional_release_s": 9.388737514630813,
+    "scope": "One fresh 0-to-12s validation per method on the same medium fixture/manifest/seed; executor owns t0 dispatch, no manual initial callback, no automatic retry.",
+    "result_claim": "Each method completed one fresh 0-to-12s validation and the real fractional release callback, with no failed/invalid state; not a 600s formal outcome.",
+    "method_results": {
+      "energy_slack": {
+        "status": "completed",
+        "initial_time_s": 0.0,
+        "final_time_s": 12.0,
+        "callback_count": 4,
+        "callback_calls": [
+          {
+            "commit_status": "ACCEPTED",
+            "records_added": 1,
+            "status": "completed",
+            "submitted": 10,
+            "time": 0.0,
+            "wall_s": 18.196540383971296
+          },
+          {
+            "commit_status": "ACCEPTED",
+            "records_added": 1,
+            "status": "completed",
+            "submitted": 1,
+            "time": 5.0,
+            "wall_s": 14.023972305003554
+          },
+          {
+            "commit_status": "ACCEPTED",
+            "records_added": 1,
+            "status": "completed",
+            "submitted": 0,
+            "time": 9.388737514630813,
+            "wall_s": 14.282503664959222
+          },
+          {
+            "commit_status": "ACCEPTED",
+            "records_added": 1,
+            "status": "completed",
+            "submitted": 0,
+            "time": 10.0,
+            "wall_s": 14.68469579401426
+          }
+        ],
+        "failed": false,
+        "terminated_invalid": false,
+        "wall_s": 62.96052693598904,
+        "gnu_real_s": 63.39,
+        "exit_code": 0,
+        "planning_profile": "downstream_service_v8",
+        "budget_profile": "quality_v5",
+        "expected_budget": {
+          "candidate_seconds": 12.0,
+          "hint_seconds": 3.0,
+          "hint_validation_reserve_seconds": 0.5,
+          "max_attempts": 2048,
+          "max_per_aircraft": 64,
+          "max_refinement_rounds": 64,
+          "soft_seconds": 30.0,
+          "solver_reserve_seconds": 8.0,
+          "solver_seconds": 8.0,
+          "watchdog_seconds": 60.0
+        },
+        "all_callback_budgets_equal_expected": true,
+        "all_callback_profiles_match": true,
+        "manual_initial_callback": false,
+        "automatic_retries": 0,
+        "fractional_callback_times": [
+          9.388737514630813
+        ],
+        "fractional_release_callbacks_observed": {
+          "9.388737514630813": true
+        },
+        "baseline_files_unchanged": true,
+        "current_source_files_unchanged": true,
+        "fixture_equal": {
+          "aircraft": true,
+          "pads": true,
+          "slots": true
+        },
+        "config_hash_unchanged": true,
+        "profile_hash_unchanged": true,
+        "raw_facts_path": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_validation_20261023/recovery/continuous/energy_slack/facts.json",
+        "raw_facts_sha256": "b1ec23e2cf1f6285603f979d4422ffc39b88f25344cdbe7c05fd8cea57007d30",
+        "exit_path": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_validation_20261023/recovery/continuous_energy_slack.exit",
+        "timing_path": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_validation_20261023/recovery/continuous_energy_slack.timing.txt"
+      },
+      "rh_cp_sat": {
+        "status": "completed",
+        "initial_time_s": 0.0,
+        "final_time_s": 12.0,
+        "callback_count": 4,
+        "callback_calls": [
+          {
+            "commit_status": "ACCEPTED",
+            "records_added": 1,
+            "status": "completed",
+            "submitted": 10,
+            "time": 0.0,
+            "wall_s": 31.70748497004388
+          },
+          {
+            "commit_status": "ACCEPTED",
+            "records_added": 1,
+            "status": "completed",
+            "submitted": 3,
+            "time": 5.0,
+            "wall_s": 25.20872352196602
+          },
+          {
+            "commit_status": "ACCEPTED",
+            "records_added": 1,
+            "status": "completed",
+            "submitted": 1,
+            "time": 9.388737514630813,
+            "wall_s": 27.400288862991147
+          },
+          {
+            "commit_status": "ACCEPTED",
+            "records_added": 1,
+            "status": "completed",
+            "submitted": 0,
+            "time": 10.0,
+            "wall_s": 25.142349091998767
+          }
+        ],
+        "failed": false,
+        "terminated_invalid": false,
+        "wall_s": 111.29763754102169,
+        "gnu_real_s": 111.75,
+        "exit_code": 0,
+        "planning_profile": "downstream_service_v8",
+        "budget_profile": "quality_v5",
+        "expected_budget": {
+          "candidate_seconds": 12.0,
+          "hint_seconds": 3.0,
+          "hint_validation_reserve_seconds": 0.5,
+          "max_attempts": 2048,
+          "max_per_aircraft": 64,
+          "max_refinement_rounds": 64,
+          "soft_seconds": 30.0,
+          "solver_reserve_seconds": 8.0,
+          "solver_seconds": 8.0,
+          "watchdog_seconds": 60.0
+        },
+        "all_callback_budgets_equal_expected": true,
+        "all_callback_profiles_match": true,
+        "manual_initial_callback": false,
+        "automatic_retries": 0,
+        "fractional_callback_times": [
+          9.388737514630813
+        ],
+        "fractional_release_callbacks_observed": {
+          "9.388737514630813": true
+        },
+        "baseline_files_unchanged": true,
+        "current_source_files_unchanged": true,
+        "fixture_equal": {
+          "aircraft": true,
+          "pads": true,
+          "slots": true
+        },
+        "config_hash_unchanged": true,
+        "profile_hash_unchanged": true,
+        "raw_facts_path": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_validation_20261023/recovery/continuous/rh_cp_sat/facts.json",
+        "raw_facts_sha256": "be3fb27a89f89c5cd1759726157d1b0be8bc17e1e7a503078032b87d950ed3d6",
+        "exit_path": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_validation_20261023/recovery/continuous_rh_cp_sat.exit",
+        "timing_path": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_validation_20261023/recovery/continuous_rh_cp_sat.timing.txt"
+      }
+    }
+  },
+  "recovery_budget_plan": {
+    "failed_parent_budget_elapsed_floor_s": 663.6353569030762,
+    "failed_parent_campaign_wall_s": 663.6366401958512,
+    "carried_parent_cost_s": 663.6366401958512,
+    "original_600s_preparation_credit_already_included": true,
+    "recovery_validation_provisional_credit_s": 300,
+    "planned_preparation_wall_seconds": 963.6366401958512,
+    "credit_rule": "Frozen at r1 prepare: carry old final max 663.6366401958512s plus recovery credit 300s; original 600s already included once. Manual coding/wait excluded. Do not modify running or failed-parent budgets.",
+    "total_s": 21600,
+    "compute_stop_s": 19800,
+    "archive_reserve_s": 1800,
+    "observed_validation_wall_basis": {
+      "parallel_continuous_pair_gnu_wall_s": 111.75,
+      "server_recovery_pytest_wrapper_s": 11.192204,
+      "local_checks_wall_s": 16.78,
+      "known_subtotal_s": 139.722204,
+      "conservative_credit_s": 300,
+      "interpretation": "Known wall components plus other recovery checks fit within the conservative 300s credit; preserve planned precredit 963.6366401958512s without adding original 600s again."
+    },
+    "actual_preparation_wall_seconds": 963.6366401958512,
+    "new_persisted_elapsed_floor_s": 965.147096157074,
+    "elapsed_rule": "max(floor,now_epoch-started_epoch,monotonic_guard), never floor + epoch difference",
+    "recovery_accounting_path": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023_r1/recovery_accounting.json",
+    "budget_frozen_on_prepare": true,
+    "runtime_budget_mutation_permitted": false
+  },
+  "planned_valid_formal_run": {
+    "root": "stage2_downstream_service_v8_medium_600s_20261023_r1",
+    "status": "RUNNING",
+    "target_s": 600,
+    "scenario_profile": "medium24_rate150_v1",
+    "service_profile": "service_half_v1",
+    "rescue_rule_profile": "rescue_need_v7",
+    "planning_profile": "downstream_service_v8",
+    "seed": 71,
+    "methods": [
+      "energy_slack",
+      "rh_cp_sat"
+    ],
+    "physical_cores": [
+      6,
+      7
+    ],
+    "interpretation": "Same-input restart after a software exception; no complete old window exists to reuse. Not a second scenario or tuning matrix.",
+    "source_revision": "ecd49738f918d861125f4afee3814e2596c33176",
+    "source_revision_pushed": true,
+    "source_hash": "e9777021491e30aa1e7fbdbd2938f989f0968f4126acdf7c1cb18c741d425c17",
+    "campaign_start_utc": "2026-10-23T10:35:10.139Z",
+    "common_complete_boundary_s": 0.0,
+    "human_review": "HUMAN_PENDING",
+    "formal_600s_complete": false,
+    "launch_facts_path": "D:/7_codespace/terminal/artifacts/rotating_slots_stage2_20261023/v8_launch_facts.json",
+    "startup_confirmation_path": "D:/7_codespace/training_outputs/terminal/stage2_downstream_service_v8_medium_600s_20261023_r1/startup_confirmed.json",
+    "cpu_affinity": {
+      "energy_slack": 12,
+      "rh_cp_sat": 14
+    }
+  },
+  "shared_machine_context": {
+    "other_checkout": ".worktrees/equal-linear-speed",
+    "other_experiment_cpus": [
+      0,
+      2,
+      4,
+      6,
+      8,
+      10
+    ],
+    "interference_policy": "Recovery and planned formal tasks must not alter or interrupt that independent experiment.",
+    "wall_comparison_limit": "Disjoint physical cores do not remove shared-machine memory/cache/load effects; wall-time comparisons retain a concurrency limitation."
+  }
+}

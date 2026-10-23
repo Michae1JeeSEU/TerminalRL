@@ -1,6 +1,6 @@
 # downstream_service_v8：medium 600 s 协议与状态
 
-状态：本地检查、服务器定向测试与两个真实 t0 callback 已产生并读取验证记录。唯一计划的 medium 两方法从 0 到 600 s 正式实验尚未 prepare 或启动。
+状态：修复代码 `ecd49738f918d861125f4afee3814e2596c33176` 已提交并推送，provenance 已冻结；唯一有效 paired 600 s 实验 `_r1` 已正式启动。确认快照的完整共同 60 s 边界仍为 0，尚未完成 600 s，`HUMAN_PENDING` 保持。首次异常 root、其 provenance 与原始日志继续保留只读。
 
 本轮将正常调度算法显式冻结为 `planning_profile=downstream_service_v8`；默认旧档案仍为 `progress_tail_v7`。candidate policy 与 objective schema 随 profile 保存到 provenance、campaign、checkpoint identity、summary 与 comparison。profile 独立于 `quality_v5` 预算：soft 30 s、solver 8 s、refinement 64 rounds 保持原样。新增下游服务预测与队列启发式不是可行性证明；执行仍需现有连续认证。
 
@@ -10,7 +10,7 @@
 
 候选保留同时照顾 complete / partial 与 immediate / delayed 类别，目录 cap 为每机 10 列，既有生成上限每机 64 次、全局 2048 次保持不变；有限预算内未找到某类候选时，不声称该类不存在。外/中环 delay 从已见资源释放时刻及反推下游可用时间导出，最多取 2 个延后 offset；轨迹仍由原生成器重新生成，并通过原有校验。只提交 `start_time <= now + 5 s` 的首动作；更远期内容是预测，靠后续 dispatch 重评或状态、能量与 epoch 仍有效的链复用接续。
 
-对照为旧 `stage2_rescue_need_v7_medium_600s_20261023` 的两方法从 0 到 600 s 完整结果。新 root 为 `stage2_downstream_service_v8_medium_600s_20261023`，同 `service_half_v1`、`medium24_rate150_v1`、`rescue_need_v7`、seed 71 及 fixture/manifest/environment，仅运行 energy_slack 与 rh_cp_sat 各一次，从 0 开始，不允许通过 branch 改变正常调度算法。pair 墙钟 21600 s、compute 19800 s、archive 1800 s 与旧实验一致。world、rescue、能源、安全、轨迹与物理配置不在本轮修改范围。
+对照为旧 `stage2_rescue_need_v7_medium_600s_20261023` 的两方法从 0 到 600 s 完整结果。修复后正式 root 为 `stage2_downstream_service_v8_medium_600s_20261023_r1`，同 `service_half_v1`、`medium24_rate150_v1`、`rescue_need_v7`、seed 71 及 fixture/manifest/environment，从 0 开始，不允许通过 branch 改变正常调度算法。pair 墙钟 21600 s、compute 19800 s、archive 1800 s 与旧实验一致，已在 prepare 冻结，运行中不修改预算。world、rescue、能源、安全、轨迹与物理配置不在本轮修改范围。
 
 旧运行源码为 `4da4f3`；`2009c0d` 后有 monitor 精确帧日志修复，UI 另线程变更。旧两方法回放审计各有 2 个 warning 缺帧 issue，保留原证据，不计作物理失败，也不能将日志补帧当作调度收益。
 
@@ -39,4 +39,20 @@ CP 记录 `refinement_rounds=7`、16 个 phase 记录，solver 合计 1.676627 s
 
 两份原始 `runtime/*/candidates.json` 均有 136 列：31 complete、57 partial、48 no-move；移动列中 82 immediate、6 delayed，6 个 delayed 均为 complete。原 helper 把同名 NO_MOVE category 与 timing 各加一次，导致原诊断 counts 显示 96，而原始 columns 实际为 48。本轮只修正 helper 统计并增加全局/每机 `COMPLETE+PARTIAL+NO_MOVE==columns_count` 断言，使用原 columns 机械重算紧凑事实，保留原 facts/logs，不重新执行 callback。无真实 callback 的 4 列 synthetic 计数检查通过。
 
-首次两个 wrapper 因工作目录错误尝试加载 `/home/user/artifacts/.../v8_runtime_validation.py`，Python 找不到脚本，PID 172652 / 172651 均以 2 退出，尚未 import 或执行 callback；原日志保留。随后使用正确绝对路径才产生上述各一次真实 callback 记录。这些验证不等于正式 medium 实验启动，也不作正常着陆率或能耗收益结论。
+首次两个 t0 验证 wrapper 因工作目录错误尝试加载 `/home/user/artifacts/.../v8_runtime_validation.py`，Python 找不到脚本，PID 172652 / 172651 均以 2 退出，尚未 import 或执行 callback；原日志保留。随后使用正确绝对路径才产生上述各一次真实 callback 记录。上述 t0 验证不代表完整 medium 实验结果，也不作正常着陆率或能耗收益结论。
+
+首次正式 root `stage2_downstream_service_v8_medium_600s_20261023` 已停止并保留只读：`INVALID_STOP`、common completed 0 s、`campaign.exit=1`、GNU real 41.19 s；energy_slack 最后记录 9.388737514630813 s，rh_cp_sat 最后记录 4.0 s，两者均无完整 60 s summary。这是候选生成软件异常，不能当作物理失败结果或可用于比较的部分窗口。紧凑恢复事实见 `artifacts/rotating_slots_stage2_20261023/v8_recovery_facts.json`。
+
+异常发生在 `_delayed_reference_seed`：`97.8887375146308 - 49.38873751463081 - 13.5 = 34.99999999999999`，旧 `int(duration)` 得到 34，而 screen 的实际 duration 键采用 5 s 步长，查询 `(0,34)` 抛出 KeyError。修复只枚举 `screen.items()` 实际存在的键，筛选 `d >= duration - 1e-8` 且 `witness is None`，按 `(d,pad)` 排序；没有放松原生成器、能源或安全校验，也未调目标或预算。修复后 `stage2_planning.py` SHA256 为 `3534521894fdc4d4f2790a81cd89335caba1e7a3ca61a3553018e497f265d3b3`，服务器 `recovery/pytest.*` 记录 **16 passed，10.99 s，exit 0**。
+
+连续 helper 使用原 old-medium fixture/manifest/seed，让 executor 自行开始 t0 并推进至 12 s，各方法一次，不额外手动调用 t0、不自动重试。两方法现已各完成 0→12 s，均有 4 次 callback，时间为 `[0,5,9.388737514630813,10]`，均 `failed=false`、`terminated_invalid=false`、exit 0，profile 及每次 quality_v5 budget 保持原样；baseline 输入与源码 before/after 哈希一致。energy_slack 验证 wall 62.96052694 s、GNU real 63.39 s；rh_cp_sat wall 111.29763754 s、GNU real 111.75 s。该验证覆盖原异常所在的实际非整数 release，没有新增场景或种子。原始事实位于 `~/training_outputs/terminal/stage2_downstream_service_v8_validation_20261023/recovery/continuous/{method}/facts.json`，wrapper 证据为同 recovery 目录的 `continuous_METHOD.exit` / `continuous_METHOD.timing.txt`；紧凑回调列表及准确路径见 `v8_recovery_facts.json`。修复后的 `_r1` 是相同输入的软件错误重启；原 root 无完整窗口可拼接，不构成调参矩阵。
+
+`_r1` 使用 total 21600 s / compute 19800 s / archive 1800 s。旧账目 `elapsed_floor_s=663.6353569030762`、`campaign_wall_s=663.6366401958512` 已包含原 600 s preparation credit；新 preparation 实际承接两者较大值，加恢复验证保守 credit 300 s，即 **963.6366401958512 s**。本次并行连续验证 wall 111.75 s、服务器恢复 pytest wrapper 11.192204 s、本地检查 16.78 s 等由该 300 s 保守额度覆盖；不再追加原 600 s，排除旧退出后人工编码等待，原 budget 文件保持不变。新 prepare 只执行一次，exit 0、GNU real 1.86 s，新持久化 floor 为 965.147096157074 s。运行 elapsed 按 `max(floor, now-started_epoch, monotonic_guard)` 计算，不能把 floor 再加到 epoch 差上。
+
+`_r1` 已绑定 CPU 12 / 14（物理 core 6 / 7），各进程及数值库线程为 1。另一独立 `.worktrees/equal-linear-speed` 实验使用 CPU 0 / 2 / 4 / 6 / 8 / 10，应保持其运行与文件不受影响。物理核心分开仍共享机器内存、缓存与负载，因此 wall-time 比较保留并发环境限制。
+
+正式启动时间为服务器 UTC **2026-10-23T10:35:10.139Z**，launcher PID 178063、GNU time PID 178073、runner PID 178074、energy_slack spawn PID 178077（CPU 12）、rh_cp_sat spawn PID 178078（CPU 14）。本地与服务器物化 provenance 完全相同，source hash 为 `e9777021491e30aa1e7fbdbd2938f989f0968f4126acdf7c1cb18c741d425c17`；fixture、manifest、environment.lock 与旧 medium 字节相同。启动事实见 `artifacts/rotating_slots_stage2_20261023/v8_launch_facts.json`。
+
+采用 `startup_confirmed.json` 的服务器 UTC **10:39:53.661Z** 快照：runner elapsed 283.522 s，energy_slack 最新真实状态约 29 s、rh_cp_sat 18 s，两者 failed/invalid 均 false，无 error/invalid 文件，进程仍在运行。完整共同 60 s 边界为 **0 s**；18 s 只是 min latest state，不能当作完整共同窗口。本地 SSH 前后时间另记为 UTC 10:38:59.315Z / 10:39:06.035Z，不混作服务器观测时间。原 `startup_snapshot.json` 的错误标签不覆盖，以保留的 `startup_confirmed.json` 纠正。后续日志读取 `campaign.log`，耗时读取 `campaign.timing.txt`，终态退出标记读取 **`campaign.exit`**（不是 `exit_code.txt`）；该确认快照尚无终态退出标记。
+
+初始预计总耗时 T0 为 **12600 s**，依据旧 medium 约 9749 s 及新 CP callback 约 25–32 s；工作不均匀，估时不保证完成时间。确认快照的剩余估计为 12316.478 s。主对话随后在本地 UTC **10:41:25.614Z** 经工具确认当前 chat 的 heartbeat `stage2-v8-600` 为 ACTIVE、间隔 **203 min**：从 SSH 后时刻已过去 139.579 s，故采用 `12316.478-139.579=12176.899 s` 取整。首次调用因缺 destination 被拒、未创建，随后 `destination=thread` 成功，无重复调度。唤醒时检查实际退出状态和完整产物；完成或失败后删除 heartbeat，并继续既定分析交付；非终态且无变化时静默。
