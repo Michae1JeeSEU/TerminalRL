@@ -188,6 +188,7 @@ def evaluate_job(payload,binding):
             certified=bool(last and last.certified),objective=None if last is None else list(last.objective),
             scheduler_records=scheduler.records,costs=costs,cache_regime="FRESH_PROCESS_COLD_PER_ARM",cpu=os.sched_getaffinity(0) if hasattr(os,"sched_getaffinity") else None)
         if isinstance(row["cpu"],set):row["cpu"]=sorted(row["cpu"])
+        if "execution_provenance" in binding:row["execution_provenance"]=binding["execution_provenance"]
         atomic_json(directory/"result.json",row)
         return row
     # Both serial arms publish identical 5-second completed boundaries. Hard
@@ -204,6 +205,7 @@ def evaluate_job(payload,binding):
                 sum(r.get("dispatch_wall_s",0.) for r in world.dispatch_timings),setup_timings=setup_timings,dispatch_records=world.dispatch_timings),
             shared_manifest_hash=root["manifest_hash"],initial_state_hash=root["initial_state_hash"],
             dispatch_timings=world.dispatch_timings,cpu=sorted(os.sched_getaffinity(0)) if hasattr(os,"sched_getaffinity") else None)
+        if "execution_provenance" in binding:row["execution_provenance"]=binding["execution_provenance"]
         save_checkpoint(directory/f"checkpoint_{boundary:04d}.json",world,scheduler,root["identity"],boundary_summary=row)
         atomic_json(directory/f"boundary_{boundary:04d}.json",row)
     completed=sorted(directory.glob("boundary_*.json"))
@@ -213,11 +215,12 @@ def evaluate_job(payload,binding):
     row=load_json(completed[-1]) if completed else dict(status="EVALUATION_PARTIAL",time=0.,root_id=root_id,arm=arm)
     row["status"]="COMPLETE" if row["time"]==60. else "EVALUATION_PARTIAL"
     row["terminal_observation"]=terminal
+    if "execution_provenance" in binding:row["execution_provenance"]=binding["execution_provenance"]
     # Bundle trajectory commits separately from proposal/attempt trace records.
     record=world.to_dict();record.update(decisions=scheduler.records,stage3_trace=observer.records,
         stage2_provenance=binding,tentative_predictions=[dict(aircraft_id=aid,as_of=world.time,plans=[p.to_dict() for p in plans]) for aid,plans in scheduler.provider.previous.items()])
     if record.get("states") and not (directory/"replay").exists():
-        ReplayBundle.write(directory/"replay",record=record,code_commit=binding["fingerprint"]["source_commit"],config_path=world.config.path,
+        ReplayBundle.write(directory/"replay",record=record,code_commit=binding.get("execution_provenance",{}).get("source_commit",binding["fingerprint"]["source_commit"]),config_path=world.config.path,
             command="scripts/stage3/evaluate.py",seed=root["seed"],eager=False)
         row["replay_path"]=str(directory/"replay")
     atomic_json(directory/"result.json",row)
