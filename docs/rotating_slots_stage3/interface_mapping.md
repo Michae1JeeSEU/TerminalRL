@@ -42,6 +42,80 @@ NormalSchedulerCallback(..., advisor_runtime=None, budget_scale=1.0)
 scale_candidate_budget(existing_budget, scale)
 ```
 
+The development optimization adds an optional keyword-only
+`FeatureEncoder(..., cache_enabled=False)` reference path and `clear_cache()`.
+The default encoder retains at most one snapshot preparation and 256 candidate
+relation-set entries. Every call reconstructs a key from exactly the visible
+snapshot/configuration fields already used by the encoder, including missing
+versus explicit-null values, resource intervals and commitment endpoints.
+Input-object identities additionally invalidate prepared references after an
+equal-valued object replacement; identities never replace the content check or
+enter numeric features. Custom numeric/array inputs bypass caching. Changed
+configuration, aircraft, reservations, time or encoder scales invalidate the
+snapshot preparation. Candidate keys include aircraft identity, actual source
+coordinates, source/target ring and resource, and start/end times. Returned rows
+and masks own fresh list containers.
+
+Query rows, actual parent/materialization checks, SOC, depth, peak, attempts,
+materialized count, remaining budget and downstream observations are rebuilt on
+every call. Scores and complete ranks are never cached. The runtime still
+consumes one selected work item and reranks the current ready pool under its
+existing coverage, interleave and finish rules. Normalization retains Python
+float arithmetic before float32 tensor construction; model modules, state-dict
+keys, pooling and tie order remain unchanged. Tensor assembly batches each set
+once instead of constructing one tensor per candidate.
+
+`python -m scripts.stage3.benchmark_encoding` compares an independent legacy
+encoder/normalizer/tensor-assembly reference from `2f73845` against these paths
+on artificial development inputs and a fixed changing search-state sequence.
+It accepts a read-only `--checkpoint` for frozen-weight checks and an optional
+`--output` JSON path. Warm timings include content-key construction, output
+copies, dynamic queries, normalization and inference, reported separately and
+end to end. No episodes, physics, CP, training or heldout data are run. These
+microbenchmarks do not establish online closed-loop speed or policy benefit.
+
+Local development verification on 2026-10-24 passed all 51 tests in
+`test_rotating_slots_stage3_encoding_optimization.py`,
+`test_rotating_slots_stage3_model.py` and `test_rotating_slots_stage3_runtime.py`
+(13.66 seconds). The new tests compare independent legacy calculations, mutable
+input invalidation, output ownership, bounded eviction, dynamic parent/query
+state, float32 outputs and inherited tie order. A fixed-clock, ten-attempt real
+candidate scheduler fixture retained identical selections and KEEP/WAIT results;
+the existing authoritative conflicting-commit regression also passed.
+
+The fixed-initialization local warm microbenchmark used 12 calls of 16 candidates
+and 24 artificial aircraft, with one torch thread. Legacy/new encoder totals were
+0.47155/0.03694 seconds, rank totals 0.93994/0.44619 seconds, and end-to-end totals
+1.46527/0.57963 seconds. All feature values and orders matched exactly; maximum
+score difference was zero, with weights and normalizer unchanged. These are
+development-only measurements from one run, without a frozen campaign checkpoint.
+
+Server verification on 2026-10-24 used the same four Python source-file hashes,
+a real frozen checkpoint, each serial check pinned to CPU 12, and one
+thread for torch and every numerical library. The focused test suite passed all
+51 tests in 3.39 seconds; JUnit records 51 tests, zero failures, zero errors and
+zero skipped tests. The checkpoint SHA-256 remained
+`b565c2a98af7f30c5b8179e823a6447bb1ccecebcbf4da2dfdcb44679ce85969`, and the
+normalizer SHA-256 remained
+`007de6c700959a8cadc0397e8896f279aeca0070fe12bbac5441c3c5b2e63491`.
+Both server microbenchmarks reported exact features and rank order, zero maximum
+score difference, and unchanged model weights and normalizer.
+
+| Server warm workload | Legacy encoder (s) | New encoder (s) | Legacy rank (s) | New rank (s) | Legacy end to end (s) | New end to end (s) |
+|---|---:|---:|---:|---:|---:|---:|
+| 12 calls, 16 candidates | 0.225742 | 0.017650 | 0.364098 | 0.224826 | 0.640756 | 0.203473 |
+| 4 calls, 64 candidates | 0.293892 | 0.070586 | 0.536318 | 0.245501 | 0.898278 | 0.323364 |
+
+Both shapes use 24 artificial development aircraft, warm repeated inputs and
+changing budget/parent state. Each timing path is measured independently; the
+component totals must not be added in place of the measured end-to-end totals.
+Server evidence is retained under
+`/home/user/training_outputs/terminal/stage3_encoding_optimization_20261024/` as
+`tests.xml`, `tests.log`, `benchmark_16.json` and `benchmark_64.json`. Local
+Syncthing arrival is not established by these server checks. No retraining or
+formal reevaluation was performed, and these microbenchmarks add no conclusion
+about online closed-loop performance or policy benefit.
+
 The feature encoder and learned advisor are separate modules. The runtime lazily
 creates an encoder only when enabled. Importing Stage2 or the Stage3 public
 interfaces does not import torch. `observer` is a callable receiving a frozen

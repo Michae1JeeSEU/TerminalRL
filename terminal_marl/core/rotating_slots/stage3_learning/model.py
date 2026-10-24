@@ -56,7 +56,17 @@ class FeatureNormalizer:
         _validate_feature(feature)
         if self.statistics is None:
             raise ValueError('normalizer is not fitted')
-        result = copy.deepcopy(feature)
+        # Numeric rows only need fresh list containers. Preserve ownership of
+        # optional metadata without recursively copying every numeric scalar.
+        result = {k:copy.deepcopy(v) for k,v in feature.items()
+                  if k not in ('query','sets','query_mask','set_masks')}
+        result['query'] = list(feature['query'])
+        result['sets'] = {k:(tuple(list(r) for r in rows) if isinstance(rows,tuple)
+                             else [list(r) for r in rows]) for k,rows in feature['sets'].items()}
+        if 'query_mask' in feature:
+            result['query_mask'] = list(feature['query_mask'])
+        if 'set_masks' in feature:
+            result['set_masks'] = {k:[list(r) for r in rows] for k,rows in feature['set_masks'].items()}
         for k, rows in [('query',[result['query']]),*result['sets'].items()]:
             for r in rows:
                 for j,s in enumerate(self.statistics[k]):
@@ -108,13 +118,15 @@ def build_model():
             chunks = [self.query_encoder(query)]
             for name,dim in SET_DIMS.items():
                 size = max((len(f['sets'][name]) for f in features),default=0)
-                data = torch.zeros((len(features),size,dim),dtype=torch.float32,device='cpu')
-                mask = torch.zeros((len(features),size),dtype=torch.bool,device='cpu')
-                for i,f in enumerate(features):
-                    rows = f['sets'][name]
-                    if rows:
-                        data[i,:len(rows)] = torch.tensor(rows,dtype=torch.float32,device='cpu')
-                        mask[i,:len(rows)] = True
+                lengths = [len(f['sets'][name]) for f in features]
+                if size:
+                    zero = [0.]*dim
+                    data = torch.tensor([list(f['sets'][name])+[zero]*(size-length)
+                                         for f,length in zip(features,lengths)],dtype=torch.float32,device='cpu')
+                else:
+                    data = torch.zeros((len(features),0,dim),dtype=torch.float32,device='cpu')
+                mask = (torch.arange(size,device='cpu').unsqueeze(0) <
+                        torch.tensor(lengths,device='cpu').unsqueeze(1))
                 chunks.append(self.pool(self.entity_encoders[name](data),mask,SET_LIMITS[name]))
             return self.score_head(torch.cat(chunks,dim=-1))
     return CandidateSetMLP().cpu()
@@ -173,6 +185,7 @@ class LearnedAdvisor:
         if not all(math.isfinite(x) for r in prediction for x in r):
             raise FeatureInputError('NONFINITE_SCORE')
         scores = {did:r[0] for did,r in zip(ids,prediction)}
-        ordered = tuple(sorted(ids,key=lambda did:(-scores[did],ids.index(did))))
+        index = {did:i for i,did in enumerate(ids)}
+        ordered = tuple(sorted(ids,key=lambda did:(-scores[did],index[did])))
         return RankResult(ordered_ids=ordered,model_metadata=self._metadata,scores=scores)
 
