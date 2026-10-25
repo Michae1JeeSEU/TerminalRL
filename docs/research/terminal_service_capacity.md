@@ -266,3 +266,7 @@ SOC 基准采用截断正态位置参数 0.75、标准差参数 0.08、区间 [0
 | Le Boudec / Thiran，Network Calculus | 到达包络与服务曲线下的积压、延迟条件界 |
 
 可进一步研究的贡献是把能量加权等待域、有限多环冲突/资源网络、QoS 接收容量域及解释性实验连接起来。上述组成各有已有文献；是否形成新的组合方法或定理，仍需更广的文献对照、可构造服务保证和完整仿真证据，本文不宣称“首次”或文献空白。
+
+## 10. 完整模型验证的后续入口
+
+完整仿真的必要资源界与适用边界见 [full_capacity_bounds_derivation.md](full_capacity_bounds_derivation.md)，单请求资格检查、配对 pilot 和首轮因素筛查的固定输入及统计口径见 [full_capacity_validation_protocol.md](full_capacity_validation_protocol.md)。本轮完整仿真结果仍待运行与复核；第 8 节的简化队列结果保持其原有解释范围，不作为完整终端容量或动态安全的验证结果。
