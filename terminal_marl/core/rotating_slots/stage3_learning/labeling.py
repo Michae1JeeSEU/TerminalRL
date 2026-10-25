@@ -86,14 +86,21 @@ def _solution(result, ancestry, catalog_id, method, *, required=None,budget=None
     return row
 
 
-def label_snapshot(output,root_id,binding):
+def label_snapshot(output,root_id,binding, *, schema_id=None):
     from ..stage2_planning import (PlanningBudget,CandidateProvider,EvaluationContext,
         NormalSchedulerCallback,EnergySlackScheduler,RollingHorizonCPSATScheduler)
     from .runtime import AdvisorRuntime
     from .campaign import contract_config
+    from .features import SCHEMA_V2
+    v2 = schema_id == SCHEMA_V2
     output=Path(output);root=load_json(output/"roots"/root_id/"root.json")
+    ancestry_root_id=root.get('ancestry_root_id',root_id)
     directory=output/"labels"/root_id;directory.mkdir(parents=True,exist_ok=True)
-    if (directory/"labels.json").exists():return load_json(directory/"labels.json")
+    if (directory/"labels.json").exists():
+        saved=load_json(directory/'labels.json')
+        if v2 and saved.get('feature_schema_id') != SCHEMA_V2:
+            raise ValueError('existing labels use a different feature schema')
+        return saved
     raw=output/"raw"/root_id
     # Failed partial jobs may be retried, but cannot append a second trace to stale facts.
     if raw.exists() and any(raw.iterdir()):
@@ -103,39 +110,64 @@ def label_snapshot(output,root_id,binding):
     world=restore_root(root,NormalSchedulerCallback("rh_cp_sat",planning_profile="downstream_service_v8"))
     snapshot=world.build_planning_snapshot()
     runtime=AdvisorRuntime(mode="SHADOW_OFFLINE",fingerprint=binding["fingerprint"],observer=observer,
-        ancestry_root_id=root_id,evaluation=False,offline_probe=StratifiedProbe(cfg["offline_probe_seed"]).select)
+        ancestry_root_id=ancestry_root_id,evaluation=False,offline_probe=StratifiedProbe(cfg["offline_probe_seed"]).select,
+        feature_schema=schema_id)
     budget=PlanningBudget.for_profile("quality_v5")
     budget.candidate_seconds=min(cfg["reference_candidate_wall_cap_seconds"],budget.candidate_seconds*cfg["reference_candidate_budget_multiplier"])
     budget.max_attempts*=2;budget.max_per_aircraft*=2
     budget.soft_seconds=max(budget.soft_seconds,budget.candidate_seconds)
     context=EvaluationContext(snapshot,budget=budget,validation_cache={})
     provider=CandidateProvider(planning_profile="downstream_service_v8",advisor_runtime=runtime)
-    catalog=provider.get_columns(snapshot,budget,context)
+    if v2:
+        budget.candidate_active_seconds=0.
+        batches=provider.iter_progressive_columns(snapshot,budget,context)
+        catalog=None
+        while True:
+            try:
+                with budget.candidate_work():
+                    catalog=next(batches)
+            except StopIteration:
+                break
+        if catalog is None:
+            raise ValueError('progressive collection produced no catalog')
+    else:
+        catalog=provider.get_columns(snapshot,budget,context)
     ancestry=_column_ancestry(catalog,observer.records)
     catalog_id=digest([repr(c.signature) for cs in catalog.columns.values() for c in cs])
     solutions=[]
-    def reference(method,limit,required=None):
+    def reference(method,limit,required=None,excluded=None):
         remaining=deadline-time.perf_counter()
         if remaining<=0:return None
         local=PlanningBudget.for_profile("quality_v5")
         local.soft_seconds=local.watchdog_seconds=min(limit,remaining)
-        if required is not None:
+        if required is not None or excluded is not None:
             local.solver_seconds=min(3.,local.soft_seconds)
             local.hint_seconds=min(.5,local.soft_seconds)
             local.solver_reserve_seconds=0.
         candidates=catalog if required is None else conditional_catalog(catalog,required,ancestry)
         if candidates is None:return None
+        if excluded is not None:
+            filtered={aid:tuple(c for c in cs if excluded not in ancestry.get(c.signature,())) for aid,cs in catalog.columns.items()}
+            if any(not cs for cs in filtered.values()):return None
+            candidates=replace(catalog,columns=MappingProxyType(filtered))
         # Independent cache and scheduler per reference; same materialized catalog and target.
         ctx=EvaluationContext(snapshot,budget=local,validation_cache={})
         scheduler=EnergySlackScheduler() if method=="energy_slack" else RollingHorizonCPSATScheduler()
         result=scheduler.plan(snapshot,candidates,ctx,local)
-        return _solution(result,ancestry,catalog_id,method,required=required,budget=local)
+        row = _solution(result,ancestry,catalog_id,method,required=required,budget=local)
+        if excluded is not None:
+            row.update(excluded_descriptor=excluded,removed_signatures=[repr(c.signature) for cs in catalog.columns.values() for c in cs if excluded in ancestry.get(c.signature,())],
+                counterfactual_catalog_id=digest([repr(c.signature) for cs in candidates.columns.values() for c in cs]))
+        return row
     for method in cfg["reference_solvers"]:
         solution=reference(method,30.)
         if solution is not None and solution["certified"]:solutions.append(solution)
     descriptors=list({r["descriptor_id"]:r for r in observer.records if r.get("record_type")=="WorkDescriptor"}.values())
     # Bound conditional attempts before observing conditional outcomes.
     eligible=sorted({d for values in ancestry.values() for d in values})
+    if v2:
+        terminal_hashes={c.plans[-1].trajectory_hash for cs in catalog.columns.values() for c in cs if c.plans}
+        eligible=sorted({ids[-1] for h,ids in runtime._plans.items() if h in terminal_hashes and ids})
     conditional_ids=[]
     candidates=[d for d in descriptors if d["descriptor_id"] in eligible]
     for a,b in combinations(candidates,2):
@@ -144,9 +176,16 @@ def label_snapshot(output,root_id,binding):
                 if d not in conditional_ids:conditional_ids.append(d)
         if len(conditional_ids)>=cfg["conditional_resolves_max_per_snapshot"]:break
     conditional_attempts=[]
-    for descriptor_id in conditional_ids[:cfg["conditional_resolves_max_per_snapshot"]]:
+    incremental=[]
+    limit=cfg["conditional_resolves_max_per_snapshot"]
+    for descriptor_id in conditional_ids[:limit//2 if v2 else limit]:
         solution=reference("rh_cp_sat",cfg["conditional_resolve_wall_cap_seconds"],descriptor_id)
         if solution is not None:conditional_attempts.append(solution)
+        if v2:
+            removal=reference('rh_cp_sat',cfg['conditional_resolve_wall_cap_seconds'],excluded=descriptor_id)
+            if removal is not None:conditional_attempts.append(removal)
+            if solution is not None and removal is not None:
+                incremental.append(incremental_evidence(descriptor_id,solution,removal))
     facts=[r for r in observer.records if r.get("record_type") in ("FactualResult","SingleVehicleEvidence")]
     # Final single-vehicle evidence augments the recorded pre-query timed fact.
     evidence={r["descriptor_id"]:r for r in facts if r.get("record_type")=="SingleVehicleEvidence"}
@@ -159,13 +198,17 @@ def label_snapshot(output,root_id,binding):
         fact["wall_s"]=(fact["wall_s"] or 0.)+(energy.get("wall_s") or 0.)
         fact["cpu_s"]=(fact.get("cpu_s") or 0.)+(energy.get("cpu_s") or 0.)
         fact["cost_boundary"]="GENERATOR_PLUS_OBSERVED_SINGLE_VEHICLE_ENERGY_EXCLUDES_JOINT_VALIDATION"
+    if v2:
+        timed=complete_cost_facts(observer.records)
     context_id=getattr(runtime,"snapshot_id",None) or (descriptors[0]["snapshot_id"] if descriptors else root["snapshot_id"])
     reference_solutions=[];seen=set()
     for solution in solutions+conditional_attempts:
         key=tuple(solution["selected_signatures"])
         if solution["certified"] and key not in seen and len(reference_solutions)<cfg["certified_reference_solutions_max"]:
             seen.add(key);reference_solutions.append(solution)
-    pairs=derive_pairs(descriptors,timed,reference_solutions,conditional_attempts=conditional_attempts,context_id=context_id,root_id=root_id,split=root["split"],fingerprint=binding["fingerprint"])
+    pairs=derive_pairs(descriptors,timed,reference_solutions,conditional_attempts=conditional_attempts,context_id=context_id,root_id=ancestry_root_id,split=root["split"],fingerprint=binding["fingerprint"])
+    if v2:
+        pairs += supplementary_pairs(descriptors,timed,conditional_attempts,incremental,root_id=ancestry_root_id,split=root['split'],fingerprint=binding['fingerprint'])
     support={d for solution in reference_solutions for d in solution["descriptor_ids"]}
     result=dict(status="LABELED" if pairs else "DATA_INSUFFICIENT",context_id=context_id,root_id=root_id,split=root["split"],
         sealed=root["split"]=="test",fingerprint=binding["fingerprint"],catalog_id=catalog_id,
@@ -173,5 +216,85 @@ def label_snapshot(output,root_id,binding):
         auxiliary_labels=auxiliary_labels(timed),facts=timed,wall_s=time.perf_counter()-started,
         coverage_summary=summarize_coverage(descriptors,timed,support,support_kind="SAVED_BOUNDED_REFERENCE_ANCESTRY"),
         unsupported_valid_is_negative=False,conditional_is_global_oracle=False)
+    if v2:
+        result.update(feature_schema_id=SCHEMA_V2,incremental_contribution_evidence=incremental,ancestry_root_id=ancestry_root_id,
+            candidate_timer_regime='CUMULATIVE_ACTIVE_GENERATION_SHARED_ORIGINAL_CLOCK',
+            complete_cost_facts=sum(bool(f.get('cost_complete')) for f in timed),incremental_labeled_descriptors=sum(bool(i.get('contribution_mask')) for i in incremental))
     atomic_json(directory/"labels.json",result)
     return result
+
+
+def complete_cost_facts(records):
+    """Join measured components by exact query reference, never descriptor overwrite."""
+    import math
+    energies,validations={},{}
+    for row in records:
+        ref=row.get('features_before_query_ref')
+        if ref and row.get('record_type')=='SingleVehicleEvidence':energies.setdefault(ref,[]).append(row)
+        if ref and row.get('record_type')=='ColumnValidationCost':validations.setdefault(ref,[]).append(row)
+    result=[]
+    def measured(row):
+        value=row.get('wall_s')
+        return isinstance(value,(int,float)) and math.isfinite(value) and value>=0
+    for source in records:
+        if source.get('record_type')!='FactualResult':continue
+        fact=dict(source);ref=fact.get('features_before_query_ref');es=energies.get(ref,[]);vs=validations.get(ref,[])
+        if es:
+            fact.update({k:v for k,v in es[-1].items() if k in ('outcome','validity_label_mask','energy_j')})
+        # A generated plan requires observed energy and terminal validation. A
+        # bounded no-plan return has no energy/validation operation to charge.
+        no_plan=fact.get('trajectory_hash') is None
+        components=[source]+es+vs
+        complete=not fact.get('censored',False) and measured(source) and (no_plan or bool(es and vs)) and all(measured(r) for r in components)
+        fact.update(cost_scope='GENERATOR_ENERGY_TERMINAL_VALIDATION_V2',cost_complete=complete,
+            generation_wall_s=source.get('wall_s'),energy_wall_s=sum(r['wall_s'] for r in es if measured(r)) if es else None,
+            column_validation_wall_s=sum(r['wall_s'] for r in vs if measured(r)) if vs else None,
+            wall_s=sum(r['wall_s'] for r in components if measured(r)) if complete else None,
+            cost_component_refs=[ref] if ref else [])
+        result.append(fact)
+    return result
+
+
+def incremental_evidence(descriptor_id,inclusion,removal):
+    """Bounded same-catalog paired solves; local contribution, never global optimum."""
+    certified=bool(inclusion.get('certified') and removal.get('certified') and
+        inclusion.get('catalog_id')==removal.get('catalog_id') and inclusion.get('budget_settings')==removal.get('budget_settings') and
+        inclusion.get('required_descriptor')==descriptor_id and removal.get('excluded_descriptor')==descriptor_id and
+        descriptor_id in inclusion.get('descriptor_ids',()) and descriptor_id not in removal.get('descriptor_ids',()) and len(removal.get('removed_signatures',()))==1)
+    return dict(descriptor_id=descriptor_id,contribution_mask=certified,
+        included_objective=inclusion.get('objective'),removed_objective=removal.get('objective'),
+        increment=[b-a for a,b in zip(inclusion['objective'],removal['objective'])] if certified else None,
+        evidence_refs=[inclusion['solution_id'],removal['solution_id']],
+        catalog_id=inclusion.get('catalog_id'),counterfactual_catalog_id=removal.get('counterfactual_catalog_id'),
+        removed_signatures=removal.get('removed_signatures',[]),scope='BOUNDED_CERTIFIED_INCLUSION_REMOVAL',
+        missing_reason=None if certified else 'UNCERTIFIED_NONCOMPARABLE_OR_MULTIPLE_DESCENDANT_REMOVAL')
+
+
+def supplementary_pairs(descriptors,facts,solutions,increments,*,root_id,split,fingerprint):
+    """Original quality dominates; use contribution/cost only at certified ties."""
+    by_id={d['descriptor_id']:d for d in descriptors}
+    by_increment={r['descriptor_id']:r for r in increments if r.get('contribution_mask')}
+    by_fact={}
+    for fact in facts:
+        if fact.get('cost_complete'):by_fact.setdefault(fact['descriptor_id'],[]).append(fact)
+    eligible=[s for s in solutions if s.get('certified') and s.get('required_descriptor')]
+    pairs=[]
+    for a,b in combinations(eligible,2):
+        da,db=a['required_descriptor'],b['required_descriptor']
+        if da not in by_id or db not in by_id or not comparable(by_id[da],by_id[db]):continue
+        if a['catalog_id']!=b['catalog_id'] or a['budget_settings']!=b['budget_settings'] or a['objective']!=b['objective']:continue
+        ia,ib=by_increment.get(da),by_increment.get(db)
+        source=None;evidence=[]
+        if ia and ib and ia['increment']!=ib['increment']:
+            preferred,other=(da,db) if tuple(ia['increment'])>tuple(ib['increment']) else (db,da)
+            source='equal_quality_incremental_preference';evidence=ia['evidence_refs']+ib['evidence_refs']
+        elif ia and ib and ia['increment']==ib['increment'] and len(by_fact.get(da,[]))==len(by_fact.get(db,[]))==1:
+            fa,fb=by_fact[da][0],by_fact[db][0]
+            if fa['cost_scope']==fb['cost_scope'] and fa['wall_s']!=fb['wall_s']:
+                preferred,other=(da,db) if fa['wall_s']<fb['wall_s'] else (db,da)
+                source='equal_quality_measured_cost_preference';evidence=[fa['features_before_query_ref'],fb['features_before_query_ref']]
+        if source:
+            pairs.append(dict(record_type='PreferencePair',context_id=by_id[da]['source_node_id'],preferred_descriptor=preferred,other_descriptor=other,
+                label_source=source,objective_id=fingerprint['objective_id'],label_policy_id='bounded_reference_supported_pair_v1_0',
+                ancestry_root_id=root_id,split=split,evidence_refs=evidence))
+    return pairs

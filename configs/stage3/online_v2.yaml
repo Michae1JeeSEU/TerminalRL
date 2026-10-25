@@ -1,0 +1,46 @@
+schema: stage3_online_v2_20261025
+parent_readonly: /home/user/training_outputs/terminal/stage3_learning_v1_0_20261023
+encoding_archive_readonly: /home/user/training_outputs/terminal/stage3_encoding_reevaluation_20261024
+output: /home/user/training_outputs/terminal/stage3_online_v2_20261025
+feature_schema_id: candidate_context_sets_v2_0
+feature_cost_policy_id: pre_materialization_visible_context_and_measured_cost_v2_0
+online_policy_id: progressive_v1_prefix_memo_light_observer_v2
+cost_ranking_policy_id: priority_minus_0.1_normalized_predicted_logcost_v2
+evaluation_cpu: 12
+training_seed: 20261023
+formal_training_runs_max: 1
+max_epochs: 30
+early_stopping_patience: 5
+parameter_count: 119555
+query_dim: 66
+heads: 3
+candidate_seconds: 6.0
+max_per_aircraft: 32
+max_attempts: 1024
+hint_seconds: 3.0
+solver_seconds: 8.0
+soft_seconds: 30.0
+watchdog_seconds: 60.0
+same_state_job_cap_s: 90.0
+evaluation_cap_s: 3600.0
+collection_parallel_max: 2
+per_process_threads: 1
+mid_snapshots:
+  - {root_id: s3r01, seed: 7302, split: train, scenario_profile: diagnostic18_rate120_v1, time_s: 30.0}
+  - {root_id: s3r02, seed: 7303, split: train, scenario_profile: medium24_rate150_v1, time_s: 30.0}
+  - {root_id: s3r17, seed: 7318, split: validation, scenario_profile: medium24_rate150_v1, time_s: 30.0}
+development:
+  states: 2
+  arms: [reference_full, heuristic_reduced, learned_reduced]
+  callbacks: 6
+  role: DEVELOPMENT_SEEN
+  reference: ORIGINAL_BOUNDED_CATALOG_SAME_HALF_BUDGET_NOT_GLOBAL_OPTIMUM
+closed_loop:
+  root_id: s3r23
+  seed: 7324
+  arms: [heuristic_reduced, learned_reduced]
+  sim_seconds: 60
+  jobs: 2
+  serial: true
+heldout_signal_measurement: false
+quality_degradation_allowance: NOT_AUTHORIZED

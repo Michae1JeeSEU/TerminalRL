@@ -5,6 +5,8 @@ import math
 from ..geometry import slot_state, pad_position
 
 SCHEMA_ID = 'candidate_context_sets_v1_0'
+SCHEMA_V2 = 'candidate_context_sets_v2_0'
+SCHEMAS = (SCHEMA_ID, SCHEMA_V2)
 SET_LIMITS = dict(aircraft=256, slots=128, pads=16, reservations=1024)
 RINGS = ('outer', 'middle', 'inner')
 QUERY_DIM = 66
@@ -58,7 +60,10 @@ class FeatureEncoder:
     Only allowlisted visible fields and actual materialized nodes are read.
     Identifiers establish relations and never enter numeric inputs.
     """
-    def __init__(self, horizon_s=240., energy_capacity_j=None, entity_limits=None, *, cache_enabled=True):
+    def __init__(self, horizon_s=240., energy_capacity_j=None, entity_limits=None, *, cache_enabled=True, schema_id=SCHEMA_ID):
+        if schema_id not in SCHEMAS:
+            raise ValueError('unknown feature schema')
+        self.schema_id = schema_id
         if not math.isfinite(horizon_s) or horizon_s <= 0:
             raise ValueError('positive bound horizon required')
         self.cache_enabled = bool(cache_enabled)
@@ -199,6 +204,23 @@ class FeatureEncoder:
                 (commitment_end-now,self.horizon_s),
                 (get(downstream,'energy_j'),capacity) if capacity and get(downstream,'status') == 'KNOWN' else None,
                 (get(downstream,'duration_s'),self.horizon_s) if get(downstream,'status') == 'KNOWN' else None])
+            if self.schema_id == SCHEMA_V2:
+                retained = state.get('retained_context', {}).get(aid, {})
+                conflicts = state.get('known_conflicts', {}).get(aid)
+                direction = (tr, ti) if tk == 'next_ring_slot' else ('pad', ti)
+                duplicate = retained.get('directions', {}).get(repr(direction), 0) if retained else None
+                query = row([*hot(sr), *hot(tr), float(tk == 'normal_pad'),
+                    (get(d, 'start_offset_s'), self.horizon_s), (get(d, 'duration_s'), self.horizon_s),
+                    *hot(get(d, 'construction_stage'), ('progress','reference','alternative')),
+                    *hot(get(d, 'proposal_origin'), ('current','delayed','resource_aligned','reuse')),
+                    soc, get(node, 'depth', 0) if node else 0, float(parent is not None),
+                    state.get('remaining_budget_fraction'), (peak,120.),
+                    (get(node,'end_time')-now,self.horizon_s) if node and get(node,'end_time') is not None else None,
+                    (get(downstream,'energy_j'),capacity) if capacity and get(downstream,'status') == 'KNOWN' else None,
+                    (get(downstream,'duration_s'),self.horizon_s) if get(downstream,'status') == 'KNOWN' else None,
+                    (get(downstream,'wait_s'),self.horizon_s),
+                    *[retained.get(k) for k in ('full_count','immediate_count','delayed_count','pad_count','window_count')],
+                    conflicts, duplicate, retained.get('missing_coverage_count')])
             relation_key = (aid, tuple(source), sr, tr, tk, ti, start, end)
             cached = self._entity_cache.get(relation_key) if use_cache else None
             if cached is None:
@@ -247,9 +269,27 @@ class FeatureEncoder:
             set_masks = {k:[list(r) for r in rows] for k,rows in cached[1].items()}
             if len(query) != QUERY_DIM or any(len(r) != SET_DIMS[k] for k,rows in sets.items() for r in rows):
                 raise RuntimeError('feature schema dimensions: '+str((len(query),{k:len(v[0]) if v else 0 for k,v in sets.items()})))
-            output.append(dict(descriptor_id=did,schema_id=SCHEMA_ID,query=query,sets=sets,
+            output.append(dict(descriptor_id=did,schema_id=self.schema_id,query=query,sets=sets,
                 query_mask=query[1::2],set_masks=set_masks))
         return output
+
+
+def migrate_v1_feature_to_v2(feature):
+    """Map only known v1 numeric fields; newly introduced context stays missing."""
+    from copy import deepcopy
+    if feature.get('schema_id') != SCHEMA_ID:
+        raise ValueError('migration requires v1 feature')
+    result = deepcopy(feature)
+    old = feature['query']
+    # The first 19 values are identical; v1 attempts/materialized/positions are removed.
+    indices = list(range(19)) + [21,25,27,31,32]
+    result['query'] = [x for i in indices for x in old[2*i:2*i+2]] + [0.,0.]*9
+    if len(result['query']) != QUERY_DIM:
+        raise ValueError('invalid v1 query shape')
+    result['query_mask'] = result['query'][1::2]
+    result['schema_id'] = SCHEMA_V2
+    result['feature_provenance'] = 'v1_known_fields_only_new_context_masked'
+    return result
 
 
 

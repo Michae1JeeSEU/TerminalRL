@@ -87,14 +87,17 @@ def _scheduler(output,arm,binding,observer,root_id,setup_timings=None):
     if arm=="learned_reduced":
         model_started=time.perf_counter()
         from .model import LearnedAdvisor
-        advisor=LearnedAdvisor(Path(output)/"model",fingerprint=binding["fingerprint"],evaluation=True)
+        options={"schema_id":binding["fingerprint"]["feature_schema_id"]} if binding.get("online_v2") else {}
+        advisor=LearnedAdvisor(Path(output)/"model",fingerprint=binding["fingerprint"],evaluation=True,**options)
         advisor._load()
         model_setup=time.perf_counter()-model_started
     fingerprint=dict(binding["fingerprint"],model_id=load_json(Path(output)/"model/model_card.json")["model_hash"])
     runtime=AdvisorRuntime(mode="GUIDED_LIMITED" if arm!="reference_full" else "RECORD",advisor=advisor,
-        fingerprint=fingerprint,observer=observer,ancestry_root_id=root_id,evaluation=True,deterministic_only=arm=="heuristic_reduced")
+        fingerprint=fingerprint,observer=observer,ancestry_root_id=root_id,evaluation=True,deterministic_only=arm=="heuristic_reduced",
+        **({"trace_mode":"online","feature_schema":binding["fingerprint"]["feature_schema_id"]} if binding.get("online_v2") else {}))
     scheduler=NormalSchedulerCallback("rh_cp_sat",planning_profile="downstream_service_v8",advisor_runtime=runtime,
-        budget_scale=1. if arm=="reference_full" else .5)
+        budget_scale=.5 if binding.get("online_v2") else 1. if arm=="reference_full" else .5,
+        **({"online_policy":None if arm=="reference_full" else "progressive_v1","prefix_reuse":True} if binding.get("online_v2") else {}))
     if setup_timings is not None:
         setup_timings.update(model_setup_wall_s=model_setup,scheduler_setup_wall_s=time.perf_counter()-setup_started,
             setup_included_in_full_online_wall=True)
@@ -122,6 +125,13 @@ def same_state_latency(rows):
 
 
 def _costs(scheduler,observer,wall,cpu,dispatch,*,setup_timings=None,dispatch_records=()):
+    if hasattr(observer,"cost_counts"):
+        summary=observer.summary()
+        return dict(full_online_wall_s=wall,process_cpu_s=cpu,full_dispatch_wall_s=dispatch,
+            setup_timings=dict(setup_timings or {}),online_timing_boundary="JOB_ENTRY_THROUGH_COMPLETED_PLANNING_OR_SIMULATION_BOUNDARY",
+            planning_latency=latency_summary(scheduler.records),dispatch_latency=latency_summary(dispatch_records,"dispatch_wall_s"),
+            exclusive_planning_timings=[r.get("timings",r.get("phase_timings",{})) for r in scheduler.records],
+            coverage_summary=observer.coverage(),online_telemetry=summary,**observer.cost_counts())
     facts=[r for r in observer.records if r.get("record_type")=="FactualResult"]
     energies=[r for r in observer.records if r.get("record_type")=="SingleVehicleEvidence"]
     descriptors=[r for r in observer.records if r.get("record_type")=="WorkDescriptor"]
@@ -175,7 +185,10 @@ def evaluate_job(payload,binding):
     world=restore_root(root,NormalSchedulerCallback("rh_cp_sat",planning_profile="downstream_service_v8"))
     world.configure_practical_runtime(True)
     directory=output/"evaluation"/kind/root_id/arm;directory.mkdir(parents=True,exist_ok=True)
-    observer=PortableObserver(directory/"trace")
+    if binding.get("online_v2"):
+        from .online_observer import OnlineObserver
+        observer=OnlineObserver()
+    else:observer=PortableObserver(directory/"trace")
     setup_timings={"pre_scheduler_setup_wall_s":time.perf_counter()-start}
     scheduler=_scheduler(output,arm,binding,observer,root_id,setup_timings)
     world.admission_callback=shared_fifo_admission
@@ -186,7 +199,9 @@ def evaluate_job(payload,binding):
         row=dict(status="COMPLETE",root_id=root_id,arm=arm,snapshot_id=root["snapshot_id"],
             original_initial_state_hash=root["initial_state_hash"],manifest_hash=root["manifest_hash"],
             certified=bool(last and last.certified),objective=None if last is None else list(last.objective),
-            scheduler_records=scheduler.records,costs=costs,cache_regime="FRESH_PROCESS_COLD_PER_ARM",cpu=os.sched_getaffinity(0) if hasattr(os,"sched_getaffinity") else None)
+            scheduler_records=scheduler.records,costs=costs,cache_regime="FRESH_PROCESS_COLD_PER_ARM",snapshot_time_s=getattr(world,"time",root.get("snapshot_time_s",0.)),
+            ancestry_root_id=root.get("ancestry_root_id",root_id),evaluation_role=root.get("evaluation_role","FROZEN_EVALUATION"),
+            cpu=os.sched_getaffinity(0) if hasattr(os,"sched_getaffinity") else None)
         if isinstance(row["cpu"],set):row["cpu"]=sorted(row["cpu"])
         if "execution_provenance" in binding:row["execution_provenance"]=binding["execution_provenance"]
         atomic_json(directory/"result.json",row)
@@ -217,8 +232,9 @@ def evaluate_job(payload,binding):
     row["terminal_observation"]=terminal
     if "execution_provenance" in binding:row["execution_provenance"]=binding["execution_provenance"]
     # Bundle trajectory commits separately from proposal/attempt trace records.
-    record=world.to_dict();record.update(decisions=scheduler.records,stage3_trace=observer.records,
+    record=world.to_dict();record.update(decisions=scheduler.records,stage3_trace=getattr(observer,"records",[]),
         stage2_provenance=binding,tentative_predictions=[dict(aircraft_id=aid,as_of=world.time,plans=[p.to_dict() for p in plans]) for aid,plans in scheduler.provider.previous.items()])
+    if hasattr(observer,"summary"):record["stage3_online_summary"]=observer.summary()
     if record.get("states") and not (directory/"replay").exists():
         ReplayBundle.write(directory/"replay",record=record,code_commit=binding.get("execution_provenance",{}).get("source_commit",binding["fingerprint"]["source_commit"]),config_path=world.config.path,
             command="scripts/stage3/evaluate.py",seed=root["seed"],eager=False)

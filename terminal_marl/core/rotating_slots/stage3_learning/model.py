@@ -7,13 +7,13 @@ import hashlib
 import json
 import math
 from pathlib import Path
-from .features import SCHEMA_ID, QUERY_DIM, SET_DIMS, SET_LIMITS, FeatureInputError
+from .features import SCHEMA_ID, SCHEMA_V2, SCHEMAS, QUERY_DIM, SET_DIMS, SET_LIMITS, FeatureInputError
 
 ARCHITECTURE_ID = 'cc_set_mlp64_v1_0'
 
 
-def _validate_feature(feature):
-    if feature.get('schema_id') != SCHEMA_ID:
+def _validate_feature(feature, schema_id=SCHEMA_ID):
+    if feature.get('schema_id') != schema_id:
         raise FeatureInputError('INPUT_OOD', 'feature schema')
     for name, rows in [('query',[feature['query']]), *feature['sets'].items()]:
         dim = QUERY_DIM if name == 'query' else SET_DIMS[name]
@@ -28,7 +28,10 @@ def _validate_feature(feature):
 
 class FeatureNormalizer:
     """Moments are fitted only on observed numeric values from training contexts."""
-    def __init__(self, statistics=None):
+    def __init__(self, statistics=None, *, schema_id=SCHEMA_ID):
+        if schema_id not in SCHEMAS:
+            raise ValueError('unknown feature schema')
+        self.schema_id = schema_id
         self.statistics = statistics
 
     def fit(self, contexts):
@@ -37,7 +40,7 @@ class FeatureNormalizer:
             raise ValueError('normalizer fit requires train contexts only')
         for context in contexts:
             for f in context['features']:
-                _validate_feature(f)
+                _validate_feature(f,self.schema_id)
                 for k, rows in [('query',[f['query']]),*f['sets'].items()]:
                     for r in rows:
                         for j in range(len(r)//2):
@@ -53,7 +56,7 @@ class FeatureNormalizer:
         return self
 
     def transform(self, feature):
-        _validate_feature(feature)
+        _validate_feature(feature,self.schema_id)
         if self.statistics is None:
             raise ValueError('normalizer is not fitted')
         # Numeric rows only need fresh list containers. Preserve ownership of
@@ -74,23 +77,26 @@ class FeatureNormalizer:
         return result
 
     def as_dict(self):
-        return dict(schema_id=SCHEMA_ID,fit_split='train',statistics=self.statistics)
+        return dict(schema_id=self.schema_id,fit_split='train',statistics=self.statistics)
 
     @classmethod
     def from_dict(cls, value):
-        if value.get('schema_id') != SCHEMA_ID or value.get('fit_split') != 'train':
+        if value.get('schema_id') not in SCHEMAS or value.get('fit_split') != 'train':
             raise ValueError('incompatible normalizer')
-        return cls(value['statistics'])
+        return cls(value['statistics'],schema_id=value['schema_id'])
 
 
-def build_model():
+def build_model(schema_id=SCHEMA_ID):
     """Construct exactly one frozen 64x2 four-set architecture."""
     import torch
     from torch import nn
+    if schema_id not in SCHEMAS:
+        raise ValueError('unknown feature schema')
 
     class CandidateSetMLP(nn.Module):
         def __init__(self):
             super().__init__()
+            self.schema_id = schema_id
             def encoder(dim):
                 return nn.Sequential(nn.Linear(dim,64),nn.ReLU(),nn.Linear(64,64),nn.ReLU())
             self.query_encoder = encoder(QUERY_DIM)
@@ -113,7 +119,7 @@ def build_model():
             if not features:
                 return torch.empty((0,3),dtype=torch.float32,device='cpu')
             for f in features:
-                _validate_feature(f)
+                _validate_feature(f,self.schema_id)
             query = torch.tensor([f['query'] for f in features],dtype=torch.float32,device='cpu')
             chunks = [self.query_encoder(query)]
             for name,dim in SET_DIMS.items():
@@ -140,12 +146,14 @@ def fingerprint_compatible(actual, expected):
 
 
 class LearnedAdvisor:
-    def __init__(self, checkpoint, fingerprint=None, *, evaluation=False):
+    def __init__(self, checkpoint, fingerprint=None, *, evaluation=False, schema_id=SCHEMA_ID):
         self.path = Path(checkpoint)
         if self.path.is_dir():
             self.path = self.path/'model.pt'
         self.fingerprint = fingerprint
         self.evaluation = evaluation
+        self.schema_id = schema_id
+        self.cost_statistics = None
         self._model = self._normalizer = self._metadata = None
 
     def _load(self):
@@ -159,14 +167,19 @@ class LearnedAdvisor:
             if torch.get_num_interop_threads() != 1:
                 raise
         data = torch.load(self.path,map_location='cpu',weights_only=True)
-        if data.get('architecture_id') != ARCHITECTURE_ID or data.get('schema_id') != SCHEMA_ID:
+        if data.get('architecture_id') != ARCHITECTURE_ID or data.get('schema_id') != self.schema_id:
             raise FeatureInputError('FINGERPRINT_MISMATCH')
         if self.fingerprint is None or not fingerprint_compatible(data['fingerprint'],self.fingerprint):
             raise FeatureInputError('FINGERPRINT_MISMATCH')
-        self._model = build_model()
+        self._model = build_model(self.schema_id)
         self._model.load_state_dict(data['state_dict'],strict=True)
         self._model.eval()
         self._normalizer = FeatureNormalizer.from_dict(data['normalizer'])
+        if self._normalizer.schema_id != self.schema_id:
+            raise FeatureInputError('FINGERPRINT_MISMATCH')
+        self.cost_statistics = data.get('cost_statistics')
+        if self.schema_id == SCHEMA_V2:
+            _cost_statistics(self.cost_statistics)
         self._metadata = dict(model_hash=hashlib.sha256(self.path.read_bytes()).hexdigest(),architecture_id=ARCHITECTURE_ID)
 
     def rank(self, features, budget=None):
@@ -184,8 +197,28 @@ class LearnedAdvisor:
             raise FeatureInputError('ILLEGAL_DESCRIPTOR_ID')
         if not all(math.isfinite(x) for r in prediction for x in r):
             raise FeatureInputError('NONFINITE_SCORE')
-        scores = {did:r[0] for did,r in zip(ids,prediction)}
+        scores = cost_aware_scores(ids,prediction,self.cost_statistics) if self.schema_id == SCHEMA_V2 else {did:r[0] for did,r in zip(ids,prediction)}
         index = {did:i for i,did in enumerate(ids)}
         ordered = tuple(sorted(ids,key=lambda did:(-scores[did],index[did])))
-        return RankResult(ordered_ids=ordered,model_metadata=self._metadata,scores=scores)
+        metadata = dict(self._metadata or {})
+        if self.schema_id == SCHEMA_V2:
+            metadata.update(cost_coefficient=.1,predicted_log1p_cost={did:r[2] for did,r in zip(ids,prediction)})
+        return RankResult(ordered_ids=ordered,model_metadata=metadata,scores=scores)
+
+
+def _cost_statistics(statistics):
+    if not statistics or statistics.get('fit_split') != 'train' or statistics.get('count',0) <= 0:
+        raise FeatureInputError('INPUT_OOD','missing train cost calibration')
+    mean,std = statistics.get('mean'),statistics.get('std')
+    if not isinstance(mean,(int,float)) or not isinstance(std,(int,float)) or not math.isfinite(mean) or not math.isfinite(std) or std < 0:
+        raise FeatureInputError('INPUT_OOD','invalid train cost calibration')
+    return mean,max(std,1.e-6)
+
+
+def cost_aware_scores(ids,prediction,statistics):
+    """Frozen v2 rule, with no validation/test fit or coefficient sweep."""
+    mean,std = _cost_statistics(statistics)
+    if not all(len(r)==3 and all(math.isfinite(x) for x in r) for r in prediction):
+        raise FeatureInputError('NONFINITE_SCORE')
+    return {did:r[0]-.1*max(-3.,min(3.,(r[2]-mean)/std)) for did,r in zip(ids,prediction)}
 

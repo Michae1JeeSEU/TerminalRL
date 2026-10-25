@@ -183,10 +183,96 @@ def auxiliary_labels(facts):
         outcome=fact.get("outcome")
         validity = 1. if outcome=="SINGLE_VALID" else 0. if outcome=="SINGLE_INVALID_CERTIFIED" else None
         if fact.get("validity_label_mask") is False:validity=None
-        complete = not fact.get("censored",False) and outcome not in ("TIMEOUT","NOT_ATTEMPTED") and fact.get("wall_s") is not None
+        wall = fact.get('wall_s')
+        complete = not fact.get("censored",False) and outcome not in ("TIMEOUT","NOT_ATTEMPTED") and isinstance(wall,(int,float)) and math.isfinite(wall) and wall >= 0
+        if fact.get('cost_scope') is not None:
+            complete = complete and fact.get('cost_complete',False)
         rows.append(dict(descriptor_id=fact["descriptor_id"], validity=validity,validity_mask=validity is not None,
             log1p_cost_ms=math.log1p(fact["wall_s"]*1000.) if complete else None,cost_mask=complete,censored=fact.get("censored",False)))
     return rows
+
+
+def merge_v2_datasets(datasets, fingerprint):
+    """Merge ancestry-safe datasets; migrate known v1 fields, never infer new context.
+
+    Conflicting/repeated context IDs are rejected rather than choosing a feature
+    observation silently. Legacy partial costs stay explicitly masked for v2.
+    """
+    from copy import deepcopy
+    from .features import SCHEMA_ID, SCHEMA_V2, migrate_v1_feature_to_v2
+    from .model import fingerprint_compatible
+    contexts, pairs, roots, seen = [], [], {}, set()
+    for dataset in datasets:
+        if not fingerprint_compatible(dataset.get('fingerprint',{}),fingerprint):
+            raise ValueError('dataset fingerprint mismatch')
+        for source in dataset.get('contexts',[]):
+            context = deepcopy(source)
+            if context['split'] not in ('train','validation'):
+                raise ValueError('keep test sealed')
+            root = context['ancestry_root_id']
+            if root in roots and roots[root] != context['split']:
+                raise ValueError('ancestry crosses split')
+            roots[root] = context['split']
+            if context['context_id'] in seen:
+                raise ValueError('duplicate context observation; retain precise feature reference')
+            seen.add(context['context_id'])
+            context['features'] = [migrate_v1_feature_to_v2(f) if f.get('schema_id') == SCHEMA_ID else f for f in context['features']]
+            if any(f.get('schema_id') != SCHEMA_V2 for f in context['features']):
+                raise ValueError('unsupported feature schema')
+            for fact in context.get('facts',[]):
+                if fact.get('cost_scope') != 'GENERATOR_ENERGY_TERMINAL_VALIDATION_V2':
+                    fact['cost_complete'] = False
+                    fact['legacy_cost_boundary'] = fact.get('cost_boundary','GENERATOR_PLUS_OBSERVED_SINGLE_VEHICLE_ENERGY_EXCLUDES_JOINT_VALIDATION')
+            contexts.append(context)
+        pairs.extend(deepcopy(dataset.get('preference_pairs',[])))
+    return dict(schema='stage3_training_dataset_v2',feature_schema_id=SCHEMA_V2,fingerprint=dict(fingerprint),contexts=contexts,preference_pairs=pairs)
+
+
+def migrate_v1_dataset(dataset,fingerprint,*,expected_source_fingerprint=None):
+    """Explicit authorized semantic migration with original binding preserved.
+
+    This changes feature/cost schema bindings, not evidence/ancestry/objectives.
+    Caller supplies the frozen source binding when it is independently known.
+    """
+    from copy import deepcopy
+    from .features import SCHEMA_ID,SCHEMA_V2,migrate_v1_feature_to_v2
+    from .model import fingerprint_compatible
+    original=dataset.get('fingerprint',{})
+    if expected_source_fingerprint is not None and not fingerprint_compatible(original,expected_source_fingerprint):
+        raise ValueError('source dataset fingerprint mismatch')
+    if original.get('objective_id') != fingerprint.get('objective_id'):
+        raise ValueError('migration cannot change objective semantics')
+    result=deepcopy(dataset)
+    result.update(schema='stage3_training_dataset_v2',feature_schema_id=SCHEMA_V2,fingerprint=dict(fingerprint),
+        migration_provenance=dict(source_fingerprint=original,policy='V1_KNOWN_NUMERIC_FIELDS_NEW_CONTEXT_MASKED'))
+    for c in result.get('contexts',[]):
+        if not fingerprint_compatible(c.get('fingerprint',original),original):
+            raise ValueError('source context fingerprint mismatch')
+        c['migration_provenance']=dict(source_fingerprint=c.get('fingerprint',original))
+        c['fingerprint']=dict(fingerprint)
+        c['features']=[migrate_v1_feature_to_v2(f) if f.get('schema_id')==SCHEMA_ID else f for f in c['features']]
+        for fact in c.get('facts',[]):
+            if not fingerprint_compatible(fact.get('fingerprint',original),original):
+                raise ValueError('source fact fingerprint mismatch')
+            fact['source_fingerprint']=fact.get('fingerprint',original)
+            fact['fingerprint']=dict(fingerprint)
+            fact['cost_complete']=False
+            fact['legacy_cost_boundary']=fact.get('cost_boundary','GENERATOR_PLUS_OBSERVED_SINGLE_VEHICLE_ENERGY_EXCLUDES_JOINT_VALIDATION')
+    for pair in result.get('preference_pairs',[]):
+        if pair.get('objective_id') != fingerprint.get('objective_id'):
+            raise ValueError('migration pair objective mismatch')
+    return merge_v2_datasets([result],fingerprint)
+
+
+def query_observations(records):
+    """Exact feature-ref join; repeated descriptor queries remain distinct rows.
+
+    Integration must explicitly select an observation when building a preference
+    context. This function never overwrites observations by descriptor ID.
+    """
+    features = {r['features_before_query_ref']:r for r in records if r.get('record_type') == 'FeaturesBeforeQuery'}
+    return [dict(fact=f,features=features.get(f.get('features_before_query_ref')))
+            for f in records if f.get('record_type') == 'FactualResult']
 
 
 def summarize_coverage(descriptors,facts,supported_descriptor_ids=(),*,support_kind="OBSERVED_CERTIFIED_ANCESTRY"):
