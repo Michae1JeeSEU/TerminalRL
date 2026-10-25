@@ -33,7 +33,6 @@ ASSUMPTIONS = [
     "Rejections are abstract nonnormal outcomes; no emergency or physical energy failure is simulated.",
     "Full calendar drain resolves the arrival cohort; end-of-window backlog is reported separately.",
     "empirical_normal_rate_per_h is normal outcomes of the arrival cohort divided by cohort duration; it includes later drained service, not departures within the window.",
-    "empirical_normal_rate_per_h is normal outcomes of the arrival cohort divided by cohort duration; it includes later drained service, not departures within the window.",
     "Radius variants are reduced-model counterfactuals, not engine-approved geometry.",
     "FCFS reduced_model results are neither mathematical upper nor lower bounds on the full terminal.",
 ]
