@@ -16,6 +16,7 @@ import time as walltime
 from .config import freeze, load_config, thaw, service_duration
 from .demand import ArrivalManifest, ArrivalRequest
 from .models import ValidationResult
+from .geometry import ring_config
 from .resources import PadCalendar, ResourceConflict, SlotCalendar
 from .trajectory import (generate_final, generate_inbound, generate_transfer,
                          make_ground_plan, make_stable_plan, slot_state, TrajectoryPlan)
@@ -427,7 +428,7 @@ class RotatingSlotWorld:
         self.reference_counts = {"initial_search": 0, "fallback_search": 0, "template_instantiation": 0}
         self.minimum_separation = None
         self.costs = {"reroute": 0., "emergency": 0., "failure": 0.}
-        self.pad_busy_seconds = {j:0. for j in range(6)}
+        self.pad_busy_seconds = {j:0. for j in range(self.config.pads.count)}
         self._scheduler_port=SchedulerPort(self)
         self.configure_practical_runtime(practical_runtime, reference_cache_path=reference_cache_path)
         self._record(force=True)
@@ -1542,7 +1543,7 @@ class RotatingSlotWorld:
             duration = end-initial
             results = {key: (p, self._energy(p, initial, end)) for key, (p, _) in results.items()}
         self.time = end
-        for pad in range(6):
+        for pad in range(self.config.pads.count):
             if any(r.resource == pad and r.start <= initial < r.end for r in self.pads.reservations):
                 self.pad_busy_seconds[pad] += duration
         for key, (p, q) in results.items():
@@ -1745,7 +1746,7 @@ class RotatingSlotWorld:
             self.cache_hits += 1
             return self._q_cache[key]
         choices = []
-        for pad in range(6):
+        for pad in range(self.config.pads.count):
             q, plan = self._reference_pad(ring, slot, pad, t, version)
             if q is not None:
                 choices.append((q, plan))
@@ -1755,7 +1756,7 @@ class RotatingSlotWorld:
         return result
 
     def _reference_pad(self, ring, slot, pad, t, version=0):
-        phase = (pad*math.pi/3 - math.atan2(*slot_state(ring,slot,t,self.config).p[1::-1])) % (2*math.pi)
+        phase = (self.config.pads.initial_phase_rad+pad*math.pi/(self.config.pads.count/2) - math.atan2(*slot_state(ring,slot,t,self.config).p[1::-1])) % (2*math.pi)
         phase_bin=min(self.REFERENCE_PHASE_BINS-1,int(phase/(2*math.pi)*self.REFERENCE_PHASE_BINS))
         duration=self._canonical_reference_duration(ring,phase_bin)
         result=None
@@ -1790,8 +1791,8 @@ class RotatingSlotWorld:
         phase0 = -math.atan2(*slot_state(ring,slot,t,self.config).p[1::-1])
         estimates, uncertain = [], False
         width = 2*math.pi/240
-        for pad in range(6):
-            phase = (pad*math.pi/3 + phase0) % (2*math.pi)
+        for pad in range(self.config.pads.count):
+            phase = (self.config.pads.initial_phase_rad+pad*math.pi/(self.config.pads.count/2) + phase0) % (2*math.pi)
             cell = min(239, int(phase/width))
             key = f"{ring}:{cell}"
             samples = rt["table"].get(key)
@@ -1821,7 +1822,7 @@ class RotatingSlotWorld:
             j = 0 if u <= .5 else 1
             fraction = 2*u-j
             estimates.append(values[j] + fraction*(values[j+1]-values[j]))
-        q = min(estimates) if len(estimates) == 6 else None
+        q = min(estimates) if len(estimates) == self.config.pads.count else None
         # The sampled residual is an explicit allowance, not a certified global
         # bound. Critical decisions always request the original exact routine.
         critical = q is None or soc > .35 or soc-q-qhold-.25 <= 2e-5 + .002
@@ -1852,9 +1853,9 @@ class RotatingSlotWorld:
         visible[a.id] = replace(a, emergency=replace(a.emergency, eligible=True))
         probe = replace(snapshot, aircraft=MappingProxyType(visible))
         grid = tuple(range(20, 301, 5))
-        next_duration = {pad: 20. for pad in range(6)}
+        next_duration = {pad: 20. for pad in range(self.config.pads.count)}
         for alternative in range(RESCUE_DURATION_ALTERNATIVES_V6):
-            for pad in range(6):
+            for pad in range(self.config.pads.count):
                 first = generate_final(a.id, a.ring, a.slot, pad, self.time,
                     emergency=True, source_version=a.version, config=self.config,
                     durations=[d for d in grid if d >= next_duration[pad]])
@@ -2176,7 +2177,7 @@ class RotatingSlotWorld:
         if emergency and self._rescue_v6():
             opportunity = self._search_rescue_opportunity(a)
             return bool(opportunity is not None and self.submit((opportunity[0],)).accepted)
-        for pad in range(6):
+        for pad in range(self.config.pads.count):
             result = generate_final(a.id, a.ring, a.slot, pad, self.time,
                                     emergency=emergency, source_version=a.version, config=self.config)
             if result.plan is None or result.status != "FEASIBLE":
@@ -2317,7 +2318,7 @@ class RotatingSlotWorld:
     def _outer_capacity(self):
         """Only perpetual reservations without any recorded release prove capacity."""
         evidence = []
-        for slot in range(37):
+        for slot in range(ring_config("outer", self.config).slot_count):
             reservations = [r for r in self.slots.reservations if r.resource == ("outer", slot)
                             and r.end > self.time]
             if not reservations or any(math.isfinite(r.end) for r in reservations):
@@ -2359,7 +2360,8 @@ class RotatingSlotWorld:
         """Construct one complete single-aircraft normal reference; no fleet certificate."""
         portions = [(inbound, inbound.start_time, inbound.end_time)]
         ring, slot, t = "outer", inbound.target_slot, inbound.end_time
-        for target_ring, count in (("middle", 28), ("inner", 18)):
+        for target_ring in ("middle", "inner"):
+            count = ring_config(target_ring, self.config).slot_count
             found = None
             for target in range(count):
                 candidate = generate_transfer("freeflow", ring, slot, target, t, config=self.config)
@@ -2373,7 +2375,7 @@ class RotatingSlotWorld:
             p, q = found
             portions.append((p,p.start_time,p.end_time))
             ring, slot, t = target_ring, p.target_slot, p.end_time
-        for pad in range(6):
+        for pad in range(self.config.pads.count):
             candidate = generate_final("freeflow", ring, slot, pad, t, config=self.config)
             if candidate.plan is not None and candidate.status == "FEASIBLE":
                 p = candidate.plan
@@ -2407,7 +2409,7 @@ class RotatingSlotWorld:
         candidates = [plan] if plan is not None else None
         if candidates is None:
             candidates = []
-            for slot in range(37):
+            for slot in range(ring_config("outer", self.config).slot_count):
                 c = generate_inbound(r.id, r.gate_id, slot, self.time, config=self.config)
                 if c.plan is not None and c.status == "FEASIBLE":
                     candidates.append(c.plan)

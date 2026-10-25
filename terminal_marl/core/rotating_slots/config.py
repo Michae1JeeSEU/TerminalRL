@@ -54,6 +54,10 @@ class Config:
     path: str
     @property
     def service_profile(self):
+        study = self.sections.get('capacity_study')
+        if (isinstance(study, Section) and study.get('schema_version') == 'capacity_study_v1'
+                and study.get('base_config_hash') == SERVICE_HALF_CONFIG_HASH):
+            return 'capacity_study_v1'
         return 'service_half_v1' if self.config_hash == SERVICE_HALF_CONFIG_HASH else 'baseline'
     def __getattr__(self, key): return getattr(self.sections, key)
     def __getitem__(self, key): return self.sections[key]

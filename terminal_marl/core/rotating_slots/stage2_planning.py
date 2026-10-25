@@ -479,7 +479,7 @@ class ReferenceProvider:
         current,plans=node,[]
         for _ in range({"outer":3,"middle":2,"inner":1}[node.ring]):
             found=[]
-            targets=range(6 if current.ring=="inner" else ring_config({"outer":"middle","middle":"inner"}[current.ring],snapshot.config).slot_count)
+            targets=range(snapshot.config.pads.count if current.ring=="inner" else ring_config({"outer":"middle","middle":"inner"}[current.ring],snapshot.config).slot_count)
             screen=self.screen(snapshot,current,current.time,budget)
             if screen is None: return NormalReference("UNKNOWN",identity=key)
             yield None
@@ -1134,7 +1134,7 @@ class CandidateProvider:
 
     def _offset_cursors(self,snapshot,a,node,budget,offset,include_aligned=True):
         """One offset's all-target cursors; only their next template is queued."""
-        targets=range(6 if node.ring=="inner" else ring_config({"outer":"middle","middle":"inner"}[node.ring],snapshot.config).slot_count)
+        targets=range(snapshot.config.pads.count if node.ring=="inner" else ring_config({"outer":"middle","middle":"inner"}[node.ring],snapshot.config).slot_count)
         rows=snapshot.pads if node.ring=="inner" else snapshot.slots
         next_ring=None if node.ring=="inner" else {"outer":"middle","middle":"inner"}[node.ring]
         opportunities=sorted({(r.end,str(r.resource),r.resource) for r in rows
