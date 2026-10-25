@@ -158,6 +158,7 @@ def label_snapshot(output,root_id,binding, *, schema_id=None):
         if excluded is not None:
             row.update(excluded_descriptor=excluded,removed_signatures=[repr(c.signature) for cs in catalog.columns.values() for c in cs if excluded in ancestry.get(c.signature,())],
                 counterfactual_catalog_id=digest([repr(c.signature) for cs in candidates.columns.values() for c in cs]))
+            row['solution_id']=canonical_solution_id(row)
         return row
     for method in cfg["reference_solvers"]:
         solution=reference(method,30.)
@@ -298,3 +299,43 @@ def supplementary_pairs(descriptors,facts,solutions,increments,*,root_id,split,f
                 label_source=source,objective_id=fingerprint['objective_id'],label_policy_id='bounded_reference_supported_pair_v1_0',
                 ancestry_root_id=root_id,split=split,evidence_refs=evidence))
     return pairs
+
+
+def canonical_solution_id(row):
+    """Intervention-qualified content identity, computed after all metadata exists."""
+    return 'solution:'+digest({k:v for k,v in row.items() if k!='solution_id'})
+
+
+def reindex_saved_labels(labels,descriptors):
+    """Repair saved evidence references only; no generation, scheduler or solves.
+
+    Matching interventions uses required/excluded descriptors, never legacy IDs
+    which may collide. The original saved reference subset and order are kept.
+    """
+    from copy import deepcopy
+    result=deepcopy(labels)
+    for key in ('conditional_attempts','reference_solutions'):
+        for row in result[key]:row['solution_id']=canonical_solution_id(row)
+    conditional=result['conditional_attempts']
+    increments=[]
+    for original in labels.get('incremental_contribution_evidence',[]):
+        did=original['descriptor_id']
+        included=[r for r in conditional if r.get('required_descriptor')==did]
+        removed=[r for r in conditional if r.get('excluded_descriptor')==did]
+        if len(included)!=1 or len(removed)!=1:
+            raise ValueError('ambiguous saved intervention match: '+did)
+        increments.append(incremental_evidence(did,included[0],removed[0]))
+    kwargs=dict(root_id=labels.get('ancestry_root_id',labels['root_id']),split=labels['split'],fingerprint=labels['fingerprint'])
+    pairs=derive_pairs(descriptors,labels['facts'],result['reference_solutions'],conditional_attempts=conditional,context_id=labels['context_id'],**kwargs)
+    pairs+=supplementary_pairs(descriptors,labels['facts'],conditional,increments,**kwargs)
+    def pair_semantics(rows):
+        return sorted((r['context_id'],r['preferred_descriptor'],r['other_descriptor'],r['label_source'],r['objective_id'],r['split'],r['ancestry_root_id']) for r in rows)
+    if pair_semantics(pairs)!=pair_semantics(labels['preference_pairs']):
+        raise ValueError('reference repair changed preference semantics/count')
+    strip_refs=lambda rows:[{k:v for k,v in r.items() if k!='evidence_refs'} for r in rows]
+    if strip_refs(increments)!=strip_refs(labels.get('incremental_contribution_evidence',[])):
+        raise ValueError('reference repair changed contribution semantics')
+    result.update(preference_pairs=pairs,incremental_contribution_evidence=increments,
+        reindex_provenance=dict(policy='INTERVENTION_QUALIFIED_SOLUTION_IDS_ONLY',source_labels_content_sha256=digest(labels),
+            source_fingerprint=deepcopy(labels['fingerprint']),no_new_solves=True,reference_subset_preserved=True))
+    return result

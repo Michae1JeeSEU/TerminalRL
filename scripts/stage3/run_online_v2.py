@@ -276,13 +276,15 @@ def execute_job(output,payload):
     raise ValueError("unknown job")
 
 
-def build_dataset(output,binding,protocol):
+def build_dataset(output,binding,protocol,*,derived_labels_dir=None,source_fingerprint=None,dataset_directory=None):
     from terminal_marl.core.rotating_slots.stage3_learning.data import migrate_v1_dataset,merge_v2_datasets,read_jsonl
     old=load_json(protocol["training_dataset_input"])
     migrated=migrate_v1_dataset(old,binding["fingerprint"],expected_source_fingerprint=binding["execution_provenance"]["old_training_fingerprint"])
     contexts=[];pairs=[];label_counts=[]
     for spec in config()["mid_snapshots"]:
-        rid=spec["root_id"]+"_t30";raw=output/"raw"/rid;labels=load_json(output/"labels"/rid/"labels.json")
+        rid=spec["root_id"]+"_t30";raw=output/"raw"/rid;labels=load_json((Path(derived_labels_dir) if derived_labels_dir is not None else output/"labels")/rid/"labels.json")
+        if source_fingerprint is not None and labels['fingerprint']!=source_fingerprint:
+            raise ValueError('collected label source fingerprint mismatch')
         descriptors={d["descriptor_id"]:d for d in read_jsonl(raw/"descriptors.jsonl")}
         # Explicit first-query projection. Facts join the exact reference selected
         # here; a later observation never silently replaces earlier visible input.
@@ -295,6 +297,13 @@ def build_dataset(output,binding,protocol):
         for cid,features in by_context.items():
             refs={d:r["features_before_query_ref"] for d,r in features.items()}
             facts=[f for f in labels["facts"] if refs.get(f["descriptor_id"])==f.get("features_before_query_ref")]
+            if source_fingerprint is not None:
+                facts=deepcopy(facts)
+                for fact in facts:
+                    if fact.get('fingerprint')!=source_fingerprint:
+                        raise ValueError('collected fact source fingerprint mismatch')
+                    fact['source_fingerprint']=deepcopy(fact['fingerprint'])
+                    fact['fingerprint']=deepcopy(binding['fingerprint'])
             contexts.append(dict(context_id=cid,ancestry_root_id=spec["root_id"],split=spec["split"],fingerprint=binding["fingerprint"],
                 features=[r["features"] for r in features.values()],facts=facts,selected_feature_refs=refs,feature_observation_policy="FIRST_QUERY_EXACT_REF"))
         for pair in labels["preference_pairs"]:
@@ -307,7 +316,9 @@ def build_dataset(output,binding,protocol):
             preference_pairs=len(labels["preference_pairs"]),candidate_timer_regime=labels.get("candidate_timer_regime")))
     fresh=dict(fingerprint=binding["fingerprint"],contexts=contexts,preference_pairs=pairs)
     dataset=merge_v2_datasets([migrated,fresh],binding["fingerprint"])
-    atomic_json(output/"training_dataset.json",dataset)
+    dataset_directory=output if dataset_directory is None else Path(dataset_directory)
+    dataset_directory.mkdir(parents=True,exist_ok=True)
+    atomic_json(dataset_directory/"training_dataset.json",dataset)
     from terminal_marl.core.rotating_slots.stage3_learning.learning import auxiliary_targets
     from terminal_marl.core.rotating_slots.stage3_learning.features import SCHEMA_V2
     def visible_new_context(context):
@@ -318,8 +329,142 @@ def build_dataset(output,binding,protocol):
             nonmissing_new_context_groups=sum(c["split"]==split and visible_new_context(c) for c in dataset["contexts"]),
             complete_cost_targets=sum(auxiliary_targets(f,schema_id=SCHEMA_V2)[1] is not None for c in dataset["contexts"] if c["split"]==split for f in c.get("facts",[])),
             contribution_labels=sum(r["contribution_labels"] for r in label_counts if r["split"]==split)) for split in ("train","validation")})
-    atomic_json(output/"dataset_index.json",summary)
+    atomic_json(dataset_directory/"dataset_index.json",summary)
     return summary
+
+
+REPAIR_ALLOWED_CHANGED={
+    'terminal_marl/core/rotating_slots/stage3_learning/learning.py',
+    'terminal_marl/core/rotating_slots/stage3_learning/labeling.py',
+    'scripts/stage3/run_online_v2.py',
+    'tests/test_rotating_slots_stage3_cost_ranking.py',
+    'tests/test_rotating_slots_stage3_online_campaign.py',
+}
+
+
+def _pretrain_repair_guard(output):
+    if load_json(output/'collect.finished.json').get('status')!='COMPLETED':
+        raise ValueError('repair requires completed collection')
+    for name in ('train.started.json','formal_training.guard.json','model','heldout_access.json'):
+        if (output/name).exists():raise ValueError('pretraining repair forbidden after '+name)
+    if (output/'implementation_repair_pretrain').exists() or (output/'labels_reindexed').exists():
+        raise ValueError('repair already attempted; preserve evidence and return to primary')
+    if not (output/'budget_ledger.json').is_file():raise ValueError('existing ledger required; no reset')
+    ledger=campaign.CampaignLedger(output/'budget_ledger.json')
+    if ledger.data.get('paused_at') is None or ledger.data.get('active_phase') is not None:
+        raise ValueError('repair requires paused inactive ledger')
+    if any(j.get('status') not in ('completed','failed','BUDGET_LIMITED') for j in ledger.data['jobs'].values()):
+        raise ValueError('live or unresolved ledger job prevents repair')
+    return ledger
+
+
+def _dataset_semantics(value):
+    """Only bindings/provenance and evidence references may change in this repair."""
+    if isinstance(value,dict):
+        return {k:_dataset_semantics(v) for k,v in value.items() if k not in
+                ('fingerprint','source_fingerprint','migration_provenance','reindex_provenance','evidence_refs')}
+    if isinstance(value,list):return [_dataset_semantics(v) for v in value]
+    return value
+
+
+def repair_pretrain(output,source_freeze):
+    """One explicit derived-artifact repair; never collect, fit, simulate or solve."""
+    from terminal_marl.core.rotating_slots.stage3_learning.data import read_jsonl
+    from terminal_marl.core.rotating_slots.stage3_learning.labeling import reindex_saved_labels
+    from terminal_marl.core.rotating_slots.stage3_learning.learning import _groups,eligible_training_groups,auxiliary_targets
+    from terminal_marl.core.rotating_slots.stage3_learning.features import SCHEMA_V2
+    output=Path(output)
+    with campaign.campaign_lock(output):
+        started=time.perf_counter()
+        ledger=_pretrain_repair_guard(output)
+        old_frozen=load_json(output/'source_freeze.json')
+        binding=load_json(output/'run_binding.generated.json');protocol=load_json(output/'online_v2_protocol.json')
+        if protocol['config']!=config() or file_hash(output/'split_manifest.json')!=protocol['inherited_split_sha256']:
+            raise ValueError('prepared protocol/split changed before repair')
+        compute=campaign.contract_config()['compute']
+        if ledger.data['phase_caps']!=compute['phase_caps_seconds'] or ledger.data['total_s']!=compute['campaign_wall_seconds'] or ledger.data['compute_stop_s']!=compute['compute_stop_seconds']:
+            raise ValueError('ledger caps changed before repair')
+        original_fp=deepcopy(binding['fingerprint'])
+        if (digest(old_frozen['source_files'])!=old_frozen['source_hash'] or
+            binding['source_files']!=old_frozen['source_files'] or
+            binding['source_hash']!=old_frozen['source_hash'] or protocol['source_hash']!=old_frozen['source_hash'] or
+            original_fp['source_commit']!=old_frozen['source_commit'] or original_fp['workspace_diff_hash']!=old_frozen['workspace_diff_hash']):
+            raise ValueError('original frozen inventory/binding metadata mismatch')
+        new_path=Path(source_freeze)
+        if new_path.is_dir():new_path=new_path/'source_freeze.json'
+        new_frozen=load_json(new_path)
+        campaign.verify_sources(new_frozen)
+        if set(old_frozen['source_files'])!=set(new_frozen['source_files']):
+            raise ValueError('repair source inventory changed')
+        changed={n for n,h in old_frozen['source_files'].items() if new_frozen['source_files'][n]!=h}
+        if not changed or not changed.issubset(REPAIR_ALLOWED_CHANGED):
+            raise ValueError('repair changed unapproved execution sources: '+repr(sorted(changed)))
+        if new_frozen['source_commit']==old_frozen['source_commit']:
+            raise ValueError('repair requires a new committed source freeze')
+        names=('run_binding.generated.json','source_freeze.json','online_v2_protocol.json','training_dataset.json','dataset_index.json')
+        old_hashes={name:file_hash(output/name) for name in names}
+        old_dataset=load_json(output/'training_dataset.json');old_index=load_json(output/'dataset_index.json')
+        old_groups=_groups(old_dataset,original_fp,schema_id=SCHEMA_V2)
+        # Archive before changing a binding or dataset. Existing raw/label paths
+        # are only read, and the archive is exclusive so a retry cannot replace it.
+        archive=output/'implementation_repair_pretrain';archive.mkdir()
+        for name in names:shutil.copyfile(output/name,archive/name)
+        if any(file_hash(archive/name)!=old_hashes[name] for name in names):
+            raise ValueError('repair archive byte copy mismatch')
+        result=dict(status='FAILED',started_at=campaign.utc_now(),old_hashes=old_hashes,changed_sources=sorted(changed),
+            original_source_hash=old_frozen['source_hash'],new_source_hash=new_frozen['source_hash'],no_new_simulation_or_solves=True)
+        try:
+            if ledger.remaining('data_and_labels')<=0:raise ValueError('data_and_labels budget exhausted')
+            derived=output/'labels_reindexed';derived.mkdir()
+            label_receipts=[]
+            for spec in config()['mid_snapshots']:
+                rid=spec['root_id']+'_t30';path=output/'labels'/rid/'labels.json'
+                source_hash=file_hash(path)
+                descriptors=list({r['descriptor_id']:r for r in read_jsonl(output/'raw'/rid/'descriptors.jsonl')}.values())
+                labels=reindex_saved_labels(load_json(path),descriptors)
+                labels['reindex_provenance']['source_labels_file_sha256']=source_hash
+                target=derived/rid/'labels.json';atomic_json(target,labels)
+                if file_hash(path)!=source_hash:raise ValueError('original labels changed during repair')
+                label_receipts.append(dict(root_id=rid,source_sha256=source_hash,derived_sha256=file_hash(target),
+                    pairs=len(labels['preference_pairs']),contribution_labels=labels['incremental_labeled_descriptors']))
+            updated=deepcopy(binding)
+            updated.update(source_commit=new_frozen['source_commit'],source_hash=new_frozen['source_hash'],source_files=new_frozen['source_files'])
+            updated['fingerprint'].update(source_commit=new_frozen['source_commit'],workspace_diff_hash=new_frozen['workspace_diff_hash'])
+            updated['execution_provenance']['collection_source']=dict(source_commit=old_frozen['source_commit'],source_hash=old_frozen['source_hash'],
+                workspace_diff_hash=old_frozen['workspace_diff_hash'],fingerprint=original_fp)
+            updated['execution_provenance']['pretrain_repair_source']=dict(source_commit=new_frozen['source_commit'],source_hash=new_frozen['source_hash'])
+            updated['execution_provenance'].update(source_commit=new_frozen['source_commit'],source_hash=new_frozen['source_hash'])
+            new_protocol=deepcopy(protocol);new_protocol['source_hash']=new_frozen['source_hash']
+            new_protocol['pretrain_repair_provenance']=dict(collection_source_hash=protocol['source_hash'])
+            staging=archive/'rebuilt'
+            summary=build_dataset(output,updated,new_protocol,derived_labels_dir=derived,source_fingerprint=original_fp,dataset_directory=staging)
+            rebuilt=load_json(staging/'training_dataset.json')
+            if _dataset_semantics(rebuilt)!=_dataset_semantics(old_dataset):
+                raise ValueError('repair changed numeric features/facts or preference semantics')
+            if summary!=old_index:raise ValueError('repair changed dataset counts/index semantics')
+            groups=_groups(rebuilt,updated['fingerprint'],schema_id=SCHEMA_V2)
+            eligible=eligible_training_groups(groups,schema_id=SCHEMA_V2)
+            for name in names:
+                if file_hash(output/name)!=old_hashes[name]:raise ValueError('original implementation files changed during repair')
+            atomic_json(output/'run_binding.generated.json',updated)
+            atomic_json(output/'online_v2_protocol.json',new_protocol)
+            atomic_json(output/'source_freeze.json',new_frozen)
+            for name in ('training_dataset.json','dataset_index.json'):
+                atomic_json(output/name,load_json(staging/name))
+            result.update(status='COMPLETED',labels=label_receipts,dataset_summary=summary,
+                old_eligible_groups=sum(g['context']['split']=='train' and (g['pairs'] or any(any(t is not None for t in auxiliary_targets(f,schema_id=SCHEMA_V2)) for f in g['facts'].values())) for g in old_groups),
+                eligible_train_groups=len(eligible),eligible_rank_groups=sum(bool(g['pairs']) for g in eligible),
+                eligible_cost_only_groups=sum(not g['pairs'] for g in eligible),new_hashes={name:file_hash(output/name) for name in names})
+        except Exception as exc:
+            result.update(error_type=type(exc).__name__,error=str(exc))
+            raise
+        finally:
+            wall=time.perf_counter()-started
+            ledger.credit('implementation_repair_pretrain',wall,phase='data_and_labels')
+            result.update(wall_s=wall,finished_at=campaign.utc_now(),ledger_elapsed_s=ledger.elapsed)
+            with (archive/'repair_receipt.json').open('x',encoding='utf8') as stream:
+                json.dump(result,stream,indent=2,sort_keys=True,allow_nan=False)
+        return result
 
 
 def matrix(protocol,kind):
@@ -427,7 +572,7 @@ def run_stage(output,stage,*,reviewed_dev=False):
 
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("stage",choices=("freeze","prepare","tests","collect","train","dev","evaluate","archive","job"))
+    parser.add_argument("stage",choices=("freeze","prepare","tests","collect","repair-pretrain","train","dev","evaluate","archive","job"))
     parser.add_argument("--output",type=Path,required=True)
     parser.add_argument("--parent",type=Path)
     parser.add_argument("--source-freeze",type=Path)
@@ -440,6 +585,9 @@ def main(argv=None):
         if args.parent is None or args.source_freeze is None or args.dev_specs is None:parser.error("prepare requires parent/source-freeze/dev-specs")
         return prepare(args.parent,args.output,args.source_freeze,load_json(args.dev_specs))
     if args.stage=="job":return execute_job(args.output,json.loads(args.payload))
+    if args.stage=='repair-pretrain':
+        if args.source_freeze is None:parser.error('repair-pretrain requires --source-freeze')
+        return repair_pretrain(args.output,args.source_freeze)
     return run_stage(args.output,args.stage,reviewed_dev=args.reviewed_dev)
 
 

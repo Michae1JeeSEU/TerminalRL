@@ -8,7 +8,7 @@ from pathlib import Path
 import random
 import time
 from .features import SCHEMA_ID, SCHEMA_V2
-from .model import ARCHITECTURE_ID, FeatureNormalizer, build_model, fingerprint_compatible
+from .model import ARCHITECTURE_ID, FeatureNormalizer, build_model, fingerprint_compatible, cost_aware_scores
 
 SEED = 20261023
 LABEL_POLICY = 'bounded_reference_supported_pair_v1_0'
@@ -159,12 +159,12 @@ def train_model(dataset_path, output_dir, fingerprint, *, config=None, deadline=
     dataset, binding = _read(dataset_path), _read(fingerprint)
     fingerprint = binding.get('fingerprint',binding)
     groups = _groups(dataset,fingerprint,schema_id=schema_id)
-    train = [g for g in groups if g['context']['split'] == 'train' and (g['pairs'] or (schema_id == SCHEMA_V2 and any(any(t is not None for t in auxiliary_targets(f,schema_id=schema_id)) for f in g['facts'].values())))]
+    train = eligible_training_groups(groups,schema_id=schema_id)
     validation = [g for g in groups if g['context']['split'] == 'validation' and g['pairs']]
     output.mkdir(parents=True,exist_ok=True)
     counts = dict(train_pairs=sum(len(g['pairs']) for g in train),validation_pairs=sum(len(g['pairs']) for g in validation),
         train_groups=len(train),validation_groups=len(validation))
-    if not train or not validation:
+    if not train or not validation or not counts['train_pairs'] or not counts['validation_pairs']:
         result = dict(status='DATA_INSUFFICIENT',formal_training_started=False,**counts)
         atomic_json(output/'model_card.json',result)
         return result
@@ -260,6 +260,12 @@ def fit_cost_statistics(groups):
         std=math.sqrt(math.fsum((v-mean)**2 for v in values)/len(values)) if values else 0.)
 
 
+def eligible_training_groups(groups,*,schema_id=SCHEMA_ID):
+    """Admit rank groups and v2 complete-cost groups; validity alone never admits."""
+    return [g for g in groups if g['context']['split']=='train' and (g['pairs'] or
+        (schema_id==SCHEMA_V2 and any(auxiliary_targets(f,schema_id=schema_id)[1] is not None for f in g['facts'].values())))]
+
+
 def validation_cost_groups(groups):
     """Cost diagnostics include cost-only validation groups, independent of rank selection."""
     return [g for g in groups if g['context']['split'] == 'validation' and
@@ -271,14 +277,25 @@ def cost_diagnostics(model,groups,normalizer,statistics):
     import torch
     rows = []
     with torch.inference_mode():
-        for group in groups:
+        for index,group in enumerate(groups):
             for did,fact in group['facts'].items():
                 _,target = auxiliary_targets(fact,schema_id=SCHEMA_V2)
                 if target is not None:
-                    predicted = float(model([normalizer.transform(group['features'][did])])[0,2])
-                    rows.append(dict(descriptor_id=did,target_log1p_ms=target,predicted_log1p_ms=predicted))
+                    vector = model([normalizer.transform(group['features'][did])])[0].tolist()
+                    predicted = vector[2]
+                    adjusted = cost_aware_scores([did],[vector],statistics)[did]
+                    rows.append(dict(context_id=group.get('context',{}).get('context_id',str(index)),descriptor_id=did,
+                        target_log1p_ms=target,predicted_log1p_ms=predicted,preference_score=vector[0],
+                        cost_adjusted_score=adjusted,cost_penalty=vector[0]-adjusted,
+                        cost_penalty_clipped=abs((predicted-statistics['mean'])/max(statistics['std'],1.e-6))>3.))
+    by_context={}
+    for r in rows:by_context.setdefault(r['context_id'],[]).append(r)
+    changed=sum(sorted(values,key=lambda r:-r['preference_score'])!=sorted(values,key=lambda r:-r['cost_adjusted_score']) for values in by_context.values())
     return dict(count=len(rows),mae_log1p_ms=math.fsum(abs(r['target_log1p_ms']-r['predicted_log1p_ms']) for r in rows)/len(rows) if rows else None,
         constant_train_mean_mae_log1p_ms=math.fsum(abs(r['target_log1p_ms']-statistics['mean']) for r in rows)/len(rows) if rows else None,
-        predictions=rows)
+        predictions=rows,ordering_scope='MEASURED_COST_VALIDATION_EXAMPLES_ONLY',covered_context_count=len(by_context),
+        comparable_order_context_count=sum(len(v)>1 for v in by_context.values()),ordering_changed_contexts=changed,
+        penalty_min=min((r['cost_penalty'] for r in rows),default=None),penalty_max=max((r['cost_penalty'] for r in rows),default=None),
+        penalty_clipped_count=sum(r['cost_penalty_clipped'] for r in rows))
 
 

@@ -116,3 +116,89 @@ def test_train_after_gate_refused_before_guard(tmp_path,monkeypatch):
     monkeypatch.setattr(runner,"verify",lambda output:({}, {}, object()))
     with pytest.raises(ValueError,match="no training"):runner.run_stage(tmp_path,"train")
     assert not (tmp_path/"train.started.json").exists()
+
+
+def repair_fixture(tmp_path,monkeypatch):
+    """Tiny saved artifacts only; no fit, generator, trajectory, validator or CP."""
+    from terminal_marl.core.rotating_slots.stage3_learning.features import SCHEMA_V2
+    output=tmp_path/'output';output.mkdir()
+    cfg=dict(mid_snapshots=[dict(root_id='r',split='train')])
+    monkeypatch.setattr(runner,'config',lambda:cfg)
+    path='terminal_marl/core/rotating_slots/stage3_learning/learning.py'
+    oldfiles={path:'oldhash'};newfiles={path:'newhash'}
+    oldfreeze=dict(source_files=oldfiles,source_hash=digest(oldfiles),source_commit='oldcommit',workspace_diff_hash='clean')
+    newfreeze=dict(source_files=newfiles,source_hash=digest(newfiles),source_commit='newcommit',workspace_diff_hash='clean')
+    pilotfp=dict(objective_id='o',source_commit='pilot',workspace_diff_hash='clean')
+    fp=dict(objective_id='o',source_commit='oldcommit',workspace_diff_hash='clean')
+    binding=dict(source_files=oldfiles,source_hash=oldfreeze['source_hash'],fingerprint=fp,
+        execution_provenance=dict(old_training_fingerprint=pilotfp,source_commit='oldcommit',source_hash=oldfreeze['source_hash']))
+    atomic_json(tmp_path/'pilot.json',dict(fingerprint=pilotfp,contexts=[],preference_pairs=[]))
+    atomic_json(output/'split_manifest.json',dict(roots=[]))
+    protocol=dict(config=cfg,source_hash=oldfreeze['source_hash'],training_dataset_input=str(tmp_path/'pilot.json'),
+        inherited_split_sha256=runner.file_hash(output/'split_manifest.json'),development_case_ids=['unchanged'],closed_loop_case_id='unchanged')
+    for name,value in [('source_freeze.json',oldfreeze),('run_binding.generated.json',binding),('online_v2_protocol.json',protocol),('collect.finished.json',dict(status='COMPLETED'))]:atomic_json(output/name,value)
+    fact=dict(record_type='FactualResult',descriptor_id='d',context_id='n',ancestry_root_id='r',fingerprint=fp,features_before_query_ref='q',
+        outcome='UNKNOWN',wall_s=.2,cost_complete=True,cost_scope='GENERATOR_ENERGY_TERMINAL_VALIDATION_V2')
+    labels=dict(root_id='r_t30',ancestry_root_id='r',context_id='s',split='train',fingerprint=fp,facts=[fact],reference_solutions=[],conditional_attempts=[],
+        incremental_contribution_evidence=[],incremental_labeled_descriptors=0,preference_pairs=[],candidate_timer_regime='existing')
+    atomic_json(output/'labels/r_t30/labels.json',labels)
+    raw=output/'raw/r_t30';raw.mkdir(parents=True)
+    descriptor=dict(descriptor_id='d',source_node_id='n')
+    feature=dict(descriptor_id='d',schema_id=SCHEMA_V2,query=[0.,1.]*33,sets={})
+    import json
+    (raw/'descriptors.jsonl').write_text(json.dumps(descriptor)+'\n')
+    (raw/'features.jsonl').write_text(json.dumps(dict(descriptor_id='d',features_before_query_ref='q',features=feature))+'\n')
+    (raw/'facts.jsonl').write_text(json.dumps(fact)+'\n')
+    runner.build_dataset(output,binding,protocol)
+    ledger=runner.campaign.CampaignLedger(output/'budget_ledger.json');ledger.pause()
+    atomic_json(tmp_path/'newfreeze.json',newfreeze)
+    verified=[]
+    monkeypatch.setattr(runner.campaign,'verify_sources',lambda value:verified.append(value))
+    return output,tmp_path/'newfreeze.json',verified
+
+
+def test_pretrain_repair_archives_exact_bytes_reindexes_and_rebinds_without_new_jobs(tmp_path,monkeypatch):
+    output,newfreeze,verified=repair_fixture(tmp_path,monkeypatch)
+    names=('source_freeze.json','run_binding.generated.json','online_v2_protocol.json','training_dataset.json','dataset_index.json')
+    before={name:(output/name).read_bytes() for name in names}
+    raw_before={p:p.read_bytes() for p in (output/'raw').rglob('*.jsonl')}
+    labels=(output/'labels/r_t30/labels.json').read_bytes()
+    ledger_before=load_json(output/'budget_ledger.json')
+    result=runner.repair_pretrain(output,newfreeze)
+    assert result['status']=='COMPLETED' and result['eligible_train_groups']==1 and result['eligible_cost_only_groups']==1
+    assert len(verified)==1 and verified[0]['source_commit']=='newcommit'
+    archive=output/'implementation_repair_pretrain'
+    assert all((archive/name).read_bytes()==value for name,value in before.items())
+    assert all(p.read_bytes()==value for p,value in raw_before.items())
+    assert (output/'labels/r_t30/labels.json').read_bytes()==labels
+    binding=load_json(output/'run_binding.generated.json');protocol=load_json(output/'online_v2_protocol.json')
+    assert binding['fingerprint']['source_commit']=='newcommit' and binding['source_hash']==protocol['source_hash']
+    assert binding['execution_provenance']['collection_source']['source_commit']=='oldcommit'
+    assert binding['execution_provenance']['source_commit']=='newcommit' and binding['execution_provenance']['source_hash']==binding['source_hash']
+    fresh=load_json(output/'training_dataset.json')['contexts'][0]['facts'][0]
+    assert fresh['fingerprint']['source_commit']=='newcommit' and fresh['source_fingerprint']['source_commit']=='oldcommit'
+    ledger=load_json(output/'budget_ledger.json')
+    assert ledger['paused_at']==ledger_before['paused_at'] and ledger['jobs']==ledger_before['jobs']
+    assert ledger['phase_caps']==ledger_before['phase_caps'] and ledger['phase_used']['data_and_labels']>0
+    assert not (output/'train.started.json').exists() and not (output/'formal_training.guard.json').exists()
+    assert (archive/'repair_receipt.json').is_file()
+    with pytest.raises(ValueError,match='already attempted'):runner.repair_pretrain(output,newfreeze)
+
+
+@pytest.mark.parametrize('blocked',('train.started.json','formal_training.guard.json','model','heldout_access.json','running','unpaused','incomplete','unapproved'))
+def test_pretrain_repair_refuses_started_training_live_jobs_and_other_changes(tmp_path,monkeypatch,blocked):
+    output,newfreeze,_=repair_fixture(tmp_path,monkeypatch)
+    if blocked in ('train.started.json','formal_training.guard.json','heldout_access.json'):atomic_json(output/blocked,{})
+    elif blocked=='model':(output/'model').mkdir()
+    elif blocked in ('running','unpaused'):
+        ledger=load_json(output/'budget_ledger.json')
+        if blocked=='running':ledger['jobs']['unexpected']=dict(status='running',pid=123)
+        else:ledger['paused_at']=None
+        atomic_json(output/'budget_ledger.json',ledger)
+    elif blocked=='incomplete':atomic_json(output/'collect.finished.json',dict(status='FAILED'))
+    else:
+        frozen=load_json(newfreeze);frozen['source_files']={'physics.py':'changed'};frozen['source_hash']=digest(frozen['source_files']);atomic_json(newfreeze,frozen)
+    old={p:p.read_bytes() for p in output.glob('*.json')}
+    with pytest.raises(ValueError):runner.repair_pretrain(output,newfreeze)
+    assert all(p.read_bytes()==value for p,value in old.items())
+    assert not (output/'implementation_repair_pretrain').exists()
