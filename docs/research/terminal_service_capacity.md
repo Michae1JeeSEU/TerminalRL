@@ -269,4 +269,6 @@ SOC 基准采用截断正态位置参数 0.75、标准差参数 0.08、区间 [0
 
 ## 10. 完整模型验证的后续入口
 
-完整仿真的必要资源界与适用边界见 [full_capacity_bounds_derivation.md](full_capacity_bounds_derivation.md)，单请求资格检查、配对 pilot 和首轮因素筛查的固定输入及统计口径见 [full_capacity_validation_protocol.md](full_capacity_validation_protocol.md)。本轮完整仿真结果仍待运行与复核；第 8 节的简化队列结果保持其原有解释范围，不作为完整终端容量或动态安全的验证结果。
+完整仿真的必要资源界与适用边界见 [full_capacity_bounds_derivation.md](full_capacity_bounds_derivation.md)，单请求资格检查、配对 pilot 和首轮因素筛查的固定输入及统计口径见 [full_capacity_validation_protocol.md](full_capacity_validation_protocol.md)。正式因素筛查结果仍待完成与复核；第 8 节的简化队列结果保持其原有解释范围，不作为完整终端容量或动态安全的验证结果。
+
+已完成的单请求资格检查、配对 pilot 与正式筛查运行进展见[完整模型验证状态](full_capacity_validation_status.md)。
