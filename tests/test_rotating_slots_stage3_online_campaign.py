@@ -118,7 +118,7 @@ def test_train_after_gate_refused_before_guard(tmp_path,monkeypatch):
     assert not (tmp_path/"train.started.json").exists()
 
 
-def repair_fixture(tmp_path,monkeypatch):
+def repair_fixture(tmp_path,monkeypatch,*,supervision='cost'):
     """Tiny saved artifacts only; no fit, generator, trajectory, validator or CP."""
     from terminal_marl.core.rotating_slots.stage3_learning.features import SCHEMA_V2
     output=tmp_path/'output';output.mkdir()
@@ -139,16 +139,28 @@ def repair_fixture(tmp_path,monkeypatch):
     for name,value in [('source_freeze.json',oldfreeze),('run_binding.generated.json',binding),('online_v2_protocol.json',protocol),('collect.finished.json',dict(status='COMPLETED'))]:atomic_json(output/name,value)
     fact=dict(record_type='FactualResult',descriptor_id='d',context_id='n',ancestry_root_id='r',fingerprint=fp,features_before_query_ref='q',
         outcome='UNKNOWN',wall_s=.2,cost_complete=True,cost_scope='GENERATOR_ENERGY_TERMINAL_VALIDATION_V2')
-    labels=dict(root_id='r_t30',ancestry_root_id='r',context_id='s',split='train',fingerprint=fp,facts=[fact],reference_solutions=[],conditional_attempts=[],
-        incremental_contribution_evidence=[],incremental_labeled_descriptors=0,preference_pairs=[],candidate_timer_regime='existing')
+    descriptors=[dict(descriptor_id='d',source_node_id='n')]
+    facts=[fact];references=[];pairs=[]
+    if supervision=='validity':
+        fact.update(outcome='SINGLE_VALID',validity_label_mask=True,cost_complete=False)
+    elif supervision=='rank':
+        fact['cost_complete']=False
+        descriptors.append(dict(descriptor_id='e',source_node_id='n'))
+        facts.append(dict(fact,descriptor_id='e',features_before_query_ref='q_e',outcome='SINGLE_INVALID_CERTIFIED',validity_label_mask=True))
+        references=[dict(solution_id='old_reference',certified=True,descriptor_ids=['d'])]
+        pairs=[dict(record_type='PreferencePair',context_id='n',preferred_descriptor='d',other_descriptor='e',
+            label_source='supported_vs_certified_single_invalid',objective_id='o',label_policy_id='bounded_reference_supported_pair_v1_0',
+            ancestry_root_id='r',split='train',evidence_refs=['old_reference','fact:e'])]
+    labels=dict(root_id='r_t30',ancestry_root_id='r',context_id='s',split='train',fingerprint=fp,facts=facts,reference_solutions=references,conditional_attempts=[],
+        incremental_contribution_evidence=[],incremental_labeled_descriptors=0,preference_pairs=pairs,candidate_timer_regime='existing')
     atomic_json(output/'labels/r_t30/labels.json',labels)
     raw=output/'raw/r_t30';raw.mkdir(parents=True)
-    descriptor=dict(descriptor_id='d',source_node_id='n')
     feature=dict(descriptor_id='d',schema_id=SCHEMA_V2,query=[0.,1.]*33,sets={})
     import json
-    (raw/'descriptors.jsonl').write_text(json.dumps(descriptor)+'\n')
-    (raw/'features.jsonl').write_text(json.dumps(dict(descriptor_id='d',features_before_query_ref='q',features=feature))+'\n')
-    (raw/'facts.jsonl').write_text(json.dumps(fact)+'\n')
+    (raw/'descriptors.jsonl').write_text(''.join(json.dumps(d)+'\n' for d in descriptors))
+    (raw/'features.jsonl').write_text(''.join(json.dumps(dict(descriptor_id=f['descriptor_id'],
+        features_before_query_ref=f['features_before_query_ref'],features=dict(feature,descriptor_id=f['descriptor_id'])))+'\n' for f in facts))
+    (raw/'facts.jsonl').write_text(''.join(json.dumps(f)+'\n' for f in facts))
     runner.build_dataset(output,binding,protocol)
     ledger=runner.campaign.CampaignLedger(output/'budget_ledger.json');ledger.pause()
     atomic_json(tmp_path/'newfreeze.json',newfreeze)
@@ -157,15 +169,19 @@ def repair_fixture(tmp_path,monkeypatch):
     return output,tmp_path/'newfreeze.json',verified
 
 
-def test_pretrain_repair_archives_exact_bytes_reindexes_and_rebinds_without_new_jobs(tmp_path,monkeypatch):
-    output,newfreeze,verified=repair_fixture(tmp_path,monkeypatch)
+@pytest.mark.parametrize('supervision,eligible,rank,cost_only',(('cost',1,0,1),('rank',1,1,0),('validity',0,0,0)))
+def test_pretrain_repair_archives_exact_bytes_reindexes_and_rebinds_without_new_jobs(tmp_path,monkeypatch,supervision,eligible,rank,cost_only):
+    output,newfreeze,verified=repair_fixture(tmp_path,monkeypatch,supervision=supervision)
     names=('source_freeze.json','run_binding.generated.json','online_v2_protocol.json','training_dataset.json','dataset_index.json')
     before={name:(output/name).read_bytes() for name in names}
     raw_before={p:p.read_bytes() for p in (output/'raw').rglob('*.jsonl')}
     labels=(output/'labels/r_t30/labels.json').read_bytes()
     ledger_before=load_json(output/'budget_ledger.json')
     result=runner.repair_pretrain(output,newfreeze)
-    assert result['status']=='COMPLETED' and result['eligible_train_groups']==1 and result['eligible_cost_only_groups']==1
+    assert result['status']=='COMPLETED'
+    assert {key:result[key] for key in ('old_eligible_groups','eligible_train_groups','eligible_rank_groups','eligible_cost_only_groups')}==dict(
+        old_eligible_groups=1,eligible_train_groups=eligible,eligible_rank_groups=rank,eligible_cost_only_groups=cost_only)
+    assert all(type(result[key]) is int for key in ('old_eligible_groups','eligible_train_groups','eligible_rank_groups','eligible_cost_only_groups'))
     assert len(verified)==1 and verified[0]['source_commit']=='newcommit'
     archive=output/'implementation_repair_pretrain'
     assert all((archive/name).read_bytes()==value for name,value in before.items())
@@ -181,7 +197,7 @@ def test_pretrain_repair_archives_exact_bytes_reindexes_and_rebinds_without_new_
     assert ledger['paused_at']==ledger_before['paused_at'] and ledger['jobs']==ledger_before['jobs']
     assert ledger['phase_caps']==ledger_before['phase_caps'] and ledger['phase_used']['data_and_labels']>0
     assert not (output/'train.started.json').exists() and not (output/'formal_training.guard.json').exists()
-    assert (archive/'repair_receipt.json').is_file()
+    assert load_json(archive/'repair_receipt.json')==result
     with pytest.raises(ValueError,match='already attempted'):runner.repair_pretrain(output,newfreeze)
 
 

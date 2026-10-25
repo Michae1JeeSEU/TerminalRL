@@ -452,7 +452,7 @@ def repair_pretrain(output,source_freeze):
             for name in ('training_dataset.json','dataset_index.json'):
                 atomic_json(output/name,load_json(staging/name))
             result.update(status='COMPLETED',labels=label_receipts,dataset_summary=summary,
-                old_eligible_groups=sum(g['context']['split']=='train' and (g['pairs'] or any(any(t is not None for t in auxiliary_targets(f,schema_id=SCHEMA_V2)) for f in g['facts'].values())) for g in old_groups),
+                old_eligible_groups=sum(g['context']['split']=='train' and (bool(g['pairs']) or any(any(t is not None for t in auxiliary_targets(f,schema_id=SCHEMA_V2)) for f in g['facts'].values())) for g in old_groups),
                 eligible_train_groups=len(eligible),eligible_rank_groups=sum(bool(g['pairs']) for g in eligible),
                 eligible_cost_only_groups=sum(not g['pairs'] for g in eligible),new_hashes={name:file_hash(output/name) for name in names})
         except Exception as exc:
