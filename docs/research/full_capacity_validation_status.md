@@ -1,6 +1,6 @@
 # 完整模型验证状态
 
-更新日期：2026-10-26；最新筛查快照为 UTC 2026-10-26 00:45:42.970345。证据类型：资格检查、Poisson pilot、测试及本次筛查快照为 **newly_run**；完整正式筛查及几何修复验证为 **pending**。方法、需求配对和统计口径见[验证协议](full_capacity_validation_protocol.md)，必要界见[推导补充](full_capacity_bounds_derivation.md)。可纳入版本管理的逐 job 摘录见[资格检查 CSV](tables/full_capacity_qualification.csv)和[pilot CSV](tables/full_capacity_pilot.csv)，数值直接选自对应报告。
+更新日期：2026-10-26；原筛查快照为 UTC 2026-10-26 00:45:42.970345，几何修复启动验证快照为 UTC 01:00:30.375185。证据类型：资格检查、Poisson pilot、测试及本次运行快照为 **newly_run**；完整正式筛查及几何修复完整结果为 **pending**。方法、需求配对和统计口径见[验证协议](full_capacity_validation_protocol.md)，必要界见[推导补充](full_capacity_bounds_derivation.md)。可纳入版本管理的逐 job 摘录见[资格检查 CSV](tables/full_capacity_qualification.csv)和[pilot CSV](tables/full_capacity_pilot.csv)，数值直接选自对应报告。
 
 ## 2026-10-26 筛查观测与修复计划
 
@@ -16,13 +16,17 @@
 
 radius250 另有 4 个 jobs 标记 COMPLETED。不过，旧实现下 radius250/radius350 的全部 24 jobs 均暂时排除在几何因素推断之外，包括这 4 个已完成 jobs。主对话已观察到 `TrajectoryPlan.state` 及 `intervals` 在轨迹前后延续时使用默认几何，未沿用半径变体；修复后的 diff 已通过主对话复核，前后圆周延续改为从已序列化的边界极坐标系数推导，不再读取默认配置。payload/hash schema 和物理安全阈值均未改变。尚未通过修复后的正式重跑验证，不能断言 6 个 safety-stop 已全部解决，也不能把旧几何组的异常转化为策略或物理容量结论。
 
-修复的新增测试为 13 passed；最终范围回归为 121 passed、2 skipped，耗时 25.30 s。本地缺少 OR-Tools，CP 服务器验证仍为 pending。将 HEAD 中的原始方法仅在内存中恢复后的红色回归为 4 failed、2 passed、7 deselected，复现 radius250 几何错误及 radius350 的 slot 20 异常。另有未纳入修复改动的 `performance_execution_reuse` 测试在第 260 行因 `SimpleNamespace` 缺少 `_stage2_enabled` 失败，使用原始及修复方法均出现相同失败；该项不计入上述通过数。这些检查验证实现边界，不提供新的容量或理论结果。
+修复的本地新增测试为 13 passed；最终范围回归为 121 passed、2 skipped，耗时 25.30 s。本地缺少 OR-Tools，不能用本地结果替代服务器 CP 证据。服务器[新增几何测试日志](../../../training_outputs/terminal/full_service_capacity_20261025/geometry_repair_seed11_v2_preflight/pytest.log)为 13 passed、0.92 s，退出码 0；[API/需求预检](../../../training_outputs/terminal/full_service_capacity_20261025/geometry_repair_seed11_v2_preflight/api.log)确认 OR-Tools 9.15.6755 的 solver preflight 为 OPTIMAL，且 4 组 profile/rate 的 seed 11 manifest 与原筛查完全一致，每个 profile 的 90/180 h⁻¹ 完整到达时域分别为 56/105 请求。该 solver 预检与启动证据不表示 8 个正式 jobs 已通过。将修复前 HEAD 中的原始方法仅在内存中恢复后的红色回归为 4 failed、2 passed、7 deselected，复现 radius250 几何错误及 radius350 的 slot 20 异常。另有未纳入修复改动的 `performance_execution_reuse` 测试在第 260 行因 `SimpleNamespace` 缺少 `_stage2_enabled` 失败，使用原始及修复方法均出现相同失败；该项不计入上述通过数。这些检查验证实现边界，不提供新的容量或理论结果。
 
 [部分报告](../../artifacts/full_capacity_20261025/screen_partial_20261026_0045_report/report.json)的覆盖为 53 complete / 20 failed / 23 incomplete（后者包含 12 个运行中和 11 个尚未启动），无遗漏、重复或未预期 jobs。53 个完整结果的配置、manifest、cohort 和请求守恒检查通过，遗漏飞机数为 0；能量恒等式最大绝对残差为 0.0004319995641708374 J，等待时间重建最大绝对残差为 4.547473508864641e-12 s。这些输出一致性检查不解除上述 4 个旧几何完整结果的排除状态。
 
-几何修复验证为 **PLANNED**，尚未启动。[seed 11 修复规格](../../experiments/service_capacity/full_geometry_repair_seed11_v2.json)仅从正式筛查规格中选取 radius250/radius350 和 seed 11，保留两方法、90/180 h⁻¹、warmup/measurement/drain=600/1800/600 s、SLA=600 s、progress=60 s 及 Poisson 需求，共 2×2×2×1=8 jobs；未更改随机流协议、几何定义或物理与安全参数。主对话复核修复实现及这 8 个 jobs 的有效输出后，再决定执行其余 seeds 23/71 的 16 个几何 jobs；新输出应与原筛查分开保存，原始输入、需求及输出不覆盖。本段不构成已启动或已验收的记录。
+seed 11 几何修复验证为 **RUNNING**，已通过启动验证，完整结果仍为 **pending**。[修复规格](../../experiments/service_capacity/full_geometry_repair_seed11_v2.json)仅从正式筛查规格中选取 radius250/radius350 和 seed 11，保留两方法、90/180 h⁻¹、warmup/measurement/drain=600/1800/600 s、SLA=600 s、progress=60 s 及 Poisson 需求，共 2×2×2×1=8 jobs；未更改随机流协议、几何定义或物理与安全参数。UTC 2026-10-26 00:59:16 启动，wrapper PID 252556，Python parent PID 252558；6 workers 绑定 CPU 0、2、24、25、26、27，与原筛查 12 核及保留的 CPU 12 不重叠，数值库线程数均为 1。[启动快照](../../../training_outputs/terminal/full_service_capacity_20261025/geometry_repair_seed11_v2/startup_snapshot_20261026T010015Z.json)的内部观测时间为 UTC 01:00:30.375185：8 份输入目录，6 份有效 progress 均超过 100 s 仿真时间，radius250 的 90 h⁻¹ 为 232.81–232.91 s、180 h⁻¹ 为 103.96–116.31 s，radius350 的 90 h⁻¹ 为 190.78 s；6 个活动 jobs 均已有非空 events/timeseries。该快照尚无 `run.exit`，不表示完整运行通过。
 
-下一次复查时间及同一 heartbeat 的更新确认 **pending**；本次未记录新的已生效调度时间。下文 2026-10-25 的 heartbeat 时间为历史启动记录，不能视为当前下一次唤醒时间。
+修复验证初始预计总耗时 T0=8 h：8 jobs 中两档到达率各 4 个，已有有效 half6 jobs 的平均耗时在 90/180 h⁻¹ 分别约 2143/15884 s，按 6 核平均分摊得到 `(4×2143+4×15884)/6≈12018 s`，约 3.34 h 的 CPU 平均分摊基线；已有单 job 最长约 23577 s（6.55 h），再为未知几何尾部开销预留至 8 h。原筛查剩余 23 jobs 按同负载下未失败 jobs 的成本及当前阶段粗估约 6 h，并保留尾部裕量；未使用 73/96 的 job 数比例作线性外推。这些估计仅用于复查安排，不是完成承诺或容量结论。
+
+同一 heartbeat `automation-2` 已于 UTC 2026-10-26 01:00:57 成功更新为 **ACTIVE**，间隔 479 min，已扣除启动估时后经过的时间，计划约 UTC 08:59:16（北京时间 10 月 26 日 16:59，约 17:00）一起复查原筛查与修复验证；实际触发时间以调度器为准。等待期间没有驻留监控 worker。唤醒后先核对退出状态及产物，再继续原先授权的结果分析与版本交付；未完成则依据实际进度更新同一个 heartbeat。其余 seeds 23/71 的 16 个几何 jobs 仍为 **PLANNED**，仅在这 8 个 jobs 的有效结果经主对话复核后接续。原有 24 个几何 jobs 仍排除；新输出单独保存，原始输入、需求及输出不覆盖。下文 2026-10-25 的 heartbeat 时间仅为历史记录。
+
+修复及初始状态文档已随提交 `108c826d07cb2c76bb06bbae8ee12edc243f840c` 推送至 `origin/codex/arrival-restructure`。
 
 ## 2026-10-25 资格检查、pilot 与启动记录
 
@@ -49,7 +53,7 @@ Poisson pilot 于 UTC 06:22:04–06:37:06 完成，wrapper PID 232860，2 worker
 
 初始总耗时估计 T0=18 h：pilot 总 CPU 秒除以两方法共 24 个请求为 `(688.61+898.62)/24≈66.13` CPU-s/请求；首轮平均率 135/h、到达时域 2400 s 对应每 job 期望 90 请求，96 job 在 12 核下线性基线约 13.23 h，再为场景和负载异质性预留到 18 h。载荷及候选搜索成本可能不线性增长，18 h 只是初始运行时间估计，不是容量拟合或完成承诺。目前没有完整模型容量结论。
 
-历史调度记录：heartbeat `automation-2` 于 UTC 2026-10-25 06:43:42 成功更新为 ACTIVE，间隔 1078 min，当时计划在 UTC 2026-10-26 00:41:42（北京时间 10 月 26 日 08:41）复查；该时间已过去，不代表当前下一次唤醒时间。当时等待期间没有驻留监控 worker；原定唤醒后核对完成状态与产物，继续结果分析、论文/文档更新及提交推送。当前观测与待更新调度见上文。
+历史调度记录：heartbeat `automation-2` 于 UTC 2026-10-25 06:43:42 成功更新为 ACTIVE，间隔 1078 min，当时计划在 UTC 2026-10-26 00:41:42（北京时间 10 月 26 日 08:41）复查；该时间已过去，不代表当前下一次唤醒时间。当时等待期间没有驻留监控 worker；原定唤醒后核对完成状态与产物，继续结果分析、论文/文档更新及提交推送。当前观测与已更新调度见上文。
 
 ## 测试范围
 
@@ -65,7 +69,13 @@ Poisson pilot 于 UTC 06:22:04–06:37:06 完成，wrapper PID 232860，2 worker
 
 ## 输入与复现
 
-运行源码冻结提交为 `6c64016f6a2d554f5f5fa4c719039ddd6ae58e31`，[643 文件清单](../../artifacts/full_capacity_20261025/source_freeze_v1.json)的 source hash 为 `d119f7744405a568f6862274d0b31608f524aae8536f8a9c2f8b7e75f816f606`；报告实现提交为 `6d1a3f`。源码经 Syncthing 同步，服务器执行冻结目录 `/home/user/projects/terminal/artifacts/full_capacity_20261025/frozen_source_v1`，解释器为 `/home/user/envs/terminal_stage2_v1/bin/python`。原始[资格检查目录](../../../training_outputs/terminal/full_service_capacity_20261025/qualification)、[命令](../../../training_outputs/terminal/full_service_capacity_20261025/qualification/command.txt)及[run.exit](../../../training_outputs/terminal/full_service_capacity_20261025/qualification/run.exit)，以及[pilot 目录](../../../training_outputs/terminal/full_service_capacity_20261025/pilot)和[run.exit](../../../training_outputs/terminal/full_service_capacity_20261025/pilot/run.exit)位于同步输出目录。
+原筛查运行源码冻结提交为 `6c64016f6a2d554f5f5fa4c719039ddd6ae58e31`，[643 文件清单](../../artifacts/full_capacity_20261025/source_freeze_v1.json)的 source hash 为 `d119f7744405a568f6862274d0b31608f524aae8536f8a9c2f8b7e75f816f606`；报告实现提交为 `6d1a3f`。源码经 Syncthing 同步，原筛查服务器执行冻结目录 `/home/user/projects/terminal/artifacts/full_capacity_20261025/frozen_source_v1`，解释器为 `/home/user/envs/terminal_stage2_v1/bin/python`。原始[资格检查目录](../../../training_outputs/terminal/full_service_capacity_20261025/qualification)、[命令](../../../training_outputs/terminal/full_service_capacity_20261025/qualification/command.txt)及[run.exit](../../../training_outputs/terminal/full_service_capacity_20261025/qualification/run.exit)，以及[pilot 目录](../../../training_outputs/terminal/full_service_capacity_20261025/pilot)和[run.exit](../../../training_outputs/terminal/full_service_capacity_20261025/pilot/run.exit)位于同步输出目录。
+
+几何修复 v2 冻结源码以 v1 的 `6c64016f6a2d554f5f5fa4c719039ddd6ae58e31` 为基底，运行代码仅叠加修复提交 `108c826d07cb2c76bb06bbae8ee12edc243f840c` 的 `trajectory.py` 改动，另新增两个测试文件与修复规格，共 646 文件；[v2 清单](../../artifacts/full_capacity_20261025/source_freeze_v2.json)的 source hash 为 `afa8b9fb780b2f63f1bfe1f08564798dc43f72e379137a7b0f5361d561271db9`。服务器执行目录为 `/home/user/projects/terminal/artifacts/full_capacity_20261025/frozen_source_v2`。修复输出单独写入服务器 `/home/user/training_outputs/terminal/full_service_capacity_20261025/geometry_repair_seed11_v2`，同步至本地 `D:\7_codespace\training_outputs\terminal\full_service_capacity_20261025\geometry_repair_seed11_v2`；[实际启动命令](../../../training_outputs/terminal/full_service_capacity_20261025/geometry_repair_seed11_v2/command.txt)如下，预检证据保存在相邻 [geometry_repair_seed11_v2_preflight](../../../training_outputs/terminal/full_service_capacity_20261025/geometry_repair_seed11_v2_preflight) 目录。
+
+```bash
+taskset -c 0,2,24,25,26,27 env PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 /home/user/envs/terminal_stage2_v1/bin/python scripts/analysis/run_full_service_capacity.py --spec experiments/service_capacity/full_geometry_repair_seed11_v2.json --output /home/user/training_outputs/terminal/full_service_capacity_20261025/geometry_repair_seed11_v2 --workers 6 --cpus 0,2,24,25,26,27
+```
 
 正式筛查输出为服务器 `/home/user/training_outputs/terminal/full_service_capacity_20261025/screen`，同步本地 `D:\7_codespace\training_outputs\terminal\full_service_capacity_20261025\screen`；[实际启动命令](../../../training_outputs/terminal/full_service_capacity_20261025/screen/command.txt)使用冻结源码目录及以下参数：
 
