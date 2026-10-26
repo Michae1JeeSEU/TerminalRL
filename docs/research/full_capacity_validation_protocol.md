@@ -1,6 +1,6 @@
 # 完整旋转槽位仿真的服务容量验证协议
 
-日期：2026-10-25。本文规定完整 `rotating_slots` 模型的首轮验证范围，尚无本协议产生的实验结果。几何、资源、SOC 与服务容量的推导见 [terminal_service_capacity.md](terminal_service_capacity.md) 第 2–5 节；其中第 8 节的 inner–pad FCFS 结果属于简化机制实验，不作为本协议的完整终端结果。
+协议日期：2026-10-25。本文保留完整 `rotating_slots` 模型的首轮验证范围；当前运行进展见[状态文档](full_capacity_validation_status.md)，已完成的 seed 11 几何修复结果见[结果笔记](full_capacity_geometry_seed11.md)，完整研究仍在进行。几何、资源、SOC 与服务容量的推导见 [terminal_service_capacity.md](terminal_service_capacity.md) 第 2–5 节；其中第 8 节的 inner–pad FCFS 结果属于简化机制实验，不作为本协议的完整终端结果。
 
 ## 研究对象与固定条件
 
