@@ -266,22 +266,24 @@ class TrajectoryPlan:
         return self.segments[-1]
     def state(self,t):
         if t<self.start_time and self.source_ring is not None:
-            return slot_state(self.source_ring,self.source_slot,t)
+            return _circular_continuation(self.segments[0],0.,t,self.start_time).state(t)
         if t<=self.end_time: return self._segment(t).state(t)
-        if self.target_ring is not None: return slot_state(self.target_ring,self.target_slot,t)
+        if self.target_ring is not None:
+            return _circular_continuation(self.segments[-1],1.,self.end_time,t).state(t)
         return KinematicState(self.segments[-1].state(self.end_time).p)
     def intervals(self,start,end):
         """Segments including physical continuation beyond the maneuver endpoint."""
         if start<self.start_time:
             if self.source_ring is not None:
-                yield _stable_segment(self.source_ring,self.source_slot,start,min(end,self.start_time))
+                yield _circular_continuation(self.segments[0],0.,start,min(end,self.start_time))
             else:
                 raise ValueError('inbound state before admission is undefined')
         for s in self.segments:
             if s.start_time<end and s.end_time>start: yield s
         if end>self.end_time:
             begin=max(start,self.end_time)
-            if self.target_ring is not None: yield _stable_segment(self.target_ring,self.target_slot,begin,end)
+            if self.target_ring is not None:
+                yield _circular_continuation(self.segments[-1],1.,begin,end)
             else:
                 p=self.state(self.end_time).p
                 yield Segment(begin,end-begin,(math.hypot(*p[:2]),),(math.atan2(p[1],p[0]),),(p[2],),'GROUND')
@@ -289,6 +291,19 @@ class TrajectoryPlan:
         values=[s.bounds(max(start,s.start_time),min(end,s.end_time),derivative) for s in self.intervals(start,end)]
         if not values: return tuple((x,x) for x in (self.state(start).p,self.state(start).v,self.state(start).a,self.state(start).jerk)[derivative])
         return tuple((min(v[i][0] for v in values),max(v[i][1] for v in values)) for i in range(3))
+
+def _circular_continuation(boundary,u,start,end):
+    """Extend the encoded boundary orbit without consulting a configuration.
+
+    Generated plans meet their source/target circles with zero radial and
+    vertical motion. Their boundary polar coefficients retain that circle and
+    its physical angular rate, including after serialization or time shifts.
+    """
+    time=boundary.start_time+u*boundary.duration
+    omega=poly(boundary.theta,u,1)/boundary.duration
+    theta=poly(boundary.theta,u)+omega*(start-time)
+    return Segment(start,end-start,(poly(boundary.r,u),),
+                   (theta,omega*(end-start)),(poly(boundary.z,u),),'STABLE')
 
 def _stable_segment(ring,slot,start,end,config=None):
     c=config or load_config(); r=ring_config(ring,c)

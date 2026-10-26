@@ -44,7 +44,7 @@ def test_non_gate_transfer_is_positive_and_c2(degrees):
         st=p.state(when)
         for key in ('p','v','a'): assert getattr(st,key)==pytest.approx(getattr(expected,key),abs=1e-7)
     assert validate_plan(p).accepted
-    assert p.state(p.end_time+50).p==slot_state('middle',0,p.end_time+50).p
+    assert p.state(p.end_time+50).p==pytest.approx(slot_state('middle',0,p.end_time+50).p,abs=1e-9,rel=0)
 
 def test_inbound_initial_cartesian_acceleration_zero_and_positive():
     result=generate_inbound('a',0,2,0)
