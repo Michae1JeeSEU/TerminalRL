@@ -1,0 +1,25 @@
+{
+  "profiles": [
+    "half6",
+    "radius250",
+    "radius350"
+  ],
+  "methods": [
+    "energy_slack",
+    "rh_cp_sat"
+  ],
+  "seeds": [
+    23,
+    71
+  ],
+  "rates_per_hour": [
+    90,
+    180
+  ],
+  "warmup_s": 600,
+  "measurement_s": 1800,
+  "drain_s": 600,
+  "sla_delay_s": 600,
+  "progress_interval_s": 60,
+  "demand_kind": "poisson"
+}
