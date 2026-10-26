@@ -6,12 +6,14 @@ priority response semantics; their measured CPU service postpones normal work.
 from dataclasses import asdict, dataclass, replace
 from bisect import bisect_right
 from hashlib import sha256
+from itertools import combinations
 import math
 import time
 
 from .config import freeze, thaw, service_duration
 from .energy import evaluate_power
 from .models import ValidationResult
+from .safety import validate_separation
 from .trajectory import TrajectoryPlan, make_stable_plan
 from .world import (AIRBORNE, HOLD, _planning_context,
                     evaluate_planning_snapshot)
@@ -19,6 +21,7 @@ from .world import (AIRBORNE, HOLD, _planning_context,
 
 EFFECTIVE_STATE_VERSION = "planning_effective_state_v1"
 EMERGENCY_TIMING_MODE = "existing_priority_response_cpu_charged"
+DEPENDENCY_PROTOCOL_VERSION = "affected_traffic_revalidation_v1"
 EPS = 1.e-8
 
 
@@ -231,6 +234,68 @@ def _dependency_table(source, effective):
     return tuple(rows)
 
 
+def _direct_dependencies(source, plans, starts, resources, pad_resources, graph_table, target):
+    hashes={p.trajectory_hash for p in plans}
+    hashes.update(h for _,deps in starts.values() for h in deps)
+    ids={p.aircraft_id for p in plans}
+    for r in (*source.slots,*source.pads):
+        used=resources if isinstance(r.resource,tuple) else pad_resources
+        if r.resource in used and r.end>target:
+            ids.add(r.aircraft_id)
+            if r.plan_hash: hashes.add(r.plan_hash)
+    approved=tuple((*source.active.values(),*source.soft.values()))
+    while True:
+        old=(set(ids),set(hashes))
+        for p in approved:
+            if p.aircraft_id in ids or p.trajectory_hash in hashes:
+                ids.add(p.aircraft_id); hashes.add(p.trajectory_hash)
+        for _,graph,_ in graph_table:
+            for h,values in graph.items():
+                if h in hashes or hashes.intersection(values):
+                    hashes.add(h); hashes.update(values)
+        if old==(ids,hashes): break
+    return tuple(sorted(ids)),tuple(sorted(hashes))
+
+
+def _pair_geometry(context, soft, proposed_ids):
+    traffic=[context._traffic(a,soft) for a in context.aircraft.values()
+             if a.status in AIRBORNE or a.status=="LANDED_SERVICE"]
+    horizon=max([context.time,*(p.end_time for p in context.active.values()),
+                 *(p.end_time for p in soft.values())])+2*math.pi/.035
+    rows={}
+    def signature(x):
+        return (x.base.trajectory_hash,tuple(p.trajectory_hash for p in x.plans),x.start_time,x.end_time)
+    for x,y in combinations(sorted(traffic,key=lambda x:x.aircraft_id),2):
+        if x.aircraft_id not in proposed_ids and y.aircraft_id not in proposed_ids: continue
+        rows[(x.aircraft_id,y.aircraft_id)]=(signature(x),signature(y),context.time,min(horizon,x.end_time,y.end_time),x,y)
+    return horizon,rows
+
+
+def _external_delta(world, packet, baseline=None):
+    baseline=packet if baseline is None else baseline
+    source=baseline["traffic_source"]; tables=baseline["traffic_tables"]
+    direct=set(packet["direct_ids"]); affected=set()
+    for aid,table in tables.items():
+        actual=world.aircraft.get(aid)
+        if actual is None:
+            return ValidationResult(False,"REJECTED","EXTERNAL_TRAFFIC_MISSING",dict(aircraft_id=aid))
+        # Known non-live removal is conservative for all retained certificates.
+        if actual.status not in AIRBORNE and actual.status!="LANDED_SERVICE": continue
+        _,key,active,soft=table[bisect_right(tuple(r[0] for r in table),world.time)-1]
+        if (_physical_key(actual)!=key or world.active.get(aid)!=active or world.soft.get(aid)!=soft
+                or _emergency_key(actual)!=_emergency_key(source.aircraft[aid])):
+            affected.add(aid)
+        if abs(world.time-packet["timing"].effective_time)<=EPS:
+            expected=baseline["traffic_projected"].aircraft.get(aid)
+            if expected is None or any(math.dist(getattr(actual,k),getattr(expected,k))>tol
+                    for k,tol in (("p",1e-6),("v",1e-7),("a",1e-7))):
+                affected.add(aid)
+    affected.update(a.id for a in world.aircraft.values() if a.id not in direct and
+                    a.id not in tables and (a.status in AIRBORNE or a.status=="LANDED_SERVICE"))
+    return (ValidationResult(False,"REJECTED","TRAFFIC_REVALIDATION_REQUIRED",dict(affected_aircraft_ids=sorted(affected)))
+            if affected else ValidationResult(True,"GUARDED"))
+
+
 def prepare_submission(world, plans, timing):
     """Issue a world-owned packet after full certification and transaction prep.
 
@@ -284,6 +349,9 @@ def prepare_submission(world, plans, timing):
     pad_resources = {r.resource for r in (*source.pads,*pads.reservations) if r.aircraft_id in ids}
     registry = world.__dict__.setdefault("_planning_latency_packets",{})
     token = sha256(repr((timing,plans,source.version,len(registry),id(prepared))).encode()).hexdigest()
+    graph_table=_dependency_table(source,timing.effective_time)
+    direct_ids,direct_hashes=_direct_dependencies(source,plans,starts,resources,pad_resources,graph_table,timing.effective_time)
+    horizon,pairs=_pair_geometry(context,soft,ids)
     registry[token] = dict(timing=timing,source=source,projected=projected,plans=plans,
         slots=tuple(r for r in slots.reservations if r.aircraft_id in ids),
         pads=tuple(r for r in pads.reservations if r.aircraft_id in ids),
@@ -294,30 +362,33 @@ def prepare_submission(world, plans, timing):
         fine_plans={p.trajectory_hash:True for p in plans},starts=starts,
         commitment_tables={aid:_commitment_table(source,a,timing.effective_time)
             for aid,a in source.aircraft.items() if a.status in AIRBORNE or a.status=="LANDED_SERVICE"},
-        dependency_table=_dependency_table(source,timing.effective_time),
+        dependency_table=graph_table,direct_ids=direct_ids,direct_hashes=direct_hashes,
+        dependency_protocol=DEPENDENCY_PROTOCOL_VERSION,pair_horizon=horizon,
+        pair_certificates={key:row[:4] for key,row in pairs.items()},
+        traffic_source=source,traffic_projected=projected,
+        traffic_tables={aid:_commitment_table(source,a,timing.effective_time) for aid,a in source.aircraft.items()
+                        if aid not in direct_ids and (a.status in AIRBORNE or a.status=="LANDED_SERVICE")},
+        revalidation=None,revalidation_sequence=0,
         ready_at=None)
     registry[token]["not_ready_before"] = world.time+time.perf_counter()-started
     return ValidationResult(True,"PREPARED","",dict(token=token)), token
 
 
-def guard_submission(world, token):
-    packet = world.__dict__.get("_planning_latency_packets",{}).get(token)
-    if packet is None: return ValidationResult(False,"REJECTED","UNISSUED_LATENCY_PACKET")
+def _direct_guard(world, packet):
     source, target = packet["source"], packet["timing"].effective_time
     if world.failed or world.time > target+EPS or world.config.config_hash != source.config.config_hash:
         return ValidationResult(False,"REJECTED","LATENCY_PACKET_EXPIRED")
     if (getattr(world,"rescue_rule_profile","legacy_v5") !=
             (source.emergency_monitor or {}).get("rescue_rule_profile","legacy_v5")):
         return ValidationResult(False,"REJECTED","EMERGENCY_POLICY_CHANGED")
-    expected_live = set()
     for aid, table in packet["commitment_tables"].items():
+        if aid not in packet["direct_ids"]: continue
         original = source.aircraft[aid]
         row = table[bisect_right(tuple(r[0] for r in table),world.time)-1]
         _, expected_key, active, soft = row
         actual = world.aircraft.get(aid)
         if actual is None or _physical_key(actual)!=expected_key:
             return ValidationResult(False,"REJECTED","TRAFFIC_COMMITMENT_CHANGED",dict(aircraft_id=aid))
-        if expected_key[0] in AIRBORNE or expected_key[0]=="LANDED_SERVICE": expected_live.add(aid)
         if (_emergency_key(actual)!=_emergency_key(original)
                 or world.active.get(aid)!=active or world.soft.get(aid)!=soft):
             return ValidationResult(False,"REJECTED","DEPENDENCY_CHANGED",dict(aircraft_id=aid))
@@ -331,24 +402,123 @@ def guard_submission(world, token):
                 return ValidationResult(False,"REJECTED","CONTINUATION_STATE_CHANGED",dict(aircraft_id=aid))
             if actual.soc+1e-12 < bound.soc or actual.peak_seconds > bound.peak_seconds+1e-10:
                 return ValidationResult(False,"REJECTED","ENERGY_BOUND_CHANGED",dict(aircraft_id=aid))
-    actual_live = {a.id for a in world.aircraft.values() if a.status in AIRBORNE or a.status=="LANDED_SERVICE"}
-    if actual_live != expected_live:
-        return ValidationResult(False,"REJECTED","NEW_TRAFFIC")
     if (_reservations(world.slots.reservations,packet["resources"],target)!=packet["resource_key"]
             or _reservations(world.pads.reservations,packet["pad_resources"],target)!=packet["pad_key"]):
         return ValidationResult(False,"REJECTED","RESOURCE_DEPENDENCY_CHANGED")
     graph_table=packet["dependency_table"]
     _,expected_graph,completed=graph_table[bisect_right(tuple(r[0] for r in graph_table),world.time)-1]
-    actual_graph={h:tuple(sorted(set(values)-set(completed))) for h,values in world.dependencies.items()}
+    direct_hashes=set(packet["direct_hashes"])
+    def relevant(graph):
+        normalized={h:tuple(sorted(set(values)-set(completed))) for h,values in graph.items()}
+        return {h:values for h,values in normalized.items() if h in direct_hashes or direct_hashes.intersection(values)}
+    actual_graph=relevant(world.dependencies); expected_graph=relevant(expected_graph)
     if expected_graph != actual_graph:
         return ValidationResult(False,"REJECTED","RELEASE_DEPENDENCY_CHANGED")
     for p in (*world.active.values(),*world.soft.values()):
+        if p.trajectory_hash not in direct_hashes: continue
         if source.source_clear.get(p.trajectory_hash) != world._source_clear.get(p.trajectory_hash):
             return ValidationResult(False,"REJECTED","RELEASE_TIME_CHANGED")
     for p in packet["plans"]:
         if world._emergency_priority_wait(p) is not None:
             return ValidationResult(False,"REJECTED","EMERGENCY_PRIORITY_CHANGED")
     return ValidationResult(True,"GUARDED")
+
+
+def guard_submission(world, token):
+    packet=world.__dict__.get("_planning_latency_packets",{}).get(token)
+    if packet is None: return ValidationResult(False,"REJECTED","UNISSUED_LATENCY_PACKET")
+    direct=_direct_guard(world,packet)
+    return _external_delta(world,packet) if direct.accepted else direct
+
+
+def revalidate_submission(world, token, *, max_work_s=None):
+    """Measured affected-pair certification; retain original own plans/energy/delta."""
+    started=time.perf_counter()
+    if max_work_s is not None and (not math.isfinite(max_work_s) or max_work_s<0):
+        return ValidationResult(False,"UNKNOWN","REVALIDATION_WORK_DEADLINE")
+    work_deadline=math.inf if max_work_s is None else started+max_work_s
+    packet=world.__dict__.get("_planning_latency_packets",{}).get(token)
+    if packet is None: return ValidationResult(False,"REJECTED","UNISSUED_LATENCY_PACKET")
+    packet["ready_at"]=None
+    packet["revalidation"]=None
+    direct=_direct_guard(world,packet)
+    if not direct.accepted: return direct
+    timing=packet["timing"]
+    if world.time>timing.ready_deadline: return ValidationResult(False,"REJECTED","READY_DEADLINE_MISSED")
+    delta=_external_delta(world,packet)
+    if delta.accepted: return ValidationResult(True,"UNCHANGED",details=dict(affected_aircraft_ids=[]))
+    if delta.reason!="TRAFFIC_REVALIDATION_REQUIRED": return delta
+    checked=[]; reused=0; extended=0
+    def expired():
+        return ValidationResult(False,"UNKNOWN","REVALIDATION_WORK_DEADLINE",dict(
+            affected_aircraft_ids=delta.details["affected_aircraft_ids"],pairs_checked=len(checked),
+            reused_pairs=reused,full_fallback=False,horizon_extension_pairs=extended,
+            minimum_work_s=time.perf_counter()-started))
+    if time.perf_counter()>=work_deadline: return expired()
+    current=world.build_planning_snapshot()
+    current=replace(current,aircraft=freeze(dict(current.aircraft)),active=freeze(dict(current.active)),
+                    soft=freeze(dict(current.soft)),requests=freeze(dict(current.requests)))
+    foreign={aid:a for aid,a in current.aircraft.items() if aid not in packet["direct_ids"] and
+             (a.status in AIRBORNE or a.status=="LANDED_SERVICE")}
+    source=replace(current,aircraft=freeze(foreign),active=freeze({aid:p for aid,p in current.active.items() if aid in foreign}),
+                   soft=freeze({aid:p for aid,p in current.soft.items() if aid in foreign}))
+    try: projected=project_visible_snapshot(source,timing.effective_time,timing=timing,fine=True)
+    except ProjectionRejected as exc: return ValidationResult(False,"REJECTED",str(exc),delta.details)
+    if time.perf_counter()>=work_deadline: return expired()
+    original=packet["projected"]
+    merged=replace(original,aircraft=freeze({**{aid:a for aid,a in original.aircraft.items() if aid in packet["direct_ids"]},**dict(projected.aircraft)}),
+        active=freeze({**{aid:p for aid,p in original.active.items() if aid in packet["direct_ids"]},**dict(projected.active)}),
+        soft=freeze({**{aid:p for aid,p in original.soft.items() if aid in packet["direct_ids"]},**dict(projected.soft)}),
+        slots=current.slots,pads=current.pads,trajectories=freeze({**dict(original.trajectories),**dict(projected.trajectories)}))
+    context=_planning_context(merged); staged_soft=dict(merged.soft)
+    staged_soft.update({p.aircraft_id:p for p in packet["plans"]})
+    horizon,pairs=_pair_geometry(context,staged_soft,{p.aircraft_id for p in packet["plans"]})
+    certificates={}
+    for key,row in pairs.items():
+        if time.perf_counter()>=work_deadline: return expired()
+        sig_x,sig_y,start,end,x,y=row
+        old=packet["pair_certificates"].get(key)
+        if old is not None and old[:3]==row[:3] and end<=old[3]:
+            certificates[key]=old; reused+=1; continue
+        if old is not None and end>old[3]: extended+=1
+        if end>start:
+            result=validate_separation(x,y,start,end,config=world.config)
+            checked.append(key)
+            if time.perf_counter()>=work_deadline: return expired()
+            if not result.accepted or result.status!="SAFE":
+                return ValidationResult(False,"REJECTED",result.reason or result.status,
+                    dict(affected_aircraft_ids=delta.details["affected_aircraft_ids"],pairs_checked=len(checked),
+                         reused_pairs=reused,full_fallback=False,validation_status=result.status,pair=key))
+        certificates[key]=(sig_x,sig_y,start,end)
+    if time.perf_counter()>=work_deadline: return expired()
+    packet["revalidation_sequence"]+=1; attempt=packet["revalidation_sequence"]
+    packet["revalidation"]=dict(attempt=attempt,traffic_source=source,traffic_projected=projected,
+        traffic_tables={aid:_commitment_table(source,a,timing.effective_time) for aid,a in foreign.items()},
+        pair_certificates=certificates,pair_horizon=horizon,not_ready_before=world.time+time.perf_counter()-started)
+    return ValidationResult(True,"REVALIDATING",details=dict(attempt=attempt,affected_aircraft_ids=delta.details["affected_aircraft_ids"],
+        pairs_checked=len(checked),reused_pairs=reused,full_fallback=False,horizon_extension_pairs=extended,
+        minimum_work_s=time.perf_counter()-started))
+
+
+def complete_revalidation(world, token, attempt, *, promote=False):
+    packet=world.__dict__.get("_planning_latency_packets",{}).get(token)
+    if packet is None: return ValidationResult(False,"REJECTED","UNISSUED_LATENCY_PACKET")
+    candidate=packet.get("revalidation")
+    if candidate is None or candidate["attempt"]!=attempt:
+        return ValidationResult(False,"REJECTED","UNISSUED_REVALIDATION")
+    if world.time<candidate["not_ready_before"]:
+        return ValidationResult(False,"WAIT","REVALIDATION_NOT_COMPLETE",dict(due=candidate["not_ready_before"]))
+    if world.time>packet["timing"].ready_deadline:
+        return ValidationResult(False,"REJECTED","READY_DEADLINE_MISSED")
+    direct=_direct_guard(world,packet)
+    if not direct.accepted: return direct
+    delta=_external_delta(world,packet,candidate)
+    if not delta.accepted: return delta
+    if promote:
+        for key in ("traffic_source","traffic_projected","traffic_tables","pair_certificates","pair_horizon"):
+            packet[key]=candidate[key]
+        packet["revalidation"]=None; packet["not_ready_before"]=world.time
+    return ValidationResult(True,"REVALIDATED")
 
 
 def mark_submission_ready(world, token, *, handoff_delay=0.):
@@ -427,8 +597,9 @@ def publish_submission(world, token):
 
 class _FuturePort:
     """Read-only future state plus a deferred proposal sink."""
-    def __init__(self, snapshot, source):
+    def __init__(self, snapshot, source, planning_wall_deadline=None):
         self._snapshot, self._source = snapshot, source
+        self.planning_wall_deadline = planning_wall_deadline
         self.proposal, self.evidence = None, []
 
     @property
@@ -490,7 +661,7 @@ class LatencyAwareScheduler:
             wall_s=wall_s,cpu_s=cpu_s,emergency_timing_mode=EMERGENCY_TIMING_MODE))
         if self.pending is not None:
             self.pending["online_service_s"] += wall_s
-            if self.pending["stage"] in ("RESULT","PREPARING","READY_SERVICE"):
+            if self.pending["stage"] in ("RESULT","PREPARING","READY_SERVICE","REVALIDATING"):
                 if self.pending["due"] <= now+EPS:
                     # Work has completed before this priority handoff. Charge the
                     # handoff once to the next stage, rather than re-serving a
@@ -498,6 +669,8 @@ class LatencyAwareScheduler:
                     self._handoff_service += wall_s
                 else:
                     self.pending["due"] += wall_s
+            elif self.pending["stage"]=="PREPARED":
+                self._service_until=max(now,self._service_until)+wall_s
         else:
             old_time, value = self._idle_service
             self._idle_service = (now,wall_s+(value if old_time==now else 0.))
@@ -512,11 +685,13 @@ class LatencyAwareScheduler:
             return
         timing = PlanningTiming.from_lead(port.time,self.lead_seconds,self.preparation_margin)
         self.dirty = False
+        actual_started=time.perf_counter()
+        planning_wall_deadline=actual_started+(timing.ready_deadline-timing.snapshot_time)-max(0.,self._service_until-port.time)
         started, started_cpu = self.clock(), time.process_time()
         proposal, evidence, reason = None, [], None
         try:
             source = port.build_planning_snapshot()
-            future = _FuturePort(project_visible_snapshot(source,timing.effective_time,timing=timing),source)
+            future = _FuturePort(project_visible_snapshot(source,timing.effective_time,timing=timing),source,planning_wall_deadline)
             self.callback(future)
             proposal, evidence = future.proposal, future.evidence
             if proposal is None: reason = "NO_CERTIFIED_PREFIX"
@@ -529,6 +704,8 @@ class LatencyAwareScheduler:
         self._service_until = port.time
         self._idle_service = (None,0.)
         record = dict(interface=EFFECTIVE_STATE_VERSION,emergency_timing_mode=EMERGENCY_TIMING_MODE,
+            dependency_protocol=DEPENDENCY_PROTOCOL_VERSION,revalidation_work_s=0.,revalidation_work_cpu_s=0.,
+            revalidation_count=0,revalidations=[],dependency_guard_work_s=0.,dependency_guard_work_cpu_s=0.,
             **asdict(timing),normal_work_s=duration,normal_work_cpu_s=time.process_time()-started_cpu,
             prepare_work_s=None,online_service_s=service,
             status="COMPUTING",submitted=0,commit_status="DEFERRED")
@@ -557,13 +734,61 @@ class LatencyAwareScheduler:
             self._service_until = max(port.time,self._service_until)+self._handoff_service
         self._handoff_service = 0.
 
+    def _begin_revalidation(self, port, *, extra_delay=0.):
+        p=self.pending; record=self.records[p["record_index"]]
+        if port.time>p["timing"].ready_deadline:
+            self._handoff_service+=extra_delay
+            self._finish(port,"REJECTED","TRAFFIC_CHANGED_AFTER_DEADLINE")
+            return
+        previous_ready=record.get("ready_time")
+        record["ready_time"]=None
+        started,started_cpu=self.clock(),time.process_time()
+        queued=max(0.,self._service_until-port.time)+self._handoff_service+extra_delay
+        max_work=max(0.,p["timing"].ready_deadline-port.time-queued)
+        evaluation=port.revalidate_latency_submission(p["token"],max_work_s=max_work)
+        duration=self.clock()-started; cpu=time.process_time()-started_cpu
+        if duration<0 or not math.isfinite(duration): raise ValueError("invalid revalidation duration")
+        duration=max(duration,evaluation.details.get("minimum_work_s",0.))
+        delay=queued
+        self._service_until=port.time; self._handoff_service=0.
+        row=dict(started_time=port.time+delay,due=port.time+delay+duration,
+            affected_aircraft_ids=list(evaluation.details.get("affected_aircraft_ids",())),
+            pairs_checked=evaluation.details.get("pairs_checked",0),reused_pairs=evaluation.details.get("reused_pairs",0),
+            full_fallback=evaluation.details.get("full_fallback",False),
+            horizon_extension_pairs=evaluation.details.get("horizon_extension_pairs",0),
+            reason=evaluation.reason or ("HORIZON_EXTENDED" if evaluation.details.get("horizon_extension_pairs") else "AFFECTED_TRAFFIC"),
+            status="COMPUTING",wall_s=duration,cpu_s=cpu)
+        if previous_ready is not None: row["previous_ready_time"]=previous_ready
+        record["revalidation_count"]+=1; record["revalidation_work_s"]+=duration
+        record["revalidation_work_cpu_s"]+=cpu; record["revalidations"].append(row)
+        record.update(status="REVALIDATING",commit_status="DEFERRED")
+        p.update(stage="REVALIDATING",due=row["due"],revalidation_attempt=evaluation.details.get("attempt"),
+            revalidation_accepted=evaluation.accepted,revalidation_reason=evaluation.reason)
+        port.planning_latency_event("normal_revalidation_started",**row)
+
+    def inspect_dependencies(self, port):
+        if self.pending is None or self.pending["stage"]!="PREPARED": return
+        record=self.records[self.pending["record_index"]]
+        started,started_cpu=self.clock(),time.process_time()
+        result=port.latency_packet_guard(self.pending["token"])
+        duration=self.clock()-started; cpu=time.process_time()-started_cpu
+        record["dependency_guard_work_s"]+=duration; record["dependency_guard_work_cpu_s"]+=cpu
+        self.online_service(port.time,duration,cpu,"dependency_guard")
+        if result.reason=="TRAFFIC_REVALIDATION_REQUIRED": self._begin_revalidation(port)
+        elif not result.accepted: self._finish(port,"REJECTED",result.reason)
+
     def planning_event(self, port):
         if self.pending is None: return
         p = self.pending
         timing = p["timing"]
         if p["due"] > port.time+EPS: return
-        if p["stage"] in ("RESULT","PREPARING","READY_SERVICE") and (
+        if p["stage"] in ("RESULT","PREPARING","READY_SERVICE","REVALIDATING") and (
                 port.time > timing.ready_deadline+EPS or p["due"] > timing.ready_deadline+EPS):
+            if p["stage"]=="REVALIDATING":
+                self.records[p["record_index"]]["revalidations"][-1].update(completed_time=port.time,status="LATE",reason="READY_DEADLINE_MISSED")
+            elif p.get("completion_revalidation_index") is not None:
+                self.records[p["record_index"]]["revalidations"][p["completion_revalidation_index"]].update(
+                    completed_time=port.time,status="LATE",reason="READY_DEADLINE_MISSED")
             self._finish(port,"REJECTED","READY_DEADLINE_MISSED")
             return
         record = self.records[p["record_index"]]
@@ -599,19 +824,36 @@ class LatencyAwareScheduler:
             ready = port.time+self._handoff_service+guard_work
             self._handoff_service = 0.
             p.update(stage="READY_SERVICE",due=ready,
-                     reason=guarded.reason if guarded is not None and not guarded.accepted else None)
+                     reason=guarded.reason if guarded is not None and not guarded.accepted and guarded.reason!="TRAFFIC_REVALIDATION_REQUIRED" else None)
             record["ready_time"] = ready
         elif p["stage"] == "READY_SERVICE":
+            completed_index=p.pop("completion_revalidation_index",None)
+            completed_row=None if completed_index is None else record["revalidations"][completed_index]
+            if completed_row is not None:
+                completed_row.update(completed_time=port.time,status=p.pop("completion_revalidation_status"))
+                if completed_row["status"]=="SUPERSEDED":
+                    self._begin_revalidation(port)
+                    return
             if p["reason"]:
                 self._finish(port,"REJECTED",p["reason"])
                 return
             bookkeeping, bookkeeping_cpu = time.perf_counter(), time.process_time()
             handoff = self._handoff_service
-            guard = port.mark_latency_submission_ready(p["token"],handoff)
+            guard=(port.complete_latency_revalidation(p["token"],p["revalidation_attempt"],promote=True)
+                   if completed_row is not None and p["revalidation_attempt"] is not None else None)
+            if guard is None or guard.accepted:
+                guard = port.mark_latency_submission_ready(p["token"],handoff+time.perf_counter()-bookkeeping)
             registration = time.perf_counter()-bookkeeping
             registration_cpu = time.process_time()-bookkeeping_cpu
-            record["ready_registration_bookkeeping_s"] = registration
+            record["ready_registration_bookkeeping_s"] = record.get("ready_registration_bookkeeping_s",0.)+registration
+            record["ready_registration_bookkeeping_cpu_s"] = record.get("ready_registration_bookkeeping_cpu_s",0.)+registration_cpu
             if not guard.accepted:
+                if completed_row is not None:
+                    completed_row.update(status="SUPERSEDED" if guard.reason=="TRAFFIC_REVALIDATION_REQUIRED" else "REJECTED",reason=guard.reason)
+                if guard.reason=="TRAFFIC_REVALIDATION_REQUIRED":
+                    self._handoff_service=handoff
+                    self._begin_revalidation(port,extra_delay=registration)
+                    return
                 # _finish carries the already-recorded handoff into the CPU
                 # queue; only the new registration work is recorded again.
                 self._finish(port,"REJECTED",guard.reason)
@@ -621,7 +863,31 @@ class LatencyAwareScheduler:
                 p.update(stage="PREPARED",due=timing.effective_time)
                 record.update(status="PREPARED",commit_status="DEFERRED",ready_time=guard.details["ready_at"])
                 self.online_service(port.time,registration,registration_cpu,"ready_registration")
+                self._service_until=max(self._service_until,guard.details["ready_at"])
                 port.planning_latency_event("normal_packet_prepared",**record)
+        elif p["stage"]=="REVALIDATING":
+            row=record["revalidations"][-1]
+            started,started_cpu=self.clock(),time.process_time()
+            if p["revalidation_accepted"]:
+                result=(port.complete_latency_revalidation(p["token"],p["revalidation_attempt"])
+                        if p["revalidation_attempt"] is not None else port.latency_packet_guard(p["token"]))
+            else: result=ValidationResult(False,"REJECTED",p["revalidation_reason"])
+            guard_work=self.clock()-started; guard_cpu=time.process_time()-started_cpu
+            if guard_work<0 or not math.isfinite(guard_work): raise ValueError("invalid revalidation guard duration")
+            record["revalidation_work_s"]+=guard_work; record["revalidation_work_cpu_s"]+=guard_cpu
+            row["wall_s"]+=guard_work; row["cpu_s"]+=guard_cpu
+            if result.status=="WAIT":
+                p["due"]=max(result.details["due"],port.time+guard_work+self._handoff_service)
+                row["due"]=p["due"]; self._handoff_service=0.; return
+            row.update(geometry_completed_time=port.time,status="GUARDING")
+            if result.reason: row["reason"]=result.reason
+            due=port.time+guard_work+self._handoff_service
+            row["guard_delivery_due"]=due
+            p.update(stage="READY_SERVICE",due=due,completion_revalidation_index=len(record["revalidations"])-1,
+                completion_revalidation_status="CERTIFIED" if result.accepted else
+                    "SUPERSEDED" if result.reason=="TRAFFIC_REVALIDATION_REQUIRED" else "REJECTED",
+                reason=None if result.accepted else result.reason)
+            self._handoff_service=0.
         elif p["stage"] == "PREPARED":
             bookkeeping, bookkeeping_cpu = time.perf_counter(), time.process_time()
             result = port.publish_latency_submission(p["token"])
@@ -646,6 +912,7 @@ class LatencyAwareScheduler:
 
     def state_dict(self):
         return dict(interface=EFFECTIVE_STATE_VERSION,emergency_timing_mode=EMERGENCY_TIMING_MODE,
+            dependency_protocol=DEPENDENCY_PROTOCOL_VERSION,
             lead_seconds=self.lead_seconds,preparation_margin=self.preparation_margin,
             callback=self.callback.state_dict(),pending=self.pending,dirty=self.dirty,
             records=self.records,online_services=self.online_services,
@@ -654,6 +921,7 @@ class LatencyAwareScheduler:
 
     def load_state_dict(self, state):
         if (state["interface"]!=EFFECTIVE_STATE_VERSION
+                or state.get("dependency_protocol")!=DEPENDENCY_PROTOCOL_VERSION
                 or state["emergency_timing_mode"]!=EMERGENCY_TIMING_MODE
                 or state["lead_seconds"]!=self.lead_seconds
                 or state["preparation_margin"]!=self.preparation_margin):

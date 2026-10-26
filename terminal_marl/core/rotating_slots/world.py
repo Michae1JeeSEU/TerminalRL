@@ -351,6 +351,14 @@ class SchedulerPort:
         from .planning_latency import guard_submission
         return guard_submission(self.__world, token)
 
+    def revalidate_latency_submission(self, token, max_work_s=None):
+        from .planning_latency import revalidate_submission
+        return revalidate_submission(self.__world, token, max_work_s=max_work_s)
+
+    def complete_latency_revalidation(self, token, attempt, promote=False):
+        from .planning_latency import complete_revalidation
+        return complete_revalidation(self.__world, token, attempt, promote=promote)
+
     def mark_latency_submission_ready(self, token, handoff_delay=0.):
         from .planning_latency import mark_submission_ready
         return mark_submission_ready(self.__world, token, handoff_delay=handoff_delay)
@@ -2307,6 +2315,8 @@ class RotatingSlotWorld:
                 if callback and callback is not False and normal_trigger:
                     callback(self.snapshot(), self._scheduler_port)
                 if latency is not None:
+                    inspect = getattr(latency,"inspect_dependencies",None)
+                    if callable(inspect): inspect(self._scheduler_port)
                     # Completed work can have zero-duration handoffs. Drain only
                     # this task's finite state transitions, never recurse advance.
                     for _ in range(4):

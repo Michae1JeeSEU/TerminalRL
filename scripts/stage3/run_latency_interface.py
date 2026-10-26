@@ -25,6 +25,7 @@ MODEL_HASH = "dba25b3393a5580bdc3971d9adf7d6e3cff6360404fdb08bc8fbb6f0b36e3b48"
 NORMALIZER_HASH = "1e06b066dad2d657acbe16de6706b180dd4f4ed8ba1bc106cefcc2a3d4f4e7be"
 THREAD_KEYS = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS", "VECLIB_MAXIMUM_THREADS")
 EXTRA_SOURCES = ("scripts/stage3/run_latency_interface.py", "tests/test_rotating_slots_latency_campaign.py",
+                 "scripts/stage3/report_latency_interface.py", "tests/test_rotating_slots_latency_report.py",
                  "tests/test_rotating_slots_planning_latency.py", "tests/test_rotating_slots_latency_ranking.py")
 
 
@@ -61,7 +62,7 @@ def dependencies(checkout):
     from terminal_marl.core.rotating_slots.stage3_learning.online_observer import OnlineObserver
     from terminal_marl.core.rotating_slots.stage2_campaign import atomic_json, digest, shared_fifo_admission, episode_metrics, save_checkpoint
     from terminal_marl.core.rotating_slots.stage2_planning import NormalSchedulerCallback
-    from terminal_marl.core.rotating_slots.planning_latency import LatencyAwareScheduler
+    from terminal_marl.core.rotating_slots.planning_latency import LatencyAwareScheduler, DEPENDENCY_PROTOCOL_VERSION
     from terminal_marl.core.rotating_slots.replay import ReplayBundle
     require(campaign.ROOT.resolve()==checkout and Path(evaluation.__file__).resolve().is_relative_to(checkout),
             "project imports are outside the selected checkout")
@@ -72,15 +73,17 @@ def dependencies(checkout):
     return SimpleNamespace(checkout=checkout,campaign=campaign,evaluation=evaluation,restore_root=restore_root,
         OnlineObserver=OnlineObserver,atomic_json=atomic_json,digest=digest,shared_fifo_admission=shared_fifo_admission,
         episode_metrics=episode_metrics,save_checkpoint=save_checkpoint,NormalSchedulerCallback=NormalSchedulerCallback,
-        LatencyAwareScheduler=LatencyAwareScheduler,ReplayBundle=ReplayBundle,aggregate=aggregate.aggregate_decisions)
+        LatencyAwareScheduler=LatencyAwareScheduler,dependency_protocol=DEPENDENCY_PROTOCOL_VERSION,
+        ReplayBundle=ReplayBundle,aggregate=aggregate.aggregate_decisions)
 
 
-def protocol():
+def protocol(dependency_protocol):
     return dict(schema="normal_latency_120_v1",root_id=ROOT_ID,seed=SEED,scenario_profile="medium24_rate150_v1",
         target_sim_seconds=HORIZON,boundary_seconds=STEP,checkpoint_seconds=CHECKPOINT_STEP,
         cpu=CPU,arms=list(ARMS),formal_jobs=2,ordering="H_THEN_L_SERIAL",job_wall_cap_s=JOB_CAP,
         total_evaluation_wall_cap_s=TOTAL_CAP,lead_seconds=30.,preparation_margin=1.,scheduler_period=5.,
-        interface=INTERFACE,ranking_scope=RANKING,emergency_timing_mode="existing_priority_response_cpu_charged",
+        interface=INTERFACE,ranking_scope=RANKING,dependency_protocol=dependency_protocol,
+        emergency_timing_mode="existing_priority_response_cpu_charged",
         candidate_active_seconds=6.,cp_seconds=8.,hint_seconds=3.,soft_seconds=30.,callback_watchdog_seconds=60.,
         attempts_per_aircraft=32,total_attempts=1024,model_sha256=MODEL_HASH,normalizer_sha256=NORMALIZER_HASH,
         endpoint_policy="settle_only_at_end; dispatch/delivery exactly at 120 is censored and remains pending",
@@ -139,7 +142,7 @@ def prepare(args, d):
         shutil.copyfile(original/"root.json",directory/"original_root.json")
         relocated=deepcopy(row); relocated.update(checkpoint_path=str(directory/"initial.checkpoint.json"),raw_snapshot_path=str(directory/"initial_state.json"))
         d.atomic_json(directory/"root.json",relocated)
-        scope=dict(protocol=protocol(),source_commit=frozen["source_commit"],source_hash=frozen["source_hash"],
+        scope=dict(protocol=protocol(d.dependency_protocol),source_commit=frozen["source_commit"],source_hash=frozen["source_hash"],
             checkout=str(d.checkout),driver_sha256=file_hash(DRIVER),model_fingerprint=deepcopy(binding["fingerprint"]),
             training_source_hash=binding["source_hash"],training_source_commit=binding["fingerprint"]["source_commit"],
             shared_manifest_hash=row["manifest_hash"],initial_state_hash=row["initial_state_hash"],
@@ -162,7 +165,7 @@ def prepare(args, d):
 def verify(output, d):
     require(load(output/"prepare.finished.json")["status"]=="COMPLETED", "prepare did not complete")
     scope=load(output/"execution_scope.json"); verify_source(load(output/"source_freeze.json"),d)
-    require(scope["protocol"]==protocol() and Path(scope["checkout"]).resolve()==d.checkout, "execution scope changed")
+    require(scope["protocol"]==protocol(d.dependency_protocol) and Path(scope["checkout"]).resolve()==d.checkout, "execution scope changed")
     require(scope["scope_id"]==d.digest({k:v for k,v in scope.items() if k not in ("scope_id","prepared_file_sha256")}), "scope digest mismatch")
     for name,expected in scope["prepared_file_sha256"].items(): require(file_hash(output/name)==expected,"prepared input changed: "+name)
     binding=verify_model(output)
@@ -191,17 +194,18 @@ def lifecycle_summary(tasks, callbacks, services):
     for reason,count in reasons.items(): base_reasons[reason.split(":",1)[0]]+=count
     stale_reasons={"TRAFFIC_COMMITMENT_CHANGED","DEPENDENCY_CHANGED","CONTINUATION_STATE_CHANGED","NEW_TRAFFIC",
         "RESOURCE_DEPENDENCY_CHANGED","RELEASE_DEPENDENCY_CHANGED","RELEASE_TIME_CHANGED","EMERGENCY_POLICY_CHANGED",
-        "EMERGENCY_PRIORITY_CHANGED","LATENCY_PACKET_EXPIRED"}
+        "EMERGENCY_PRIORITY_CHANGED","LATENCY_PACKET_EXPIRED","TRAFFIC_CHANGED_AFTER_DEADLINE","EXTERNAL_TRAFFIC_MISSING"}
     energy_reasons={"ENERGY_BASIS_CHANGED","ENERGY_BOUND_CHANGED","SOC_INSUFFICIENT","LANDING_RESERVE",
         "PEAK_BUDGET","PREPARED_ENERGY_BOUND","PROJECTED_ENERGY_INSUFFICIENT"}
-    components=("normal_work_s","prepare_work_s","ready_registration_bookkeeping_s",
+    components=("normal_work_s","prepare_work_s","revalidation_work_s","dependency_guard_work_s","ready_registration_bookkeeping_s",
                 "publication_bookkeeping_wall_s","normal_evidence_wall_s")
     task_work=[dict(snapshot_time=r["snapshot_time"],status=r["status"],finished="finished_time" in r,
         full_normal_planning_work_s=math.fsum(r.get(k) or 0. for k in components),
         observed_components={k:r.get(k) for k in components}) for r in tasks]
     timing={key:measured(r.get(key) for r in tasks) for key in
-        ("normal_work_s","normal_work_cpu_s","prepare_work_s","prepare_work_cpu_s","ready_guard_work_s",
-         "ready_registration_bookkeeping_s","publication_bookkeeping_wall_s","publication_bookkeeping_cpu_s",
+        ("normal_work_s","normal_work_cpu_s","prepare_work_s","prepare_work_cpu_s","revalidation_work_s",
+         "revalidation_work_cpu_s","dependency_guard_work_s","dependency_guard_work_cpu_s","ready_guard_work_s",
+         "ready_registration_bookkeeping_s","ready_registration_bookkeeping_cpu_s","publication_bookkeeping_wall_s","publication_bookkeeping_cpu_s",
          "normal_evidence_wall_s","normal_evidence_cpu_s")}
     kinds=sorted({r["kind"] for r in services})
     service={kind:dict(wall=measured(r.get("wall_s") for r in services if r["kind"]==kind),
@@ -213,16 +217,68 @@ def lifecycle_summary(tasks, callbacks, services):
         join_rate=len(committed)/len(finished) if finished else None,
         join_rate_denominator="finished nonempty proposed groups; pending and no-prefix excluded",
         ready_deadline_rejections=reasons.get("READY_DEADLINE_MISSED",0),rejection_reasons=dict(reasons),
+        traffic_changed_after_deadline_rejections=reasons.get("TRAFFIC_CHANGED_AFTER_DEADLINE",0),
+        external_traffic_missing_rejections=reasons.get("EXTERNAL_TRAFFIC_MISSING",0),
+        packet_expiry_rejections=reasons.get("LATENCY_PACKET_EXPIRED",0),
+        revalidation_work_deadline_rejections=reasons.get("REVALIDATION_WORK_DEADLINE",0),
         stale_or_dependency_rejections=sum(base_reasons[r] for r in stale_reasons),stale_reason_set=sorted(stale_reasons),
         energy_rejections=sum(base_reasons[r] for r in energy_reasons),energy_reason_set=sorted(energy_reasons),
         unknown_energy_rejections=base_reasons["ENERGY_UNKNOWN"],
         status_counts=dict(Counter(r["status"] for r in tasks)),timings=timing,online_service_by_kind=service,
-        per_task_work=task_work,full_normal_planning_work=measured(r["full_normal_planning_work_s"] for r in task_work),
+        per_task_work=task_work,revalidation=revalidation_summary(tasks),search_reuse=search_reuse_summary(callbacks),
+        actual_joined_groups=len(committed),actual_submitted_plans=sum(r.get("submitted") or 0 for r in committed),
+        submitted_plans_by_joined_group=[r["submitted"] for r in committed],
+        full_normal_planning_work=measured(r["full_normal_planning_work_s"] for r in task_work),
         all_task_work_includes_pending_partial=True,
         finished_task_full_planning_work=measured(r["full_normal_planning_work_s"] for r in task_work if r["finished"]),
         old_5s_full_planning_overrun_groups=sum(r["full_normal_planning_work_s"]>5. for r in task_work),
         old_callback_budget_miss_count=sum(bool(r.get("deadline_miss",False)) for r in callbacks),
-        note="prepare_work_s includes ready_guard_work_s; publication is separately measured atomic bookkeeping, not backdated latency")
+        note="prepare_work_s includes ready_guard_work_s; revalidation_work_s and dependency_guard_work_s are separate and counted once; online_services diagnostics are not summed again; publication is separately measured atomic bookkeeping, not backdated latency")
+
+
+def revalidation_summary(tasks):
+    """Summarize saved observations; missing legacy fields are unavailable."""
+    observed=[r for r in tasks if "revalidations" in r or "revalidation_count" in r]
+    rows=[event for task in tasks for event in task.get("revalidations",[])]
+    def total(key):
+        values=[r[key] for r in rows if isinstance(r.get(key),(int,float)) and not isinstance(r[key],bool)]
+        return math.fsum(values) if values else None
+    counts=Counter(r.get("status","MISSING") for r in rows)
+    return dict(availability="OBSERVED" if observed else "UNAVAILABLE_LEGACY_FIELDS",
+        tasks_with_fields=len(observed),tasks_missing_fields=len(tasks)-len(observed),
+        declared_count=sum(r["revalidation_count"] for r in tasks if "revalidation_count" in r) if observed else None,
+        recorded_rounds=len(rows) if observed else None,status_counts=dict(counts),
+        certified_rounds=counts["CERTIFIED"] if observed else None,
+        rejected_rounds=counts["REJECTED"] if observed else None,late_rounds=counts["LATE"] if observed else None,
+        pending_rounds=sum(r.get("status") in ("COMPUTING","GUARDING") and r.get("completed_time") is None for r in rows) if observed else None,
+        affected_aircraft_ids=sorted({aid for r in rows for aid in r.get("affected_aircraft_ids",[])}) if observed else None,
+        pairs_checked=total("pairs_checked"),reused_pairs=total("reused_pairs"),
+        full_fallback_rounds=sum(bool(r["full_fallback"]) for r in rows if "full_fallback" in r) if any("full_fallback" in r for r in rows) else None,
+        wall=measured(r.get("wall_s") for r in rows),cpu=measured(r.get("cpu_s") for r in rows))
+
+
+def search_reuse_summary(callbacks):
+    """Aggregate actual per-CP and per-callback fields, without legacy zeros."""
+    cp=[row for callback in callbacks for row in callback.get("cp_continuation",[])]
+    rank=[r["rank_batch_cache"] for r in callbacks if "rank_batch_cache" in r]
+    budgets=[r["ready_budget"] for r in callbacks if "ready_budget" in r]
+    solvers=[r for callback in callbacks for r in callback.get("solver",[])]
+    def total(rows,key):
+        values=[r[key] for r in rows if isinstance(r.get(key),(int,float))]
+        return sum(values) if values else None
+    misses=Counter()
+    for row in rank: misses.update(row.get("miss_reasons",{}))
+    drifts=[r["max_budget_fraction_drift"] for r in rank if isinstance(r.get("max_budget_fraction_drift"),(int,float))]
+    return dict(cp_observed_calls=len(cp),cp_callbacks_with_fields=sum("cp_continuation" in r for r in callbacks),
+        cp={key:total(cp,key) for key in ("state_reused","state_invalidated","caller_incumbent_accepted",
+            "pair_cuts_reused","single_cuts_reused","prefix_nogoods_reused","single_results_reused","solver_internal_state_reused")},
+        incumbent_sources=dict(Counter(r["incumbent_source"] for r in cp if "incumbent_source" in r)),
+        rank_callbacks_with_fields=len(rank),rank_cache_hits=total(rank,"hits"),rank_cache_miss_reasons=dict(misses) if rank else None,
+        max_budget_fraction_drift=max(drifts) if drifts else None,
+        ready_budget_callbacks=len(budgets),ready_budget_remaining_at_start=measured(r.get("remaining_at_start_s") for r in budgets),
+        ready_budget_remaining_at_return=measured(r.get("remaining_at_return_s") for r in budgets),
+        solver_allocated_seconds=measured(r.get("allocated_seconds") for r in solvers),
+        solver_remaining_deadline_s=measured(r.get("remaining_deadline_s") for r in solvers))
 
 
 def run_job(output,arm,d,*,started=None):
@@ -407,7 +463,7 @@ def summarize(output,d):
 def main(argv=None):
     started=time.perf_counter(); parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("stage",choices=("prepare","run","job","summarize"))
-    parser.add_argument("--output",type=Path,default=Path("/home/user/training_outputs/terminal/stage3_latency_interface_20261026"))
+    parser.add_argument("--output",type=Path,default=Path("/home/user/training_outputs/terminal/stage3_latency_revalidation_20261027"))
     parser.add_argument("--checkout",type=Path,required=True)
     parser.add_argument("--source-freeze",type=Path)
     parser.add_argument("--model-parent",type=Path,default=Path("/home/user/training_outputs/terminal/stage3_online_v2_20261025"))

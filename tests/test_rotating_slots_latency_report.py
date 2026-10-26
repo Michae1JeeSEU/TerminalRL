@@ -63,6 +63,8 @@ def test_saved_report_preserves_inputs_and_separates_pending_work_and_readiness(
     assert l["normal_lifecycle"]["pending_past_ready_deadline"]==0
     assert l["normal_lifecycle"]["pending_nonempty"]==1 and l["normal_lifecycle"]["join_rate"]==1.
     assert h["replay"]["status"]=="UNAVAILABLE_REPLAY" and value["identity_checks"]["same_actual_normal_start_hashes"] is None
+    assert h["normal_lifecycle"]["revalidation"]["availability"]=="UNAVAILABLE_LEGACY_FIELDS"
+    assert h["normal_lifecycle"]["revalidation"]["certified_rounds"] is None
     assert "catalogs" not in h["all_callbacks"]
     with (tmp_path/"boundary_quality.csv").open() as stream:
         rows=list(csv.DictReader(stream))
@@ -108,3 +110,54 @@ def test_saved_replay_group_start_and_pva_checks_do_not_invent_missing_proposals
     (root/"events.jsonl").write_text("".join(json.dumps(r)+"\n" for r in starts)); index()
     value,_,_=report.audit_replay(tmp_path,callbacks,core)
     assert value["start_time_mismatch_count"]==1 and not value["committed_group_checks"][0]["complete_same_time"]
+
+
+def test_saved_revalidation_multiple_joins_and_pending_are_observed_not_assumed(tmp_path):
+    fixture(tmp_path)
+    for arm in report.ARMS:
+        base=tmp_path/"evaluation"/arm
+        tasks=report.load(base/"normal_tasks.json")
+        event=dict(started_time=2.,due=3.,completed_time=3.,status="CERTIFIED",reason="NEW_TRAFFIC",
+                   affected_aircraft_ids=["new-a"],pairs_checked=4,reused_pairs=12,full_fallback=False,wall_s=.6,cpu_s=.5)
+        tasks[0].update(submitted=13,revalidation_work_s=.6,revalidation_work_cpu_s=.5,dependency_guard_work_s=.3,
+                       dependency_guard_work_cpu_s=.25,revalidation_count=1,revalidations=[event])
+        tasks.insert(1,dict(snapshot_time=3.,effective_time=8.,ready_deadline=7.,ready_time=6.,finished_time=8.,
+                            status="COMMITTED",submitted=2,revalidation_count=0,revalidations=[]))
+        tasks[-1].update(status="REVALIDATING",revalidation_work_s=.2,revalidation_count=1,
+            revalidations=[dict(started_time=9.,due=10.,status="GUARDING",geometry_completed_time=9.5,guard_delivery_due=10.,reason="NEW_TRAFFIC",
+                affected_aircraft_ids=["new-b"],pairs_checked=1,reused_pairs=3,full_fallback=True,wall_s=.2,cpu_s=.1)])
+        callbacks=report.load(base/"scheduler_records.json")
+        callbacks[0].update(cp_continuation=[dict(state_reused=True,state_invalidated=False,incumbent_source="CALLER",
+            caller_incumbent_accepted=True,pair_cuts_reused=7,single_cuts_reused=2,prefix_nogoods_reused=1,
+            single_results_reused=4,solver_internal_state_reused=False)],
+            rank_batch_cache=dict(hits=3,miss_reasons={"MEMBERSHIP_CHANGED":2},max_budget_fraction_drift=.08),
+            ready_budget=dict(planning_wall_deadline=29.,remaining_at_start_s=28.,remaining_at_return_s=17.))
+        callbacks.insert(1,dict(planning_timing=dict(snapshot_time=3.),deferred=True,noop=False))
+        save(base/"normal_tasks.json",tasks);save(base/"scheduler_records.json",callbacks)
+        save(base/"online_services.json",[dict(kind="dependency_guard",wall_s=.3,cpu_s=.25)])
+    value,timeline,*_=report.collect(tmp_path)
+    life=value["cells"][report.ARMS[0]]["normal_lifecycle"]
+    assert life["actual_joined_groups"]==2 and life["actual_submitted_plans"]==15
+    assert life["submitted_plans_by_joined_group"]==[13,2]
+    assert life["finished_nonempty"]==2 and life["pending_nonempty"]==1 and life["join_rate"]==1.
+    assert life["all_task_observed_work"]["total_s"]==pytest.approx(29.4)
+    assert life["finished_task_complete_work"]["total_s"]==pytest.approx(9.2)
+    assert life["components"]["dependency_guard_work_s"]["total_s"]==pytest.approx(.3)
+    reval=life["revalidation"]
+    assert reval["certified_rounds"]==1 and reval["pending_rounds"]==1
+    assert reval["pairs_checked"]==5 and reval["reused_pairs"]==15 and reval["full_fallback_rounds"]==1
+    assert reval["affected_aircraft_ids"]==["new-a","new-b"]
+    pending=next(r for r in timeline if r["status"]=="REVALIDATING")
+    assert pending["revalidations"][0].get("completed_time") is None
+    text=report.report_text(value,timeline)
+    assert "| Actual joined groups / submitted plans | 2 / 15 | 2 / 15 |" in text
+    assert "| Checked pairs | 5 | 5 |" in text and "| Reused pairs | 15 | 15 |" in text
+    assert "| Prepared-packet dependency inspection (s) | 0.3 | 0.3 |" in text
+    assert "| Reused pair cuts | 7 | 7 |" in text and "| Comparable group cache hits | 3 | 3 |" in text
+    assert "| Maximum cached budget-fraction drift | 0.08 | 0.08 |" in text
+    assert value["cells"][report.ARMS[0]]["search_reuse"]["cp"]["solver_internal_state_reused"]==0
+    assert "completed unavailable" in text and "observed joining bottleneck" not in text
+    assert report.search_reuse_summary([{}])["cp"]["pair_cuts_reused"] is None
+    assert report.search_reuse_summary([{}])["rank_cache_hits"] is None
+    _,rejected=report.task_facts([dict(snapshot_time=0.,status="REJECTED",finished_time=2.,reason="REVALIDATION_WORK_DEADLINE")],[],2.)
+    assert rejected["revalidation_work_deadline_rejections"]==1 and rejected["ready_deadline_rejections"]==0

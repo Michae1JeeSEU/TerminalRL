@@ -86,9 +86,13 @@ class AdvisorRuntime:
             return
         if self.trace_mode == 'online':
             from .online_observer import lightweight_event
+            batch_metadata={k:row[k] for k in ('rank_cache_hits','rank_cache_miss_reasons',
+                'budget_fraction_at_score','budget_fraction_at_pop','budget_fraction_drift')
+                if row.get('record_type')=='Rank' and k in row}
             row = lightweight_event(row)
             if row is None:
                 return
+            row.update(batch_metadata)
         row = deepcopy(dict(row))
         if hasattr(self, "snapshot_time"):
             row["snapshot_id"] = self.snapshot_id
@@ -279,12 +283,13 @@ class AdvisorRuntime:
         else:
             self.record_energy(node,plan,q,True)
 
-    def _encode(self, snapshot, descriptors, budget):
+    def _encode(self, snapshot, descriptors, budget, observed_search_state=None):
         if self.feature_encoder is None:
             from .features import FeatureEncoder
             self.feature_encoder = FeatureEncoder(**({'schema_id':self.feature_schema} if self.feature_schema else {}))
         with budget.measure("stage3_features"):
-            rows = self.feature_encoder.encode(snapshot, descriptors, self.search_state(budget))
+            state=self.search_state(budget) if observed_search_state is None else observed_search_state
+            rows = self.feature_encoder.encode(snapshot, descriptors, state)
         if len(rows) != len(descriptors):
             raise ValueError("feature count differs from descriptor count")
         for d, row in zip(descriptors, rows):
@@ -298,32 +303,69 @@ class AdvisorRuntime:
         return (descriptor.snapshot_id,descriptor.source_node_id,descriptor.aircraft_id,
                 descriptor.parent_prefix_id,descriptor.construction_stage)
 
+    def _rank_snapshot_binding(self,snapshot,budget):
+        """Compute the visible content identity once per ready-pool selection."""
+        from .features import FeatureEncoder
+        if self.feature_encoder is None:
+            self.feature_encoder=FeatureEncoder(**({'schema_id':self.feature_schema} if self.feature_schema else {}))
+        encoder=self.feature_encoder
+        if isinstance(encoder,FeatureEncoder):
+            try: visible=stable_id('feature_inputs',repr(encoder._content_key(snapshot)))
+            except Exception: visible=object()
+            return ('builtin',encoder.schema_id,visible)
+        state=self.search_state(budget)
+        state.pop('remaining_budget_fraction',None)
+        return ('custom',repr(snapshot),deepcopy(state))
+
+    def _rank_dependency_context(self,items,budget,snapshot_binding):
+        """Exact feature dependencies except the bounded batch's budget fraction.
+
+        The fraction is observed once when scoring and may drift for at most
+        three consumed items. This is score-batch reuse, not fresh inference.
+        """
+        from .features import SCHEMA_V2
+        descriptor_inputs=tuple(d.as_dict() for d in sorted(items,key=lambda d:d.descriptor_id))
+        if snapshot_binding[0]=='builtin':
+            _,schema,visible=snapshot_binding
+            aid=items[0].aircraft_id
+            global_query=() if schema==SCHEMA_V2 else (sum(budget.attempts.values()),self.coverage['attempted'])
+            return (schema,visible,descriptor_inputs,
+                tuple(sorted(self._ready_state(items),key=lambda row:row[0])),
+                self.retained_context.get(aid),self.known_conflicts.get(aid),global_query,
+                self.effective_state_version,self.effective_snapshot_version)
+        # Custom encoders do not declare dependencies. Reuse only if every
+        # supplied input other than the explicit batch fraction stays equal.
+        return (snapshot_binding,descriptor_inputs)
+
     def _order_comparable(self, snapshot, descriptors, budget):
         groups={}
         for descriptor in descriptors:
             groups.setdefault(self._comparable_key(descriptor),[]).append(descriptor)
         previous=(self._rank_cache or {}).get('groups',{})
-        entries={}; pending=[]; hits=0
+        entries={}; pending=[]; hits=0; misses=Counter()
+        fraction=self.search_state(budget)['remaining_budget_fraction']
+        snapshot_binding=self._rank_snapshot_binding(snapshot,budget) if any(len(items)>1 for items in groups.values()) else None
         for key,items in groups.items():
             if len(items)<2: continue
             ids={d.descriptor_id for d in items}
-            # Retained multiplicities are query inputs even when the broad
-            # coverage epoch is unchanged. Keep these in the existing cache.
-            aid=items[0].aircraft_id
-            context=(self._coverage_epoch,tuple(sorted(self._ready_state(items),key=lambda row:row[0])),
-                     self.retained_context.get(aid),self.known_conflicts.get(aid),
-                     self.effective_state_version,self.effective_snapshot_version)
+            context=self._rank_dependency_context(items,budget,snapshot_binding)
             old=previous.get(key)
             if (old is not None and old['remaining']==ids and old['context']==context
                     and old['uses']<self.rank_reuse_limit):
                 entries[key]=old
                 hits+=1
             else:
-                entries[key]=dict(context=deepcopy(context),uses=0,remaining=ids)
+                reason=('NO_BATCH' if old is None else 'CANDIDATES_CHANGED' if old['remaining']!=ids else
+                    'FEATURE_CONTEXT_CHANGED' if old['context']!=context else 'CONSUMPTION_LIMIT')
+                misses[reason]+=1
+                self.coverage['rank_cache_miss:'+reason]+=1
+                entries[key]=dict(context=deepcopy(context),uses=0,remaining=ids,budget_fraction_at_score=fraction)
                 pending.extend(items)
         metadata={}; scores={}
         if pending:
-            features=self._encode(snapshot,pending,budget)
+            score_state=self.search_state(budget)
+            score_fraction=score_state['remaining_budget_fraction']
+            features=self._encode(snapshot,pending,budget,score_state)
             if self.advisor is None: raise RuntimeError('MODEL_MISSING')
             with budget.measure('stage3_inference'):
                 ranked=self.advisor.rank(features,budget)
@@ -340,6 +382,7 @@ class AdvisorRuntime:
             for key,entry in entries.items():
                 if 'order' not in entry:
                     entry['order']=tuple(did for did in order if did in entry['remaining'])
+                    entry['budget_fraction_at_score']=score_fraction
             self.coverage['learned_rank_calls']+=1
         group_orders={key:iter(entry['order']) for key,entry in entries.items()}
         mapping={d.descriptor_id:d for d in descriptors}
@@ -357,17 +400,23 @@ class AdvisorRuntime:
             # Canonical state order ignores a caller's changed container order;
             # membership and every materialized state still have to match.
             remaining=[d for d in groups[selected_key] if d.descriptor_id!=selected.descriptor_id]
-            context=entry['context']
-            entry['context']=(context[0],tuple(sorted(self._ready_state(remaining),key=lambda row:row[0])),*context[2:])
+            entry['context']=deepcopy(self._rank_dependency_context(remaining,budget,snapshot_binding))
             self._learned_selected=selected.descriptor_id
         self._rank_cache=dict(groups=entries)
         original=tuple(d.descriptor_id for d in descriptors)
         result=tuple(d.descriptor_id for d in ordered)
         self.coverage['rank_cache_hits']+=hits
         self.coverage['rank_reorders']+=int(original!=result)
+        fraction=self.search_state(budget)['remaining_budget_fraction']
+        scored_fraction=entries[selected_key]['budget_fraction_at_score'] if selected_key in entries else None
+        drift=abs(fraction-scored_fraction) if scored_fraction is not None else None
+        if drift is not None:
+            self.coverage['rank_budget_fraction_max_drift']=max(self.coverage['rank_budget_fraction_max_drift'],drift)
         self.emit(dict(record_type='Rank',ready_ids=original,ordered_ids=result,
             policy='learned' if pending else 'learned_cache' if entries else 'comparable_singletons',
-            model_metadata=metadata,scores=scores,comparable_groups=len(groups)))
+            model_metadata=metadata,scores=scores,comparable_groups=len(groups),rank_cache_hits=hits,
+            rank_cache_miss_reasons=dict(misses),budget_fraction_at_score=scored_fraction,
+            budget_fraction_at_pop=fraction,budget_fraction_drift=drift))
         return ordered
 
     def order(self, snapshot, descriptors, budget, observed_search_state=None):
@@ -385,6 +434,11 @@ class AdvisorRuntime:
                 raise ValueError('descriptor registry/snapshot mismatch')
         for descriptor in descriptors:
             self.emit(descriptor.as_dict())
+        if self.guided and not budget.available():
+            self._rank_cache=None
+            self.emit(dict(record_type='Rank',ready_ids=[d.descriptor_id for d in descriptors],
+                ordered_ids=[d.descriptor_id for d in descriptors],policy='budget_exhausted'))
+            return descriptors
         if self.guided and self.deterministic_only:
             ids=tuple(d.descriptor_id for d in descriptors)
             self.emit(dict(record_type="Rank",ready_ids=ids,ordered_ids=ids,policy="heuristic_control"))

@@ -27,6 +27,7 @@ def grouped_setup(count=5):
     advisor=CountingAdvisor()
     world,s,b,r,a,n,ds=setup(advisor=advisor,feature_schema=SCHEMA_V2,
                             ranking_scope='comparable_group_v1')
+    r.feature_encoder=FeatureEncoder(schema_id=SCHEMA_V2)
     r.complete_initial_coverage()
     ds.extend(r.descriptor(s,a,n,t,0.,35.,'progress') for t in range(3,count))
     return world,s,b,r,a,n,ds,advisor
@@ -71,7 +72,7 @@ def test_comparable_cache_invalidates_real_context_changes(change):
     remaining=ordered[1:]
     if change=='candidate': remaining.append(r.descriptor(s,a,n,8,0.,35.,'progress'))
     elif change=='source': r.nodes[remaining[0].source_node_id]['soc']-=.01
-    elif change=='coverage': r._coverage_epoch+=1
+    elif change=='coverage': r.retained_context[a.id]['full_count']+=1
     elif change=='duplicate': r.retained_context[a.id]['directions'][repr(('pad',0))]+=1
     elif change=='conflict': r.known_conflicts[a.id]=1
     r.order(s,remaining,b)
@@ -86,6 +87,91 @@ def test_cached_parent_is_validated_at_each_pop():
     with pytest.raises(ValueError,match='unmaterialized'):
         r.order(s,ordered[1:],b)
     assert len(advisor.batches)==1
+
+
+def test_real_feature_dependencies_ignore_unrelated_coverage_but_keep_budget_drift_bounded():
+    _,s,b,r,a,_,ds,advisor=grouped_setup(6)
+    r.feature_encoder=FeatureEncoder(schema_id=SCHEMA_V2)
+    b.candidate_active_seconds=0.
+    one=r.order(s,ds,b)
+    scored_fraction=r.traces[-1]['budget_fraction_at_score']
+    r.retained_context['unrelated']={'full_count':1,'directions':{}}
+    r.known_conflicts['unrelated']=2
+    r._coverage_epoch+=1
+    b.candidate_active_seconds=.2
+    two=r.order(s,one[1:],b)
+    assert len(advisor.batches)==1
+    assert r.traces[-1]['budget_fraction_at_score']==scored_fraction
+    assert r.traces[-1]['budget_fraction_at_pop']<scored_fraction
+    assert r.traces[-1]['budget_fraction_drift']>0
+    r.retained_context[a.id]={'full_count':1,'directions':{}}
+    r.order(s,two[1:],b)
+    assert len(advisor.batches)==2
+    assert r.coverage['rank_cache_miss:FEATURE_CONTEXT_CHANGED']==1
+
+
+def test_visible_content_binding_computed_once_per_order_not_per_group_or_pop():
+    _,s,b,r,_,_,ds,advisor=grouped_setup(6)
+    class CountingEncoder(FeatureEncoder):
+        calls=0
+        def _content_key(self,snapshot):
+            self.calls+=1
+            return super()._content_key(snapshot)
+    encoder=CountingEncoder(schema_id=SCHEMA_V2);r.feature_encoder=encoder
+    left=[with_parent(r,d,'left') for d in ds[:3]]
+    right=[with_parent(r,d,'right') for d in ds[3:]]
+    incoming=[d for pair in zip(left,right) for d in pair]
+    ordered=r.order(s,incoming,b)
+    # One dependency binding plus encode's existing independent content guard.
+    assert encoder.calls==2 and len(advisor.batches)==1
+    encoder.calls=0
+    r.order(s,ordered[1:],b)
+    assert encoder.calls==1 and len(advisor.batches)==1
+
+
+def test_score_fraction_is_exact_encoder_input_and_pop_fraction_is_after_inference(monkeypatch):
+    from tests.test_stage2_quality_budget import Clock
+    _,s,b,r,_,_,ds,advisor=grouped_setup(4)
+    clock=Clock();monkeypatch.setattr(sp.time,'perf_counter',clock)
+    b.wall_start=0.;b.candidate_active_seconds=0.;b._candidate_phase_started=0.
+    class ObservedEncoder(FeatureEncoder):
+        def _content_key(self,snapshot):
+            clock.now+=.1
+            return super()._content_key(snapshot)
+        def encode(self,snapshot,descriptors,observed_search_state=None):
+            self.fraction=observed_search_state['remaining_budget_fraction']
+            return super().encode(snapshot,descriptors,observed_search_state)
+    encoder=ObservedEncoder(schema_id=SCHEMA_V2);r.feature_encoder=encoder
+    original=advisor.rank
+    def rank(features,budget):
+        clock.now+=.2
+        return original(features,budget)
+    monkeypatch.setattr(advisor,'rank',rank)
+    r.order(s,ds,b)
+    row=r.traces[-1]
+    assert row['budget_fraction_at_score']==encoder.fraction
+    assert row['budget_fraction_at_score']==pytest.approx(1.-.1/b.candidate_seconds)
+    assert row['budget_fraction_at_pop']==pytest.approx(1.-.4/b.candidate_seconds)
+    assert row['budget_fraction_drift']==pytest.approx(.3/b.candidate_seconds)
+
+
+def test_inference_overrun_does_not_begin_a_new_generation_query(monkeypatch):
+    from tests.test_stage2_quality_budget import Clock
+    _,s,b,r,a,n,ds,advisor=grouped_setup(4)
+    clock=Clock();monkeypatch.setattr(sp.time,'perf_counter',clock)
+    b.wall_start=0.;b.planning_wall_deadline=1.
+    original=advisor.rank
+    def rank(features,budget):
+        ranked=original(features,budget)
+        clock.now=2.
+        return ranked
+    monkeypatch.setattr(advisor,'rank',rank)
+    chosen=r.order(s,ds,b)[0]
+    provider=sp.ReferenceProvider();provider.advisor_runtime=r
+    monkeypatch.setattr(sp,'_generate',lambda *args:pytest.fail('physical attempt after inference deadline overrun'))
+    assert provider.generate(s,a,n,0,0.,35.,b,work_descriptor=chosen)==(False,None)
+    assert not any(row['record_type'] in ('FeaturesBeforeQuery','FactualResult') for row in r.traces)
+    assert 'READY_DEADLINE' in b.truncations
 
 
 def test_groups_of_singletons_do_not_encode_or_infer():
@@ -202,7 +288,7 @@ def test_candidate_cutoff_allows_one_same_catalog_improvement_and_keeps_certifie
     import terminal_marl.core.rotating_slots.stage3_learning.catalog_control as control
     monkeypatch.setattr(control,'expansion_reasons',lambda *args:['NO_COMPLETE_CHAIN_OBSERVED'])
     callback=sp.NormalSchedulerCallback('rh_cp_sat',candidate_provider=provider,online_policy='progressive_v1')
-    def plan(snapshot,actual,context,budget):
+    def plan(snapshot,actual,context,budget,**kwargs):
         calls.append((id(actual),id(budget),budget.solver_call_seconds,budget.solver_wall_used))
         budget.solver_wall_used+=2. if len(calls)==1 else 3.
         objective=move.objective if len(calls)==1 else (0,-1,0,0. if final_kind=='better' else 10.,0)

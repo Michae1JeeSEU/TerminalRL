@@ -1,0 +1,49 @@
+# Measured affected-traffic revalidation — 2026-10-27
+
+This iteration implements `affected_traffic_revalidation_v1` for the existing normal-planning latency interface. `planning_effective_state_v1`, the 30 s lead, 1 s preparation margin, 5 s heartbeat, approved plan timestamps, model, physics, energy, safety precision, emergency rules and scheduling budgets are unchanged. No formal H/L comparison or training has been run for this iteration in this implementation task.
+
+## Certification boundary
+
+The original immutable proposed group, energy starts and resource delta remain the publication packet. Its aircraft state/approved commitments, emergency conditions, touched slots/pads and relevant release-support closure are strict dependencies. A changed direct dependency rejects the whole group. Unrelated external dependency-graph entries are not direct dependencies.
+
+New or changed external traffic suspends readiness and starts measured separation revalidation. It projects only currently revealed approved commitments; it does not reveal future requests, advance a cloned world, generate trajectories or invoke a solver. Each required pair involving the proposed group uses the same traffic representation, interval construction and continuous `validate_separation` predicate as the original authoritative preparation. Only `SAFE` accepted results certify a pair; unresolved/unknown results reject. A removed actor is omitted only when its observed state proves it non-live.
+
+Pair certificates bind both immutable traffic signatures and their certified time interval. Reuse requires exact signatures/start and an interval contained in the existing certificate. A larger global horizon causes the necessary extended pairs to be checked again and increments `horizon_extension_pairs`; this implementation does not use a full-preparation fallback (`full_fallback=false`). No geometry or energy integration is added to effective-time publication. Original whole-group atomic publication and its cheap dependency guard remain in force.
+
+## Delivery and CPU accounting
+
+Revalidation startup revokes the world readiness receipt and clears the task's active `ready_time`; a prior receipt is retained only as `previous_ready_time` in round diagnostics. Ordinary guard inspection is read-only. A candidate baseline is promoted only after its measured work and completion guard have been delivered and the guard confirms no further change. A change during work yields `SUPERSEDED` and another bounded round, rather than inheriting the previous result.
+
+The original ready deadline bounds actual computation. Before projection, after projection and between pair checks, the code checks an actual `perf_counter` deadline after subtracting queued priority/guard service. An individual continuous geometry call is nonpreemptible: if it overruns, it returns before the loop stops, and its measured work remains occupied until its real virtual completion. Expiry never caches an unknown result as a pass. Ordinary triggers coalesce during that occupied interval; crossing the deadline does not cancel computation for free.
+
+The optional future-port `planning_wall_deadline` uses the actual performance-clock origin before projection, independent of the injected test-duration clock. It tightens an existing callback budget without adding a preparation reserve or increasing any budget. Monitor/emergency/admission service, prepared dependency inspection and carried handoff delay occupy the same virtual CPU. Successful readiness registration covers promotion guard, registration and handoff; CPU availability is at least the issued `ready_at`. Effective-time atomic publication remains event bookkeeping charged to subsequent online service, with the existing emergency timing mode `existing_priority_response_cpu_charged`.
+
+Cost components are separate: `prepare_work_s` includes initial preparation and its initial ready guard; `revalidation_work_s`/`revalidation_work_cpu_s` include pair work and delivered completion-guard work, never duplicated inside preparation. `dependency_guard_work_s`/CPU cover prepared inspection. `ready_registration_bookkeeping_s`/CPU accumulate across all registration attempts, including baseline promotion guard, while publication and evidence retain their existing separate components. Priority service is recorded separately from normal work and is not counted again as revalidation computation.
+
+## Saved lifecycle fields
+
+Each task records `dependency_protocol`, cumulative `revalidation_count`, `revalidation_work_s`, `revalidation_work_cpu_s`, and `revalidations`. Each round records simulation `started_time`/`due`, affected aircraft IDs, checked/reused pair counts, `full_fallback`, horizon extensions, measured wall/CPU, reason and status. `geometry_completed_time` marks geometry delivery; `guard_delivery_due` marks completion-guard delivery. `completed_time` is absent while the round is pending and is recorded only when that delivery is observed. Round states include `COMPUTING`, `GUARDING`, `CERTIFIED`, `SUPERSEDED`, `REJECTED`, and `LATE`.
+
+Exact expiry reasons are `READY_DEADLINE_MISSED` for an actual result/ready completion beyond the deadline, `TRAFFIC_CHANGED_AFTER_DEADLINE` for fresh uncertified traffic first observed after it, and `REVALIDATION_WORK_DEADLINE` for an exhausted computation allowance (status `UNKNOWN`, not a certificate). `TRAFFIC_REVALIDATION_REQUIRED` requests bounded work; `REVALIDATION_NOT_COMPLETE` is a waiting receipt. Existing direct-dependency and validator rejection reasons remain explicit. A timely prepared packet censored at the rollout endpoint is pending, not a completed join or a deadline rejection.
+
+## Local verification
+
+`tests/test_rotating_slots_planning_latency.py` plus `tests/test_rotating_slots_latency_revalidation.py`: **16 passed in 18.15 s**, RC 0. Compilation of the two implementation files and the new test file also returned 0. The test log and JUnit receipt are `artifacts/latency_revalidation_tests_20261027_e.log` and `.xml`.
+
+The real small-world checks cover an unrelated revealed arrival followed by original-time whole-group execution, unknown separation rejection, emergency pad change rejection, late work remaining occupied until its true return, arrivals after the deadline, changes during revalidation, horizon extension and exact certificate reuse. Two successive approved transfers execute at their unchanged absolute starts (30 s and 80 s), preserve p/v/a continuity and decreasing SOC, with no resource reservation for the proposed action before publication. A pending revalidation checkpoint restores and completes with the original approved hash. The bounded zero-work path starts no projection and stores no certificate. The final clock regression checks promotion-guard time at the ready deadline and preservation of carried CPU handoff after successful registration.
+
+These checks are interface evidence, not evidence of learned-ranking quality, formal closed-loop benefit or statistical generalization. The frozen prior experiment and its saved results are unchanged.
+
+## Shared CP and ranking changes
+
+Both use the same implementation; each callback owns an independent `EvaluationContext`. Reuse is confined to that context and exact catalog/resource inputs, objective and authoritative evaluator identity. Certified incumbents, proved cuts and single-column certificates can be reused only under their bound inputs; `UNKNOWN` produces no cut. Solver-internal state is not retained: a previous solution supplies a warm hint only. The cumulative limits remain 8 s CP, 3 s hint, 6 s candidate-active work and 30 s soft work. The true absolute ready deadline can shrink the remaining allowance; it never resets those limits.
+
+L uses one score batch for up to three consumed work items per ranked group as an approximation. Telemetry retains the actual query budget fraction at scoring and its drift at each pop. Reuse binds actual input dependencies and one immutable content signature per order: unrelated retained coverage does not invalidate an order, while a change to a relevant input does. The existing frozen model is not retrained for future-view states. Shared backend or grouping improvements are not exclusive evidence for learned-ranking quality.
+
+## Preregistered one-pair protocol and status
+
+The formal comparison is fixed before outcome inspection: original medium root `s3r23`, seed 7324, H then L serially on CPU 12, each to 120 simulated seconds. It uses the same initial state and model/normalizer hashes as the completed latency-interface pair: model `dba25b3393a5580bdc3971d9adf7d6e3cff6360404fdb08bc8fbb6f0b36e3b48`, normalizer `1e06b066dad2d657acbe16de6706b180dd4f4ed8ba1bc106cefcc2a3d4f4e7be`. Lead is 30 s, preparation margin 1 s and heartbeat 5 s; each job has a 900 s watchdog and the evaluation total is 1800 s. All five numerical-library thread counts are 1; profiler and rendering are off. Events exactly at endpoint 120 remain censored under the existing endpoint rule.
+
+New outputs belong only to `stage3_latency_revalidation_20261027`; prior raw inputs/results are read-only. There is no 20 s sweep, extra seed or additional fit. The research question is whether the saved run shows multiple actual joint joins, and what full computation costs and executed quality accompany them. A single pair is not generalization or isolated causal evidence.
+
+The implementation checks above are 16 local passes. Separately, the primary recorded Phase 2 local verification as 41 passes with 7 OR-Tools checks deselected, plus a prior 96-test regression run; these overlapping suites are not summed. Reporter checks include a 10-test pass and two later fixture updates, also not summed. Server verification, including the seven real-CP integration checks, and final formal outcomes are pending; actual results will be appended after review.

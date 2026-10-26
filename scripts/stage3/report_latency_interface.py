@@ -79,7 +79,7 @@ def compact_callbacks(value):
 
 def task_facts(tasks,callbacks,observed_time):
     by_time={r["planning_timing"]["snapshot_time"]:r for r in callbacks if r.get("planning_timing")}
-    components=("normal_work_s","prepare_work_s","ready_registration_bookkeeping_s",
+    components=("normal_work_s","prepare_work_s","revalidation_work_s","dependency_guard_work_s","ready_registration_bookkeeping_s",
                 "publication_bookkeeping_wall_s","normal_evidence_wall_s")
     timeline=[]
     for index,task in enumerate(tasks):
@@ -93,6 +93,10 @@ def task_facts(tasks,callbacks,observed_time):
             ready_time=ready,ready_deadline=deadline,effective_time=task.get("effective_time"),finished_time=task.get("finished_time"),
             status=task["status"],reason=task.get("reason"),submitted=task.get("submitted"),pending=pending,
             nonempty_proposed=callback.get("deferred") is True and callback.get("noop") is False,
+            revalidation_count=task.get("revalidation_count"),revalidations=task.get("revalidations"),
+            revalidation_work_cpu_s=task.get("revalidation_work_cpu_s"),
+            dependency_guard_work_cpu_s=task.get("dependency_guard_work_cpu_s"),
+            ready_registration_bookkeeping_cpu_s=task.get("ready_registration_bookkeeping_cpu_s"),
             timely_registered_ready=timely,pending_past_ready_deadline=past,pending_known_late_ready_time=known_late,
             full_observed_planning_work_s=math.fsum(task.get(k) or 0. for k in components))
         row.update({k:task.get(k) for k in components}); timeline.append(row)
@@ -102,12 +106,19 @@ def task_facts(tasks,callbacks,observed_time):
     return timeline,dict(tasks=len(tasks),status_counts=dict(Counter(r["status"] for r in timeline)),
         nonempty_offered=len(proposed),finished_nonempty=len(finished),committed_nonempty=len(committed),
         pending_nonempty=sum(r["pending"] for r in proposed),pending_tasks=sum(r["pending"] for r in timeline),
+        actual_joined_groups=len(committed),actual_submitted_plans=sum(r.get("submitted") or 0 for r in committed),
+        submitted_plans_by_joined_group=[r["submitted"] for r in committed],revalidation=revalidation_summary(tasks),
         join_rate=len(committed)/len(finished) if finished else None,join_denominator="finished nonempty offered groups; pending/no-prefix excluded",
         all_task_observed_work=stats(r["full_observed_planning_work_s"] for r in timeline),
         finished_task_complete_work=stats(r["full_observed_planning_work_s"] for r in timeline if not r["pending"]),
         components={k:stats(r.get(k) for r in tasks) for k in components},
         ready_guard_already_in_preparation=stats(r.get("ready_guard_work_s") for r in tasks),
+        ready_registration_bookkeeping_cpu=stats(r.get("ready_registration_bookkeeping_cpu_s") for r in tasks),
         ready_deadline_rejections=sum(r.get("reason")=="READY_DEADLINE_MISSED" for r in tasks),
+        traffic_changed_after_deadline_rejections=sum(r.get("reason")=="TRAFFIC_CHANGED_AFTER_DEADLINE" for r in tasks),
+        external_traffic_missing_rejections=sum(r.get("reason")=="EXTERNAL_TRAFFIC_MISSING" for r in tasks),
+        packet_expiry_rejections=sum(r.get("reason")=="LATENCY_PACKET_EXPIRED" for r in tasks),
+        revalidation_work_deadline_rejections=sum(r.get("reason")=="REVALIDATION_WORK_DEADLINE" for r in tasks),
         pending_past_ready_deadline=sum(r["pending_past_ready_deadline"] for r in timeline),
         pending_known_late_ready_time=sum(r["pending_known_late_ready_time"] for r in timeline),
         rejection_reasons=dict(Counter(r.get("reason") for r in tasks if r["status"]=="REJECTED")),
@@ -115,6 +126,49 @@ def task_facts(tasks,callbacks,observed_time):
         old_5s_complete_work_overruns=sum(r["full_observed_planning_work_s"]>5. for r in timeline if not r["pending"]),
         old_5s_observed_work_overruns=sum(r["full_observed_planning_work_s"]>5. for r in timeline),
         old_callback_budget_misses=sum(bool(r.get("deadline_miss")) for r in callbacks))
+
+
+def revalidation_summary(tasks):
+    observed=[r for r in tasks if "revalidations" in r or "revalidation_count" in r]
+    rows=[event for task in tasks for event in task.get("revalidations",[])]
+    def total(key):
+        values=[r[key] for r in rows if finite(r.get(key))]
+        return math.fsum(values) if values else None
+    counts=Counter(r.get("status","MISSING") for r in rows)
+    return dict(availability="OBSERVED" if observed else "UNAVAILABLE_LEGACY_FIELDS",
+        tasks_with_fields=len(observed),tasks_missing_fields=len(tasks)-len(observed),
+        declared_count=sum(r["revalidation_count"] for r in tasks if "revalidation_count" in r) if observed else None,
+        recorded_rounds=len(rows) if observed else None,status_counts=dict(counts),
+        certified_rounds=counts["CERTIFIED"] if observed else None,
+        rejected_rounds=counts["REJECTED"] if observed else None,late_rounds=counts["LATE"] if observed else None,
+        pending_rounds=sum(r.get("status") in ("COMPUTING","GUARDING") and r.get("completed_time") is None for r in rows) if observed else None,
+        affected_aircraft_ids=sorted({aid for r in rows for aid in r.get("affected_aircraft_ids",[])}) if observed else None,
+        pairs_checked=total("pairs_checked"),reused_pairs=total("reused_pairs"),
+        full_fallback_rounds=sum(bool(r["full_fallback"]) for r in rows if "full_fallback" in r) if any("full_fallback" in r for r in rows) else None,
+        wall=stats(r.get("wall_s") for r in rows),cpu=stats(r.get("cpu_s") for r in rows))
+
+
+def search_reuse_summary(callbacks):
+    cp=[row for callback in callbacks for row in callback.get("cp_continuation",[])]
+    rank=[r["rank_batch_cache"] for r in callbacks if "rank_batch_cache" in r]
+    budgets=[r["ready_budget"] for r in callbacks if "ready_budget" in r]
+    solvers=[r for callback in callbacks for r in callback.get("solver",[])]
+    def total(rows,key):
+        values=[r[key] for r in rows if finite(r.get(key)) or isinstance(r.get(key),bool)]
+        return sum(values) if values else None
+    misses=Counter()
+    for row in rank: misses.update(row.get("miss_reasons",{}))
+    drifts=[r["max_budget_fraction_drift"] for r in rank if finite(r.get("max_budget_fraction_drift"))]
+    return dict(cp_observed_calls=len(cp),cp_callbacks_with_fields=sum("cp_continuation" in r for r in callbacks),
+        cp={key:total(cp,key) for key in ("state_reused","state_invalidated","caller_incumbent_accepted",
+            "pair_cuts_reused","single_cuts_reused","prefix_nogoods_reused","single_results_reused","solver_internal_state_reused")},
+        incumbent_sources=dict(Counter(r["incumbent_source"] for r in cp if "incumbent_source" in r)),
+        rank_callbacks_with_fields=len(rank),rank_cache_hits=total(rank,"hits"),rank_cache_miss_reasons=dict(misses) if rank else None,
+        max_budget_fraction_drift=max(drifts) if drifts else None,
+        ready_budget_callbacks=len(budgets),ready_budget_remaining_at_start=stats(r.get("remaining_at_start_s") for r in budgets),
+        ready_budget_remaining_at_return=stats(r.get("remaining_at_return_s") for r in budgets),
+        solver_allocated_seconds=stats(r.get("allocated_seconds") for r in solvers),
+        solver_remaining_deadline_s=stats(r.get("remaining_deadline_s") for r in solvers))
 
 
 def audit_replay(base,callbacks,core=None):
@@ -240,7 +294,7 @@ def collect(output,core=None):
             terminal_observed_time_s=observed,common_quality=boundary["quality"] if boundary else None,
             terminal=terminal,receipt=optional(output/"receipts"/(arm+".json"),{}),job=optional(base/"job.finished.json",{}),
             actual_cpu=result.get("actual_cpu"),source_commit=actual_scope.get("source_commit"),source_hash=actual_scope.get("source_hash"),
-            normal_lifecycle=life,all_callbacks=compact_callbacks(result.get("all_callbacks",{})),
+            normal_lifecycle=life,search_reuse=search_reuse_summary(callbacks),all_callbacks=compact_callbacks(result.get("all_callbacks",{})),
             dispatch_cost=stats(r.get("dispatch_wall_s") for r in dispatch),dispatch_cpu=stats(r.get("dispatch_cpu_s") for r in dispatch),
             world_normal_dispatch_cost=stats(r.get("normal_wall_s") for r in dispatch),
             online_service={kind:stats(r.get("wall_s") for r in services if r.get("kind")==kind) for kind in sorted({r["kind"] for r in services})},
@@ -293,6 +347,12 @@ def figures(output,value,timeline,quality,contacts,contact_sheet=False):
                     ax.plot(r[key],i+dy,marker=marker,ms=5,color=COLORS[arm],mfc="white" if hollow else COLORS[arm],linestyle="none")
             if finite(finish):
                 ax.plot(finish,i,marker=">" if r["pending"] else "*" if r["status"]=="COMMITTED" else "x",ms=8,color=COLORS[arm])
+            for event in r.get("revalidations") or []:
+                start=event.get("started_time"); done=event.get("completed_time")
+                if finite(start):
+                    stop=done if finite(done) else end
+                    if finite(stop): ax.plot([start,stop],[i+.10,i+.10],color="#A35C33",lw=3,alpha=.7)
+                    ax.plot(start,i+.10,marker="+",ms=5,color="#A35C33")
             label=r["status"] if not r.get("reason") else r["reason"]
             ax.text(.99,i,label,transform=ax.get_yaxis_transform(),ha="right",va="bottom",fontsize=7)
         ax.set(title=f"({chr(97+panel)}) {LABELS[arm]} normal-task delivery",xlim=(0,xmax+2),ylim=(-.6,max(len(rows)-.4,.6)),
@@ -313,7 +373,8 @@ def figures(output,value,timeline,quality,contacts,contact_sheet=False):
     ax.legend(loc="upper left",ncol=2,frameon=False)
     handles=[Line2D([],[],color="#606060",marker=m,ls="none",mfc="white" if m=="D" else "#606060",label=label)
              for m,label in (("o","Snapshot"),("s","Actual result"),("^","Recorded ready"),("|","Ready deadline"),
-                             ("D","Effective"),("*","Committed"),("x","Rejected / no-prefix"),(">","Censored pending"))]
+                             ("D","Effective"),("*","Committed"),("x","Rejected / no-prefix"),(">","Censored pending"),
+                             ("+","Revalidation start"))]
     fig.legend(handles=handles,loc="upper center",ncol=4,bbox_to_anchor=(.5,.998),frameon=False)
     fig.subplots_adjust(top=.87,bottom=.07,left=.09,right=.98,hspace=.57)
     fig.savefig(output/"planning_timeline.svg"); fig.savefig(output/"planning_timeline.png",dpi=300); plt.close(fig)
@@ -356,11 +417,16 @@ def report_text(value,timeline=()):
         ("Common holding (aircraft-s)",lambda a:fmt((cells[a]['common_quality'] or {}).get("holding_time"))),
         ("Nonempty offered / finished / committed / pending",lambda a:" / ".join(str(life[a][k]) for k in ("nonempty_offered","finished_nonempty","committed_nonempty","pending_nonempty"))),
         ("Join rate: committed / finished nonempty",lambda a:fmt(life[a]["join_rate"])),
+        ("Actual joined groups / submitted plans",lambda a:f"{life[a]['actual_joined_groups']} / {life[a]['actual_submitted_plans']}"),
+        ("Submitted plans in each joined group",lambda a:str(life[a]["submitted_plans_by_joined_group"])),
         ("All-task observed planning work (s; pending included)",lambda a:fmt(life[a]["all_task_observed_work"]["total_s"])),
         ("Finished complete planning work: count / P95 (s)",lambda a:f"{life[a]['finished_task_complete_work']['count']} / {fmt(life[a]['finished_task_complete_work']['p95_s'])}"),
         ("Dispatch total / P95 (s)",lambda a:f"{fmt(cells[a]['dispatch_cost']['total_s'])} / {fmt(cells[a]['dispatch_cost']['p95_s'])}"),
         ("Job including replay / subprocess receipt (s)",lambda a:f"{fmt(cells[a]['clocks']['full_job_including_replay_s'])} / {fmt(cells[a]['clocks']['receipt_wall_s'])}"),
         ("Ready-deadline rejected / unready pending past deadline",lambda a:f"{life[a]['ready_deadline_rejections']} / {life[a]['pending_past_ready_deadline']}"),
+        ("Traffic changed after deadline / external traffic missing",lambda a:f"{life[a]['traffic_changed_after_deadline_rejections']} / {life[a]['external_traffic_missing_rejections']}"),
+        ("Packet expiry rejections",lambda a:fmt(life[a]['packet_expiry_rejections'])),
+        ("Revalidation compute-budget exhaustion rejections",lambda a:fmt(life[a]['revalidation_work_deadline_rejections'])),
         ("Old 5 s observed-work overruns / callback budget misses",lambda a:f"{life[a]['old_5s_observed_work_overruns']} / {life[a]['old_callback_budget_misses']}")]
     lines.extend(f"| {label} | {fn(ARMS[0])} | {fn(ARMS[1])} |" for label,fn in metrics)
     lines += ["","## Computation and search","","| Measured phase or work | H | L |","| --- | ---: | ---: |"]
@@ -373,10 +439,38 @@ def report_text(value,timeline=()):
                       ("rank_learned","Learned ranks"),("rank_cache_hits","Cached learned ranks"),
                       ("coverage_missing_full_callback_aircraft","Missing full-chain callback-aircraft observations")):
         lines.append(f"| {label} | {fmt(h['all_callbacks'].get(key))} | {fmt(l['all_callbacks'].get(key))} |")
+    for key,label in (("state_reused","CP calls reusing state"),("state_invalidated","CP calls invalidating state"),
+                      ("caller_incumbent_accepted","Accepted caller incumbents"),("pair_cuts_reused","Reused pair cuts"),
+                      ("single_cuts_reused","Reused single cuts"),("prefix_nogoods_reused","Reused prefix nogoods"),
+                      ("single_results_reused","Reused single results"),("solver_internal_state_reused","Solver internal state reused")):
+        lines.append(f"| {label} | "+" | ".join(fmt(cells[a]['search_reuse']['cp'][key]) for a in ARMS)+" |")
+    for key,label in (("cp_observed_calls","Observed CP continuation records"),("incumbent_sources","Observed incumbent sources"),
+                      ("rank_cache_hits","Comparable group cache hits"),("rank_cache_miss_reasons","Group cache miss reasons"),
+                      ("max_budget_fraction_drift","Maximum cached budget-fraction drift")):
+        lines.append(f"| {label} | "+" | ".join(fmt(cells[a]['search_reuse'][key]) for a in ARMS)+" |")
+    for key,label in (("ready_budget_remaining_at_start","Ready budget remaining at start"),
+                      ("ready_budget_remaining_at_return","Ready budget remaining at return"),
+                      ("solver_allocated_seconds","Solver allocated seconds"),("solver_remaining_deadline_s","Solver remaining deadline")):
+        lines.append(f"| {label}: observed count / P95 (s) | "+" | ".join(
+            f"{cells[a]['search_reuse'][key]['count']} / {fmt(cells[a]['search_reuse'][key]['p95_s'])}" for a in ARMS)+" |")
     for key,label in (("normal_work_s","Snapshot/projection/callback work"),("prepare_work_s","Preparation including ready guard"),
+                      ("revalidation_work_s","Affected revalidation, separate from preparation"),
+                      ("dependency_guard_work_s","Prepared-packet dependency inspection"),
                       ("ready_registration_bookkeeping_s","Ready registration"),("publication_bookkeeping_wall_s","Publication bookkeeping"),
                       ("normal_evidence_wall_s","Normal evidence")):
-        lines.append(f"| {label} (s) | {fmt(life[ARMS[0]]['components'][key]['total_s'])} | {fmt(life[ARMS[1]]['components'][key]['total_s'])} |")
+        lines.append(f"| {label} (s) | "+" | ".join(fmt(life[a]['components'][key]['total_s'] if life[a]['components'][key]['count'] else None) for a in ARMS)+" |")
+    lines += ["","## Affected revalidation observations","","| Saved metric | H | L |","| --- | ---: | ---: |"]
+    for key,label in (("availability","Field availability"),("declared_count","Declared revalidations"),
+                      ("recorded_rounds","Recorded rounds"),("certified_rounds","Certified rounds"),
+                      ("rejected_rounds","Rejected rounds"),("late_rounds","Late rounds"),
+                      ("pending_rounds","Pending rounds"),("affected_aircraft_ids","Affected aircraft IDs"),
+                      ("pairs_checked","Checked pairs"),("reused_pairs","Reused pairs"),
+                      ("full_fallback_rounds","Full fallback rounds")):
+        lines.append(f"| {label} | "+" | ".join(fmt(life[a]['revalidation'][key]) for a in ARMS)+" |")
+    for field,label in (("wall","Per-round measured wall (s)"),("cpu","Per-round measured CPU (s)")):
+        lines.append(f"| {label} | "+" | ".join(fmt(life[a]['revalidation'][field]['total_s'] if life[a]['revalidation'][field]['count'] else None) for a in ARMS)+" |")
+    lines.append("Revalidation status counts H/L: "+" / ".join(counts(life[a]['revalidation']['status_counts']) for a in ARMS)+". Simulation due times and observed completion times are retained per task in timeline.csv; COMPUTING or GUARDING without observed completion is censored. geometry_completed_time records geometry computation only; it does not establish completed delivery. SUPERSEDED is reported separately in status counts.")
+    lines.append("READY_DEADLINE_MISSED records computation returning after its ready deadline. REVALIDATION_WORK_DEADLINE records exhaustion of the measured revalidation compute budget and does not alone establish a late physical return. TRAFFIC_CHANGED_AFTER_DEADLINE records a newly observed traffic change after the last revalidation opportunity; it is a late dependency change, not a computation overrun. EXTERNAL_TRAFFIC_MISSING and packet expiry retain their own rejection counts.")
     lines += ["","## Task delivery facts",""]
     for arm in ARMS:
         c=cells[arm]; task=life[arm]; q=c["terminal"].get("quality",{})
@@ -384,6 +478,8 @@ def report_text(value,timeline=()):
         lines.append("")
         for row in (r for r in timeline if r["arm"]==arm):
             lines.append(f"- {LABELS[arm]} task {row['task_index']}: snapshot {fmt(row['snapshot_time'])}; result {fmt(row['result_time'])}; ready {fmt(row['ready_time'])}, deadline {fmt(row['ready_deadline'])}; effective {fmt(row['effective_time'])}; {row['status']} at {fmt(row['finished_time'])}, submitted {fmt(row['submitted'])}"+(f"; {row['reason']}." if row.get("reason") else "."))
+            for event in row.get("revalidations") or []:
+                lines.append(f"  Revalidation {event.get('status','MISSING')}: started {fmt(event.get('started_time'))}; due {fmt(event.get('due'))}; completed {fmt(event.get('completed_time'))}; reason {fmt(event.get('reason'))}; checked/reused pairs {fmt(event.get('pairs_checked'))}/{fmt(event.get('reused_pairs'))}; measured wall/CPU {fmt(event.get('wall_s'))}/{fmt(event.get('cpu_s'))} s.")
         lines.append("")
     lines += ["","## Saved replay evidence",""]
     for arm in ARMS:
@@ -404,18 +500,18 @@ def report_text(value,timeline=()):
             lines.append("Faster computation did not yield more actual joint joins or normal landings within this horizon.")
     lines.append("This is one pair, without a significance/generalization claim or an isolated causal learning ablation. H and L share the progressive catalog, CP-SAT backend and physical policies.")
     if all(finite(phase(a,k)) for a in ARMS for k in ("cp_solve","prefix_validation","trajectory_validation")):
-        lines.append(f"CP totals are H/L {fmt(phase(ARMS[0],'cp_solve'))}/{fmt(phase(ARMS[1],'cp_solve'))} s. Prefix/trajectory validation and search volume changed; the observed reduction is not evidence of faster CP. The primary interpretation is smaller catalog/validation work accompanied by learning overhead, rather than a quality improvement.")
+        lines.append(f"CP totals are H/L {fmt(phase(ARMS[0],'cp_solve'))}/{fmt(phase(ARMS[1],'cp_solve'))} s. Phase totals and search volume are descriptive observations; causal attribution remains PENDING_PRIMARY_REVIEW.")
     if all(finite(phase(ARMS[1],k)) for k in ("stage3_features","stage3_inference")):
         learning=phase(ARMS[1],"stage3_features")+phase(ARMS[1],"stage3_inference")
         lines.append(f"L features plus inference consume {fmt(learning)} s across callbacks and also occupy the same fixed candidate-active clock (6 s per callback). Fewer attempts or a smaller catalog alone cannot establish better candidate identification; inference can displace generation work. Shared prefix-cache and geometry improvements belong to both H and L. No extra ablation is run.")
     lines.append(f"L no-prefix groups: {life[ARMS[1]]['no_prefix']}; finished nonempty denominators H/L: {life[ARMS[0]]['finished_nonempty']}/{life[ARMS[1]]['finished_nonempty']}. Different denominators, no-prefix and remaining coverage gaps prevent interpreting the raw join fractions as sustained join improvement.")
     if any(life[a]["rejection_reasons"].get("NEW_TRAFFIC",0) for a in ARMS):
-        lines.append("NEW_TRAFFIC rejections expose the conservative all-live traffic dependency as the observed joining bottleneck. Finer actual-conflict dependencies and bounded revalidation near the deadline are possible future work only; no new tuning or experiment is performed here.")
+        lines.append("NEW_TRAFFIC rejection counts are retained above. Their presence alone does not establish the bottleneck; compare recorded revalidation certification, lateness, affected traffic, fallback and actual joined groups. Legacy missing revalidation fields cannot establish that revalidation occurred.")
     lines += ["","## Identity, clocks and review limits",""]
     lines.extend(f"- {name}: {fmt(result)}." for name,result in value["identity_checks"].items())
     lines.append("")
     lines += [f"Model SHA `{value['model_sha256']}`; normalizer SHA `{value['normalizer_sha256']}`.",
-        "Complete-planning P95 uses finished tasks only. All-task work includes computation already executed for censored pending tasks. Ready guard is included in preparation exactly once; service-side publication is not summed again. Join rate excludes pending/no-prefix.",
+        "Complete-planning P95 uses finished tasks only. All-task work includes computation already executed for censored pending tasks. Ready guard is included in preparation exactly once; separate cumulative revalidation and dependency-inspection work are each added once, without summing per-round or online_services diagnostics again. Service-side publication is not summed again. Join rate excludes pending/no-prefix; actual joined group and submitted-plan counts come from recorded acknowledgements.",
         "Boundary/terminal full_online_wall_s include setup and previous checkpoint/log I/O; they are job-wall diagnostics, not pure planning time. Job wall includes replay export, and subprocess receipts include startup. Integration/execution/recording overhead is separate from planning delay.",
         "A timely-ready PREPARED token censored at 120 s is pending, not a timeout or successful join. No endpoint dispatch is executed by this report. Recorded result_time includes handoff completion, while finished_time is the outcome event; negative acknowledgements may therefore precede the recorded handoff by a small interval. These metadata are not asserted strictly chronological.",
         value["c2_limit"],

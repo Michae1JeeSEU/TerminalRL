@@ -65,7 +65,7 @@ def test_prepare_preserves_fingerprint_and_predeclares_exact_pair(tmp_path,monke
     def verify_sources(value):
         assert value["source_hash"]==digest(value["source_files"])
         assert all(runner.file_hash(checkout/k)==v for k,v in value["source_files"].items())
-    d=SimpleNamespace(checkout=checkout,atomic_json=atomic,digest=digest,campaign=SimpleNamespace(
+    d=SimpleNamespace(checkout=checkout,atomic_json=atomic,digest=digest,dependency_protocol="affected_traffic_revalidation_v1",campaign=SimpleNamespace(
         source_files=lambda:[checkout/p for p in runner.EXTRA_SOURCES],verify_sources=verify_sources,
         utc_now=lambda:"UTC",CampaignLedger=Ledger))
     output=tmp_path/"output"
@@ -77,6 +77,8 @@ def test_prepare_preserves_fingerprint_and_predeclares_exact_pair(tmp_path,monke
     assert scope["source_commit"]=="primary_new_commit"
     p=scope["protocol"]
     assert p["arms"]==list(runner.ARMS) and p["formal_jobs"]==2 and p["target_sim_seconds"]==120
+    assert p["dependency_protocol"]=="affected_traffic_revalidation_v1"
+    assert (p["interface"],p["ranking_scope"])==(runner.INTERFACE,runner.RANKING)
     assert (p["cpu"],p["lead_seconds"],p["preparation_margin"],p["job_wall_cap_s"],p["total_evaluation_wall_cap_s"])==(12,30.,1.,900.,1800.)
     with pytest.raises(ValueError,match="fresh output"): runner.prepare(args,d)
 
@@ -224,3 +226,35 @@ def test_parent_exact_order_caps_and_hard_timeout_output(tmp_path,monkeypatch,ti
         assert all(r[1]==900. and r[2][-2:]==["--arm",r[0]] for r in calls)
     assert ledger.data["paused_at"]=="UTC"
     assert runner.load(output/"run.finished.json")["no_automatic_retry"] is True
+
+
+def test_revalidation_work_once_multiple_joins_and_censored_round():
+    event=dict(started_time=20.,due=21.,completed_time=21.,affected_aircraft_ids=["new-a"],
+        pairs_checked=3,reused_pairs=7,full_fallback=False,reason="NEW_TRAFFIC",status="CERTIFIED",wall_s=1.,cpu_s=.8)
+    tasks=[dict(snapshot_time=0.,status="COMMITTED",submitted=13,finished_time=30.,normal_work_s=4.,
+                prepare_work_s=2.,revalidation_work_s=1.,revalidation_work_cpu_s=.8,dependency_guard_work_s=.3,
+                dependency_guard_work_cpu_s=.25,ready_registration_bookkeeping_cpu_s=.02,revalidation_count=1,revalidations=[event]),
+           dict(snapshot_time=35.,status="COMMITTED",submitted=2,finished_time=65.,revalidation_count=0,revalidations=[]),
+           dict(snapshot_time=90.,status="REVALIDATING",submitted=0,revalidation_work_s=.4,
+                revalidation_count=1,revalidations=[dict(event,started_time=119.,due=120.,status="GUARDING",geometry_completed_time=119.5,guard_delivery_due=120.)])]
+    del tasks[-1]["revalidations"][0]["completed_time"]
+    callbacks=[dict(planning_timing=dict(snapshot_time=r["snapshot_time"]),deferred=True,noop=False) for r in tasks]
+    value=runner.lifecycle_summary(tasks,callbacks,[dict(kind="dependency_guard",wall_s=.3,cpu_s=.25)])
+    assert value["full_normal_planning_work"]["total_s"]==pytest.approx(7.7)
+    assert value["timings"]["dependency_guard_work_s"]["total_s"]==pytest.approx(.3)
+    assert value["timings"]["dependency_guard_work_cpu_s"]["total_s"]==pytest.approx(.25)
+    assert value["timings"]["ready_registration_bookkeeping_cpu_s"]["total_s"]==pytest.approx(.02)
+    assert value["actual_joined_groups"]==2 and value["actual_submitted_plans"]==15
+    assert value["submitted_plans_by_joined_group"]==[13,2]
+    assert value["join_rate"]==1. and value["pending_nonempty_groups"]==1
+    reval=value["revalidation"]
+    assert reval["recorded_rounds"]==2 and reval["certified_rounds"]==1 and reval["pending_rounds"]==1
+    assert reval["affected_aircraft_ids"]==["new-a"] and reval["reused_pairs"]==14
+    assert runner.revalidation_summary([dict(snapshot_time=0.)])["declared_count"] is None
+    assert runner.revalidation_summary([dict(snapshot_time=0.)])["availability"]=="UNAVAILABLE_LEGACY_FIELDS"
+    rejection=runner.lifecycle_summary([dict(snapshot_time=i,status="REJECTED",finished_time=30.,reason=reason)
+        for i,reason in enumerate(("READY_DEADLINE_MISSED","TRAFFIC_CHANGED_AFTER_DEADLINE","EXTERNAL_TRAFFIC_MISSING","REVALIDATION_WORK_DEADLINE"))],[],[])
+    assert rejection["ready_deadline_rejections"]==1 and rejection["traffic_changed_after_deadline_rejections"]==1
+    assert rejection["external_traffic_missing_rejections"]==1
+    assert rejection["revalidation_work_deadline_rejections"]==1
+    assert runner.search_reuse_summary([{}])["cp"]["pair_cuts_reused"] is None
