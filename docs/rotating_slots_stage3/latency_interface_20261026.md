@@ -1,11 +1,12 @@
-# Normal planning with a future execution boundary — phase 1
+# Future-time normal planning, grouped ranking, and the completed 120 s pair
 
 This is an opt-in interface implementation, `planning_effective_state_v1`. The
 default synchronous callback and its full snapshot-version stale check remain
-available. Phase 1 does not change candidate ranking, CP budgets, dynamics,
+available. Phase 1 did not change candidate ranking, CP budgets, dynamics,
 geometry, safety certification, energy parameters, emergency policy, or the
-five-second normal planning heartbeat. No formal closed-loop comparison or
-training has been run for this interface.
+five-second normal planning heartbeat. The subsequent grouped-ranking phase and
+the single preregistered H/L closed-loop pair are now complete. The model was
+not retrained; results and limitations are recorded below.
 
 ## Timing and scope
 
@@ -173,15 +174,15 @@ JSON roundtrip containing a pending packet and wrapper state. Targeted legacy
 tests cover synchronous latency, exact-plan execution, stale atomic commits,
 detached certification, prefix reuse, and the existing checkpoint path.
 
-These are implementation checks, not H/L quality or latency-benefit evidence.
-Primary review is required before phase 2 or any formal server run.
+These were implementation checks, not H/L quality or latency-benefit evidence.
+Primary reviewed them before phase 2 and the formal server run.
 
 Observed local checks on 2026-10-26: scoped compile returned RC0; the final nine
 latency tests passed in 10.81 s, with isolated output under
 `artifacts/planning_latency_tests_20261026_final`. Nine selected existing
 synchronous/execution/stale/checkpoint tests passed in 2.91 s, under
 `artifacts/planning_latency_compat_20261026_a`. No full-repository test suite or
-formal experiment was run.
+formal experiment was run at that implementation-only checkpoint.
 
 The later approved-soft ordering regression extends the same natural-transition
 case: at the join boundary an old approved soft maneuver starts before a new
@@ -191,10 +192,10 @@ are normalized on both sides; unknown graph keys/hashes still reject. The
 single regression passed in 2.38 s; the original nine interface tests plus nine
 selected compatibility cases then passed together (18 tests, 6.97 s).
 
-## Preregistered short H/L protocol — implemented, not launched
+## Preregistered short H/L protocol — retained after completion
 
-This section fixes the next run before its results are observed. It is one pair,
-not a seed search or a performance claim. The dedicated entry point is
+This section retains the protocol fixed before results were observed. It is one
+pair, not a seed search or a performance claim. The dedicated entry point is
 `scripts/stage3/run_latency_interface.py`; it does not invoke the earlier 600s
 driver. The three small-world interface scenarios above precede this pair.
 
@@ -299,11 +300,107 @@ setup and previous boundary/checkpoint/log I/O; it is not pure online planning.
 overhead, not pure physics or planning delay. Terminal/job/receipt clocks retain
 their different replay-export and process-start boundaries.
 
-No outcome or formal run has been produced for this protocol by this task.
-The runner's local checks use small JSON/process-receipt fixtures only, with no
+The runner's local checks used small JSON/process-receipt fixtures only, with no
 real closed-loop rollout, solver, model load or inference.
 Compile/help returned RC0. The six runner fixture tests passed in 0.43 s
 (`artifacts/latency_campaign_tests_20261026_summary`), covering immutable model
 binding/input preparation, exact pair/caps, wrapper-preserving boundary and
 checkpoint serialization, caught/kill timeout evidence, pending-aware rates,
 and saved-output common-boundary/README summarization.
+
+## Completed run and limited primary review
+
+The pair ran from frozen commit
+`e1d677f69cdb38dd6aa5f9b97bea9337e5368611`, source hash
+`aa556ad2fb899ac3b8e31d649ed67f6fae4f75a1cdce1d6d8c4b2da652ab8f9f`.
+The server verified 97/97 frozen files and passed 102 targeted tests in 11.11 s.
+Both arms completed 120 s with RC0, independent observed terminals at 120 s,
+actual CPU 12, and the new-run ledger paused. There was no retraining or retry.
+The separate saved-artifact reporter passed two fixture tests and completed
+with RC0. Its source is outside the executed freeze and is recorded separately
+in the derived report provenance.
+
+| Observed at common/terminal 120 s | H | L |
+| --- | ---: | ---: |
+| Normal / emergency / energy-failed | 6 / 0 / 0 | 6 / 0 / 0 |
+| Airborne pending / admitted | 23 / 29 | 23 / 29 |
+| Cumulative energy (J) | 220937565.82748184 | 220937565.82748184 |
+| Holding (aircraft-s) | 2099.7414594252973 | 2099.7414594252973 |
+| All-task observed planning work (s) | 93.82621362886857 | 66.41665432287846 |
+| Finished-task complete planning P95 (s), n=3 | 27.81468610500451 | 18.20628157397732 |
+| Dispatch total (s) | 96.7808577066753 | 69.29948534839787 |
+| Committed joint groups / plans | 1 / 13 | 1 / 13 |
+| NEW_TRAFFIC rejected groups | 2 | 1 |
+| No-executable-prefix tasks | 0 | 1 |
+| Pending tasks | 1 COMPUTING | 1 PREPARED |
+| Old 5 s observed-work overruns / ready-deadline rejects | 4 / 0 | 4 / 0 |
+
+All-task work includes computation already performed for pending tasks; its
+distribution is not the complete-planning P95. The latter uses three finished
+tasks in each arm, including L's no-prefix task. The job-wall fields also include
+setup and prior checkpoint/log I/O and must not be presented as pure planning.
+
+Both actual joint commits occurred at t=30. H's subsequent nonempty groups were
+rejected for NEW_TRAFFIC at t=65 and t=100. L had a no-prefix result for its t=35
+snapshot and a NEW_TRAFFIC rejection at t=85. H's last task was still computing
+at the 120 s cutoff, with effective time about 132.173 s. L's last task was
+prepared in time (ready 108.540988 s <= deadline 119 s), but its scheduled
+publication at 120 s was censored by the fixed endpoint policy. It is pending, not a
+timeout or successful join. The 1/3 versus 1/2 join fractions have different
+finished nonempty denominators and L has one no-prefix task; they are not
+evidence of improved sustained joining.
+
+| Saved compute/search observation | H | L |
+| --- | ---: | ---: |
+| CP solve (s) | 32.0041 | 32.0043 |
+| Prefix validation (s) | 19.4328 | 3.10583 |
+| Trajectory validation (s) | 15.2334 | 4.87555 |
+| Feature / inference work (s) | no learned model ranking | 1.94851 / 7.99464 |
+| Attempts | 313 | 143 |
+| Catalog rounds | 12 | 8 |
+| Observed similar-candidate pruning | 0 | 0 |
+| Learned / cached learned ranks | — | 368 / 12 |
+
+The observed computation and validation work decreased, while CP work remained
+about 32 s and actual joining/landing outcomes did not improve. L's approximately
+9.94315 s of feature plus inference work also consumes the same 6 s per-callback
+candidate-active clock. Fewer attempts and smaller catalogs therefore do not
+alone show better candidate identification; inference can crowd generation.
+Grouping, shared prefix/geometry caches and the shared backend are not exclusive
+learned-model benefits. This is a single pair with a fixed model used on future
+projected inputs; it does not establish generalization, a quality advantage, or
+an isolated causal learning gain.
+
+The observed joining bottleneck was the conservative all-live dependency:
+NEW_TRAFFIC invalidated whole groups. Selective actual-conflict dependencies and
+bounded revalidation near the deadline remain future work only. The physical
+five-second heartbeat is unchanged, but coalescing while a task is busy does not
+guarantee a fresh replan every five seconds. Shared emergency timestamps and the
+atomic publication bookkeeping abstraction retain the limitations stated above.
+
+Primary independently reviewed the derived identity checks and replay audit:
+both initial/manifest/model/source identities match, both authoritative
+trajectory-hash sets and actual normal-start hash sets match, and each replay
+passed all 15 member hashes. Saved airborne PVA comparisons covered 3515/3548
+samples; maximum errors across the pair were p 2.842e-13 m, v 5.527e-14 m/s and
+a 6.972e-15 m/s². Each arm had 13 uniquely identified predecessor C2 comparisons,
+all errors 0, no unavailable predecessor, no unattributed normal starts and no
+start-time mismatch. These are saved-artifact checks, not new simulation or a
+universal safety claim. Independent rejected/pending proposal nonexecution by
+hash remains unavailable because their proposed hashes were not saved.
+
+The primary agent inspected the actual timeline and XY contact images and
+accepted readability/data faithfulness: `PRIMARY_VISUAL_REVIEW_PASS`. The H/L
+cumulative landing curves overlap. Contact-panel n counts all saved aircraft,
+including the three initial ground aircraft: n=27/28/32 at t=0/60/120 s versus
+admitted 24/25/29. Circles denote HOLD, downward triangles FINAL/descent, right
+triangles other airborne states, and squares other/ground states. Limited agent
+review is `PRIMARY_REVIEWED_LIMITED`; replay human acceptance remains
+`HUMAN_PENDING`.
+
+Local derived outputs (server analogues use the output directory above):
+
+- [Final report](D:/7_codespace/training_outputs/terminal/stage3_latency_interface_20261026/FINAL_REPORT.md), [analysis JSON](D:/7_codespace/training_outputs/terminal/stage3_latency_interface_20261026/analysis_summary.json), [primary review](D:/7_codespace/training_outputs/terminal/stage3_latency_interface_20261026/primary_review.json).
+- [Timeline PNG](D:/7_codespace/training_outputs/terminal/stage3_latency_interface_20261026/planning_timeline.png), [editable SVG](D:/7_codespace/training_outputs/terminal/stage3_latency_interface_20261026/planning_timeline.svg), [timeline CSV](D:/7_codespace/training_outputs/terminal/stage3_latency_interface_20261026/timeline.csv), [boundary quality CSV](D:/7_codespace/training_outputs/terminal/stage3_latency_interface_20261026/boundary_quality.csv).
+- [Saved XY contact PNG](D:/7_codespace/training_outputs/terminal/stage3_latency_interface_20261026/saved_xy_contact.png), [editable contact SVG](D:/7_codespace/training_outputs/terminal/stage3_latency_interface_20261026/saved_xy_contact.svg), [sample errors CSV](D:/7_codespace/training_outputs/terminal/stage3_latency_interface_20261026/replay_sample_errors.csv).
+- Authoritative replay indexes: [H](D:/7_codespace/training_outputs/terminal/stage3_latency_interface_20261026/evaluation/heuristic_reduced/replay/replay.json), [L](D:/7_codespace/training_outputs/terminal/stage3_latency_interface_20261026/evaluation/learned_reduced/replay/replay.json).
