@@ -1,0 +1,665 @@
+"""Future-time normal planning without running a speculative world branch.
+
+Only normal planning uses this interface. Emergency/admission retain the existing
+priority response semantics; their measured CPU service postpones normal work.
+"""
+from dataclasses import asdict, dataclass, replace
+from bisect import bisect_right
+from hashlib import sha256
+import math
+import time
+
+from .config import freeze, thaw, service_duration
+from .energy import evaluate_power
+from .models import ValidationResult
+from .trajectory import TrajectoryPlan, make_stable_plan
+from .world import (AIRBORNE, HOLD, _planning_context,
+                    evaluate_planning_snapshot)
+
+
+EFFECTIVE_STATE_VERSION = "planning_effective_state_v1"
+EMERGENCY_TIMING_MODE = "existing_priority_response_cpu_charged"
+EPS = 1.e-8
+
+
+@dataclass(frozen=True)
+class PlanningTiming:
+    snapshot_time: float
+    effective_time: float
+    ready_deadline: float
+
+    def __post_init__(self):
+        if (not all(math.isfinite(x) for x in asdict(self).values())
+                or not self.snapshot_time < self.ready_deadline < self.effective_time):
+            raise ValueError("snapshot_time < ready_deadline < effective_time required")
+
+    @classmethod
+    def from_lead(cls, snapshot_time, lead_seconds=30., preparation_margin=1.):
+        return cls(snapshot_time, snapshot_time+lead_seconds,
+                   snapshot_time+lead_seconds-preparation_margin)
+
+
+class ProjectionRejected(ValueError):
+    pass
+
+
+def _capacity(config):
+    return config.energy.equivalent_voltage_V*config.energy.reference_capacity_Ah*3600.
+
+
+def _motion(snapshot, original, target):
+    """Known commitment transitions and energy portions; no policy or integrator."""
+    a, cursor = original, snapshot.time
+    portions = []
+    fixed = tuple(p for p in (snapshot.active.get(a.id), snapshot.soft.get(a.id)) if p is not None)
+    active = soft = None
+    if a.status not in AIRBORNE:
+        if a.status == "LANDED_SERVICE" and a.service_end <= target+EPS:
+            a = replace(a, status="CLEARED", version=a.version+1)
+        return a, active, soft, portions
+    base = (TrajectoryPlan.from_dict(thaw(snapshot.trajectories[a.trajectory_hash]), snapshot.config)
+            if a.trajectory_hash in snapshot.trajectories else None)
+    for k, p in enumerate(fixed):
+        if p.start_time > cursor:
+            end = min(target, p.start_time)
+            if end > cursor:
+                hold = base if base is not None and base.kind == "STABLE" else make_stable_plan(
+                    a.id, a.ring, a.slot, cursor, max(cursor+1., end),
+                    source_version=a.version, config=snapshot.config)
+                portions.append((hold, cursor, end))
+                s = hold.state(end)
+                a = replace(a, p=s.p, v=s.v, a=s.a, jerk=s.jerk)
+            cursor = end
+            if target < p.start_time:
+                return a, None, p, portions
+        end = min(target, p.end_time)
+        if end > cursor:
+            portions.append((p, cursor, end))
+        s = p.state(end)
+        a = replace(a, p=s.p, v=s.v, a=s.a, jerk=s.jerk,
+                    trajectory_hash=p.trajectory_hash)
+        cursor = end
+        if target < p.end_time:
+            status = ("TRANSFER_O_M" if p.source_ring == "outer" else "TRANSFER_M_I") if p.kind == "TRANSFER" else p.kind
+            if p.pad_id is not None and target >= p.segments[0].end_time:
+                status = "VERTICAL_DESCENT"
+            a = replace(a, status=status)
+            return a, p, fixed[k+1] if k+1 < len(fixed) else None, portions
+        if p.pad_id is not None:
+            end_service = p.end_time+service_duration(snapshot.config, a.service_class)
+            a = replace(a, status="LANDED_SERVICE", ring=None, slot=None, pad_id=p.pad_id,
+                        touchdown_time=p.end_time, service_end=end_service,
+                        version=a.version+1, battery_power_w=0.)
+            if end_service <= target+EPS:
+                a = replace(a, status="CLEARED", version=a.version+1)
+            return a, None, None, portions
+        base = make_stable_plan(a.id, p.target_ring, p.target_slot, p.end_time,
+            p.end_time+1000., source_version=a.version+1, config=snapshot.config)
+        a = replace(a, status=HOLD[p.target_ring], ring=p.target_ring, slot=p.target_slot,
+                    version=a.version+1, trajectory_hash=base.trajectory_hash)
+    if target > cursor:
+        if base is None:
+            raise ProjectionRejected("MISSING_APPROVED_CONTINUATION:"+a.id)
+        portions.append((base, cursor, target))
+        s = base.state(target)
+        a = replace(a, p=s.p, v=s.v, a=s.a, jerk=s.jerk)
+    return a, active, soft, portions
+
+
+def project_visible_snapshot(snapshot, t_effective, *, timing=None, fine=False):
+    """Project revealed commitments only; never reveal arrivals or invoke advance.
+
+    SOC is a lower bound and peak use an upper bound including numerical error.
+    Unknown/nonfinite energy or exhausted bounds explicitly reject projection.
+    """
+    if not math.isfinite(t_effective) or t_effective < snapshot.time:
+        raise ProjectionRejected("INVALID_EFFECTIVE_TIME")
+    if timing is not None and abs(t_effective-timing.effective_time) > EPS:
+        raise ProjectionRejected("TIMING_MISMATCH")
+    context = _planning_context(snapshot)
+    aircraft, active, soft = {}, {}, {}
+    trajectories = {h: thaw(v) for h, v in snapshot.trajectories.items()}
+    for aid, original in snapshot.aircraft.items():
+        if fine and original.status in AIRBORNE:
+            context._refine_executed_energy(aid)
+        source = context.aircraft[aid]
+        a, current, future, portions = _motion(snapshot, source, t_effective)
+        estimates = []
+        for p, start, end in portions:
+            q = context._energy(p, start, end, fine=True if fine else None)
+            if not q.valid or not all(math.isfinite(x) for x in
+                    (q.joules, q.soc_used, q.peak_seconds, q.error_j, q.peak_error_s)):
+                raise ProjectionRejected("ENERGY_UNKNOWN:"+aid)
+            estimates.append(q)
+            trajectories[p.trajectory_hash] = p.to_dict()
+            context._record_energy_charge(aid, p, start, end, q)
+        history = context._energy_state()["executed"].get(aid, ())
+        error_j = math.fsum(r["error_j"] for r in history)
+        peak_error = math.fsum(r["peak_error_s"] for r in history)
+        # Stable portions have no recorded numerical uncertainty.
+        soc = source.soc-math.fsum(q.soc_used for q in estimates)-error_j/_capacity(snapshot.config)
+        peak = source.peak_seconds+math.fsum(q.peak_seconds for q in estimates)+peak_error
+        if source.status in AIRBORNE and (soc <= 0 or peak > 120.):
+            raise ProjectionRejected("PROJECTED_ENERGY_INSUFFICIENT:"+aid)
+        a = replace(a, soc=soc, peak_seconds=peak,
+                    energy_j=source.energy_j+math.fsum(q.joules for q in estimates),
+                    battery_power_w=(evaluate_power(a.v,a.a,snapshot.config).battery_w
+                                     if a.status in AIRBORNE else 0.))
+        aircraft[aid] = a
+        if current is not None: active[aid] = current
+        if future is not None: soft[aid] = future
+        if a.status in HOLD.values() and a.trajectory_hash not in trajectories:
+            # The exact stable plan generated at a known completed endpoint.
+            completed = [p for p in (snapshot.active.get(aid),snapshot.soft.get(aid))
+                         if p is not None and p.end_time <= t_effective]
+            if completed:
+                p = completed[-1]
+                hold = make_stable_plan(aid,p.target_ring,p.target_slot,p.end_time,p.end_time+1000.,
+                                        source_version=a.version,config=snapshot.config)
+                trajectories[hold.trajectory_hash] = hold.to_dict()
+    live = {p.trajectory_hash for p in active.values()}
+    dependencies = {h: v for h,v in snapshot.dependencies.items() if h in live}
+    fields = (EFFECTIVE_STATE_VERSION,t_effective,aircraft,active,soft,snapshot.slots,
+              snapshot.pads,dependencies,snapshot.source_clear,context._energy_state(),timing)
+    version = sha256(repr(fields).encode()).hexdigest()
+    return replace(snapshot,time=t_effective,version=version,aircraft=freeze(aircraft),
+        active=freeze(active),soft=freeze(soft),dependencies=freeze(dependencies),
+        trajectories=freeze(trajectories),energy_ledger=freeze(context._energy_state()),
+        planning_timing=timing,effective_state_version=EFFECTIVE_STATE_VERSION)
+
+
+def _emergency_key(a):
+    e = a.emergency
+    return (e.eligible,e.declared,e.pending,e.charged,e.state,e.declaration_time,
+            e.declaration_ring,e.start_time,e.start_ring)
+
+
+def _physical_key(a):
+    return (a.status,a.ring,a.slot,a.pad_id,a.version,a.trajectory_hash,
+            a.touchdown_time,a.service_end,a.service_class)
+
+
+def _reservations(rows, resources, effective):
+    # Kind/hash may naturally become occupied after a known maneuver settles.
+    # Release support identity is checked separately via active/soft/dependencies.
+    return tuple(sorted((repr(r.resource),r.aircraft_id,max(r.start,effective),r.end)
+        for r in rows if r.resource in resources and r.end > effective))
+
+
+def _commitment_table(source, original, effective):
+    """Precompute natural transition signatures during measured preparation."""
+    cuts = {source.time,effective}
+    for p in (source.active.get(original.id),source.soft.get(original.id)):
+        if p is not None:
+            cuts.update((p.start_time,p.end_time))
+            if p.pad_id is not None:
+                cuts.update((p.segments[0].end_time,
+                             p.end_time+service_duration(source.config,original.service_class)))
+    if original.service_end is not None: cuts.add(original.service_end)
+    rows = []
+    for t in sorted(t for t in cuts if source.time<=t<=effective):
+        a,active,soft,_ = _motion(source,original,t)
+        rows.append((t,_physical_key(a),active,soft))
+    return tuple(rows)
+
+
+def _dependency_table(source, effective):
+    """Known active/soft release graphs at their approved transition times."""
+    approved=tuple((*source.active.values(),*source.soft.values()))
+    cuts={source.time,effective}
+    cuts.update(t for p in approved for t in (p.start_time,p.end_time) if source.time<=t<=effective)
+    context=_planning_context(source)
+    rows=[]
+    for t in sorted(cuts):
+        active,soft={},{}
+        for aid,a in source.aircraft.items():
+            _,current,future,_=_motion(source,a,t)
+            if current is not None: active[aid]=current
+            if future is not None: soft[aid]=future
+        context.active,context.soft=active,soft
+        completed={p.trajectory_hash for p in approved if p.end_time<=t}
+        graph={}
+        for p in active.values():
+            if p.aircraft_id in source.active and source.active[p.aircraft_id]==p:
+                if p.trajectory_hash not in source.dependencies: continue
+                supports=source.dependencies[p.trajectory_hash]
+            else:
+                supports=(context._release_supports(p.target_ring,p.target_slot,p.aircraft_id,context.slots,soft)
+                          if p.target_ring is not None else ())
+            graph[p.trajectory_hash]=tuple(sorted(set(supports)-completed))
+        rows.append((t,graph,tuple(sorted(completed))))
+    return tuple(rows)
+
+
+def prepare_submission(world, plans, timing):
+    """Issue a world-owned packet after full certification and transaction prep.
+
+    The public publish API accepts only an issued token, never caller-supplied
+    prepared calendars or a caller-constructed SubmissionEvaluation.
+    """
+    started = time.perf_counter()
+    plans = tuple(plans)
+    if (not isinstance(timing,PlanningTiming) or world.time > timing.ready_deadline
+            or any(abs(p.start_time-timing.effective_time)>EPS for p in plans)
+            or any(p.kind not in ("TRANSFER","FINAL_NORMAL") for p in plans)):
+        return ValidationResult(False,"REJECTED","INVALID_LATENCY_PREFIX"), None
+    source = world.build_planning_snapshot()
+    source = replace(source,aircraft=freeze(dict(source.aircraft)),active=freeze(dict(source.active)),
+                     soft=freeze(dict(source.soft)),requests=freeze(dict(source.requests)))
+    try:
+        projected = project_visible_snapshot(source,timing.effective_time,timing=timing,fine=True)
+    except ProjectionRejected as exc:
+        return ValidationResult(False,"REJECTED",str(exc)), None
+    context = _planning_context(projected)
+    if not plans:
+        return ValidationResult(False,"REJECTED","NO_EXECUTABLE_PREFIX"), None
+    if any(p.aircraft_id in projected.active or p.aircraft_id in projected.soft for p in plans):
+        return ValidationResult(False,"REJECTED","EXISTING_EFFECTIVE_COMMITMENT"), None
+    prepared = context._prepare_submission(plans)
+    if isinstance(prepared,ValidationResult): return prepared, None
+    if (context.aircraft != dict(projected.aircraft)
+            or freeze(context._energy_state()["executed"]) != projected.energy_ledger["executed"]):
+        return ValidationResult(False,"REJECTED","UNIFORM_REFINEMENT_REQUIRED"), None
+    soft, slots, pads, clears, redirects, fine_plans = prepared
+    ids = {p.aircraft_id for p in plans}
+    # Normal prefixes cannot secretly preempt another entity's commitment.
+    if redirects or any(soft.get(aid)!=p for aid,p in projected.soft.items() if aid not in ids):
+        return ValidationResult(False,"REJECTED","NONLOCAL_LATENCY_TRANSACTION"), None
+    starts = {}
+    for p in plans:
+        q = context._energy(p,p.start_time,p.end_time,fine=True)
+        a = projected.aircraft[p.aircraft_id]
+        normal_exception = (p.kind=="FINAL_NORMAL" and a.ring=="inner" and
+            not a.emergency.declared and not a.emergency.pending and not context._rescue_v6())
+        if (a.emergency.declared or ((a.emergency.eligible or a.emergency.pending) and not normal_exception)):
+            return ValidationResult(False,"REJECTED","EMERGENCY_DISPOSITION_REQUIRED"), None
+        if (not q.valid or a.soc < q.soc_used+q.error_j/_capacity(world.config)+(.25 if p.kind=="FINAL_NORMAL" else 0.)
+                or a.peak_seconds+q.peak_seconds+q.peak_error_s > 120.):
+            return ValidationResult(False,"REJECTED","PREPARED_ENERGY_BOUND"), None
+        fine_plans[p.trajectory_hash] = True
+        deps = (context._release_supports(p.target_ring,p.target_slot,p.aircraft_id,slots,soft)
+                if p.target_ring is not None else set())
+        starts[p.aircraft_id] = (q,tuple(sorted(deps)))
+    resources = {r.resource for r in (*source.slots,*slots.reservations) if r.aircraft_id in ids}
+    pad_resources = {r.resource for r in (*source.pads,*pads.reservations) if r.aircraft_id in ids}
+    registry = world.__dict__.setdefault("_planning_latency_packets",{})
+    token = sha256(repr((timing,plans,source.version,len(registry),id(prepared))).encode()).hexdigest()
+    registry[token] = dict(timing=timing,source=source,projected=projected,plans=plans,
+        slots=tuple(r for r in slots.reservations if r.aircraft_id in ids),
+        pads=tuple(r for r in pads.reservations if r.aircraft_id in ids),
+        resources=tuple(sorted(resources,key=repr)),pad_resources=tuple(sorted(pad_resources,key=repr)),
+        resource_key=_reservations(source.slots,resources,timing.effective_time),
+        pad_key=_reservations(source.pads,pad_resources,timing.effective_time),
+        clears={p.trajectory_hash:clears[p.trajectory_hash] for p in plans},
+        fine_plans={p.trajectory_hash:True for p in plans},starts=starts,
+        commitment_tables={aid:_commitment_table(source,a,timing.effective_time)
+            for aid,a in source.aircraft.items() if a.status in AIRBORNE or a.status=="LANDED_SERVICE"},
+        dependency_table=_dependency_table(source,timing.effective_time),
+        ready_at=None)
+    registry[token]["not_ready_before"] = world.time+time.perf_counter()-started
+    return ValidationResult(True,"PREPARED","",dict(token=token)), token
+
+
+def guard_submission(world, token):
+    packet = world.__dict__.get("_planning_latency_packets",{}).get(token)
+    if packet is None: return ValidationResult(False,"REJECTED","UNISSUED_LATENCY_PACKET")
+    source, target = packet["source"], packet["timing"].effective_time
+    if world.failed or world.time > target+EPS or world.config.config_hash != source.config.config_hash:
+        return ValidationResult(False,"REJECTED","LATENCY_PACKET_EXPIRED")
+    if (getattr(world,"rescue_rule_profile","legacy_v5") !=
+            (source.emergency_monitor or {}).get("rescue_rule_profile","legacy_v5")):
+        return ValidationResult(False,"REJECTED","EMERGENCY_POLICY_CHANGED")
+    expected_live = set()
+    for aid, table in packet["commitment_tables"].items():
+        original = source.aircraft[aid]
+        row = table[bisect_right(tuple(r[0] for r in table),world.time)-1]
+        _, expected_key, active, soft = row
+        actual = world.aircraft.get(aid)
+        if actual is None or _physical_key(actual)!=expected_key:
+            return ValidationResult(False,"REJECTED","TRAFFIC_COMMITMENT_CHANGED",dict(aircraft_id=aid))
+        if expected_key[0] in AIRBORNE or expected_key[0]=="LANDED_SERVICE": expected_live.add(aid)
+        if (_emergency_key(actual)!=_emergency_key(original)
+                or world.active.get(aid)!=active or world.soft.get(aid)!=soft):
+            return ValidationResult(False,"REJECTED","DEPENDENCY_CHANGED",dict(aircraft_id=aid))
+        capacity = _capacity(world.config)
+        if abs((actual.soc+actual.energy_j/capacity)-(original.soc+original.energy_j/capacity)) > 1e-9:
+            return ValidationResult(False,"REJECTED","ENERGY_BASIS_CHANGED",dict(aircraft_id=aid))
+        if abs(world.time-target)<=EPS:
+            bound = packet["projected"].aircraft[aid]
+            if any(math.dist(getattr(actual,k),getattr(bound,k)) > tol
+                   for k,tol in (("p",1e-6),("v",1e-7),("a",1e-7))):
+                return ValidationResult(False,"REJECTED","CONTINUATION_STATE_CHANGED",dict(aircraft_id=aid))
+            if actual.soc+1e-12 < bound.soc or actual.peak_seconds > bound.peak_seconds+1e-10:
+                return ValidationResult(False,"REJECTED","ENERGY_BOUND_CHANGED",dict(aircraft_id=aid))
+    actual_live = {a.id for a in world.aircraft.values() if a.status in AIRBORNE or a.status=="LANDED_SERVICE"}
+    if actual_live != expected_live:
+        return ValidationResult(False,"REJECTED","NEW_TRAFFIC")
+    if (_reservations(world.slots.reservations,packet["resources"],target)!=packet["resource_key"]
+            or _reservations(world.pads.reservations,packet["pad_resources"],target)!=packet["pad_key"]):
+        return ValidationResult(False,"REJECTED","RESOURCE_DEPENDENCY_CHANGED")
+    graph_table=packet["dependency_table"]
+    _,expected_graph,completed=graph_table[bisect_right(tuple(r[0] for r in graph_table),world.time)-1]
+    actual_graph={h:tuple(sorted(set(values)-set(completed))) for h,values in world.dependencies.items()}
+    if expected_graph != actual_graph:
+        return ValidationResult(False,"REJECTED","RELEASE_DEPENDENCY_CHANGED")
+    for p in (*world.active.values(),*world.soft.values()):
+        if source.source_clear.get(p.trajectory_hash) != world._source_clear.get(p.trajectory_hash):
+            return ValidationResult(False,"REJECTED","RELEASE_TIME_CHANGED")
+    for p in packet["plans"]:
+        if world._emergency_priority_wait(p) is not None:
+            return ValidationResult(False,"REJECTED","EMERGENCY_PRIORITY_CHANGED")
+    return ValidationResult(True,"GUARDED")
+
+
+def mark_submission_ready(world, token, *, handoff_delay=0.):
+    """World-issued readiness receipt, required independently of wrapper state."""
+    started = time.perf_counter()
+    if not math.isfinite(handoff_delay) or handoff_delay < 0:
+        return ValidationResult(False,"REJECTED","INVALID_HANDOFF_DELAY")
+    packet = world.__dict__.get("_planning_latency_packets",{}).get(token)
+    if packet is None: return ValidationResult(False,"REJECTED","UNISSUED_LATENCY_PACKET")
+    if world.time < packet["not_ready_before"]:
+        return ValidationResult(False,"REJECTED","PREPARATION_NOT_COMPLETE")
+    if world.time > packet["timing"].ready_deadline+EPS:
+        return ValidationResult(False,"REJECTED","READY_DEADLINE_MISSED")
+    result = guard_submission(world,token)
+    ready_at = world.time+handoff_delay+time.perf_counter()-started
+    if ready_at > packet["timing"].ready_deadline+EPS:
+        return ValidationResult(False,"REJECTED","READY_DEADLINE_MISSED")
+    if result.accepted:
+        packet["ready_at"] = ready_at
+        return ValidationResult(True,"GUARDED","",dict(ready_at=ready_at))
+    return result
+
+
+def publish_submission(world, token):
+    """Light guard plus atomic delta/activation; no trajectory/energy integration."""
+    registry = world.__dict__.get("_planning_latency_packets",{})
+    packet = registry.get(token)
+    if packet is None: return ValidationResult(False,"REJECTED","UNISSUED_LATENCY_PACKET")
+    if abs(world.time-packet["timing"].effective_time)>EPS:
+        return ValidationResult(False,"REJECTED","NOT_EFFECTIVE_TIME")
+    if packet["ready_at"] is None or packet["ready_at"] > packet["timing"].ready_deadline+EPS:
+        return ValidationResult(False,"REJECTED","NO_TIMELY_READY_RECEIPT")
+    if world.time < packet["ready_at"]:
+        return ValidationResult(False,"REJECTED","PREPARATION_NOT_COMPLETE")
+    guarded = guard_submission(world,token)
+    registry.pop(token,None)
+    if not guarded.accepted: return guarded
+    plans = packet["plans"]
+    ids = {p.aircraft_id for p in plans}
+    # Preserve all unrelated current transactions and past occupancy intervals.
+    slots, pads = world.slots.clone(), world.pads.clone()
+    for calendar,name in ((slots,"slots"),(pads,"pads")):
+        calendar._entries = [r for r in calendar.reservations if r.aircraft_id not in ids or r.end<=world.time]
+        calendar._entries.extend(r for r in packet[name] if r.end>world.time)
+        calendar._entries.sort(key=lambda r:(str(r.resource),r.start,r.aircraft_id,r.kind))
+    world.slots, world.pads = slots, pads
+    world._source_clear.update(packet["clears"])
+    world._energy_state()["fine_plans"].update(packet["fine_plans"])
+    for p in plans:
+        a = world.aircraft[p.aircraft_id]
+        q, deps = packet["starts"][a.id]
+        world.trajectories[p.trajectory_hash] = p.to_dict()
+        world.active[a.id] = p
+        world.slots.mark_committed(p.trajectory_hash)
+        world.pads.mark_committed(p.trajectory_hash)
+        world.dependencies[p.trajectory_hash] = deps
+        e = a.emergency
+        if world._rescue_v6():
+            e = replace(e,normal_path_soc=None,normal_path_wait_seconds=0.,
+                        normal_estimate_epoch=None,normal_estimate_source=None)
+        if p.kind=="FINAL_NORMAL" and a.ring=="inner" and not e.declared:
+            e = replace(e,eligible=False,pending=False,state="NONE")
+        status = ("TRANSFER_O_M" if p.source_ring=="outer" else "TRANSFER_M_I") if p.kind=="TRANSFER" else p.kind
+        touchdown_soc = a.soc-q.soc_used if p.kind=="FINAL_NORMAL" else None
+        world.aircraft[a.id] = replace(a,status=status,emergency=e,trajectory_hash=p.trajectory_hash,
+                                      normal_final_touchdown_soc=touchdown_soc)
+        world._event("plan_committed",a.id,trajectory_hash=p.trajectory_hash,
+                     start_time=p.start_time,end_time=p.end_time,planning_timing=asdict(packet["timing"]))
+        details = (dict(start_soc=a.soc,required_soc=.25+q.soc_used,predicted_touchdown_soc=touchdown_soc)
+                   if p.kind=="FINAL_NORMAL" else {})
+        world._event("maneuver_started",a.id,trajectory_hash=p.trajectory_hash,
+                     dependencies=list(deps),maneuver_kind=p.kind,**details)
+    world._record(force=True)
+    return ValidationResult(True,"ACCEPTED","",dict(submitted=len(plans)))
+
+
+class _FuturePort:
+    """Read-only future state plus a deferred proposal sink."""
+    def __init__(self, snapshot, source):
+        self._snapshot, self._source = snapshot, source
+        self.proposal, self.evidence = None, []
+
+    @property
+    def time(self): return self._snapshot.time
+    @property
+    def config(self): return self._snapshot.config
+    @property
+    def aircraft(self): return self._snapshot.aircraft
+    @property
+    def active(self): return self._snapshot.active
+    @property
+    def soft(self): return self._snapshot.soft
+    @property
+    def requests(self): return self._snapshot.requests
+    def build_planning_snapshot(self): return self._snapshot
+    def snapshot(self): return self._snapshot
+    def evaluate_submission(self,plans,*,cancel=(),snapshot=None):
+        return evaluate_planning_snapshot(snapshot or self._snapshot,plans,cancel=cancel)
+    def refine_planning_boundary(self):
+        self._snapshot = project_visible_snapshot(self._source,self.time,
+            timing=self._snapshot.planning_timing,fine=True)
+        return self._snapshot
+    def commit_validated_prefix(self,result,snapshot_version=None):
+        if (result.snapshot_version != self._snapshot.version or not result.accepted
+                or result.refinement_required or result.cancel):
+            return ValidationResult(False,"REJECTED","INVALID_DEFERRED_PROPOSAL")
+        self.proposal = tuple(result.plans)
+        return ValidationResult(False,"DEFERRED","AWAITING_EFFECTIVE_TIME")
+    def report_normal_evidence(self,rows,snapshot_version):
+        self.evidence.extend(dict(row) for row in rows)
+        return ValidationResult(False,"DEFERRED","AWAITING_ACTUAL_COMMIT")
+
+
+class LatencyAwareScheduler:
+    """One normal task with coalesced triggers and executor-owned delivery events."""
+    def __init__(self, callback, *, lead_seconds=30., preparation_margin=1., clock=time.perf_counter):
+        PlanningTiming.from_lead(0.,lead_seconds,preparation_margin)
+        self.callback = callback
+        self.lead_seconds, self.preparation_margin = lead_seconds, preparation_margin
+        self.clock = clock
+        self.pending = None
+        self.dirty = False
+        self.records, self.online_services = [], []
+        self._idle_service = (None,0.)
+        self._service_until = 0.
+        self._handoff_service = 0.
+
+    @property
+    def planning_profile(self): return getattr(self.callback,"planning_profile","progress_tail_v7")
+
+    @property
+    def next_event_time(self):
+        if self.pending is None: return math.inf
+        return self.pending["due"]
+
+    def online_service(self, now, wall_s, cpu_s, kind):
+        if wall_s < 0 or not math.isfinite(wall_s): raise ValueError("invalid online service")
+        self.online_services.append(dict(sequence=len(self.online_services),time=now,kind=kind,
+            wall_s=wall_s,cpu_s=cpu_s,emergency_timing_mode=EMERGENCY_TIMING_MODE))
+        if self.pending is not None:
+            self.pending["online_service_s"] += wall_s
+            if self.pending["stage"] in ("RESULT","PREPARING","READY_SERVICE"):
+                if self.pending["due"] <= now+EPS:
+                    # Work has completed before this priority handoff. Charge the
+                    # handoff once to the next stage, rather than re-serving a
+                    # completion event forever at successively later timestamps.
+                    self._handoff_service += wall_s
+                else:
+                    self.pending["due"] += wall_s
+        else:
+            old_time, value = self._idle_service
+            self._idle_service = (now,wall_s+(value if old_time==now else 0.))
+            self._service_until = max(now,self._service_until)+wall_s
+
+    def __call__(self, observation, port=None):
+        port = observation if port is None else port
+        if self.pending is not None:
+            if not self.dirty:
+                self.dirty = True
+                port.planning_latency_event("normal_trigger_coalesced")
+            return
+        timing = PlanningTiming.from_lead(port.time,self.lead_seconds,self.preparation_margin)
+        self.dirty = False
+        started, started_cpu = self.clock(), time.process_time()
+        proposal, evidence, reason = None, [], None
+        try:
+            source = port.build_planning_snapshot()
+            future = _FuturePort(project_visible_snapshot(source,timing.effective_time,timing=timing),source)
+            self.callback(future)
+            proposal, evidence = future.proposal, future.evidence
+            if proposal is None: reason = "NO_CERTIFIED_PREFIX"
+            elif not proposal: reason = "NO_EXECUTABLE_PREFIX"
+        except ProjectionRejected as exc:
+            reason = str(exc)
+        duration = self.clock()-started
+        if duration < 0 or not math.isfinite(duration): raise ValueError("invalid normal duration")
+        service = max(0.,self._service_until-port.time)
+        self._service_until = port.time
+        self._idle_service = (None,0.)
+        record = dict(interface=EFFECTIVE_STATE_VERSION,emergency_timing_mode=EMERGENCY_TIMING_MODE,
+            **asdict(timing),normal_work_s=duration,normal_work_cpu_s=time.process_time()-started_cpu,
+            prepare_work_s=None,online_service_s=service,
+            status="COMPUTING",submitted=0,commit_status="DEFERRED")
+        self.records.append(record)
+        self.pending = dict(timing=timing,stage="RESULT",due=port.time+duration+service,
+            proposal=proposal,evidence=evidence,reason=reason,token=None,online_service_s=service,
+            record_index=len(self.records)-1)
+        port.planning_latency_event("normal_task_started",**record)
+
+    def _finish(self, port, status, reason="", result=None):
+        p = self.pending
+        if p["token"]: port.discard_latency_submission(p["token"])
+        record = self.records[p["record_index"]]
+        record.update(status=status,reason=reason,finished_time=port.time,
+            online_service_s=p["online_service_s"],commit_status=getattr(result,"status","REJECTED"),
+            submitted=(len(p["proposal"]) if result is not None and result.accepted else 0),
+            dirty=self.dirty)
+        port.planning_latency_event("normal_task_finished",**record)
+        acknowledge = getattr(self.callback,"record_latency_ack",None)
+        if callable(acknowledge):
+            acknowledge(p["timing"],record,tuple(p["proposal"] or ()))
+        self.pending = None
+        if self._handoff_service:
+            # A rejection can end normal work while this priority dispatch's
+            # service still occupies the virtual CPU. Do not give it away.
+            self._service_until = max(port.time,self._service_until)+self._handoff_service
+        self._handoff_service = 0.
+
+    def planning_event(self, port):
+        if self.pending is None: return
+        p = self.pending
+        timing = p["timing"]
+        if p["due"] > port.time+EPS: return
+        if p["stage"] in ("RESULT","PREPARING","READY_SERVICE") and (
+                port.time > timing.ready_deadline+EPS or p["due"] > timing.ready_deadline+EPS):
+            self._finish(port,"REJECTED","READY_DEADLINE_MISSED")
+            return
+        record = self.records[p["record_index"]]
+        if p["stage"] == "RESULT":
+            record["result_time"] = port.time+self._handoff_service
+            if p["reason"]:
+                self._finish(port,"NO_EXECUTABLE_PREFIX" if p["reason"]=="NO_EXECUTABLE_PREFIX" else "REJECTED",p["reason"])
+                return
+            started, started_cpu = self.clock(), time.process_time()
+            evaluation, token = port.prepare_latency_submission(p["proposal"],timing)
+            duration = self.clock()-started
+            if duration < 0 or not math.isfinite(duration): raise ValueError("invalid preparation duration")
+            preparation_start = port.time+self._handoff_service
+            p.update(stage="PREPARING",due=preparation_start+duration,
+                     token=token,reason=None if evaluation.accepted else evaluation.reason)
+            self._handoff_service = 0.
+            record.update(prepare_work_s=duration,prepare_work_cpu_s=time.process_time()-started_cpu,
+                          preparation_started_time=preparation_start,
+                          preparation_snapshot_time=port.time,
+                          status="PREPARING")
+            port.planning_latency_event("normal_preparation_started",**record)
+        elif p["stage"] == "PREPARING":
+            if p["reason"]:
+                self._finish(port,"REJECTED",p["reason"])
+                return
+            started, started_cpu = self.clock(), time.process_time()
+            guarded = port.latency_packet_guard(p["token"]) if p["token"] is not None else None
+            guard_work = self.clock()-started
+            if guard_work < 0 or not math.isfinite(guard_work): raise ValueError("invalid ready guard duration")
+            record["ready_guard_work_s"] = guard_work
+            record["prepare_work_s"] += guard_work
+            record["prepare_work_cpu_s"] += time.process_time()-started_cpu
+            ready = port.time+self._handoff_service+guard_work
+            self._handoff_service = 0.
+            p.update(stage="READY_SERVICE",due=ready,
+                     reason=guarded.reason if guarded is not None and not guarded.accepted else None)
+            record["ready_time"] = ready
+        elif p["stage"] == "READY_SERVICE":
+            if p["reason"]:
+                self._finish(port,"REJECTED",p["reason"])
+                return
+            bookkeeping, bookkeeping_cpu = time.perf_counter(), time.process_time()
+            handoff = self._handoff_service
+            guard = port.mark_latency_submission_ready(p["token"],handoff)
+            registration = time.perf_counter()-bookkeeping
+            registration_cpu = time.process_time()-bookkeeping_cpu
+            record["ready_registration_bookkeeping_s"] = registration
+            if not guard.accepted:
+                # _finish carries the already-recorded handoff into the CPU
+                # queue; only the new registration work is recorded again.
+                self._finish(port,"REJECTED",guard.reason)
+                self.online_service(port.time,registration,registration_cpu,"ready_registration")
+            else:
+                self._handoff_service = 0.
+                p.update(stage="PREPARED",due=timing.effective_time)
+                record.update(status="PREPARED",commit_status="DEFERRED",ready_time=guard.details["ready_at"])
+                self.online_service(port.time,registration,registration_cpu,"ready_registration")
+                port.planning_latency_event("normal_packet_prepared",**record)
+        elif p["stage"] == "PREPARED":
+            bookkeeping, bookkeeping_cpu = time.perf_counter(), time.process_time()
+            result = port.publish_latency_submission(p["token"])
+            publication_wall, publication_cpu = time.perf_counter()-bookkeeping,time.process_time()-bookkeeping_cpu
+            record.update(publication_bookkeeping_wall_s=publication_wall,
+                publication_bookkeeping_cpu_s=publication_cpu,
+                publication_bookkeeping_in_delivery_delay=False)
+            evidence_wall = evidence_cpu = None
+            if result.accepted and p["evidence"]:
+                started, started_cpu = time.perf_counter(), time.process_time()
+                report = port.report_normal_evidence(p["evidence"],port.build_planning_snapshot().version)
+                evidence_wall,evidence_cpu = time.perf_counter()-started,time.process_time()-started_cpu
+                record["normal_evidence_status"] = report.status
+            record.update(normal_evidence_wall_s=0. if evidence_wall is None else evidence_wall,
+                          normal_evidence_cpu_s=0. if evidence_cpu is None else evidence_cpu)
+            self._finish(port,"COMMITTED" if result.accepted else "REJECTED",result.reason,result)
+            # Atomic event bookkeeping is measured, then occupies the subsequent
+            # CPU service timeline. It is never backdated as pre-commit latency.
+            self.online_service(port.time,publication_wall,publication_cpu,"publication_bookkeeping")
+            if evidence_wall is not None:
+                self.online_service(port.time,evidence_wall,evidence_cpu,"normal_evidence")
+
+    def state_dict(self):
+        return dict(interface=EFFECTIVE_STATE_VERSION,emergency_timing_mode=EMERGENCY_TIMING_MODE,
+            lead_seconds=self.lead_seconds,preparation_margin=self.preparation_margin,
+            callback=self.callback.state_dict(),pending=self.pending,dirty=self.dirty,
+            records=self.records,online_services=self.online_services,
+            idle_service=self._idle_service,handoff_service=self._handoff_service,
+            service_until=self._service_until)
+
+    def load_state_dict(self, state):
+        if (state["interface"]!=EFFECTIVE_STATE_VERSION
+                or state["emergency_timing_mode"]!=EMERGENCY_TIMING_MODE
+                or state["lead_seconds"]!=self.lead_seconds
+                or state["preparation_margin"]!=self.preparation_margin):
+            raise ValueError("planning latency interface binding mismatch")
+        self.callback.load_state_dict(state["callback"])
+        self.pending,self.dirty = state["pending"],state["dirty"]
+        self.records,self.online_services = state["records"],state["online_services"]
+        self._idle_service,self._handoff_service = state["idle_service"],state["handoff_service"]
+        self._service_until = state["service_until"]

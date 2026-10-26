@@ -136,6 +136,13 @@ class PlanningBudget:
             self.truncations.add("AIRCRAFT_ATTEMPT_LIMIT"); return False
         return True
 
+    def generation_stop_reason(self):
+        """Candidate exhaustion does not consume the existing-catalog solver."""
+        if self.elapsed>=self.soft_seconds: return "SOFT_BUDGET"
+        if self.candidate_elapsed>=self.candidate_seconds: return "CANDIDATE_WORK_CUTOFF"
+        if sum(self.attempts.values())>=self.max_attempts: return "GLOBAL_ATTEMPT_LIMIT"
+        return None
+
     def watchdog_ok(self):
         if self.elapsed < self.watchdog_seconds: return True
         self.truncations.add("WATCHDOG"); return False
@@ -265,6 +272,12 @@ class PlanningResult:
 
 def build_planning_snapshot(port):
     return port.build_planning_snapshot()
+
+
+def _executable_start(snapshot, start):
+    timing = getattr(snapshot,"planning_timing",None)
+    return (abs(start-timing.effective_time)<=1.e-8 if timing is not None
+            else start<=snapshot.time+5.+1.e-8)
 
 
 def _sum_key(columns):
@@ -744,7 +757,7 @@ class EvaluationContext:
         # a future normal-final suffix cannot suppress an inward transfer.
         if (column.kind=="MOVE" and column.plans and column.aircraft_id not in self.snapshot.soft
             and column.plans[0].kind=="FINAL_NORMAL"
-            and column.plans[0].start_time<=self.snapshot.time+5.+1.e-8):
+            and _executable_start(self.snapshot,column.plans[0].start_time)):
             from .world import emergency_priority_blocker, STAGE2_POLICY_ID
             if (self.snapshot.emergency_monitor or {}).get("experiment_policy_id")==STAGE2_POLICY_ID:
                 kwargs={}
@@ -809,7 +822,7 @@ class EvaluationContext:
         for c in columns:
             if c.kind in ("KEEP","WAIT") or not c.plans: continue
             p = c.plans[0]
-            if p.start_time <= self.snapshot.time+5.+1.e-8 and p.aircraft_id not in self.snapshot.soft:
+            if _executable_start(self.snapshot,p.start_time) and p.aircraft_id not in self.snapshot.soft:
                 out.append(p)
         return tuple(out)
 
@@ -1418,7 +1431,8 @@ class CandidateProvider:
             validation=context.check_single(c)
             hook=getattr(runtime,"record_column_validation",None)
             if hook is not None: hook(c,validation,time.perf_counter()-w,time.process_time()-cpu,context.cache_stats["single_hits"]>hits)
-            retained=validation.accepted and retain_validated(columns[a.id],c,snapshot.time,target,budget.screening)
+            retained=validation.accepted and retain_validated(columns[a.id],c,snapshot.time,target,budget.screening,
+                effective_time=getattr(getattr(snapshot,'planning_timing',None),'effective_time',None))
             if runtime is not None: runtime.record_column(c,validation,retained)
             if retained:
                 if plans[-1].pad_id is not None and (refs[a.id].status!="KNOWN" or ref.energy_j<refs[a.id].energy_j): refs[a.id]=ref
@@ -1561,7 +1575,7 @@ class CandidateProvider:
         seed_order=[group[index] for index in range(max(map(len,by_ring.values()),default=0))
                     for group in by_ring.values() if index<len(group)]
         progress={a.id:self._progress_steps(snapshot,a,_node(snapshot,a),budget,context) for a in seed_order
-                  if _node(snapshot,a).time<=snapshot.time+5. and a.id not in snapshot.soft}
+                  if _executable_start(snapshot,_node(snapshot,a).time) and a.id not in snapshot.soft}
         if runtime is not None and runtime.guided:
             # SCREEN is enumeration, not a materialization opportunity. Advance
             # each eligible aircraft to its first real query before learning.
@@ -1937,6 +1951,7 @@ class NormalSchedulerCallback:
             runtime=self.provider.advisor_runtime
             state["stage3"]={"budget_scale":self.budget_scale,"mode":runtime.mode if runtime is not None else "OFF",
                              "deterministic_only":runtime.deterministic_only if runtime is not None else False,
+                             "ranking_scope":getattr(runtime,"ranking_scope","legacy"),
                              "fingerprint":runtime.fingerprint if runtime is not None else {}}
         return json.loads(json.dumps(state,allow_nan=False))
 
@@ -1947,9 +1962,11 @@ class NormalSchedulerCallback:
         runtime=self.provider.advisor_runtime
         binding={"budget_scale":self.budget_scale,"mode":runtime.mode if runtime is not None else "OFF",
                  "deterministic_only":runtime.deterministic_only if runtime is not None else False,
+                 "ranking_scope":getattr(runtime,"ranking_scope","legacy"),
                  "fingerprint":runtime.fingerprint if runtime is not None else {}}
         saved=dict(state.get("stage3",{"budget_scale":1.,"mode":"OFF","fingerprint":{}}))
         saved.setdefault("deterministic_only",False)
+        saved.setdefault("ranking_scope","legacy")
         if saved!=binding: raise ValueError("Stage3 callback binding mismatch")
         if state["method"]!=self.scheduler.method: raise ValueError("scheduler method mismatch")
         if state.get("planning_profile",PLANNING_PROFILE_LEGACY)!=self.planning_profile: raise ValueError("scheduler planning profile mismatch")
@@ -1976,6 +1993,8 @@ class NormalSchedulerCallback:
         if self.online_policy: budget.candidate_active_seconds=0.
         solver_history=[]
         catalog_round_records=[]
+        generation_stop_reason=None; improvement_stop_reason=None; same_catalog_improvement=False
+        comparable_scope=getattr(self.provider.advisor_runtime,'ranking_scope','legacy')=='comparable_group_v1'
         for restart in range(2):
             with budget.measure("snapshot_and_uniform_refinement"):
                 snapshot=build_planning_snapshot(port)
@@ -2003,15 +2022,56 @@ class NormalSchedulerCallback:
                     if proposal.certified and (best is None or proposal.objective<best.objective or
                             (proposal.objective==best.objective and proposal.prefix and not best.prefix)): best=proposal
                     result=best or proposal
-                    if getattr(proposal.evaluation,"refinement_required",False): result=proposal
-                    coverage=coverage_report(snapshot,catalog.columns)
+                    refining=getattr(proposal.evaluation,"refinement_required",False)
+                    if refining and (not comparable_scope or best is None): result=proposal
+                    coverage=coverage_report(snapshot,catalog.columns,
+                        effective_time=getattr(getattr(snapshot,'planning_timing',None),'effective_time',None))
                     reasons=expansion_reasons(snapshot,catalog,proposal,coverage,context)
                     catalog_round_records.append(dict(round=catalog_round,columns=sum(map(len,catalog.columns.values())),
                         moving_columns={aid:sum(c.kind=="MOVE" for c in values) for aid,values in catalog.columns.items()},
                         coverage=coverage,expansion_reasons=reasons,pruned_columns=budget.screening["catalog_similar_pruned"],
-                        cp_wall_s=budget.solver_wall_used-before,cumulative_cp_wall_s=budget.solver_wall_used))
-                    if getattr(proposal.evaluation,"refinement_required",False) or not reasons or not budget.available(): break
+                        cp_wall_s=budget.solver_wall_used-before,cumulative_cp_wall_s=budget.solver_wall_used,
+                        same_catalog_improvement=False))
+                    if refining:
+                        generation_stop_reason="UNIFORM_REFINEMENT_REQUIRED"
+                        improvement_stop_reason="UNIFORM_REFINEMENT_REQUIRED"; break
+                    if not reasons:
+                        generation_stop_reason="NO_EXPANSION_REASON"
+                        improvement_stop_reason="NO_EXPANSION_REASON"; break
+                    if not budget.available():
+                        generation_stop_reason=budget.generation_stop_reason() or "CANDIDATE_UNAVAILABLE"
+                        # One final call may improve the already materialized
+                        # catalog after an early 2s slice. No generator resumes,
+                        # clock resets, extra solver allocation or new rounds.
+                        can_improve=(comparable_scope and catalog_round<2 and
+                            self.scheduler.method=="rh_cp_sat" and
+                            any(c.kind=="MOVE" for rows in catalog.columns.values() for c in rows) and
+                            budget.solver_wall_used<budget.solver_seconds and
+                            budget.refinement_rounds_used<budget.max_refinement_rounds and budget.search_available())
+                        if can_improve:
+                            before=budget.solver_wall_used
+                            with budget.measure("selection"):
+                                final=self.scheduler.plan(snapshot,catalog,context,budget)
+                            same_catalog_improvement=True
+                            solver_history.extend(dict(r,uniform_refinement_restart=restart,catalog_round=catalog_round,
+                                same_catalog_improvement=True) for r in final.solver_records)
+                            if final.certified and (best is None or final.objective<best.objective or
+                                    (final.objective==best.objective and final.prefix and not best.prefix)): best=final
+                            result=best or final
+                            catalog_round_records.append(dict(round=catalog_round,columns=sum(map(len,catalog.columns.values())),
+                                moving_columns={aid:sum(c.kind=="MOVE" for c in values) for aid,values in catalog.columns.items()},
+                                coverage=coverage,expansion_reasons=reasons,pruned_columns=budget.screening["catalog_similar_pruned"],
+                                cp_wall_s=budget.solver_wall_used-before,cumulative_cp_wall_s=budget.solver_wall_used,
+                                same_catalog_improvement=True))
+                            improvement_stop_reason=final.details.get("solver_stop_reason") or "FINAL_EXISTING_CATALOG_CALL_COMPLETE"
+                        else:
+                            improvement_stop_reason=("SOLVER_ALLOCATION_EXHAUSTED" if budget.solver_wall_used>=budget.solver_seconds else
+                                "REFINEMENT_LIMIT" if budget.refinement_rounds_used>=budget.max_refinement_rounds else
+                                "SOFT_BUDGET" if budget.elapsed>=budget.soft_seconds else "NO_FINAL_EXISTING_CATALOG_CALL")
+                        break
                 catalogs.close()
+                generation_stop_reason=generation_stop_reason or "CATALOG_ROUNDS_OR_GENERATORS_COMPLETE"
+                improvement_stop_reason=improvement_stop_reason or result.details.get("solver_stop_reason") or "CATALOG_ROUNDS_COMPLETE"
             else:
                 with budget.measure("candidate_generation_and_single_vehicle"):
                     catalog=self.provider.get_columns(snapshot,budget,context)
@@ -2078,7 +2138,7 @@ class NormalSchedulerCallback:
                 only_keep_wait=not moving,candidate_insufficiency_reasons=insufficient,
                 candidate_pad_ids=sorted({p.pad_id for c in moving for p in c.plans if p.pad_id is not None}),
                 selected_pad_ids=sorted({p.pad_id for p in selected.plans if p.pad_id is not None}) if selected else [],
-                immediate_move_candidates=sum(c.kind=="MOVE" and bool(c.plans) and c.plans[0].start_time<=snapshot.time+5.+1.e-8
+                immediate_move_candidates=sum(c.kind=="MOVE" and bool(c.plans) and _executable_start(snapshot,c.plans[0].start_time)
                     and aid not in snapshot.soft for c in columns),
                 selected_kind=None if selected is None else selected.kind,
                 first_target=None if selected is None else selected.first_target,
@@ -2114,6 +2174,9 @@ class NormalSchedulerCallback:
                     "METHOD_ENERGY_SLACK" if self.scheduler.method=="energy_slack" else "NO_SOLVER_CALL"),
                 "solver_stop_reason":result.details.get("solver_stop_reason"),
                 "stop_reason":result.details.get("stop_reason"),
+                "generation_stop_reason":generation_stop_reason or budget.generation_stop_reason(),
+                "improvement_stop_reason":improvement_stop_reason or result.details.get("solver_stop_reason"),
+                "same_catalog_improvement":same_catalog_improvement,
                 "refinement_rounds_used":budget.refinement_rounds_used,
                 "resource_conflicts_complete":result.details.get("resource_conflicts_complete"),
                 "model_screen_complete":result.details.get("model_screen_complete"),
@@ -2168,7 +2231,7 @@ class NormalSchedulerCallback:
                         comparison_key=None; layer=None; reason="NO_OPPOSITE_TIMING_CANDIDATE"
                     submitted=any(p.aircraft_id==selected.aircraft_id for p in committed_prefix)
                     action=("IMMEDIATE_PREFIX_SUBMITTED" if submitted else "HOLD_CURRENT_SLOT" if not selected.plans else
-                            "FUTURE_PREDICTION_NO_RESERVATION" if selected.plans[0].start_time>snapshot.time+5.+1.e-8 else "PREFIX_NOT_COMMITTED")
+                            "FUTURE_PREDICTION_NO_RESERVATION" if not _executable_start(snapshot,selected.plans[0].start_time) else "PREFIX_NOT_COMMITTED")
                     downstream_rows[selected.aircraft_id]["decision_explanation"]=dict(reason=reason,first_different_objective_layer=layer,
                         comparison_signature=None if comparison is None else comparison.signature,comparison_integer_key=comparison_key,
                         comparison_status="NOT_JOINT_VALIDATED" if comparison is not None else "NO_COMPARISON",actual_action=action,
@@ -2179,4 +2242,31 @@ class NormalSchedulerCallback:
             record.update(wall_s=budget.elapsed,cpu_s=time.process_time()-budget.cpu_start,
                 timings=dict(budget.timings),deadline_miss=budget.elapsed>5.)
         self.records.append(record)
+        if getattr(snapshot,"planning_timing",None) is not None:
+            from dataclasses import asdict
+            record.update(planning_timing=asdict(snapshot.planning_timing),
+                effective_state_version=snapshot.effective_state_version,
+                deferred=commit is not None and commit.status=="DEFERRED",
+                actual_submitted_trajectory_hashes=[])
         return result
+
+    def record_latency_ack(self, timing, delivery, plans):
+        """Attach actual executor acknowledgement after a deferred proposal."""
+        from dataclasses import asdict
+        key = asdict(timing)
+        record = next((r for r in reversed(self.records) if r.get("planning_timing")==key),None)
+        if record is None: return
+        record.update(commit_status=delivery["commit_status"],submitted=delivery["submitted"],
+            actual_delivery_status=delivery["status"],actual_delivery_reason=delivery["reason"],
+            actual_delivery_time=delivery["finished_time"],
+            actual_submitted_trajectory_hashes=[p.trajectory_hash for p in plans] if delivery["submitted"] else [])
+        if delivery["submitted"]:
+            committed = {p.trajectory_hash for p in plans}
+            self.provider.previous = {aid:tuple(p for p in rows if p.trajectory_hash not in committed)
+                                      for aid,rows in self.provider.previous.items()}
+        runtime = self.provider.advisor_runtime
+        if runtime is not None:
+            runtime.emit(dict(record_type="PlanningDelivery",planning_timing=key,
+                status=delivery["status"],reason=delivery["reason"],
+                commit_status=delivery["commit_status"],
+                submitted_trajectory_hashes=record["actual_submitted_trajectory_hashes"]))

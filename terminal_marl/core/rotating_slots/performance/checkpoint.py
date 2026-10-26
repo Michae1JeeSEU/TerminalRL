@@ -88,7 +88,8 @@ class StateCodec:
         "config": ("Config",), "demand": ("ArrivalRequest", "ArrivalManifest"),
         "models": ("KinematicState", "CandidateResult", "ValidationResult"),
         "resources": ("Reservation",), "trajectory": ("Segment", "TrajectoryPlan"),
-        "world": ("EmergencyStatus", "AircraftState"),
+        "world": ("EmergencyStatus", "AircraftState", "PlanningSnapshot"),
+        "planning_latency": ("PlanningTiming",),
         "energy": ("VehicleProfile", "EnergyProfile", "PowerResult", "EnergyResult"),
     }
 

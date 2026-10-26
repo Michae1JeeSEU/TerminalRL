@@ -37,6 +37,7 @@ failure_archive failure_resources_released dispatch_timings _pending_dispatch _r
 _monitor_timing_pending""".split())
 STAGE2_FIELDS = STAGE2_FIELDS | frozenset(("rescue_rule_profile",))
 DERIVED_RESCUE_FIELDS = frozenset(("_rescue_search_cache", "_rescue_monitor_v6"))
+LATENCY_FIELDS = frozenset(("_planning_latency_packets",))
 SCENARIO_PROFILES = ("legacy_busy_v5", "stress36_rate180_v1", "diagnostic18_rate120_v1", "medium24_rate150_v1")
 RESCUE_RULE_PROFILES = ("legacy_v5", "rescue_opportunity_v6", "rescue_need_v7")
 RUNTIME_EXTRA = frozenset(("admission_callback",))
@@ -299,6 +300,7 @@ def checkpoint_identity(provenance, manifest_hash):
 
 def save_checkpoint(path, world, scheduler, identity, *, boundary_summary=None):
     expected = WORLD_FIELDS|CACHE_FIELDS|OPTIONAL_RUNTIME_FIELDS|STAGE2_FIELDS|RUNTIME_FIELDS|RUNTIME_EXTRA
+    expected |= LATENCY_FIELDS.intersection(vars(world))
     if set(vars(world))-DERIVED_RESCUE_FIELDS != expected:
         raise CheckpointError("Stage2 world field inventory mismatch: "+str((set(vars(world))-DERIVED_RESCUE_FIELDS)^expected))
     if world.rescue_rule_profile != identity.get("rescue_rule_profile","legacy_v5"):
@@ -331,6 +333,7 @@ def restore_checkpoint(path, scheduler, identity, *, stream_copy=None):
     # Archives created before v6 had the implicit legacy rescue rule.
     state.setdefault("rescue_rule_profile","legacy_v5")
     expected = WORLD_FIELDS|CACHE_FIELDS|OPTIONAL_RUNTIME_FIELDS|STAGE2_FIELDS
+    expected |= LATENCY_FIELDS.intersection(state)
     if set(state) != expected or state["experiment_policy_id"] != STAGE2_POLICY_ID:
         raise CheckpointError("Stage2 checkpoint world inventory/policy mismatch")
     if state["rescue_rule_profile"] != identity.get("rescue_rule_profile","legacy_v5"):

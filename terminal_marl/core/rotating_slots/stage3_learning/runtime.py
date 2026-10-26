@@ -33,7 +33,8 @@ def scale_candidate_budget(budget, scale=1.0):
 class AdvisorRuntime:
     def __init__(self, mode="OFF", advisor=None, feature_encoder=None, fingerprint=None,
                  observer=None, ancestry_root_id=None, evaluation=False, trace_limit=8192,
-                 offline_probe=None, deterministic_only=False, trace_mode='collection', feature_schema=None, rank_reuse_limit=None):
+                 offline_probe=None, deterministic_only=False, trace_mode='collection', feature_schema=None, rank_reuse_limit=None,
+                 ranking_scope='legacy'):
         if mode not in MODES:
             raise ValueError("unknown advisor mode")
         self.mode, self.advisor, self.feature_encoder = mode, advisor, feature_encoder
@@ -48,8 +49,11 @@ class AdvisorRuntime:
             raise ValueError('unknown trace mode')
         self.trace_mode = trace_mode
         self.feature_schema = feature_schema
+        if ranking_scope not in ('legacy','comparable_group_v1'):
+            raise ValueError('unknown ranking scope')
+        self.ranking_scope = ranking_scope
         from .features import SCHEMA_V2
-        self.rank_reuse_limit = (3 if feature_schema == SCHEMA_V2 else 1) if rank_reuse_limit is None else int(rank_reuse_limit)
+        self.rank_reuse_limit = (3 if feature_schema == SCHEMA_V2 or ranking_scope == 'comparable_group_v1' else 1) if rank_reuse_limit is None else int(rank_reuse_limit)
         if self.rank_reuse_limit not in (1,2,3):
             raise ValueError('rank reuse limit must be 1..3')
         self.retained_context, self.downstream, self.known_conflicts = {}, {}, {}
@@ -89,6 +93,9 @@ class AdvisorRuntime:
         if hasattr(self, "snapshot_time"):
             row["snapshot_id"] = self.snapshot_id
             row["as_of"] = self.snapshot_time
+            if self.ranking_scope != 'legacy' or self.effective_state_version is not None:
+                row.update(ranking_scope=self.ranking_scope,effective_state_version=self.effective_state_version,
+                           effective_snapshot_version=self.effective_snapshot_version)
         self.traces.append(row)
         if len(self.traces) > self.trace_limit:
             del self.traces[:len(self.traces)-self.trace_limit]
@@ -98,6 +105,8 @@ class AdvisorRuntime:
     def begin_snapshot(self, snapshot, budget, aircraft_order):
         self.snapshot_id = snapshot_identity(snapshot)
         self.snapshot_time = float(snapshot.time)
+        self.effective_state_version = getattr(snapshot,'effective_state_version',None)
+        self.effective_snapshot_version = snapshot.version
         self.parents, self.nodes = {}, {}
         self._descriptors, self._plans, self._features = {}, {}, {}
         self._initial = set(aircraft_order)
@@ -170,12 +179,14 @@ class AdvisorRuntime:
 
     def update_retained_context(self, snapshot, columns_mapping, references_mapping, context, downstream=None):
         """Read retained columns and already computed facts only; never run a validator."""
+        from .catalog_control import immediate_start,delayed_start
+        effective_time=getattr(getattr(snapshot,'planning_timing',None),'effective_time',None)
         retained, estimates = {}, {}
         for aid, columns in columns_mapping.items():
             moves = [c for c in columns if c.kind == 'MOVE' and c.plans]
             full = [c for c in moves if c.plans[-1].pad_id is not None]
-            immediate = [c for c in moves if c.plans[0].start_time <= snapshot.time+5. and aid not in snapshot.soft]
-            delayed = [c for c in moves if c.plans[0].start_time > snapshot.time+5.]
+            immediate = [c for c in moves if immediate_start(c.plans[0].start_time,snapshot.time,effective_time) and aid not in snapshot.soft]
+            delayed = [c for c in moves if delayed_start(c.plans[0].start_time,snapshot.time,effective_time)]
             pads = {c.plans[-1].pad_id for c in full}
             windows = {int(c.plans[0].start_time//5) for c in moves}
             directions = Counter(repr((p.target_ring,p.target_slot) if p.pad_id is None else ('pad',p.pad_id))
@@ -280,6 +291,85 @@ class AdvisorRuntime:
             self._features[d.descriptor_id] = row
         return rows
 
+    @staticmethod
+    def _comparable_key(descriptor):
+        # The exact relation used by labeling.comparable; identifiers stay out
+        # of model inputs and scores never choose between these groups.
+        return (descriptor.snapshot_id,descriptor.source_node_id,descriptor.aircraft_id,
+                descriptor.parent_prefix_id,descriptor.construction_stage)
+
+    def _order_comparable(self, snapshot, descriptors, budget):
+        groups={}
+        for descriptor in descriptors:
+            groups.setdefault(self._comparable_key(descriptor),[]).append(descriptor)
+        previous=(self._rank_cache or {}).get('groups',{})
+        entries={}; pending=[]; hits=0
+        for key,items in groups.items():
+            if len(items)<2: continue
+            ids={d.descriptor_id for d in items}
+            # Retained multiplicities are query inputs even when the broad
+            # coverage epoch is unchanged. Keep these in the existing cache.
+            aid=items[0].aircraft_id
+            context=(self._coverage_epoch,tuple(sorted(self._ready_state(items),key=lambda row:row[0])),
+                     self.retained_context.get(aid),self.known_conflicts.get(aid),
+                     self.effective_state_version,self.effective_snapshot_version)
+            old=previous.get(key)
+            if (old is not None and old['remaining']==ids and old['context']==context
+                    and old['uses']<self.rank_reuse_limit):
+                entries[key]=old
+                hits+=1
+            else:
+                entries[key]=dict(context=deepcopy(context),uses=0,remaining=ids)
+                pending.extend(items)
+        metadata={}; scores={}
+        if pending:
+            features=self._encode(snapshot,pending,budget)
+            if self.advisor is None: raise RuntimeError('MODEL_MISSING')
+            with budget.measure('stage3_inference'):
+                ranked=self.advisor.rank(features,budget)
+            ids=tuple(d.descriptor_id for d in pending)
+            order=tuple(ranked.ordered_ids)
+            if len(order)!=len(ids) or set(order)!=set(ids):
+                raise RuntimeError('ILLEGAL_DESCRIPTOR_ID')
+            if any(not math.isfinite(float(v)) for v in ranked.scores.values()):
+                raise RuntimeError('NONFINITE_SCORE')
+            metadata=dict(ranked.model_metadata);scores=dict(ranked.scores)
+            missing_scores=sorted(set(ids)-scores.keys())
+            if missing_scores:
+                metadata['missing_score_ids']=missing_scores
+            for key,entry in entries.items():
+                if 'order' not in entry:
+                    entry['order']=tuple(did for did in order if did in entry['remaining'])
+            self.coverage['learned_rank_calls']+=1
+        group_orders={key:iter(entry['order']) for key,entry in entries.items()}
+        mapping={d.descriptor_id:d for d in descriptors}
+        ordered=[mapping[next(group_orders[self._comparable_key(d)])]
+                 if self._comparable_key(d) in group_orders else d for d in descriptors]
+        # Only the first ready item will be consumed. Other groups keep their
+        # whole batch and consumption allowance until they actually reach it.
+        selected=ordered[0]
+        selected_key=self._comparable_key(selected)
+        if selected_key in entries:
+            entry=entries[selected_key]
+            entry['uses']+=1
+            entry['remaining']=entry['remaining']-{selected.descriptor_id}
+            entry['order']=tuple(did for did in entry['order'] if did!=selected.descriptor_id)
+            # Canonical state order ignores a caller's changed container order;
+            # membership and every materialized state still have to match.
+            remaining=[d for d in groups[selected_key] if d.descriptor_id!=selected.descriptor_id]
+            context=entry['context']
+            entry['context']=(context[0],tuple(sorted(self._ready_state(remaining),key=lambda row:row[0])),*context[2:])
+            self._learned_selected=selected.descriptor_id
+        self._rank_cache=dict(groups=entries)
+        original=tuple(d.descriptor_id for d in descriptors)
+        result=tuple(d.descriptor_id for d in ordered)
+        self.coverage['rank_cache_hits']+=hits
+        self.coverage['rank_reorders']+=int(original!=result)
+        self.emit(dict(record_type='Rank',ready_ids=original,ordered_ids=result,
+            policy='learned' if pending else 'learned_cache' if entries else 'comparable_singletons',
+            model_metadata=metadata,scores=scores,comparable_groups=len(groups)))
+        return ordered
+
     def order(self, snapshot, descriptors, budget, observed_search_state=None):
         self._learned_selected=None
         self._heuristic_control_selected=None
@@ -324,6 +414,8 @@ class AdvisorRuntime:
                            policy="initial_coverage" if initial else "deterministic_finish" if finish else "heuristic_interleave"))
             return descriptors
         try:
+            if self.ranking_scope == 'comparable_group_v1':
+                return self._order_comparable(snapshot,descriptors,budget)
             cache = self._rank_cache
             states = self._ready_state(descriptors)
             if (cache is not None and cache['epoch'] == self._coverage_epoch and cache['uses'] < self.rank_reuse_limit

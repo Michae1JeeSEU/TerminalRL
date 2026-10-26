@@ -115,6 +115,8 @@ class PlanningSnapshot:
     trajectories: object
     energy_ledger: object
     emergency_monitor: object = None
+    planning_timing: object = None
+    effective_state_version: str | None = None
 
 
 @dataclass(frozen=True)
@@ -131,12 +133,8 @@ class SubmissionEvaluation:
     _prepared: object = field(default=None, repr=False, compare=False)
 
 
-def evaluate_planning_snapshot(snapshot, plans, *, cancel=()):
-    """Certify prefixes in a detached visible-state projection, without execution.
-
-    This copies only the finite scheduling input and numerical ledger. It never
-    clones a world, possesses demand history, or runs an execution branch.
-    """
+def _planning_context(snapshot):
+    """Finite revealed-state validation context; never an execution branch."""
     context = object.__new__(RotatingSlotWorld)
     context.config, context.time = snapshot.config, snapshot.time
     context.experiment_policy_id = (snapshot.emergency_monitor or {}).get("experiment_policy_id")
@@ -155,6 +153,12 @@ def evaluate_planning_snapshot(snapshot, plans, *, cancel=()):
     context._last_reference_fallback = None
     context.reference_counts = dict(initial_search=0, fallback_search=0, template_instantiation=0)
     context.cpu = {k: 0. for k in ("energy", "validation", "reference_template_search", "reference_fallback_search")}
+    return context
+
+
+def evaluate_planning_snapshot(snapshot, plans, *, cancel=()):
+    """Certify prefixes using only immutable revealed state and its ledger."""
+    context = _planning_context(snapshot)
     plans, cancel = tuple(plans), tuple(cancel)
     prepared = context._prepare_submission(plans, cancel=cancel)
     if isinstance(prepared, ValidationResult):
@@ -338,6 +342,28 @@ class SchedulerPort:
 
     def report_normal_evidence(self, rows, snapshot_version):
         return self.__world.report_normal_evidence(rows, snapshot_version)
+
+    def prepare_latency_submission(self, plans, timing):
+        from .planning_latency import prepare_submission
+        return prepare_submission(self.__world, plans, timing)
+
+    def latency_packet_guard(self, token):
+        from .planning_latency import guard_submission
+        return guard_submission(self.__world, token)
+
+    def mark_latency_submission_ready(self, token, handoff_delay=0.):
+        from .planning_latency import mark_submission_ready
+        return mark_submission_ready(self.__world, token, handoff_delay=handoff_delay)
+
+    def publish_latency_submission(self, token):
+        from .planning_latency import publish_submission
+        return publish_submission(self.__world, token)
+
+    def discard_latency_submission(self, token):
+        self.__world.__dict__.get("_planning_latency_packets", {}).pop(token, None)
+
+    def planning_latency_event(self, kind, **details):
+        self.__world._event(kind, **details)
 
     def refine_planning_boundary(self):
         return self.__world.refine_planning_boundary()
@@ -2215,6 +2241,7 @@ class RotatingSlotWorld:
         if until < self.time:
             raise ValueError("time cannot run backward")
         callback = self.decision_callback if decision_callback is None else decision_callback
+        latency = callback if callable(getattr(callback, "planning_event", None)) else None
         while not self.failed:
             triggers = self._settle()
             if settle_only_at_end and 0. < until-self.time <= 1e-9:
@@ -2238,6 +2265,8 @@ class RotatingSlotWorld:
             monitor_wall, monitor_cpu = walltime.perf_counter(), walltime.process_time()
             triggers = self._update_emergency() or triggers
             monitor_wall, monitor_cpu = walltime.perf_counter()-monitor_wall, walltime.process_time()-monitor_cpu
+            if latency is not None:
+                latency.online_service(self.time, monitor_wall, monitor_cpu, "monitor")
             if self._stage2_enabled():
                 pending_wall, pending_cpu = self._monitor_timing_pending
                 self._monitor_timing_pending = pending_wall+monitor_wall, pending_cpu+monitor_cpu
@@ -2245,7 +2274,9 @@ class RotatingSlotWorld:
             heartbeat = self._next_heartbeat <= self.time+1e-8
             if heartbeat:
                 self._next_heartbeat = (math.floor((self.time+1e-8)/self.scheduler_period)+1)*self.scheduler_period
-            if triggers or heartbeat or not self._initial_settled:
+            normal_trigger = triggers or heartbeat or not self._initial_settled
+            latency_due = latency is not None and latency.next_event_time <= self.time
+            if normal_trigger or latency_due:
                 self._initial_settled = True
                 self.decision_times.append(self.time)
                 self._record(force=True)
@@ -2256,16 +2287,34 @@ class RotatingSlotWorld:
                     self.handle_emergencies()
                 emergency_wall = walltime.perf_counter()-emergency_wall
                 emergency_cpu = walltime.process_time()-emergency_cpu
+                if latency is not None:
+                    latency.online_service(self.time, emergency_wall, emergency_cpu, "emergency")
                 admission_wall, admission_cpu = walltime.perf_counter(), walltime.process_time()
                 admission = getattr(self,"admission_callback",None)
                 if admission:
                     admission(self.snapshot(), self._scheduler_port)
                 admission_wall = walltime.perf_counter()-admission_wall
                 admission_cpu = walltime.process_time()-admission_cpu
+                if latency is not None:
+                    latency.online_service(self.time, admission_wall, admission_cpu, "admission")
+                    # Previously approved soft commands take effect before a
+                    # new normal delivery observes this exact boundary.
+                    due_wall, due_cpu = walltime.perf_counter(), walltime.process_time()
+                    self._start_due()
+                    latency.online_service(self.time, walltime.perf_counter()-due_wall,
+                                           walltime.process_time()-due_cpu, "existing_soft_start")
                 normal_wall, normal_cpu = walltime.perf_counter(), walltime.process_time()
-                if callback and callback is not False:
+                if callback and callback is not False and normal_trigger:
                     callback(self.snapshot(), self._scheduler_port)
-                self._start_due()
+                if latency is not None:
+                    # Completed work can have zero-duration handoffs. Drain only
+                    # this task's finite state transitions, never recurse advance.
+                    for _ in range(4):
+                        if latency.next_event_time > self.time:
+                            break
+                        latency.planning_event(self._scheduler_port)
+                if latency is None:
+                    self._start_due()
                 normal_wall = walltime.perf_counter()-normal_wall
                 normal_cpu = walltime.process_time()-normal_cpu
                 if self._stage2_enabled():
@@ -2294,6 +2343,11 @@ class RotatingSlotWorld:
                     and not any(self.time < t <= until for t in descent_starts+active_ends+soft_starts)):
                 break
             next_times = [until, self.time+self.physics_dt, self._next_heartbeat]
+            if latency is not None:
+                delivery = latency.next_event_time
+                if delivery <= self.time:
+                    continue
+                next_times.append(delivery)
             if self._runtime_enabled():
                 period = self._practical_runtime["telemetry_period"]
                 next_times.append((math.floor((self.time+1e-8)/period)+1)*period)
