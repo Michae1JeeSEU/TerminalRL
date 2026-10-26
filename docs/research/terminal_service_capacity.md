@@ -2,7 +2,7 @@
 
 日期：2026-10-25。对象为当前 `rotating_slots` 旋转槽位模型，非历史 `fixed_terminal` 模型。当前理论对象是模型已实现的进场/正常着陆服务，未模拟起飞与充电，不能直接称为起降混合总容量；扩展时需加入到离场共享资源冲突。本文整理可由物理量、资源占用和守恒关系计算的理论框架，区分必要上界、条件充分证书与数值机制近似；尚未证明全终端容量，也未完成创新性检索。除特别注明外，时间为 s、能量为 J、功率为 W，公式内流率为 aircraft/s，报告容量乘 3600 后为 aircraft/h。
 
-2026-10-27 进展：完整模型的 72-job 非几何研究已完成，见[结果笔记](full_capacity_nongeometry_results.md)；同版本几何研究为 35/36 完成，最终结果仍待复核，见[当前状态](full_capacity_validation_status.md)。
+2026-10-27 进展：完整模型的 [72-job 非几何研究](full_capacity_nongeometry_results.md)与[同版本 36-job 几何研究](full_capacity_geometry_results.md)均已完成，分别报告，不跨 source 版本合并。后续 half6 的更高载荷与较长时域[定向验证](full_capacity_targeted_validation_protocol.md)已于 UTC 2026-10-26 21:36:46 启动并通过启动验证，状态 RUNNING，完整结果待复核，见[当前状态](full_capacity_validation_status.md)；这些有限网格结果尚不定位稳定容量，也不结束全部研究工作。
 
 ## 1. 先明确“容量”是什么
 

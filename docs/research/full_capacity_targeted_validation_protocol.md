@@ -1,6 +1,6 @@
 # half6 载荷与时域的定向补充验证
 
-状态：**PLANNED**。已完成的 72-job 非几何研究与 36-job 同版本几何研究没有结束全部研究工作；v2 的 half6 在 180/h 下三个 seed、两方法均达到 95% 联合成功描述性阈值，尚未定位容量阈值。本轮只增加以下 14 jobs，分别检查更高载荷和较长时域，不扩展整个因素矩阵，也不自动追加其他率、seed 或时域。
+状态：**RUNNING**。E/F 均于 UTC 2026-10-26 21:36:46 启动并通过启动验证，完整结果 pending。已完成的 72-job 非几何研究与 36-job 同版本几何研究没有结束全部研究工作；v2 的 half6 在 180/h 下三个 seed、两方法均达到 95% 联合成功描述性阈值，尚未定位容量阈值。本轮只增加以下 14 jobs，分别检查更高载荷和较长时域，不扩展整个因素矩阵，也不自动追加其他率、seed 或时域。
 
 | 批次及规格 | profile / 标称率（/h） / seeds / 方法 | warmup / measurement / drain / SLA / progress（s） | jobs |
 |---|---|---|---:|
@@ -11,9 +11,11 @@ E 的 210/240 h⁻¹ 均低于 half6 零损失 pad 必要上界 271.6981/h 和 �
 
 两批均使用 Poisson 需求、既有 half6 物理配置和同一冻结 v2 源码 `/home/user/projects/terminal/artifacts/full_capacity_20261025/frozen_source_v2`，source hash 为 `afa8b9fb780b2f63f1bfe1f08564798dc43f72e379137a7b0f5361d561271db9`。解释器为 `/home/user/envs/terminal_stage2_v1/bin/python`，沿用现有 runtime/policy 身份，`PYTHONDONTWRITEBYTECODE=1`、数值库线程数为 1；不改引擎、几何、安全、SOC、服务时间或搜索协议。新规格从主仓库绝对目录 `/home/user/projects/terminal/experiments/service_capacity/` 读取，不复制到冻结目录。同版本基线仅取已有 v2 half6，不与 v1 基线直接配对；严格保留 source/runtime/policy 与相应协议字段检查，时域变更单列为 F 的显式对照。
 
+搜索使用固定墙钟预算，分配的核心执行速度和负载可能变化，从而改变预算内候选覆盖；相同 source/runtime 和输入前缀不保证决策搜索完全相同。保留实际 CPU affinity，分析时检查已有的候选目录及截断指标；当前未观察或归因任何硬件效应。F 用于时域压力敏感性检查，不能解释为纯粹的时域因果效应或稳定性证明，口径与[首轮协议](full_capacity_validation_protocol.md)一致。
+
 ## 需求配对与输出口径
 
-本地仅调用冻结 v2 的 `validate_spec` 与 `generate_manifest`，未运行仿真。E 的 6 组 rate/seed、F 的 1 组 rate/seed 均验证两方法生成完全相同的 manifest。E 每种方法的完整到达数/测量 cohort 数如下；12 jobs 合计 1662 个完整到达请求，标称 Poisson 率不替代实际 cohort 计数。
+准备阶段本地仅调用冻结 v2 的 `validate_spec` 与 `generate_manifest`，未在本地运行仿真。E 的 6 组 rate/seed、F 的 1 组 rate/seed 均验证两方法生成完全相同的 manifest。E 每种方法的完整到达数/测量 cohort 数如下；12 jobs 合计 1662 个完整到达请求，标称 Poisson 率不替代实际 cohort 计数。
 
 | 标称率（/h） | seed | 完整到达数 | 测量 cohort 数 |
 |---:|---:|---:|---:|
@@ -28,8 +30,23 @@ F 的到达时域为 `[0,6000)`、仿真终点 6600 s，共 294 个到达，测�
 
 联合成功仍要求正常接地、外部 release 后 600 s 内接地及 SOC≥0.25，以全部测量 offered 请求为分母；应急、失败、转送、上游未决和空中未决分列。E 报告每个载荷的全部逐 seed 结果、非加权均值和最小—最大范围，不预设通过率随载荷单调。F 除全测量 cohort 外，可显式报告 `[600,2400)`、`[2400,4200)`、`[4200,6000)` 三个互不重叠的 1800 s release cohort，输入计数分别为 82、92、86，均跟踪至本次终点；它们共享系统状态和资源，不作为三个独立重复。阈值口径沿用[首轮协议](full_capacity_validation_protocol.md)，经验网格集合的解释见[必要界补充第 11 节](full_capacity_bounds_derivation.md#11-允许损失的分位工作量与接收域外近似)。
 
-## 计划资源与启动边界
+## 运行记录与初始估时
 
-拟定 E 使用 12 workers、CPU `0,2,4,6,8,10,14,16,17,19,20,21`；F 使用 2 workers、CPU `24,26`，保留 CPU 12/13。正式启动前须重新检查实际负载、物理核映射、内存、磁盘、冻结 source 与规格哈希、CP solver 和需求配对；资源配置以主对话预检后的明确命令为准。输出计划为服务器 `/home/user/training_outputs/terminal/full_service_capacity_20261025/baseline_transition_v2` 和 `baseline_horizon_v2`，同步至本地 `D:\7_codespace\training_outputs\terminal\full_service_capacity_20261025` 下同名目录，分别保存输入、命令、进度和产物。
+E 使用 12 workers、CPU `0,2,4,6,8,10,14,16,17,19,20,21`，wrapper/Python PID 为 276420/276426；F 使用 2 workers、CPU `24,26`，PID 为 276421/276425，保留 CPU 12/13。两批开始时间均为 UTC 2026-10-26 21:36:46。[正式预检](../../../training_outputs/terminal/full_service_capacity_20261025/baseline_targeted_v2_preflight/preflight_20261026T213350Z.json)确认 solver OPTIMAL、无其他实验负载、内存约 30.60 GB 和磁盘约 600.07 GB。实际 E/F campaign 的 source（含文件清单与 hash）、policy、runtime 与 C 精确相等；外部规格 SHA-256 分别为 `b40852896277200d9f6807626124587cfe598cfc9b97f9b6d3cbe612baabca07`、`82427d02ca3479f7ce182e762450de8f1f095e15db34beaa6d16acfe536d2b0e`。
 
-初始运行预算暂取 E 约 18 h、F 约 24 h，整体按约 24 h 安排后续复查，尚无实际启动或预计完成时刻。F 的完整请求数相对原 seed 71 为 `294/116≈2.5345`；将既有 ES/CP 耗时 17132.60/25555.34 s 仅按请求数粗略缩放得到约 12.06/17.99 h，再为状态积累与非线性搜索尾部预留至 24 h。E 的载荷、请求数及搜索负担增加，暂留 18 h；这些是运行预算，不是容量拟合或完成承诺。主对话复核本地输入检查、提交和服务器预检后另行下达启动命令，确认进程、日志和实际中间产物后才能改为 RUNNING；本协议不宣称已经启动，也不授权自动扩展实验。
+[启动快照](../../../training_outputs/terminal/full_service_capacity_20261025/startup_snapshot_20261026T213822Z.json)在 UTC 21:38:22 确认 E 的 12 份、F 的 2 份输入/identity 均存在，全部已有非空 events/timeseries；E 仿真时间 91.20–145 s、callback 31–56，F 为 125–135 s、callback 43–47，无错误、尚无 `run.exit`。主对话另独立读取 E/F 的实际 120 s timeseries。输出为服务器 `/home/user/training_outputs/terminal/full_service_capacity_20261025/baseline_transition_v2` 和 `baseline_horizon_v2`，同步至本地 `D:\7_codespace\training_outputs\terminal\full_service_capacity_20261025` 下同名目录。两目录各保存 `run.sh`、`run.log`、`run.pid`、`start_utc.txt`、`command.txt`、`launch_metadata.json`；精确命令见 [E command.txt](../../../training_outputs/terminal/full_service_capacity_20261025/baseline_transition_v2/command.txt) 与 [F command.txt](../../../training_outputs/terminal/full_service_capacity_20261025/baseline_horizon_v2/command.txt)，工作目录为冻结 v2，规格使用主仓库绝对路径。
+
+初始总耗时预算 E 约 18 h、F 约 24 h。E 用 `25555.34×158/116≈34808 s`（约 9.67 h）的单 job 请求数缩放基线，再为非线性搜索与拥堵尾部预留至 18 h。F 用 `294/116≈2.5345` 将既有 ES/CP 耗时 17132.60/25555.34 s 粗略缩放至约 12.06/17.99 h，再预留至 24 h；这些不是容量拟合或完成承诺。heartbeat `automation-2` 已于 UTC 21:40:24 更新成功为 ACTIVE，间隔 1436 min，扣除已过时间后计划约 UTC 2026-10-27 21:36（北京时间 10 月 28 日约 05:36）复查两批。等待期间无驻留监控 worker；先核对退出状态、完整产物与协议，再进行下述分析，不自动扩展实验。
+
+## 完成后的分析入口
+
+[full_baseline_transition_study_v2.json](../../experiments/service_capacity/full_baseline_transition_study_v2.json) 是 **analysis-only** 研究封套，`automatic_launch=false`，不能交给仿真运行器。它只选择同一 v2、标准 1800 s measurement 的 half6：C 中 8 jobs、D 中 4 jobs、E 中 12 jobs，共 24 jobs，覆盖 90/180/210/240 h⁻¹、三个 seed 和两方法；排除 C 的 16 个几何 jobs，不需要 B，也不增加运行任务。F 的 measurement=5400 s 协议不同，单独分析，不与该 24-job 研究合并。
+
+以下命令须等对应批次完成并通过主对话复核后，在 `D:\7_codespace\terminal` 下执行；当前未执行，不据此生成或宣称新结果。
+
+```powershell
+.\venv\Scripts\python.exe scripts/analysis/analyze_full_capacity_study.py --spec experiments/service_capacity/full_baseline_transition_study_v2.json --campaign D:\7_codespace\training_outputs\terminal\full_service_capacity_20261025\geometry_remaining_with_controls_v2 --campaign D:\7_codespace\training_outputs\terminal\full_service_capacity_20261025\geometry_control_seed11_v2 --campaign D:\7_codespace\training_outputs\terminal\full_service_capacity_20261025\baseline_transition_v2 --output artifacts/full_capacity_20261025/baseline_transition_study_report --figures
+.\venv\Scripts\python.exe scripts/analysis/analyze_full_service_capacity.py --campaign D:\7_codespace\training_outputs\terminal\full_service_capacity_20261025\baseline_horizon_v2 --output artifacts/full_capacity_20261025/baseline_horizon_report --figures
+```
+
+F 的三个 1800 s release cohort 目前只验证了输入计数；后续须从原始 F 请求、事件及终态，按上文明确边界和同一 600 s SLA 做有范围的 cohort 分析或补充实现。现有单 campaign 命令不自动提供这三窗口结局，不填入未计算的数据，也不把窗口视为独立重复。
