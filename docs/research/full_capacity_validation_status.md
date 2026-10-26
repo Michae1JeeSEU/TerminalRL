@@ -1,8 +1,27 @@
 # 完整模型验证状态
 
-更新日期：2026-10-26；最新原筛查快照为 UTC 09:00:08，后续批次于 UTC 09:21:50 启动并通过启动验证，heartbeat 于 UTC 09:24:23 更新。证据类型为 **newly_run**；seed 11 几何修复 8/8 完成，72-job 非几何研究与 36-job 同版本几何研究的完整结果仍为 **pending**。方法、需求配对和统计口径见[验证协议](full_capacity_validation_protocol.md)，必要界见[推导补充](full_capacity_bounds_derivation.md)。资格检查与 pilot 的逐 job 摘录见[资格检查 CSV](tables/full_capacity_qualification.csv)和[pilot CSV](tables/full_capacity_pilot.csv)。
+更新日期：2026-10-27（北京时间）；最新运行观测为 UTC 2026-10-26 18:22，heartbeat 于 UTC 18:28:16 更新。证据类型为 **newly_run**；72-job 非几何研究已完成，36-job 同版本几何研究为 35/36 完成，最终几何结果仍为 **pending**。方法、需求配对和统计口径见[验证协议](full_capacity_validation_protocol.md)，必要界见[推导补充](full_capacity_bounds_derivation.md)。资格检查与 pilot 的逐 job 摘录见[资格检查 CSV](tables/full_capacity_qualification.csv)和[pilot CSV](tables/full_capacity_pilot.csv)。
 
-## 2026-10-26 09:24 UTC 当前状态
+## 2026-10-26 18:22 UTC 当前状态
+
+[运行快照](../../../training_outputs/terminal/full_service_capacity_20261025/status_observation_20261026T182225Z.json)记录 A、D 已结束，C 尚余 1 个活动 job；没有新增失败。旧实现的 24 个几何 jobs 继续全部排除，包含 20 个已知 INVALID 和 4 个已完成项，原始输出保留。
+
+| 批次 | 当前结果 | 退出状态与时间 |
+|---|---|---|
+| A：screen | 96/96 终态：76 COMPLETED、20 已知 INVALID；所选非几何 72/72 COMPLETED | `run.exit=1`；UTC 2026-10-25 06:41:42 启动，2026-10-26 11:01:39 结束 |
+| B：geometry_repair_seed11_v2 | 已验收的 8/8 COMPLETED，不重跑 | `run.exit=0`，沿用已核验结果 |
+| C：geometry_remaining_with_controls_v2 | 23/24 COMPLETED、1 DISPATCHING | 尚无 `run.exit`，最终结果 pending |
+| D：geometry_control_seed11_v2 | 4/4 COMPLETED | `run.exit=0`；UTC 2026-10-26 13:51:22 结束 |
+
+C 唯一活动项为 `radius350_rate180_seed71_rh_cp_sat`，PID 261860、CPU 21。UTC 18:22:51 观测到仿真时间 2280 s、墙钟 24790.252 s、CPU 24772.059 s、callback 1403；主对话于约 UTC 18:24 本地独立读取到 2285 s、callback 1407、墙钟 24855 s，进度仍在推进，无错误记录。23 个完成项的核心产物完整；活动项尚缺 `results.json` 和 aircraft 输出，与未完成状态一致。
+
+[非几何完整报告](../../artifacts/full_capacity_20261025/nongeometry_study_report/report.json)的 CLI 退出码为 0，覆盖 72/72、排除 24 项，无缺失、失败或重复；72 项配置、manifest、cohort 和两项守恒检查均为 true，遗漏飞机 0，能量恒等式最大绝对残差 0.0004319995641708374 J、等待重建残差 4.54747×10⁻¹² s，有限 cohort 上界违例 0。方法配对 36 组、因素配对 60 组，无 unavailable 配对。[结果笔记](full_capacity_nongeometry_results.md)、[24 行汇总 CSV](tables/full_capacity_nongeometry_summary.csv)、[72 行逐 seed CSV](tables/full_capacity_nongeometry_per_seed.csv)、[96 行配对 CSV](tables/full_capacity_nongeometry_paired.csv)及论文图 [PNG](figures/full_capacity_nongeometry_qos.png)/[SVG](figures/full_capacity_nongeometry_qos.svg)已完成；主对话已查看并验收图表及其统计解释。导出器仅读取已有报告，未运行新仿真。几何研究仍为 35/36，最终结果待复核。
+
+[几何部分报告](../../artifacts/full_capacity_20261025/geometry_study_report/report.json)为 35/36，CLI 退出码为 1，唯一 incomplete 为上述活动项的 `NO_RESULT`；35 个完整项的相同检查均通过，遗漏 0，能量残差最大 4.6342611×10⁻⁶ J、等待重建残差 1.8189894×10⁻¹² s，有限 cohort 上界违例 0。这是部分报告，最终几何结果及完整图表须等 C 终态后重建和复核；继续分别分析 v1 的 72-job 非几何研究与 v2 的 36-job 几何研究，不跨版本合并。
+
+从 UTC 18:22:51 观测起暂留 3 h 至约 UTC 21:22（北京时间 10 月 27 日约 05:22）复查。粗略均速估计为 `24790.252/2280×720≈7828 s`，约 2.17 h；剩余仿真包括约 120 s 到达阶段和 600 s drain，成本不均匀，另留尾部裕量至 3 h，未按 23/24 的 job 数比例线性外推。这是复查估时，不是完成承诺。同一 heartbeat `automation-2` 已于 UTC 18:28:16 成功更新为 **ACTIVE**，间隔 173 min，已扣除估时后经过的时间，目标约 UTC 21:22；实际触发受分钟取整影响。等待期间无驻留监控 worker；唤醒后检查 C 的终态和产物，继续已授权的报告、图表、文档及版本交付，未完成则按有效进度更新同一 heartbeat。本轮未启动新实验。
+
+## 2026-10-26 09:24 UTC 历史状态与后续启动记录
 
 原筛查 A（`screen`）在 [UTC 09:00:08 快照](../../../training_outputs/terminal/full_service_capacity_20261025/screen/heartbeat_check_20261026T085946Z.json)中已有 95/96 个终态：75 COMPLETED、20 个已知 INVALID、1 个运行中，无新增失败。排除旧实现的全部 24 个几何 jobs（20 INVALID、4 COMPLETED）后，非几何研究为 71/72 完成；唯一未完成项为 `high_variance66_rate180_seed71_rh_cp_sat`，PID 234402、CPU 18，仿真时间 1814.036 s、墙钟 19409.9 s。该快照无 `run.exit`，不能宣称 A 已全部完成。
 
@@ -116,11 +135,11 @@ env PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_T
 .\venv\Scripts\python.exe scripts/analysis/analyze_full_service_capacity.py --campaign D:\7_codespace\training_outputs\terminal\full_service_capacity_20261025\pilot --output artifacts/full_capacity_20261025/pilot_report
 ```
 
-以下为 A/C/D 完成并通过主对话复核后，在 `D:\7_codespace\terminal` 下重建两个同版本研究报告的命令；当前未执行这两条完整报告命令。`--figures` 生成结果图，图仍需按实际 seed 数解释和查看。
+以下命令在 `D:\7_codespace\terminal` 下重建两个同版本研究报告。非几何命令已执行并返回 0；几何命令当前生成 35/36 的部分报告并返回 1，需在 C 终态后再次执行并复核。`--figures` 生成结果图，图仍需按实际 seed 数解释和查看。
 
 ```powershell
 .\venv\Scripts\python.exe scripts/analysis/analyze_full_capacity_study.py --spec experiments/service_capacity/full_nongeometry_study_v1.json --campaign D:\7_codespace\training_outputs\terminal\full_service_capacity_20261025\screen --output artifacts/full_capacity_20261025/nongeometry_study_report --figures
 .\venv\Scripts\python.exe scripts/analysis/analyze_full_capacity_study.py --spec experiments/service_capacity/full_geometry_study_v2.json --campaign D:\7_codespace\training_outputs\terminal\full_service_capacity_20261025\geometry_repair_seed11_v2 --campaign D:\7_codespace\training_outputs\terminal\full_service_capacity_20261025\geometry_remaining_with_controls_v2 --campaign D:\7_codespace\training_outputs\terminal\full_service_capacity_20261025\geometry_control_seed11_v2 --output artifacts/full_capacity_20261025/geometry_study_report --figures
 ```
 
-各阶段运行入口、规格和资源设置规则见[协议中的复现模板](full_capacity_validation_protocol.md#复现入口与运行记录)。B 已完成且结果经主对话复核；A/C/D 的完整结果和两项完整研究仍待复核。
+各阶段运行入口、规格和资源设置规则见[协议中的复现模板](full_capacity_validation_protocol.md#复现入口与运行记录)。A/B/D 已结束，所选非几何 72-job 报告已闭合；C 最后一个 job、完整几何研究及最终图表仍待复核。
