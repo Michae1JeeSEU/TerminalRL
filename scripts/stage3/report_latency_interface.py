@@ -504,7 +504,7 @@ def report_text(value,timeline=()):
     if all(finite(phase(ARMS[1],k)) for k in ("stage3_features","stage3_inference")):
         learning=phase(ARMS[1],"stage3_features")+phase(ARMS[1],"stage3_inference")
         lines.append(f"L features plus inference consume {fmt(learning)} s across callbacks and also occupy the same fixed candidate-active clock (6 s per callback). Fewer attempts or a smaller catalog alone cannot establish better candidate identification; inference can displace generation work. Shared prefix-cache and geometry improvements belong to both H and L. No extra ablation is run.")
-    lines.append(f"L no-prefix groups: {life[ARMS[1]]['no_prefix']}; finished nonempty denominators H/L: {life[ARMS[0]]['finished_nonempty']}/{life[ARMS[1]]['finished_nonempty']}. Different denominators, no-prefix and remaining coverage gaps prevent interpreting the raw join fractions as sustained join improvement.")
+    lines.append(f"L no-prefix groups: {life[ARMS[1]]['no_prefix']}; finished nonempty denominators H/L: {life[ARMS[0]]['finished_nonempty']}/{life[ARMS[1]]['finished_nonempty']}. Sample composition, no-prefix and remaining coverage gaps limit comparison; equal denominators do not ensure comparable work or establish sustained join improvement.")
     if any(life[a]["rejection_reasons"].get("NEW_TRAFFIC",0) for a in ARMS):
         lines.append("NEW_TRAFFIC rejection counts are retained above. Their presence alone does not establish the bottleneck; compare recorded revalidation certification, lateness, affected traffic, fallback and actual joined groups. Legacy missing revalidation fields cannot establish that revalidation occurred.")
     lines += ["","## Identity, clocks and review limits",""]

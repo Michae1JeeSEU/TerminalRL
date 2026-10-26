@@ -1,6 +1,6 @@
 # Measured affected-traffic revalidation — 2026-10-27
 
-This iteration implements `affected_traffic_revalidation_v1` for the existing normal-planning latency interface. `planning_effective_state_v1`, the 30 s lead, 1 s preparation margin, 5 s heartbeat, approved plan timestamps, model, physics, energy, safety precision, emergency rules and scheduling budgets are unchanged. No formal H/L comparison or training has been run for this iteration in this implementation task.
+This iteration implements `affected_traffic_revalidation_v1` for the existing normal-planning latency interface. `planning_effective_state_v1`, the 30 s lead, 1 s preparation margin, 5 s heartbeat, approved plan timestamps, model, physics, energy, safety precision, emergency rules and scheduling budgets are unchanged. The preregistered single 120 s H/L comparison is complete; no training was performed.
 
 ## Certification boundary
 
@@ -46,4 +46,58 @@ The formal comparison is fixed before outcome inspection: original medium root `
 
 New outputs belong only to `stage3_latency_revalidation_20261027`; prior raw inputs/results are read-only. There is no 20 s sweep, extra seed or additional fit. The research question is whether the saved run shows multiple actual joint joins, and what full computation costs and executed quality accompany them. A single pair is not generalization or isolated causal evidence.
 
-The implementation checks above are 16 local passes. Separately, the primary recorded Phase 2 local verification as 41 passes with 7 OR-Tools checks deselected, plus a prior 96-test regression run; these overlapping suites are not summed. Reporter checks include a 10-test pass and two later fixture updates, also not summed. Server verification, including the seven real-CP integration checks, and final formal outcomes are pending; actual results will be appended after review.
+The implementation checks above are 16 local passes. Separately, the primary recorded Phase 2 local verification as 41 passes with 7 OR-Tools checks deselected, plus a prior 96-test regression run; these overlapping suites are not summed. Reporter checks include a 10-test pass and two later fixture updates, also not summed.
+
+Server verification subsequently completed with **126 passed in 12.60 s**, zero skipped, failed or errored cases, including 17 CP cases; the primary checked the actual JUnit receipt. An earlier malformed `taskset -c12` invocation failed before Python started and ran zero tests. The corrected `taskset -c 12` invocation passed once; the shell-wrapper error is not an experimental outcome.
+
+The implementation was committed and pushed as `d84f3a372b04221b5e4c7845a403add906fb59b0`. The final 101-file freeze has source hash `e481913216dd4b75f8111bd25a38e2f391ba5f988cfcd3b05b744d2831c5c9d8` and matches **101/101** recorded file hashes. Earlier raw-byte differences in 95 local frozen files were verified to be CRLF/LF-only and equal after line-ending normalization; the frozen files were then materialized as the tested main-checkout bytes. This did not change algorithm semantics or prior results.
+
+The sole preregistered pair completed at 17:11:52.300867 UTC, both process return codes 0, both independent terminals at 120 s. The ledger is paused with 182.860477 s evaluation usage. No retry, additional pair, sweep or fit was run.
+
+## Actual 120 s results
+
+H is heuristic candidate ordering with CP-SAT; L uses the frozen learned ordering with the same backend. Both ran on CPU 12 from the same initial state, manifest and model binding under the implementation commit/source hash above.
+
+| Observed metric | H | L |
+| --- | ---: | ---: |
+| Normal / emergency landings / energy failures | 6 / 0 / 0 | 6 / 0 / 0 |
+| Airborne pending / admitted | 23 / 29 | 23 / 29 |
+| Holding (aircraft-s) | 2079.7414594252973 | 2079.7414594252973 |
+| Cumulative energy (J) | 219238588.34146103 | 220924953.457677 |
+| All-task observed full planning work (s) | 86.78324015508406 | 65.33274777326733 |
+| Finished complete planning P95 (s; task count) | 25.354964612051845; 3 | 18.36061074270401; 4 |
+| Full dispatch work (s) | 89.74022091785446 | 68.28851268999279 |
+| Actual committed groups / plans | 2 / 13 | 2 / 17 |
+| Finished nonempty tasks / committed | 3 / 2 | 3 / 2 |
+| Endpoint pending tasks / no-prefix tasks | 1 / 0 | 0 / 1 |
+
+L used 24.7173% less observed planning work and 23.9042% less dispatch work, with unchanged landings/holding and 0.76919% more energy. All-task work includes already executed computation in H's pending task; finished-task P95 uses completed tasks only. These three/four-sample P95 values are neither stable tail estimates nor algorithmic upper bounds. Job/receipt wall time also includes checkpoint, replay and process overhead and is not pure planning time.
+
+H committed 11 plans together at 30 s and 2 at 65 s. L committed 13 at 30 s and 4 at 115 s. Both join fractions are 2/3 of finished nonempty attempts; H's pending task and L's no-prefix task are excluded. Their actual task compositions differ, so equal fractions do not establish a sustained join-rate improvement. All four tasks per arm exceeded the old 5 s observed-work target; the heartbeat remains 5 s, not a guarantee of a new completed plan every 5 s.
+
+## Revalidation, computation and limits
+
+The new-traffic path was exercised successfully: H certified one round (0.015843 s, 2 checked pairs, 45 reused) before the 65 s join. L certified two rounds in the same group (0.020762 and 0.055825 s; 0.076588 s total, 8 checked pairs, 192 reused) before the 115 s join. There were no `NEW_TRAFFIC`, ready-deadline or compute-exhaustion rejections. Each arm had one `TRAFFIC_CHANGED_AFTER_DEADLINE`: H observed the change at 99.22268 s after deadline 99 s; L at 84.83362 s after deadline 84 s. These are dependency changes after the original preparation opportunity, not solver/computation timeouts; no free late revalidation was performed.
+
+| Shared computation / search evidence | H | L |
+| --- | ---: | ---: |
+| CP wall (s) | 32.0026846 | 32.0046714 |
+| CP calls reusing context state | 4 | 4 |
+| Reused pair cuts / single results | 122 / 367 | 33 / 277 |
+| Prefix validation (s) | 11.6104 | 2.6421 |
+| Trajectory validation (s) | 14.8953 | 4.4218 |
+| Physical attempts | 315 | 144 |
+| Catalog rounds / pruned columns | 12 / 0 | 8 / 0 |
+| Learned ranks / cached learned ranks | 0 / 0 | 361 / 10 |
+
+Reuse has execution evidence but did not reduce CP wall: each arm still used four callbacks with about 8 s CP each. L feature construction plus inference cost 1.7925 + 7.9855 = approximately 9.778 s and consumed the same 6 s candidate-active clock per callback. Its group-cache misses were 348 candidate changes and 13 first batches; reuse worked, but observed hits remained low. Fewer attempts, smaller catalogs and reduced validation work do not alone prove better candidate identification, because inference can displace candidate generation; L also produced one no-prefix result. Shared backend/group/cache improvements are not exclusive learned-ranking gains.
+
+The prior interface pair produced one 13-plan joint group per arm; this iteration produced two groups per arm with different executed trajectories. This establishes that the previously global new-traffic rejection path can be traversed, but the comparison with the prior implementation is not a single-factor ablation. In this pair, lower computation did not improve normal landings, and L energy was slightly higher. The unchanged frozen model is being used on future-view states; one development scenario and one pair support no generalization or isolated causal claim. A 20/30 s lead comparison is deferred to a separately specified next engineering trial; no such extension or fit was performed here.
+
+## Saved replay and review evidence
+
+The primary reviewed the saved results, terminals, task records, receipts and derived report. Both replays passed their 15-file SHA/index checks and `ReplayBundle.validate`. Saved PVA checks covered H 3578 and L 3635 samples with maximum position error below 2.87e-13; maximum velocity/acceleration errors were about 5.53e-14 / 6.98e-15. All actual normal starts correspond to approved acknowledgements at the exact approved start times; both groups per arm start atomically, with no early or unattributed normal starts. All 13 H and 17 L unique-predecessor C2 comparisons were available and checked. Different cross-arm actual trajectory-hash sets describe different execution outcomes, not a control-input identity failure. Proposed hashes for rejected/pending proposals were not saved, so independent per-proposal nonexecution remains unavailable; actual-start coverage is a separate completed check.
+
+The primary viewed the actual timeline/contact PNGs and accepted their readability and fidelity. Static saved-frame inspection does not replace a complete human replay review: `HUMAN_PENDING` remains. The normal-only atomic-publication abstraction and existing priority-emergency timing limitation described above remain applicable.
+
+Outputs are separate from the read-only prior results, under [the local output directory](D:/7_codespace/training_outputs/terminal/stage3_latency_revalidation_20261027): [report](D:/7_codespace/training_outputs/terminal/stage3_latency_revalidation_20261027/FINAL_REPORT.md), [analysis JSON](D:/7_codespace/training_outputs/terminal/stage3_latency_revalidation_20261027/analysis_summary.json), [timeline CSV](D:/7_codespace/training_outputs/terminal/stage3_latency_revalidation_20261027/timeline.csv), [boundary quality CSV](D:/7_codespace/training_outputs/terminal/stage3_latency_revalidation_20261027/boundary_quality.csv), [timeline PNG](D:/7_codespace/training_outputs/terminal/stage3_latency_revalidation_20261027/planning_timeline.png), [editable SVG](D:/7_codespace/training_outputs/terminal/stage3_latency_revalidation_20261027/planning_timeline.svg), [saved XY contact PNG](D:/7_codespace/training_outputs/terminal/stage3_latency_revalidation_20261027/saved_xy_contact.png), and the authoritative [H replay](D:/7_codespace/training_outputs/terminal/stage3_latency_revalidation_20261027/evaluation/heuristic_reduced/replay/replay.json) / [L replay](D:/7_codespace/training_outputs/terminal/stage3_latency_revalidation_20261027/evaluation/learned_reduced/replay/replay.json).
