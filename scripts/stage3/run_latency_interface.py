@@ -77,11 +77,12 @@ def dependencies(checkout):
         ReplayBundle=ReplayBundle,aggregate=aggregate.aggregate_decisions)
 
 
-def protocol(dependency_protocol):
+def protocol(dependency_protocol, lead_seconds=30.):
+    require(lead_seconds in (20.,30.), "lead seconds must be 20 or 30")
     return dict(schema="normal_latency_120_v1",root_id=ROOT_ID,seed=SEED,scenario_profile="medium24_rate150_v1",
         target_sim_seconds=HORIZON,boundary_seconds=STEP,checkpoint_seconds=CHECKPOINT_STEP,
         cpu=CPU,arms=list(ARMS),formal_jobs=2,ordering="H_THEN_L_SERIAL",job_wall_cap_s=JOB_CAP,
-        total_evaluation_wall_cap_s=TOTAL_CAP,lead_seconds=30.,preparation_margin=1.,scheduler_period=5.,
+        total_evaluation_wall_cap_s=TOTAL_CAP,lead_seconds=float(lead_seconds),preparation_margin=1.,scheduler_period=5.,
         interface=INTERFACE,ranking_scope=RANKING,dependency_protocol=dependency_protocol,
         emergency_timing_mode="existing_priority_response_cpu_charged",
         candidate_active_seconds=6.,cp_seconds=8.,hint_seconds=3.,soft_seconds=30.,callback_watchdog_seconds=60.,
@@ -112,6 +113,8 @@ def verify_source(frozen, d):
 
 
 def prepare(args, d):
+    selected_lead=getattr(args,"lead_seconds",None)
+    selected_protocol=protocol(d.dependency_protocol,30. if selected_lead is None else selected_lead)
     output, parent, initial = (Path(p).resolve() for p in (args.output,args.model_parent,args.initial_parent))
     require(not output.exists(), "fresh output required; no retry/reset")
     require(not any(output.is_relative_to(p) or p.is_relative_to(output) for p in (parent,initial)), "output overlaps an input archive")
@@ -142,7 +145,7 @@ def prepare(args, d):
         shutil.copyfile(original/"root.json",directory/"original_root.json")
         relocated=deepcopy(row); relocated.update(checkpoint_path=str(directory/"initial.checkpoint.json"),raw_snapshot_path=str(directory/"initial_state.json"))
         d.atomic_json(directory/"root.json",relocated)
-        scope=dict(protocol=protocol(d.dependency_protocol),source_commit=frozen["source_commit"],source_hash=frozen["source_hash"],
+        scope=dict(protocol=selected_protocol,source_commit=frozen["source_commit"],source_hash=frozen["source_hash"],
             checkout=str(d.checkout),driver_sha256=file_hash(DRIVER),model_fingerprint=deepcopy(binding["fingerprint"]),
             training_source_hash=binding["source_hash"],training_source_commit=binding["fingerprint"]["source_commit"],
             shared_manifest_hash=row["manifest_hash"],initial_state_hash=row["initial_state_hash"],
@@ -163,9 +166,12 @@ def prepare(args, d):
 
 
 def verify(output, d):
-    require(load(output/"prepare.finished.json")["status"]=="COMPLETED", "prepare did not complete")
+    prepared=load(output/"prepare.finished.json")
+    require(prepared["status"]=="COMPLETED", "prepare did not complete")
     scope=load(output/"execution_scope.json"); verify_source(load(output/"source_freeze.json"),d)
-    require(scope["protocol"]==protocol(d.dependency_protocol) and Path(scope["checkout"]).resolve()==d.checkout, "execution scope changed")
+    require(scope["protocol"]==protocol(d.dependency_protocol,scope["protocol"]["lead_seconds"])
+            and Path(scope["checkout"]).resolve()==d.checkout, "execution scope changed")
+    require(scope["scope_id"]==prepared["scope_id"], "prepared scope identity changed")
     require(scope["scope_id"]==d.digest({k:v for k,v in scope.items() if k not in ("scope_id","prepared_file_sha256")}), "scope digest mismatch")
     for name,expected in scope["prepared_file_sha256"].items(): require(file_hash(output/name)==expected,"prepared input changed: "+name)
     binding=verify_model(output)
@@ -325,7 +331,8 @@ def run_job(output,arm,d,*,started=None):
         world.configure_practical_runtime(True); observer=d.OnlineObserver()
         scheduler=d.evaluation._scheduler(output,arm,binding,observer,ROOT_ID,setup)
         scheduler.provider.advisor_runtime.ranking_scope=RANKING
-        wrapper=d.LatencyAwareScheduler(scheduler,lead_seconds=30.,preparation_margin=1.)
+        wrapper=d.LatencyAwareScheduler(scheduler,lead_seconds=scope["protocol"]["lead_seconds"],
+            preparation_margin=scope["protocol"]["preparation_margin"])
         world.decision_callback=wrapper; world.admission_callback=d.shared_fifo_admission
         require(world.scheduler_period==5.,"original scheduling period changed")
         holding,restore_observer=d.evaluation.observe_executed_holding(world)
@@ -469,7 +476,10 @@ def main(argv=None):
     parser.add_argument("--model-parent",type=Path,default=Path("/home/user/training_outputs/terminal/stage3_online_v2_20261025"))
     parser.add_argument("--initial-parent",type=Path,default=Path("/home/user/training_outputs/terminal/stage3_learning_v1_0_20261023"))
     parser.add_argument("--arm",choices=ARMS)
+    parser.add_argument("--lead-seconds",type=float,choices=(20.,30.),default=None,
+        help="prepare only: freeze the normal-planning lead (default: 30 seconds)")
     args=parser.parse_args(argv)
+    if args.stage!="prepare" and args.lead_seconds is not None: parser.error("--lead-seconds is prepare-only; run/job use the frozen scope")
     if args.stage=="prepare" and args.source_freeze is None: parser.error("prepare requires primary-provided --source-freeze")
     if args.stage=="job" and args.arm is None: parser.error("job requires --arm")
     output=args.output.resolve(); d=dependencies(args.checkout)

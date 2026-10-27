@@ -71,6 +71,7 @@ def test_saved_report_preserves_inputs_and_separates_pending_work_and_readiness(
     assert len(rows)==4 and {float(r["time_s"]) for r in rows}=={5.,10.}
     text=ET.parse(tmp_path/"planning_timeline.svg").getroot().findall(".//{http://www.w3.org/2000/svg}text")
     assert len(text)>10 and value["figure_qa"]["export_dpi"]==300
+    assert any("lead unavailable s" in (element.text or "") for element in text)
     assert value["human_replay_acceptance"]=="HUMAN_PENDING"
     text=(tmp_path/"FINAL_REPORT.md").read_text(encoding="utf8")
     assert "PENDING_PRIMARY_REVIEW" in text
@@ -161,3 +162,22 @@ def test_saved_revalidation_multiple_joins_and_pending_are_observed_not_assumed(
     assert report.search_reuse_summary([{}])["rank_cache_hits"] is None
     _,rejected=report.task_facts([dict(snapshot_time=0.,status="REJECTED",finished_time=2.,reason="REVALIDATION_WORK_DEADLINE")],[],2.)
     assert rejected["revalidation_work_deadline_rejections"]==1 and rejected["ready_deadline_rejections"]==0
+
+
+@pytest.mark.parametrize("lead",[20.,30.,None])
+def test_report_timing_scope_uses_recorded_lead_and_missing_is_unavailable(tmp_path,lead):
+    fixture(tmp_path)
+    scope=report.load(tmp_path/"execution_scope.json")
+    if lead is not None:
+        scope["protocol"].update(lead_seconds=lead,preparation_margin=1.,scheduler_period=5.)
+    save(tmp_path/"execution_scope.json",scope)
+    value,timeline,*_=report.collect(tmp_path)
+    text=report.report_text(value,timeline)
+    if lead is None:
+        assert "lead_seconds=unavailable s; preparation_margin=unavailable s; scheduler_period=unavailable s" in text
+        assert "recorded lead - margin = unavailable s" in text
+        assert "lead_seconds=30" not in text
+    else:
+        assert f"lead_seconds={lead:g} s; preparation_margin=1 s; scheduler_period=5 s" in text
+        assert f"recorded lead - margin = {lead-1:g} s" in text
+    assert "Ready deadline = snapshot time + lead - margin" in text

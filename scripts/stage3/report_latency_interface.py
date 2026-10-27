@@ -355,7 +355,8 @@ def figures(output,value,timeline,quality,contacts,contact_sheet=False):
                     ax.plot(start,i+.10,marker="+",ms=5,color="#A35C33")
             label=r["status"] if not r.get("reason") else r["reason"]
             ax.text(.99,i,label,transform=ax.get_yaxis_transform(),ha="right",va="bottom",fontsize=7)
-        ax.set(title=f"({chr(97+panel)}) {LABELS[arm]} normal-task delivery",xlim=(0,xmax+2),ylim=(-.6,max(len(rows)-.4,.6)),
+        lead_label=fmt(value["scope"].get("protocol",{}).get("lead_seconds"))
+        ax.set(title=f"({chr(97+panel)}) {LABELS[arm]} normal-task delivery; lead {lead_label} s",xlim=(0,xmax+2),ylim=(-.6,max(len(rows)-.4,.6)),
                yticks=range(len(rows)),yticklabels=[f"Task {r['task_index']}" for r in rows],xlabel="Simulation time (s)")
         if finite(end): ax.axvline(end,color="#A0A0A0",ls=":",lw=.8)
         if finite(end) and end<xmax: ax.axvspan(end,xmax+2,color="#EEEEEE",zorder=-1)
@@ -405,9 +406,13 @@ def report_text(value,timeline=()):
     life={a:cells[a]["normal_lifecycle"] for a in ARMS}
     def phase(arm,key): return cells[arm]["all_callbacks"].get("exclusive_phase_timings",{}).get(key,{}).get("wall_s")
     def counts(values): return "; ".join(f"{k}: {v}" for k,v in values.items()) or "none recorded"
+    timing=value["scope"].get("protocol",{})
+    lead,margin,period=(timing.get(key) for key in ("lead_seconds","preparation_margin","scheduler_period"))
+    ready_offset=lead-margin if finite(lead) and finite(margin) else None
     lines=["# Normal planning latency interface — saved-artifact report","",
         "Final interpretation: PENDING_PRIMARY_REVIEW. Figure review and replay human acceptance remain pending.","",
         f"Common completed boundary: {value['common_completed_boundary_s']} s. Execution source `{value['scope'].get('source_commit')}` / `{value['scope'].get('source_hash')}`.","",
+        f"Recorded timing scope: lead_seconds={fmt(lead)} s; preparation_margin={fmt(margin)} s; scheduler_period={fmt(period)} s. Ready deadline = snapshot time + lead - margin; recorded lead - margin = {fmt(ready_offset)} s.","",
         "One preregistered H/L pair. H is heuristic candidate order with the same CP-SAT backend as L. Detailed observations and checks are in [analysis_summary.json](analysis_summary.json); raw inputs are unchanged.","",
         "## Quality and timing","","| Observed metric | H | L |","| --- | ---: | ---: |"]
     metrics=[("Terminal time (s) / process RC",lambda a:f"{fmt(cells[a]['terminal_observed_time_s'])} / {fmt(cells[a]['receipt'].get('exit_code'))}"),
