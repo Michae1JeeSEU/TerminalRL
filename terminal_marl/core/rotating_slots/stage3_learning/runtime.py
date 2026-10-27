@@ -49,11 +49,11 @@ class AdvisorRuntime:
             raise ValueError('unknown trace mode')
         self.trace_mode = trace_mode
         self.feature_schema = feature_schema
-        if ranking_scope not in ('legacy','comparable_group_v1'):
+        if ranking_scope not in ('legacy','comparable_group_v1','comparable_group_lazy_v2'):
             raise ValueError('unknown ranking scope')
         self.ranking_scope = ranking_scope
         from .features import SCHEMA_V2
-        self.rank_reuse_limit = (3 if feature_schema == SCHEMA_V2 or ranking_scope == 'comparable_group_v1' else 1) if rank_reuse_limit is None else int(rank_reuse_limit)
+        self.rank_reuse_limit = (3 if feature_schema == SCHEMA_V2 or ranking_scope in ('comparable_group_v1','comparable_group_lazy_v2') else 1) if rank_reuse_limit is None else int(rank_reuse_limit)
         if self.rank_reuse_limit not in (1,2,3):
             raise ValueError('rank reuse limit must be 1..3')
         self.retained_context, self.downstream, self.known_conflicts = {}, {}, {}
@@ -87,7 +87,8 @@ class AdvisorRuntime:
         if self.trace_mode == 'online':
             from .online_observer import lightweight_event
             batch_metadata={k:row[k] for k in ('rank_cache_hits','rank_cache_miss_reasons',
-                'budget_fraction_at_score','budget_fraction_at_pop','budget_fraction_drift')
+                'budget_fraction_at_score','budget_fraction_at_pop','budget_fraction_drift',
+                'scored_groups','scored_descriptors','deferred_groups','deferred_items','batch_consumed')
                 if row.get('record_type')=='Rank' and k in row}
             row = lightweight_event(row)
             if row is None:
@@ -341,11 +342,17 @@ class AdvisorRuntime:
         groups={}
         for descriptor in descriptors:
             groups.setdefault(self._comparable_key(descriptor),[]).append(descriptor)
+        lazy=self.ranking_scope=='comparable_group_lazy_v2'
+        active_key=self._comparable_key(descriptors[0])
+        active_groups={active_key:groups[active_key]} if lazy else groups
         previous=(self._rank_cache or {}).get('groups',{})
-        entries={}; pending=[]; hits=0; misses=Counter()
+        # Inactive entries remain unexamined until their group reaches the head.
+        # Drop groups absent from the ready pool without creating new scores.
+        entries=({key:value for key,value in previous.items() if key in groups and key!=active_key} if lazy else {})
+        pending=[]; hits=0; misses=Counter()
         fraction=self.search_state(budget)['remaining_budget_fraction']
-        snapshot_binding=self._rank_snapshot_binding(snapshot,budget) if any(len(items)>1 for items in groups.values()) else None
-        for key,items in groups.items():
+        snapshot_binding=self._rank_snapshot_binding(snapshot,budget) if any(len(items)>1 for items in active_groups.values()) else None
+        for key,items in active_groups.items():
             if len(items)<2: continue
             ids={d.descriptor_id for d in items}
             context=self._rank_dependency_context(items,budget,snapshot_binding)
@@ -384,7 +391,7 @@ class AdvisorRuntime:
                     entry['order']=tuple(did for did in order if did in entry['remaining'])
                     entry['budget_fraction_at_score']=score_fraction
             self.coverage['learned_rank_calls']+=1
-        group_orders={key:iter(entry['order']) for key,entry in entries.items()}
+        group_orders={key:iter(entry['order']) for key,entry in entries.items() if not lazy or key==active_key}
         mapping={d.descriptor_id:d for d in descriptors}
         ordered=[mapping[next(group_orders[self._comparable_key(d)])]
                  if self._comparable_key(d) in group_orders else d for d in descriptors]
@@ -412,11 +419,17 @@ class AdvisorRuntime:
         drift=abs(fraction-scored_fraction) if scored_fraction is not None else None
         if drift is not None:
             self.coverage['rank_budget_fraction_max_drift']=max(self.coverage['rank_budget_fraction_max_drift'],drift)
+        counts={}
+        if lazy:
+            counts=dict(scored_groups=int(bool(pending)),scored_descriptors=len(pending),
+                deferred_groups=len(groups)-1,deferred_items=len(descriptors)-len(groups[active_key]),
+                batch_consumed=int(selected_key in entries))
+            for name,value in counts.items(): self.coverage['rank_'+name]+=value
         self.emit(dict(record_type='Rank',ready_ids=original,ordered_ids=result,
-            policy='learned' if pending else 'learned_cache' if entries else 'comparable_singletons',
+            policy='learned' if pending else 'learned_cache' if group_orders else 'comparable_singletons',
             model_metadata=metadata,scores=scores,comparable_groups=len(groups),rank_cache_hits=hits,
             rank_cache_miss_reasons=dict(misses),budget_fraction_at_score=scored_fraction,
-            budget_fraction_at_pop=fraction,budget_fraction_drift=drift))
+            budget_fraction_at_pop=fraction,budget_fraction_drift=drift,**counts))
         return ordered
 
     def order(self, snapshot, descriptors, budget, observed_search_state=None):
@@ -468,7 +481,7 @@ class AdvisorRuntime:
                            policy="initial_coverage" if initial else "deterministic_finish" if finish else "heuristic_interleave"))
             return descriptors
         try:
-            if self.ranking_scope == 'comparable_group_v1':
+            if self.ranking_scope in ('comparable_group_v1','comparable_group_lazy_v2'):
                 return self._order_comparable(snapshot,descriptors,budget)
             cache = self._rank_cache
             states = self._ready_state(descriptors)

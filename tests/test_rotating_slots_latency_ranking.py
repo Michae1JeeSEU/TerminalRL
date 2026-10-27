@@ -23,10 +23,10 @@ class CountingAdvisor(ReverseAdvisor):
         return replace(ranked,scores={did:score*1.e100 for did,score in ranked.scores.items()})
 
 
-def grouped_setup(count=5):
+def grouped_setup(count=5,ranking_scope='comparable_group_v1'):
     advisor=CountingAdvisor()
     world,s,b,r,a,n,ds=setup(advisor=advisor,feature_schema=SCHEMA_V2,
-                            ranking_scope='comparable_group_v1')
+                            ranking_scope=ranking_scope)
     r.feature_encoder=FeatureEncoder(schema_id=SCHEMA_V2)
     r.complete_initial_coverage()
     ds.extend(r.descriptor(s,a,n,t,0.,35.,'progress') for t in range(3,count))
@@ -155,9 +155,10 @@ def test_score_fraction_is_exact_encoder_input_and_pop_fraction_is_after_inferen
     assert row['budget_fraction_drift']==pytest.approx(.3/b.candidate_seconds)
 
 
-def test_inference_overrun_does_not_begin_a_new_generation_query(monkeypatch):
+@pytest.mark.parametrize('ranking_scope',('comparable_group_v1','comparable_group_lazy_v2'))
+def test_inference_overrun_does_not_begin_a_new_generation_query(monkeypatch,ranking_scope):
     from tests.test_stage2_quality_budget import Clock
-    _,s,b,r,a,n,ds,advisor=grouped_setup(4)
+    _,s,b,r,a,n,ds,advisor=grouped_setup(4,ranking_scope=ranking_scope)
     clock=Clock();monkeypatch.setattr(sp.time,'perf_counter',clock)
     b.wall_start=0.;b.planning_wall_deadline=1.
     original=advisor.rank
@@ -270,15 +271,16 @@ def test_future_plus_one_is_delayed_coverage_without_changing_five_second_bucket
 
 
 @pytest.mark.parametrize('final_kind',('better','unknown','worse'))
-def test_candidate_cutoff_allows_one_same_catalog_improvement_and_keeps_certified_best(monkeypatch,final_kind):
-    world,s,_,runtime,_,_,_,_=grouped_setup()
+@pytest.mark.parametrize('ranking_scope',('comparable_group_v1','comparable_group_lazy_v2'))
+def test_candidate_cutoff_allows_one_same_catalog_improvement_and_keeps_certified_best(monkeypatch,final_kind,ranking_scope):
+    world,s,_,runtime,_,_,_,_=grouped_setup(ranking_scope=ranking_scope)
     provider=sp.CandidateProvider(advisor_runtime=runtime)
     context=sp.EvaluationContext(s)
     aircraft=s.aircraft['i']
     keep=provider._column(s,aircraft,(),'KEEP',context)
     move=fake_move('i')
     catalog=sp.CandidateCatalog({'i':(keep,move)},{'i':(0,)},{},('i',))
-    generated=[]; budgets=[]; calls=[]
+    generated=[]; budgets=[]; calls=[];incumbents=[]
     def batches(snapshot,budget,context):
         generated.append(0);budgets.append(budget)
         budget.candidate_active_seconds=budget.candidate_seconds
@@ -289,6 +291,7 @@ def test_candidate_cutoff_allows_one_same_catalog_improvement_and_keeps_certifie
     monkeypatch.setattr(control,'expansion_reasons',lambda *args:['NO_COMPLETE_CHAIN_OBSERVED'])
     callback=sp.NormalSchedulerCallback('rh_cp_sat',candidate_provider=provider,online_policy='progressive_v1')
     def plan(snapshot,actual,context,budget,**kwargs):
+        incumbents.append(kwargs.get('incumbent'))
         calls.append((id(actual),id(budget),budget.solver_call_seconds,budget.solver_wall_used))
         budget.solver_wall_used+=2. if len(calls)==1 else 3.
         objective=move.objective if len(calls)==1 else (0,-1,0,0. if final_kind=='better' else 10.,0)
@@ -300,6 +303,7 @@ def test_candidate_cutoff_allows_one_same_catalog_improvement_and_keeps_certifie
         commit_validated_prefix=lambda *args,**kwargs:ValidationResult(False,'REJECTED'))
     callback(port)
     assert len(generated)==1 and len(calls)==2
+    assert incumbents[0] is None and incumbents[1].certified and incumbents[1].prefix
     assert calls[0][:2]==calls[1][:2] and calls[0][2]==2. and calls[1][2] is None and calls[1][3]==2.
     assert callback.last_result.certified
     expected=(0,-1,0,0.,0) if final_kind=='better' else move.objective

@@ -557,7 +557,7 @@ class ReferenceProvider:
 
     def generate(self,snapshot,a,node,target,start,duration,budget,*,construction_stage="reference",prefix=(),base=None,work_descriptor=None):
         runtime=self.advisor_runtime
-        if (runtime is not None and (getattr(runtime,'ranking_scope','legacy')=='comparable_group_v1' or
+        if (runtime is not None and (getattr(runtime,'ranking_scope','legacy') in ('comparable_group_v1','comparable_group_lazy_v2') or
                 budget.planning_wall_deadline is not None) and not budget.available(a.id)):
             return False,None
         if runtime is None:
@@ -2245,7 +2245,7 @@ class NormalSchedulerCallback:
         catalog_round_records=[]
         cp_continuation_records=[]
         generation_stop_reason=None; improvement_stop_reason=None; same_catalog_improvement=False
-        comparable_scope=getattr(self.provider.advisor_runtime,'ranking_scope','legacy')=='comparable_group_v1'
+        comparable_scope=getattr(self.provider.advisor_runtime,'ranking_scope','legacy') in ('comparable_group_v1','comparable_group_lazy_v2')
         for restart in range(2):
             with budget.measure("snapshot_and_uniform_refinement"):
                 snapshot=build_planning_snapshot(port)
@@ -2535,7 +2535,7 @@ class NormalSchedulerCallback:
             record['search_handoff']=trace
             port.search_handoff=trace
         self.records.append(record)
-        if runtime is not None and getattr(runtime,'ranking_scope','legacy')=='comparable_group_v1':
+        if runtime is not None and getattr(runtime,'ranking_scope','legacy') in ('comparable_group_v1','comparable_group_lazy_v2'):
             record['rank_batch_cache']=dict(hits=runtime.coverage['rank_cache_hits'],
                 miss_reasons={k.split(':',1)[1]:v for k,v in runtime.coverage.items() if k.startswith('rank_cache_miss:')},
                 max_budget_fraction_drift=runtime.coverage.get('rank_budget_fraction_max_drift'))
