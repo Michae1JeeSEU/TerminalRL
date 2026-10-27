@@ -1,5 +1,6 @@
 """Stage A input, accounting and saved-artifact gates (not whole-contract acceptance)."""
 from copy import deepcopy
+from hashlib import sha256
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -15,6 +16,27 @@ from scripts.stage3 import run_latency_interface as latency
 def write(path, value):
     path.parent.mkdir(parents=True,exist_ok=True)
     path.write_text(json.dumps(value),encoding="utf8")
+
+
+def test_binding_digest_survives_real_atomic_json_cpu_keys_and_unicode(tmp_path):
+    from terminal_marl.core.rotating_slots.stage2_campaign import atomic_json
+    binding=dict(environment=dict(cpu_load_percent={2:1.5,10:2.5,12:3.5},description="服务器 CPU 测量"),
+                 source=dict(files={"source.py":"源码哈希"}))
+    binding["binding_id"]=runner.digest(binding)
+    atomic_json(tmp_path/"resolved_run_binding.json",binding)
+    restored=runner.load(tmp_path/"resolved_run_binding.json")
+    assert set(restored["environment"]["cpu_load_percent"])=={"2","10","12"}
+    assert restored["binding_id"]==runner.digest({k:v for k,v in restored.items() if k!="binding_id"})
+    restored["environment"]["cpu_load_percent"]["10"]+=1.
+    atomic_json(tmp_path/"resolved_run_binding.json",restored)
+    with pytest.raises(ValueError,match="run binding changed"):
+        runner.verify(tmp_path,SimpleNamespace())
+
+
+def test_digest_preserves_existing_all_string_source_hash():
+    source={"terminal_marl/source.py":"abc123","scripts/工具.py":"源码"}
+    old=sha256(json.dumps(source,sort_keys=True,separators=(",",":"),allow_nan=False).encode()).hexdigest()
+    assert runner.digest(source)==old
 
 
 def test_A_contract_actually_parsed_and_B_C_rejected(tmp_path):

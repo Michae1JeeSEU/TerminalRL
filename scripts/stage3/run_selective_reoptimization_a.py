@@ -45,7 +45,10 @@ def file_hash(path):
 
 
 def digest(value):
-    return sha256(json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
+    # Normalize object keys to their stored JSON form before sorting: resource
+    # probes can use integer CPU IDs while reloaded artifacts use string keys.
+    normalized = json.loads(json.dumps(value, allow_nan=False))
+    return sha256(json.dumps(normalized, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
 
 
 def module(path, name):
