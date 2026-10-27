@@ -106,6 +106,7 @@ class PlanningBudget:
     _certificate_context: str | None = field(default=None,repr=False)
     _catalog_counter: int = field(default=0,repr=False)
     certificate_source: str = "search_prefix"
+    allowed_replan_ids: object = None
 
     def search_deadline_ok(self):
         if self.search_wall_deadline is None or time.perf_counter()<self.search_wall_deadline: return True
@@ -368,6 +369,8 @@ class CandidateCatalog:
     cache_hits: int = 0
     slack_reference_statuses: object = field(default_factory=dict)
     downstream: object = None
+    scope: object = None
+    fixed_background: object = None
 
 
 @dataclass(frozen=True)
@@ -556,6 +559,7 @@ class ReferenceProvider:
         return table
 
     def generate(self,snapshot,a,node,target,start,duration,budget,*,construction_stage="reference",prefix=(),base=None,work_descriptor=None):
+        if budget.allowed_replan_ids is not None and a.id not in budget.allowed_replan_ids: raise ValueError("reference generation outside scope")
         runtime=self.advisor_runtime
         if (runtime is not None and (getattr(runtime,'ranking_scope','legacy') in ('comparable_group_v1','comparable_group_lazy_v2') or
                 budget.planning_wall_deadline is not None) and not budget.available(a.id)):
@@ -573,6 +577,7 @@ class ReferenceProvider:
         return ok,p
 
     def _generate_unobserved(self,snapshot,a,node,target,start,duration,budget):
+        if budget.allowed_replan_ids is not None and a.id not in budget.allowed_replan_ids: raise ValueError("trajectory materialization outside scope")
         key=(snapshot.config.config_hash,a.id,node.ring,node.slot,node.version,target,start,duration)
         if self.templates.get(key) is not None:
             self.hits+=1
@@ -590,6 +595,7 @@ class ReferenceProvider:
         if not budget.heavy_allowed("geometry"): return False,None
         with budget.heavy_work("geometry"):
             p=_generate(snapshot,a.id,node,target,start,duration)
+        budget.screening["materialized:"+a.id]+=1
         used=1 if node.ring=="inner" else practical_numeric_stats().get("transfer_feasibility_calls",0)-before
         budget.attempts[a.id]+=used
         # A bounded template miss is not an infeasibility certificate. Retain
@@ -601,6 +607,7 @@ class ReferenceProvider:
 
     def build_steps(self,snapshot,aircraft,node,budget):
         """Yield at every primitive attempt so callers can round-robin aircraft."""
+        if budget.allowed_replan_ids is not None and aircraft.id not in budget.allowed_replan_ids: raise ValueError("cold reference outside scope")
         key=(snapshot.config.config_hash,node.ring,node.slot,node.time,node.version,aircraft.id)
         if key in self.cache:
             self.hits+=1
@@ -702,7 +709,13 @@ def _generate(snapshot, aircraft_id, node, target, start, duration):
 class EvaluationContext:
     """Private trajectory/calendar checks, with no permanent-hold prefilter."""
     def __init__(self, snapshot, prefix_evaluator=None, budget=None, validation_cache=None,
-                 reuse_prefix_results=False, prefix_evaluator_identity=None):
+                 reuse_prefix_results=False, prefix_evaluator_identity=None, *, scope=None, global_frame=None):
+        if scope is not None: scope.validate(snapshot)
+        if global_frame is not None and (global_frame.snapshot_id != snapshot.version or global_frame.effective_time != snapshot.time):
+            raise ValueError("global frame snapshot binding mismatch")
+        if scope is not None and global_frame is not None and scope.objective_frame_id != global_frame.identity:
+            raise ValueError("scope/frame binding mismatch")
+        self.scope, self.global_frame = scope, global_frame
         self.snapshot = snapshot
         self.prefix_evaluator = prefix_evaluator
         self.reuse_prefix_results = bool(reuse_prefix_results)
@@ -717,6 +730,8 @@ class EvaluationContext:
         # Include the full immutable scheduling input, rather than the world
         # version alone: resources, SOC and fixed traffic are validation inputs.
         self.snapshot_key=hashlib.sha256(repr((snapshot,HORIZON)).encode()).hexdigest()
+        if scope is not None:
+            self.snapshot_key=hashlib.sha256(repr((self.snapshot_key,scope.identity,getattr(global_frame,"identity",None))).encode()).hexdigest()
         previous=self.cache.get("snapshot_key")
         if previous is not None and previous!=self.snapshot_key: self.cache_stats["snapshot_invalidations"]+=1
         self.cache["snapshot_key"]=self.snapshot_key
@@ -726,7 +741,9 @@ class EvaluationContext:
         self.pairs=self.cache.setdefault("pairs",{})
         self.singles=self.cache.setdefault("singles",{})
         self.energies=self.cache.setdefault("energies",{})
-        self.decisions = {a.id for a in _decision_aircraft(snapshot)}
+        self.decisions = set(scope.replan_ids) if scope is not None else {a.id for a in _decision_aircraft(snapshot)}
+        self.completed_evaluations=set()
+        self.background_blockers=[]
         self.budget=budget
         self.rejection_reasons=Counter()
         self.rejections_by_aircraft={}
@@ -852,6 +869,7 @@ class EvaluationContext:
             self.cache_stats["pair_hits"]+=1
             return self.pairs[key]
         self.cache_stats["pair_misses"]+=1
+        self.cache_stats["pair_selected_background" if a.kind=="BACKGROUND" or b.kind=="BACKGROUND" else "pair_selected_selected"]+=1
         if self.resource_conflict(a,b):
             result = ValidationResult(False,"CONFLICT","RESOURCE_CONFLICT")
         else:
@@ -872,11 +890,14 @@ class EvaluationContext:
         return result
 
     def check_single(self, column):
+        if self.scope is not None and column.aircraft_id not in self.decisions:
+            raise ValueError("candidate outside planning scope")
         if not self._time_ok(): return self._observe(self._time_rejection(),(column,))
         key=((self.snapshot_key,column.signature,column.resources)
              if all(getattr(p,"trajectory_hash",None) for p in column.plans) else None)
         if key is not None and key in self.singles:
             self.cache_stats["single_hits"]+=1
+            if self.singles[key].status!="UNKNOWN": self.completed_evaluations.add(column.aircraft_id)
             return self._observe(self.singles[key],(column,))
         self.cache_stats["single_misses"]+=1
         if self.budget is not None and not self.budget.heavy_allowed("single"):
@@ -884,6 +905,7 @@ class EvaluationContext:
         with self.budget.heavy_work("single") if self.budget else nullcontext():
             result=self._check_single(column)
         if key is not None and result.status!="UNKNOWN": _bounded_put(self.singles,key,result)
+        if result.status!="UNKNOWN": self.completed_evaluations.add(column.aircraft_id)
         return result
 
     def _check_single(self, column):
@@ -914,7 +936,13 @@ class EvaluationContext:
                 return self._observe(ValidationResult(False,"UNKNOWN","SEARCH_RESOURCE_PROTECTION_UNKNOWN"),(column,))
             background = PredictionColumn(a.id,"BACKGROUND",(),resources or (), (0,0,0,0,0))
             r = self.check_pair(column, background)
-            if not r.accepted: return self._observe(r,(column,))
+            if not r.accepted:
+                if r.status in ("CONFLICT","REJECTED","UNSAFE","INVALID"):
+                    self.background_blockers.append(dict(source=column.aircraft_id,target=a.id,
+                        snapshot_id=self.snapshot.version,reason=r.reason,
+                        resource=next((x.resource for x in column.resources for y in background.resources
+                            if x.resource==y.resource and x.start<y.end and y.start<x.end),())))
+                return self._observe(r,(column,))
         return ValidationResult(True,"SAFE")
 
     def check_batch(self, columns):
@@ -957,6 +985,7 @@ class EvaluationContext:
     def prefix(self, columns):
         out = []
         for c in columns:
+            if self.scope is not None and c.aircraft_id not in self.decisions: raise ValueError("prefix outside scope")
             if c.kind in ("KEEP","WAIT") or not c.plans: continue
             p = c.plans[0]
             if _executable_start(self.snapshot,p.start_time) and p.aircraft_id not in self.snapshot.soft:
@@ -1056,6 +1085,7 @@ class CandidateProvider:
         return "UNKNOWN"
 
     def _column(self, snapshot, a, plans, kind, context, reference=None, emergency="NONE",budget=None):
+        if plans and getattr(context,"scope",None) is not None and a.id not in context.decisions: raise ValueError("candidate materialization outside scope")
         node = _node(snapshot,a)
         current = node
         energy, peak = 0.,0.
@@ -1542,12 +1572,19 @@ class CandidateProvider:
         columns.remove(replaceable); columns.append(column)
         return True
 
-    def iter_progressive_columns(self,snapshot,budget,context):
+    def iter_progressive_columns(self,snapshot,budget,context,*,scope=None):
         """Resume one finite search across up to three growing catalog batches."""
         from .stage3_learning.catalog_control import retain_validated
         self.aligned_starts=[]; self._aligned_by_node={}
         runtime=self.advisor_runtime
-        aircraft=_decision_aircraft(snapshot)
+        scope=scope or getattr(context,"scope",None)
+        if scope is not None:
+            scope.validate(snapshot)
+            if context.scope != scope: raise ValueError("candidate/context scope mismatch")
+            budget.allowed_replan_ids=set(scope.replan_ids)
+            if self.planning_profile==PLANNING_PROFILE_DOWNSTREAM and context.global_frame is None:
+                raise ValueError("scoped downstream generation requires preselection frame")
+        aircraft=[a for a in _decision_aircraft(snapshot) if scope is None or a.id in scope.replan_ids]
         nodes={a.id:_node(snapshot,a) for a in aircraft}
         refs={a.id:self.references.cache.get((snapshot.config.config_hash,nodes[a.id].ring,
             nodes[a.id].slot,nodes[a.id].time,nodes[a.id].version,a.id),NormalReference("UNKNOWN")) for a in aircraft}
@@ -1653,6 +1690,20 @@ class CandidateProvider:
         if self.planning_profile==PLANNING_PROFILE_DOWNSTREAM:
             from .stage2_downstream import JointDownstream,describe_column,ticks
             demands={c.signature:describe_column(snapshot,c,self.references,context) for rows in values.values() for c in rows}
+            if context.global_frame is not None:
+                # FOLLOW is precisely the preselection committed continuation.
+                # Newly searched references cannot improve a fixed background
+                # only when it happens to have been selected by FULL_H.
+                baseline_demands=context.global_frame.baseline_by_id
+                demands={c.signature:(baseline_demands[c.aircraft_id] if not c.plans else demands[c.signature])
+                    for rows in values.values() for c in rows}
+                downstream=context.global_frame.downstream(demands,set(values))
+                baseline={aid:rows[0] for aid,rows in values.items()}
+                values={aid:tuple(replace(c,objective=downstream.key(tuple(dict(baseline,**{aid:c}).values())),
+                    downstream=demands[c.signature].diagnostics) for c in rows) for aid,rows in values.items()}
+                return CandidateCatalog(MappingProxyType(values),MappingProxyType(slacks),MappingProxyType(dict(budget.attempts)),
+                    tuple(values),0,MappingProxyType({aid:ref.status for aid,ref in refs.items()}),downstream,
+                    context.scope,MappingProxyType(dict(downstream.fixed_demands)))
             fixed=[]; order=[a.id for a in sorted(ordered,key=lambda a:slacks[a.id])]; others=[]
             for a in snapshot.aircraft.values():
                 if a.id in values or _node(snapshot,a) is None: continue
@@ -1672,8 +1723,18 @@ class CandidateProvider:
         return CandidateCatalog(MappingProxyType(values),MappingProxyType(slacks),MappingProxyType(dict(budget.attempts)),
             tuple(values),0,MappingProxyType({aid:ref.status for aid,ref in refs.items()}),downstream)
 
-    def get_columns(self,snapshot,budget=None,context=None):
-        budget=budget or PlanningBudget(); context=context or EvaluationContext(snapshot,budget=budget)
+    def get_columns(self,snapshot,budget=None,context=None,*,scope=None):
+        budget=budget or PlanningBudget(); context=context or EvaluationContext(snapshot,budget=budget,scope=scope)
+        scope=scope or getattr(context,"scope",None)
+        if scope is not None:
+            scope.validate(snapshot)
+            if context.scope != scope: raise ValueError("candidate/context scope mismatch")
+            # Same scoped progressive generator, including all cold references;
+            # the legacy alternative entry cannot bypass selection.
+            latest=None
+            with budget.candidate_work():
+                for latest in self.iter_progressive_columns(snapshot,budget,context,scope=scope): pass
+            return latest
         self.aligned_starts=[]
         self._aligned_by_node={}
         start_hits=self.references.hits
@@ -1890,6 +1951,7 @@ class RollingHorizonCPSATScheduler:
         downstream_inputs=vars(downstream) if hasattr(downstream,'__dict__') else downstream
         evaluator_binding=(getattr(context,'prefix_evaluator_identity',None),id(getattr(context,'prefix_evaluator',None)))
         inputs=(getattr(context,'snapshot_key',None),snapshot,getattr(context,'snapshot',None),
+            getattr(getattr(context,'scope',None),'identity',None),getattr(getattr(context,'global_frame',None),'identity',None),
             evaluator_binding,
             tuple((aid,tuple(rows)) for aid,rows in candidates.columns.items()),candidates.slacks,downstream_inputs)
         identity=hashlib.sha256(repr(inputs).encode()).hexdigest()
@@ -1935,6 +1997,9 @@ class RollingHorizonCPSATScheduler:
         return replace(seed,selected=selected,prefix=prefix,evaluation=evaluation,objective=objective,certified=True)
 
     def plan(self,snapshot,candidates,context,budget,*,incumbent=None):
+        if getattr(context,"scope",None) is not None:
+            if set(candidates.columns)!=set(context.scope.replan_ids) or candidates.scope!=context.scope:
+                raise ValueError("CP catalog/scope binding mismatch")
         try: from ortools.sat.python import cp_model
         except ImportError as exc:
             raise RuntimeError("RH-CP-SAT requires OR-Tools; no replacement solver is used") from exc
@@ -2031,6 +2096,7 @@ class RollingHorizonCPSATScheduler:
                         chosen={c.signature for c in incumbent.selected}
                         for key,v in variables.items(): model.AddHint(v,int(key in chosen))
                     shared_expressions=(candidates.downstream.cp_expressions(model,variables,lookup) if candidates.downstream is not None else None)
+                    model_scale=dict(decision_variables=len(variables),auxiliary_variables=len(model.Proto().variables)-len(variables),constraints=len(model.Proto().constraints))
                 invalid=False; carry=0.
                 for phase,share in enumerate(PHASE_SHARES):
                     if not budget.search_available():
@@ -2061,6 +2127,7 @@ class RollingHorizonCPSATScheduler:
                         started=time.perf_counter(); status=solver.Solve(model); used=time.perf_counter()-started
                     solve_used+=used; budget.solver_wall_used+=used; carry=max(0.,limit-used)
                     rec={"round":refinement,"phase":phase,"status":solver.StatusName(status),"wall_s":used,
+                         "model_scale":model_scale,
                          "allocated_seconds":limit,"remaining_deadline_s":deadline_remaining,
                          "search_validation_headroom_s":validation_headroom,
                          "bound":solver.BestObjectiveBound(),"branches":solver.NumBranches(),
@@ -2152,7 +2219,19 @@ class RollingHorizonCPSATScheduler:
 class NormalSchedulerCallback:
     """Callable SchedulerPort adapter; runner owns admission/emergency timing."""
     def __init__(self,method="energy_slack",candidate_provider=None,budget_profile=QUALITY_BUDGET_PROFILE,planning_profile=PLANNING_PROFILE_LEGACY,
-                 advisor_runtime=None,budget_scale=1.,online_policy=None,prefix_reuse=None):
+                 advisor_runtime=None,budget_scale=1.,online_policy=None,prefix_reuse=None,selective_method=None,global_frame=None):
+        if selective_method not in (None,"FULL_H","RULE_LOCAL_K8"): raise ValueError("unknown Stage A selective method")
+        if selective_method is not None:
+            if method!="rh_cp_sat" or planning_profile!=PLANNING_PROFILE_DOWNSTREAM: raise ValueError("Stage A requires rh_cp_sat/downstream_service_v8")
+            if advisor_runtime is not None or getattr(candidate_provider,"advisor_runtime",None) is not None: raise ValueError("Stage A disables old descriptor ranker")
+            if budget_scale!=1.: raise ValueError("Stage A freezes candidate budget")
+            if online_policy not in (None,"progressive_v1"): raise ValueError("Stage A requires progressive_v1")
+            online_policy="progressive_v1"
+        self.selective_method,self.global_frame=selective_method,global_frame
+        if selective_method is not None:
+            from .selective_replanning.history import PlanningHistory
+            self.selective_history=PlanningHistory()
+            self.selective_blockers=[]
         self.scheduler=EnergySlackScheduler() if method=="energy_slack" else RollingHorizonCPSATScheduler() if method=="rh_cp_sat" else None
         if self.scheduler is None: raise ValueError("unknown Stage2 baseline")
         candidate_policy_id(planning_profile)
@@ -2182,6 +2261,8 @@ class NormalSchedulerCallback:
                 "references":[(key,reference(r)) for key,r in self.provider.references.cache.items()],
                 "templates":[(key,p.to_dict() if p is not None else None) for key,p in self.provider.references.templates.items()],
                 "reference_hits":self.provider.references.hits}
+        if self.selective_method is not None:
+            state["selective_replanning"]=dict(method=self.selective_method,history=self.selective_history.state_dict(),blockers=self.selective_blockers)
         if self.planning_profile!=PLANNING_PROFILE_LEGACY: state["planning_profile"]=self.planning_profile
         if self.online_policy is not None: state["online_policy"]=self.online_policy
         if self.prefix_reuse or self.online_policy: state["prefix_reuse"]=self.prefix_reuse
@@ -2195,6 +2276,11 @@ class NormalSchedulerCallback:
 
     def load_state_dict(self,state):
         from .trajectory import TrajectoryPlan
+        selective=state.get("selective_replanning")
+        if (selective or {}).get("method")!=self.selective_method: raise ValueError("selective method binding mismatch")
+        if selective is not None:
+            self.selective_history.load_state_dict(selective["history"])
+            self.selective_blockers=list(selective.get("blockers",()))
         if state.get("online_policy")!=self.online_policy: raise ValueError("online catalog policy mismatch")
         if state.get("prefix_reuse",False)!=self.prefix_reuse: raise ValueError("prefix reuse policy mismatch")
         runtime=self.provider.advisor_runtime
@@ -2224,6 +2310,10 @@ class NormalSchedulerCallback:
     def __call__(self,port,*args):
         if args: port=args[-1]  # executor callback(snapshot, port) convention
         budget=PlanningBudget.for_profile(self.budget_profile)
+        if self.selective_method is not None:
+            budget.candidate_seconds=6.; budget.solver_seconds=8.; budget.hint_seconds=3.
+            budget.soft_seconds=30.; budget.watchdog_seconds=60.
+            budget.max_per_aircraft=32; budget.max_attempts=1024
         wall_deadline=getattr(port,'planning_wall_deadline',None)
         if wall_deadline is not None:
             if not math.isfinite(wall_deadline): raise ValueError('finite planning wall deadline required')
@@ -2236,7 +2326,7 @@ class NormalSchedulerCallback:
             budget.planning_wall_origin=float(getattr(port,'planning_wall_origin',budget.wall_start))
             budget.search_handoff_reserve_seconds=float(getattr(port,'search_handoff_reserve_seconds',wall_deadline-search_deadline))
         ready_remaining_at_start=(None if wall_deadline is None else max(0.,wall_deadline-time.perf_counter()))
-        effective_scale = .5 if self.online_policy and self.budget_scale == 1. else self.budget_scale
+        effective_scale = .5 if self.selective_method is None and self.online_policy and self.budget_scale == 1. else self.budget_scale
         if effective_scale!=1.:
             from .stage3_learning.runtime import scale_candidate_budget
             scale_candidate_budget(budget,effective_scale)
@@ -2246,6 +2336,7 @@ class NormalSchedulerCallback:
         cp_continuation_records=[]
         generation_stop_reason=None; improvement_stop_reason=None; same_catalog_improvement=False
         comparable_scope=getattr(self.provider.advisor_runtime,'ranking_scope','legacy') in ('comparable_group_v1','comparable_group_lazy_v2')
+        selective_telemetry=None; selective_completed=set()
         for restart in range(2):
             with budget.measure("snapshot_and_uniform_refinement"):
                 snapshot=build_planning_snapshot(port)
@@ -2253,7 +2344,41 @@ class NormalSchedulerCallback:
                 reuse_prefix_results=self.prefix_reuse)
             budget._certificate_context=context.snapshot_key
             budget._catalog=None
-            if self.online_policy:
+            if self.selective_method is not None:
+                from .selective_replanning import build_global_frame, RuleSelector, LocalPlanner
+                from .selective_replanning.frame import FrameIncomplete
+                from .selective_replanning.relations import build_relations
+                source=getattr(port,"_source",snapshot)
+                if getattr(source,"planning_timing",None) is None: self.selective_history.observe(source)
+                now=source.time
+                with budget.measure("global_evaluation_frame"):
+                    try: frame=self.global_frame or build_global_frame(snapshot,self.provider,context)
+                    except FrameIncomplete as exc:
+                        result=PlanningResult((),(),None,"GLOBAL_FRAME_INCOMPLETE",(),certified=False,details={"reason":str(exc)})
+                        self.last_result=result
+                        self.records.append(dict(time=snapshot.time,method=self.scheduler.method,status=result.status,
+                            wall_s=budget.elapsed,cpu_s=time.process_time()-budget.cpu_start,planning_budget=budget.settings(),
+                            timings=dict(budget.timings),submitted=0,commit_status="NOT_COMMITTED",attempts=dict(budget.attempts),
+                            selective_replanning=dict(method=self.selective_method,status="LOCAL_SEARCH_INCOMPLETE",reason=str(exc),
+                                solve_calls=0,scope_expansions=0,objective_frame_id=None,scope=None)))
+                        return result
+                if frame.snapshot_id!=snapshot.version or frame.effective_time!=snapshot.time: raise ValueError("injected frame snapshot mismatch")
+                with budget.measure("selective_selection"):
+                    relations=build_relations(snapshot,tuple(a.id for a in _decision_aircraft(snapshot)),self.selective_blockers,frame=frame)
+                    scope,selection=RuleSelector().select(snapshot,frame,self.selective_history,relations,method=self.selective_method,now=now)
+                local=LocalPlanner(self.provider,self.scheduler)
+                result=local.plan(snapshot,scope,frame,budget)
+                catalog,context=local.last_catalog,local.last_context
+                selection["selection_status"]=selection.pop("status")
+                selective_telemetry=dict(local.telemetry,**selection,method=self.selective_method,
+                    relations=[vars(r) for r in relations],selection_reasons=dict(local.last_scope.selection_reasons),
+                    frame_wall_s=budget.timings.get("global_evaluation_frame",(0.,0.))[0],selection_wall_s=budget.timings.get("selective_selection",(0.,0.))[0])
+                selective_completed.update(local.completed_evaluations)
+                self.selective_blockers=list(local.telemetry["background_blockers"])
+                for call in local.telemetry["calls"]: solver_history.extend(call["solver_records"])
+                generation_stop_reason=budget.generation_stop_reason() or "SCOPED_CATALOG_COMPLETE"
+                improvement_stop_reason=result.details.get("solver_stop_reason") or "LOCAL_SOLVE_LIMIT"
+            elif self.online_policy:
                 from .stage3_learning.catalog_control import coverage_report, expansion_reasons
                 catalogs=self.provider.iter_progressive_columns(snapshot,budget,context)
                 best=None
@@ -2351,7 +2476,7 @@ class NormalSchedulerCallback:
                 if 'continuation' in result.details: cp_continuation_records.append(dict(result.details['continuation']))
                 solver_history.extend(dict(r,uniform_refinement_restart=restart) for r in result.solver_records)
             if not getattr(result.evaluation,"refinement_required",False): break
-            if restart or not budget.search_available():
+            if restart or self.selective_method is not None or not budget.search_available():
                 result=replace(result,prefix=(),evaluation=None,status="REFINEMENT_UNCERTAIN",certified=False)
                 break
             with budget.measure("snapshot_and_uniform_refinement"):
@@ -2390,7 +2515,11 @@ class NormalSchedulerCallback:
                     evidence_report=report(tuple(rows),snapshot_version=current.version)
         self.last_result=result
         committed_prefix=result.prefix if commit is not None and commit.accepted else ()
-        self.provider.previous={c.aircraft_id:tuple(p for p in c.plans if p not in committed_prefix) for c in result.selected if c.kind=="MOVE"}
+        updated_previous={c.aircraft_id:tuple(p for p in c.plans if p not in committed_prefix) for c in result.selected if c.kind=="MOVE"}
+        if self.selective_method is None: self.provider.previous=updated_previous
+        else:
+            for aid in context.decisions: self.provider.previous.pop(aid,None)
+            self.provider.previous.update(updated_previous)
         selected_by_id={c.aircraft_id:c for c in result.selected}
         aircraft_choices=[]
         for aid,columns in catalog.columns.items():
@@ -2486,6 +2615,14 @@ class NormalSchedulerCallback:
                 "stale":bool(commit is not None and commit.status=="STALE"),"watchdog":"WATCHDOG" in budget.truncations,
                 "noop":not result.prefix,"selected_key":result.objective,
                 "keep":sum(c.kind=="KEEP" for c in result.selected),"wait":sum(c.kind=="WAIT" for c in result.selected)}
+        if selective_telemetry is not None:
+            record["selective_replanning"]=selective_telemetry
+            source=getattr(port,"_source",snapshot)
+            timing=getattr(snapshot,"planning_timing",None)
+            review_key=self._selective_review_key(timing) if timing is not None else "immediate:"+snapshot.version
+            self.selective_history.queue_reviews(review_key,source,selective_completed)
+            if timing is None: self.selective_history.deliver(review_key,build_planning_snapshot(port),port.time)
+            record["selective_replanning"]["review_delivery_key"]=review_key
         explanation_stopped=search_deadline is not None and not budget.search_deadline_ok()
         if catalog.downstream is not None and not explanation_stopped:
             with budget.measure("downstream_explanation"):
@@ -2550,6 +2687,24 @@ class NormalSchedulerCallback:
         if search_deadline is not None:
             trace['callback_return']['wall_elapsed_s']=time.perf_counter()-budget.planning_wall_origin
         return result
+
+    @staticmethod
+    def _selective_review_key(timing):
+        return "effective:"+repr((timing.snapshot_time,timing.effective_time,timing.ready_deadline))
+
+    def observe_execution_snapshot(self, snapshot, now=None):
+        if self.selective_method is not None: self.selective_history.observe(snapshot,now)
+
+    def initialize_imported_history(self, snapshot, events=()):
+        if self.selective_method is None: raise ValueError("selective history requires Stage A method")
+        self.selective_history.initialize_imported(snapshot,events)
+
+    def record_evaluation_delivery(self, timing, snapshot, now):
+        if self.selective_method is None: return
+        updated=self.selective_history.deliver(self._selective_review_key(timing),snapshot,now)
+        for record in reversed(self.records):
+            if record.get("selective_replanning",{}).get("review_delivery_key")==self._selective_review_key(timing):
+                record["selective_replanning"].update(review_delivered_time=now,review_updated_ids=list(updated)); break
 
     def record_latency_ack(self, timing, delivery, plans):
         """Attach actual executor acknowledgement after a deferred proposal."""

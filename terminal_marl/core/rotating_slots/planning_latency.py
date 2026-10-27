@@ -689,6 +689,7 @@ class LatencyAwareScheduler:
     def __call__(self, observation, port=None):
         port = observation if port is None else port
         if self.pending is not None:
+            self._observe_selective(port)
             if not self.dirty:
                 self.dirty = True
                 port.planning_latency_event("normal_trigger_coalesced")
@@ -703,6 +704,8 @@ class LatencyAwareScheduler:
         proposal, evidence, reason, future = None, [], None, None
         try:
             source = port.build_planning_snapshot()
+            if getattr(self.callback,"selective_method",None) is not None:
+                self.callback.observe_execution_snapshot(source,port.time)
             future = _FuturePort(project_visible_snapshot(source,timing.effective_time,timing=timing),source,planning_wall_deadline,
                 search_wall_deadline=search_wall_deadline,planning_wall_origin=actual_started,
                 search_handoff_reserve_seconds=self.search_handoff_reserve_seconds)
@@ -723,6 +726,8 @@ class LatencyAwareScheduler:
             **asdict(timing),normal_work_s=duration,normal_work_cpu_s=time.process_time()-started_cpu,
             prepare_work_s=None,online_service_s=service,
             status="COMPUTING",submitted=0,commit_status="DEFERRED")
+        if getattr(self.callback,"selective_method",None) is not None:
+            record["proposed_trajectory_hashes"]=[p.trajectory_hash for p in proposal or ()]
         if self.search_handoff_reserve_seconds:
             record["search_handoff"] = (future.search_handoff if future is not None else None)
         self.records.append(record)
@@ -730,6 +735,19 @@ class LatencyAwareScheduler:
             proposal=proposal,evidence=evidence,reason=reason,token=None,online_service_s=service,
             record_index=len(self.records)-1)
         port.planning_latency_event("normal_task_started",**record)
+
+    def _observe_selective(self, port, delivery_timing=None):
+        if getattr(self.callback,"selective_method",None) is None: return
+        started, cpu=time.perf_counter(),time.process_time()
+        snapshot=port.build_planning_snapshot()
+        self.callback.observe_execution_snapshot(snapshot,port.time)
+        if delivery_timing is not None: self.callback.record_evaluation_delivery(delivery_timing,snapshot,port.time)
+        wall,used_cpu=time.perf_counter()-started,time.process_time()-cpu
+        self.online_service(port.time,wall,used_cpu,"selective_history")
+        if self.pending is not None:
+            record=self.records[self.pending["record_index"]]
+            record["selective_history_work_s"]=record.get("selective_history_work_s",0.)+wall
+            record["selective_history_work_cpu_s"]=record.get("selective_history_work_cpu_s",0.)+used_cpu
 
     def _finish(self, port, status, reason="", result=None):
         p = self.pending
@@ -741,6 +759,7 @@ class LatencyAwareScheduler:
             dirty=self.dirty)
         port.planning_latency_event("normal_task_finished",**record)
         acknowledge = getattr(self.callback,"record_latency_ack",None)
+        self._observe_selective(port)
         if callable(acknowledge):
             acknowledge(p["timing"],record,tuple(p["proposal"] or ()))
         self.pending = None
@@ -798,6 +817,7 @@ class LatencyAwareScheduler:
         p = self.pending
         timing = p["timing"]
         if p["due"] > port.time+EPS: return
+        self._observe_selective(port,timing if p["stage"]=="RESULT" else None)
         if p["stage"] in ("RESULT","PREPARING","READY_SERVICE","REVALIDATING") and (
                 port.time > timing.ready_deadline+EPS or p["due"] > timing.ready_deadline+EPS):
             if p["stage"]=="REVALIDATING":

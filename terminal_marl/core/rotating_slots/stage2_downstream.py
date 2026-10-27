@@ -132,11 +132,12 @@ def describe_column(snapshot, column, references, context):
 
 class JointDownstream:
     """Shared service calendars and explicit optional CP queue intervals."""
-    def __init__(self, demands, fixed_calendars, order, *, now=0, pad_count=6, fixed_demands=()):
+    def __init__(self, demands, fixed_calendars, order, *, now=0, pad_count=6, fixed_demands=(), assignment=None, frame_id=None):
         self.demands = demands
         self.fixed_demands = {d.aircraft_id:d for d in fixed_demands}
         self.order = tuple(order)
         self.now = now
+        self.frame_id = frame_id
         self.calendars = {p:[] for p in range(pad_count)}
         self.fixed_identity = set()
         for p,lo,hi,aid in fixed_calendars:
@@ -145,11 +146,14 @@ class JointDownstream:
                 self.calendars[p].append((lo,hi)); self.fixed_identity.add(identity)
         # One assignment based on the baseline reference readiness, then frozen.
         provisional = {p:list(rows) for p,rows in self.calendars.items()}
-        self.assignment = {}
+        self.assignment = dict(assignment or {})
         for aid in self.order:
             options = [d for key,d in demands.items() if d.aircraft_id==aid and not d.full]
             d = self.fixed_demands.get(aid) or (options[0] if options else None)
             if d is None: continue
+            if assignment is not None:
+                if not d.full and aid not in self.assignment: raise ValueError("frozen frame missing virtual pad")
+                continue
             start,pad=min((earliest_gap(provisional[p],d.ready,d.duration),p) for p in provisional)
             self.assignment[aid]=pad
             provisional[pad].append((start,start+d.duration))
@@ -205,6 +209,13 @@ class JointDownstream:
         for p,rows in self.calendars.items():
             for n,(lo,hi) in enumerate(rows):
                 intervals[p].append(model.NewIntervalVar(lo,hi-lo,hi,f"fixed_pad_{p}_{n}"))
+        fixed_seen=set(self.fixed_identity)
+        for d in self.fixed_demands.values() if self.frame_id is not None else ():
+            for p,lo,hi,aid in d.real_intervals:
+                identity=(p,lo,hi,aid)
+                if identity not in fixed_seen:
+                    intervals[p].append(model.NewIntervalVar(lo,hi-lo,hi,f"background_real_{aid}_{len(intervals[p])}"))
+                    fixed_seen.add(identity)
         for key,c in lookup.items():
             d=self.demands[key]; v=variables[key]
             for p,lo,hi,aid in d.real_intervals:
