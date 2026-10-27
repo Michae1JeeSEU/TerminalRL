@@ -299,10 +299,11 @@ def search_reuse_summary(callbacks):
         solver_remaining_deadline_s=measured(r.get("remaining_deadline_s") for r in solvers))
 
 
-def run_job(output,arm,d,*,started=None):
+def run_job(output,arm,d,*,started=None,execution_verifier=None):
     require(arm in ARMS,"unexpected arm")
     started=time.perf_counter() if started is None else started; cpu_started=time.process_time()
-    scope,binding,ledger=verify(output,d)
+    scope,binding,ledger=(execution_verifier or verify)(output,d)
+    ranking=scope["protocol"].get("ranking_scope",RANKING)
     require((output/"run.started.json").is_file(),"job is internal to the fixed parent run")
     receipt=ledger.data["jobs"].get(arm,{})
     require((ledger.data.get("active_phase") or {}).get("phase")=="evaluation"
@@ -315,7 +316,7 @@ def run_job(output,arm,d,*,started=None):
     advance_wall=advance_cpu=0.
     row=load(output/"roots"/ROOT_ID/"root.json")
     # Original identity restores t0; new checkpoints identify this execution source.
-    checkpoint_identity=dict(row["identity"],source_hash=scope["source_hash"],normal_planning_interface=INTERFACE,ranking_scope=RANKING)
+    checkpoint_identity=dict(row["identity"],source_hash=scope["source_hash"],normal_planning_interface=INTERFACE,ranking_scope=ranking)
     def progress(phase,target=None):
         pending=wrapper.pending if wrapper is not None else None
         d.atomic_json(output/"progress"/(arm+".json"),dict(pid=os.getpid(),arm=arm,phase=phase,
@@ -342,7 +343,7 @@ def run_job(output,arm,d,*,started=None):
         world=d.restore_root(row,d.NormalSchedulerCallback("rh_cp_sat",planning_profile="downstream_service_v8"))
         world.configure_practical_runtime(True); observer=d.OnlineObserver()
         scheduler=d.evaluation._scheduler(output,arm,binding,observer,ROOT_ID,setup)
-        scheduler.provider.advisor_runtime.ranking_scope=RANKING
+        scheduler.provider.advisor_runtime.ranking_scope=ranking
         wrapper=d.LatencyAwareScheduler(scheduler,lead_seconds=scope["protocol"]["lead_seconds"],
             preparation_margin=scope["protocol"]["preparation_margin"],
             search_handoff_reserve_seconds=scope["protocol"].get("search_handoff_reserve_seconds",0.))
@@ -454,9 +455,10 @@ def run(output,d):
         return result
 
 
-def summarize(output,d):
-    scope,_,ledger=verify(output,d)
-    require(ledger.data.get("paused_at") is not None and not ledger.data.get("active_phase"),"run must be paused before summarizing")
+def summarize(output,d,*,execution_verifier=None):
+    scope,_,ledger=(execution_verifier or verify)(output,d)
+    archive_phase=execution_verifier is not None and (ledger.data.get("active_phase") or {}).get("phase")=="archive"
+    require((ledger.data.get("paused_at") is not None and not ledger.data.get("active_phase")) or archive_phase,"run must be paused before summarizing")
     require(not (output/"summary.json").exists() and not (output/"README.md").exists(),"summary already exists")
     paths={arm:output/"evaluation"/arm for arm in ARMS}
     boundaries={arm:{int(p.stem.split("_")[-1]):p for p in base.glob("boundary_*.json")} for arm,base in paths.items()}
@@ -470,12 +472,17 @@ def summarize(output,d):
     d.atomic_json(output/"summary.json",values)
     text="# Normal-planning latency interface: fixed 120s H/L pair\n\n"
     text+=f"Common completed boundary: {common}s. Source: `{scope['source_commit']}`.\n\n"
-    text+="H is heuristic candidate order with the same CP-SAT backend as L. Original model fingerprint is unchanged; execution_scope.json records the new interface and ranking scope.\n\n"
+    fresh_training=execution_verifier is not None and scope["protocol"].get("training")=="ONE_NEW_FORMAL_TRAINING_RUN"
+    text+=("H is heuristic candidate order with the same CP-SAT backend as L. One new guarded future-state training run produced the frozen model; execution_scope.json binds its actual model/normalizer hashes and projected interface.\n\n" if fresh_training else
+        "H is heuristic candidate order with the same CP-SAT backend as L. Original model fingerprint is unchanged; execution_scope.json records the new interface and ranking scope.\n\n")
     for arm in ARMS:
         result=results[arm]; life=result.get("normal_lifecycle",{})
         text+=f"- {arm}: {result['status']}; committed/finished nonempty groups {life.get('committed_nonempty_groups')}/{life.get('finished_nonempty_groups')}; pending groups {life.get('pending_nonempty_groups')}; join rate {life.get('join_rate')}.\n"
     text+="\nBoundary costs end before that boundary checkpoint; terminal_costs include terminal bookkeeping before replay export; full_job_wall_s includes replay export; subprocess receipt also includes process startup. World.advance-minus-dispatch includes integration, execution checks and recording, and is not pure physics.\n\n"
-    text+="Publication is an atomic event with separately measured bookkeeping CPU, not backdated validation. Shared emergency response timestamps are unchanged and its CPU service delays normal tasks. No training, seed scan, retries or statistical/generalization claim. Exact-120 dispatch is censored. See independent terminals, actual scheduler records and authoritative replay; HUMAN_PENDING.\n"
+    text+="Publication is an atomic event with separately measured bookkeeping CPU, not backdated validation. Shared emergency response timestamps are unchanged and its CPU service delays normal tasks. "
+    text+=("One new formal training run; one DEVELOPMENT_SEEN evaluation pair. No seed scan, retries or statistical/generalization claim. " if fresh_training else
+        "No training, seed scan, retries or statistical/generalization claim. ")
+    text+="Exact-120 dispatch is censored. See independent terminals, actual scheduler records and authoritative replay; HUMAN_PENDING.\n"
     (output/"README.md").write_text(text,encoding="utf8")
     return dict(status="SUMMARIZED",common_completed_boundary_s=common)
 

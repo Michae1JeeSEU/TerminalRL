@@ -13,6 +13,9 @@ from .model import ARCHITECTURE_ID, FeatureNormalizer, build_model, fingerprint_
 SEED = 20261023
 LABEL_POLICY = 'bounded_reference_supported_pair_v1_0'
 PAIR_SOURCES = {'supported_vs_certified_single_invalid','bounded_conditional_certified_objective_preference'}
+JOINT_LABEL_POLICY = 'bounded_joint_contribution_v2'
+JOINT_PAIR_SOURCES = {'observed_bounded_joint_contribution_preference',
+    'observed_bounded_joint_contribution_measured_cost_preference'}
 
 
 def atomic_json(path, value):
@@ -60,7 +63,8 @@ def _groups(dataset, fingerprint, *, schema_id=SCHEMA_ID):
         if p.get('split') not in ('train','validation'):
             raise ValueError('sealed/test pair found in training input')
         sources = PAIR_SOURCES | ({'equal_quality_incremental_preference','equal_quality_measured_cost_preference'} if schema_id == SCHEMA_V2 else set())
-        if p.get('label_source') not in sources or p.get('label_policy_id') != LABEL_POLICY or not p.get('evidence_refs'):
+        future = schema_id == SCHEMA_V2 and fingerprint.get('label_policy_id') == JOINT_LABEL_POLICY
+        if p.get('label_source') not in sources | (JOINT_PAIR_SOURCES if future else set()) or not p.get('evidence_refs'):
             raise ValueError('unapproved preference pair')
         if p.get('objective_id') != fingerprint.get('objective_id'):
             raise ValueError('preference objective mismatch')
@@ -68,6 +72,34 @@ def _groups(dataset, fingerprint, *, schema_id=SCHEMA_ID):
         if group is None:
             raise ValueError('pair without context')
         c = group['context']
+        if future:
+            if p.get('label_policy_id') == LABEL_POLICY:
+                provenance=c.get('migration_provenance',{})
+                if (c['split']!='train' or c.get('feature_state_semantics')!='CURRENT_STATE_V2' or
+                        not provenance.get('source_fingerprint') or
+                        provenance.get('source_feature_state_semantics')!='CURRENT_STATE_V2' or
+                        p.get('label_source') not in sources):
+                    raise ValueError('legacy pair requires explicit old-current train migration')
+            elif p.get('label_policy_id') == JOINT_LABEL_POLICY:
+                if c.get('feature_state_semantics')!='planning_effective_state_v1':
+                    raise ValueError('new pair requires projected future feature state')
+                if p.get('label_source') in JOINT_PAIR_SOURCES:
+                    # Reconstruct the approved pair from the exact four archived
+                    # inclusion/removal solves, selected facts and increments.
+                    from .labeling import joint_contribution_pairs, canonical_solution_id
+                    solutions=c.get('contribution_solutions',[])
+                    if any(s.get('solution_id')!=canonical_solution_id(s) for s in solutions):
+                        raise ValueError('contribution solve content identity mismatch')
+                    approved=joint_contribution_pairs(c.get('descriptor_records',[]),c.get('facts',[]),solutions,
+                        c.get('incremental_contribution_evidence',[]),root_id=c['ancestry_root_id'],split=c['split'],fingerprint=fingerprint)
+                    if p not in approved or len(p['evidence_refs'])!=4 or len(set(p['evidence_refs']))!=4:
+                        raise ValueError('unverified four-solve contribution evidence')
+                elif p.get('label_source') not in PAIR_SOURCES:
+                    raise ValueError('unapproved new-policy preference source')
+            else:
+                raise ValueError('unapproved preference pair policy')
+        elif p.get('label_policy_id') != LABEL_POLICY:
+            raise ValueError('unapproved preference pair')
         if p['split'] != c['split'] or p['ancestry_root_id'] != c['ancestry_root_id']:
             raise ValueError('preference split/ancestry mismatch')
         a,b = p['preferred_descriptor'],p['other_descriptor']

@@ -10,15 +10,27 @@ import time
 from ..stage2_campaign import atomic_json,digest,load_json
 from .data import PortableObserver,StratifiedProbe,restore_root,auxiliary_labels,summarize_coverage
 
+DEFAULT_LABEL_POLICY = 'bounded_reference_supported_pair_v1_0'
+JOINT_CONTRIBUTION_POLICY = 'bounded_joint_contribution_v2'
+
+
+def _label_policy(policy):
+    policy = DEFAULT_LABEL_POLICY if policy is None else policy
+    if policy not in (DEFAULT_LABEL_POLICY, JOINT_CONTRIBUTION_POLICY):
+        raise ValueError('unsupported label policy: '+str(policy))
+    return policy
+
 
 def comparable(a,b):
     keys=("snapshot_id","source_node_id","aircraft_id","parent_prefix_id","construction_stage")
     return all(a.get(k)==b.get(k) for k in keys)
 
 
-def derive_pairs(descriptors, facts, reference_solutions, *, conditional_attempts=(), context_id, root_id, split, fingerprint):
+def derive_pairs(descriptors, facts, reference_solutions, *, conditional_attempts=(), context_id, root_id, split, fingerprint,
+                 label_policy=None, increments=()):
     """Only certified observed strict preferences; no unselected pseudo-negatives."""
     from .campaign import contract_config
+    policy=_label_policy(label_policy)
     limits=contract_config()["labeling"]
     if len(reference_solutions)>limits["certified_reference_solutions_max"]:
         raise ValueError("saved reference support exceeds frozen solution cap")
@@ -33,7 +45,7 @@ def derive_pairs(descriptors, facts, reference_solutions, *, conditional_attempt
     def add(a,b,source,evidence):
         if a==b or a not in by_id or b not in by_id or not comparable(by_id[a],by_id[b]):return
         pairs[(a,b)]=dict(record_type="PreferencePair",context_id=by_id[a]["source_node_id"],preferred_descriptor=a,other_descriptor=b,
-            label_source=source,objective_id=fingerprint["objective_id"],label_policy_id="bounded_reference_supported_pair_v1_0",
+            label_source=source,objective_id=fingerprint["objective_id"],label_policy_id=policy,
             ancestry_root_id=root_id,split=split,evidence_refs=list(evidence))
     for a in sorted(supported):
         for b in sorted(invalid):
@@ -46,7 +58,17 @@ def derive_pairs(descriptors, facts, reference_solutions, *, conditional_attempt
         better,worse=(a,b) if tuple(a["objective"])<tuple(b["objective"]) else (b,a)
         add(better["required_descriptor"],worse["required_descriptor"],
             "bounded_conditional_certified_objective_preference",[better["solution_id"],worse["solution_id"]])
-    return list(pairs.values())
+    result=list(pairs.values())
+    if policy==JOINT_CONTRIBUTION_POLICY:
+        contribution=joint_contribution_pairs(descriptors,facts,conditional_attempts,increments,
+            root_id=root_id,split=split,fingerprint=fingerprint)
+        replaced={frozenset((p['preferred_descriptor'],p['other_descriptor'])) for p in contribution}
+        result=[p for p in result if p['label_source']!='bounded_conditional_certified_objective_preference' or
+            frozenset((p['preferred_descriptor'],p['other_descriptor'])) not in replaced]
+        result.extend(contribution)
+        unordered=[frozenset((p['preferred_descriptor'],p['other_descriptor'])) for p in result]
+        assert len(unordered)==len(set(unordered)), 'duplicate or contradictory unordered preference pair'
+    return result
 
 
 def conditional_catalog(catalog, descriptor_id, ancestry):
@@ -86,13 +108,45 @@ def _solution(result, ancestry, catalog_id, method, *, required=None,budget=None
     return row
 
 
-def label_snapshot(output,root_id,binding, *, schema_id=None):
+def _planning_snapshot_provenance(snapshot,provenance):
+    """Validate caller-supplied revealed projection metadata without projecting it."""
+    from collections.abc import Mapping
+    from copy import deepcopy
+    import math
+    from ..world import PlanningSnapshot
+    if snapshot is None:
+        if provenance is not None:raise ValueError('planning snapshot provenance requires a snapshot')
+        return None
+    if not isinstance(snapshot,PlanningSnapshot):
+        raise ValueError('planning_snapshot must be an immutable PlanningSnapshot')
+    required={'source_time','effective_time','version','projection'}
+    if not isinstance(provenance,Mapping) or not required.issubset(provenance):
+        raise ValueError('planning snapshot provenance requires source_time/effective_time/version/projection')
+    source,effective=provenance['source_time'],provenance['effective_time']
+    if (not all(isinstance(t,(int,float)) and not isinstance(t,bool) and math.isfinite(t) for t in (source,effective))
+            or effective<source):
+        raise ValueError('planning snapshot effective_time must be finite and >= source_time')
+    if snapshot.time!=effective or snapshot.version!=provenance['version']:
+        raise ValueError('planning snapshot provenance time/version mismatch')
+    if not isinstance(provenance['projection'],Mapping) or not provenance['projection']:
+        raise ValueError('planning snapshot projection provenance must be a nonempty mapping')
+    return deepcopy(dict(provenance))
+
+
+def label_snapshot(output,root_id,binding, *, schema_id=None,label_policy=None,
+                   planning_snapshot=None,planning_snapshot_provenance=None):
     from ..stage2_planning import (PlanningBudget,CandidateProvider,EvaluationContext,
         NormalSchedulerCallback,EnergySlackScheduler,RollingHorizonCPSATScheduler)
     from .runtime import AdvisorRuntime
     from .campaign import contract_config
     from .features import SCHEMA_V2
+    policy=_label_policy(label_policy)
     v2 = schema_id == SCHEMA_V2
+    if policy==JOINT_CONTRIBUTION_POLICY:
+        if not v2:raise ValueError('joint contribution policy requires SCHEMA_V2')
+        if binding['fingerprint'].get('label_policy_id')!=policy:
+            raise ValueError('binding fingerprint label policy does not match requested policy')
+    snapshot_provenance=_planning_snapshot_provenance(planning_snapshot,planning_snapshot_provenance)
     output=Path(output);root=load_json(output/"roots"/root_id/"root.json")
     ancestry_root_id=root.get('ancestry_root_id',root_id)
     directory=output/"labels"/root_id;directory.mkdir(parents=True,exist_ok=True)
@@ -100,6 +154,10 @@ def label_snapshot(output,root_id,binding, *, schema_id=None):
         saved=load_json(directory/'labels.json')
         if v2 and saved.get('feature_schema_id') != SCHEMA_V2:
             raise ValueError('existing labels use a different feature schema')
+        if saved.get('label_policy_id',DEFAULT_LABEL_POLICY)!=policy:
+            raise ValueError('existing labels use a different label policy')
+        if saved.get('planning_snapshot_provenance')!=snapshot_provenance:
+            raise ValueError('existing labels use a different planning snapshot')
         return saved
     raw=output/"raw"/root_id
     # Failed partial jobs may be retried, but cannot append a second trace to stale facts.
@@ -107,8 +165,11 @@ def label_snapshot(output,root_id,binding, *, schema_id=None):
         raise ValueError("partial raw trace exists; retain evidence and return to primary before retry")
     observer=PortableObserver(raw)
     cfg=contract_config()["labeling"];started=time.perf_counter();deadline=started+cfg["per_snapshot_total_wall_seconds"]
-    world=restore_root(root,NormalSchedulerCallback("rh_cp_sat",planning_profile="downstream_service_v8"))
-    snapshot=world.build_planning_snapshot()
+    if planning_snapshot is None:
+        world=restore_root(root,NormalSchedulerCallback("rh_cp_sat",planning_profile="downstream_service_v8"))
+        snapshot=world.build_planning_snapshot()
+    else:
+        snapshot=planning_snapshot
     runtime=AdvisorRuntime(mode="SHADOW_OFFLINE",fingerprint=binding["fingerprint"],observer=observer,
         ancestry_root_id=ancestry_root_id,evaluation=False,offline_probe=StratifiedProbe(cfg["offline_probe_seed"]).select,
         feature_schema=schema_id)
@@ -207,8 +268,8 @@ def label_snapshot(output,root_id,binding, *, schema_id=None):
         key=tuple(solution["selected_signatures"])
         if solution["certified"] and key not in seen and len(reference_solutions)<cfg["certified_reference_solutions_max"]:
             seen.add(key);reference_solutions.append(solution)
-    pairs=derive_pairs(descriptors,timed,reference_solutions,conditional_attempts=conditional_attempts,context_id=context_id,root_id=ancestry_root_id,split=root["split"],fingerprint=binding["fingerprint"])
-    if v2:
+    pairs=derive_pairs(descriptors,timed,reference_solutions,conditional_attempts=conditional_attempts,context_id=context_id,root_id=ancestry_root_id,split=root["split"],fingerprint=binding["fingerprint"],label_policy=policy,increments=incremental)
+    if v2 and policy==DEFAULT_LABEL_POLICY:
         pairs += supplementary_pairs(descriptors,timed,conditional_attempts,incremental,root_id=ancestry_root_id,split=root['split'],fingerprint=binding['fingerprint'])
     support={d for solution in reference_solutions for d in solution["descriptor_ids"]}
     result=dict(status="LABELED" if pairs else "DATA_INSUFFICIENT",context_id=context_id,root_id=root_id,split=root["split"],
@@ -217,6 +278,11 @@ def label_snapshot(output,root_id,binding, *, schema_id=None):
         auxiliary_labels=auxiliary_labels(timed),facts=timed,wall_s=time.perf_counter()-started,
         coverage_summary=summarize_coverage(descriptors,timed,support,support_kind="SAVED_BOUNDED_REFERENCE_ANCESTRY"),
         unsupported_valid_is_negative=False,conditional_is_global_oracle=False)
+    if policy==JOINT_CONTRIBUTION_POLICY:
+        result.update(label_policy_id=policy,contribution_is_global_oracle=False,
+            contribution_is_causal_guarantee=False)
+    if snapshot_provenance is not None:
+        result['planning_snapshot_provenance']=snapshot_provenance
     if v2:
         result.update(feature_schema_id=SCHEMA_V2,incremental_contribution_evidence=incremental,ancestry_root_id=ancestry_root_id,
             candidate_timer_regime='CUMULATIVE_ACTIVE_GENERATION_SHARED_ORIGINAL_CLOCK',
@@ -269,6 +335,77 @@ def incremental_evidence(descriptor_id,inclusion,removal):
         catalog_id=inclusion.get('catalog_id'),counterfactual_catalog_id=removal.get('counterfactual_catalog_id'),
         removed_signatures=removal.get('removed_signatures',[]),scope='BOUNDED_CERTIFIED_INCLUSION_REMOVAL',
         missing_reason=None if certified else 'UNCERTIFIED_NONCOMPARABLE_OR_MULTIPLE_DESCENDANT_REMOVAL')
+
+
+def joint_contribution_pairs(descriptors,facts,solutions,increments,*,root_id,split,fingerprint):
+    """Observed finite-budget relative contribution, with four exact solve bindings.
+
+    These comparisons neither establish a global optimum nor a causal effect.
+    An increment is admitted only when its two references uniquely identify the
+    certified, single-signature inclusion/removal interventions that produced it.
+    """
+    import math
+    by_id={d['descriptor_id']:d for d in descriptors}
+    solutions_by_ref={}
+    for row in solutions:
+        solutions_by_ref.setdefault(row.get('solution_id'),[]).append(row)
+    increments_by_descriptor={}
+    for row in increments:
+        increments_by_descriptor.setdefault(row['descriptor_id'],[]).append(row)
+    bound={}
+    for did,rows in increments_by_descriptor.items():
+        if len(rows)!=1 or not rows[0].get('contribution_mask'):continue
+        row=rows[0];refs=row.get('evidence_refs',())
+        if len(refs)!=2 or len(set(refs))!=2 or any(len(solutions_by_ref.get(ref,()))!=1 for ref in refs):continue
+        included,removed=(solutions_by_ref[ref][0] for ref in refs)
+        if included.get('excluded_descriptor') is not None or removed.get('required_descriptor') is not None:continue
+        objectives=(included.get('objective'),removed.get('objective'))
+        if (not objectives[0] or not objectives[1] or len(objectives[0])!=len(objectives[1]) or
+                not all(isinstance(v,(int,float)) and not isinstance(v,bool) and math.isfinite(v) for obj in objectives for v in obj)):continue
+        verified=incremental_evidence(did,included,removed)
+        if not verified['contribution_mask']:continue
+        fields=('included_objective','removed_objective','increment','catalog_id','counterfactual_catalog_id','removed_signatures')
+        if any(row.get(key)!=verified.get(key) for key in fields):continue
+        if not included.get('catalog_id') or not included.get('budget_settings'):continue
+        bound[did]=(row,included,removed)
+    by_fact={}
+    for fact in facts:
+        if fact.get('cost_complete'):by_fact.setdefault(fact['descriptor_id'],[]).append(fact)
+    pairs=[]
+    for da,db in combinations(sorted(bound),2):
+        if da not in by_id or db not in by_id or not comparable(by_id[da],by_id[db]):continue
+        ia,a,ar=bound[da];ib,b,br=bound[db]
+        if a['catalog_id']!=b['catalog_id'] or a['budget_settings']!=b['budget_settings']:continue
+        refs=ia['evidence_refs']+ib['evidence_refs']
+        if len(set(refs))!=4:continue
+        delta_a,delta_b=tuple(ia['increment']),tuple(ib['increment'])
+        if len(delta_a)!=len(delta_b):continue
+        source=None;cost_refs=[]
+        if delta_a!=delta_b:
+            preferred,other=(da,db) if delta_a>delta_b else (db,da)
+            source='observed_bounded_joint_contribution_preference'
+        elif len(by_fact.get(da,[]))==len(by_fact.get(db,[]))==1:
+            fa,fb=by_fact[da][0],by_fact[db][0]
+            costs=(fa.get('wall_s'),fb.get('wall_s'))
+            if (fa.get('cost_scope') and fa.get('cost_scope')==fb.get('cost_scope') and
+                    all(isinstance(v,(int,float)) and not isinstance(v,bool) and math.isfinite(v) and v>=0 for v in costs) and
+                    costs[0]!=costs[1] and fa.get('features_before_query_ref') and fb.get('features_before_query_ref') and
+                    fa['features_before_query_ref']!=fb['features_before_query_ref']):
+                preferred,other=(da,db) if costs[0]<costs[1] else (db,da)
+                source='observed_bounded_joint_contribution_measured_cost_preference'
+                cost_refs=[fa['features_before_query_ref'],fb['features_before_query_ref']]
+        if source:
+            pairs.append(dict(record_type='PreferencePair',context_id=by_id[da]['source_node_id'],preferred_descriptor=preferred,other_descriptor=other,
+                label_source=source,objective_id=fingerprint['objective_id'],label_policy_id=JOINT_CONTRIBUTION_POLICY,
+                ancestry_root_id=root_id,split=split,evidence_refs=list(refs),cost_evidence_refs=cost_refs,
+                catalog_id=a['catalog_id'],budget_settings=dict(a['budget_settings']),
+                contribution_evidence=[dict(descriptor_id=did,included_solution_ref=inc['solution_id'],removed_solution_ref=rem['solution_id'],
+                    included_objective=list(inc['objective']),removed_objective=list(rem['objective']),delta=list(increment['increment']),
+                    counterfactual_catalog_id=rem.get('counterfactual_catalog_id'),removed_signatures=list(rem['removed_signatures']))
+                    for did,increment,inc,rem in ((da,ia,a,ar),(db,ib,b,br))],
+                contribution_scope='OBSERVED_BOUNDED_SAME_CATALOG_SINGLE_SIGNATURE_INCLUSION_REMOVAL',
+                global_oracle=False,causal_guarantee=False))
+    return pairs
 
 
 def supplementary_pairs(descriptors,facts,solutions,increments,*,root_id,split,fingerprint):
@@ -326,8 +463,11 @@ def reindex_saved_labels(labels,descriptors):
             raise ValueError('ambiguous saved intervention match: '+did)
         increments.append(incremental_evidence(did,included[0],removed[0]))
     kwargs=dict(root_id=labels.get('ancestry_root_id',labels['root_id']),split=labels['split'],fingerprint=labels['fingerprint'])
-    pairs=derive_pairs(descriptors,labels['facts'],result['reference_solutions'],conditional_attempts=conditional,context_id=labels['context_id'],**kwargs)
-    pairs+=supplementary_pairs(descriptors,labels['facts'],conditional,increments,**kwargs)
+    policy=labels.get('label_policy_id',DEFAULT_LABEL_POLICY)
+    pairs=derive_pairs(descriptors,labels['facts'],result['reference_solutions'],conditional_attempts=conditional,context_id=labels['context_id'],
+        label_policy=policy,increments=increments,**kwargs)
+    if policy==DEFAULT_LABEL_POLICY:
+        pairs+=supplementary_pairs(descriptors,labels['facts'],conditional,increments,**kwargs)
     def pair_semantics(rows):
         return sorted((r['context_id'],r['preferred_descriptor'],r['other_descriptor'],r['label_source'],r['objective_id'],r['split'],r['ancestry_root_id']) for r in rows)
     if pair_semantics(pairs)!=pair_semantics(labels['preference_pairs']):
