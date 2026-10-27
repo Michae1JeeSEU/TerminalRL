@@ -79,7 +79,17 @@ def build_global_frame(snapshot, provider, context):
     order=tuple(sorted((d.aircraft_id for d in baselines),key=lambda aid:(priorities[aid],aid)))
     calendars=tuple((r.resource if isinstance(r.resource,int) else r.resource[1],ticks(r.start),ticks(r.end),r.aircraft_id)
                     for r in snapshot.pads if math.isfinite(r.end))
-    baseline_map={}; fixed=tuple(baselines)
+    # Actual calendars already reserve these owners. A current-state demand
+    # may clip the same reservation at snapshot.time; do not add that covered
+    # subinterval as a second fixed CP occupancy. Other owners and extensions
+    # remain explicit, and the authoritative calendars are never changed.
+    def covered(interval):
+        pad,lo,hi,owner=interval
+        return any(pad==p and owner==aid and start<=lo and hi<=end
+                   for p,start,end,aid in calendars)
+    fixed=tuple(replace(d,real_intervals=tuple(row for row in d.real_intervals if not covered(row)))
+                for d in baselines)
+    baseline_map={}
     provisional=JointDownstream(baseline_map,calendars,order,now=ticks(snapshot.time),pad_count=snapshot.config.pads.count,fixed_demands=fixed)
     # Every aircraft may replace FOLLOW by a full candidate. Freeze a virtual
     # pad for every nonfull baseline; full baselines are never open normal IDs.

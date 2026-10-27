@@ -505,3 +505,80 @@ def test_A19_selective_state_dict_nonfinite_fails_closed_and_off_unchanged():
     off.records.append(dict(diagnostic=Section(dict(value=1.))))
     with pytest.raises(TypeError,match="Section"):
         off.state_dict()
+
+
+def _ground_frame_fixture(time_s=10.,calendar_change=None):
+    from terminal_marl.core.rotating_slots.world import STAGE2_POLICY_ID
+    w=RotatingSlotWorld(experiment_policy_id=STAGE2_POLICY_ID)
+    for pad,end in ((0,15.),(2,30.),(4,45.)):
+        w.seed_service("initial_ground_pad"+str(pad),pad,remaining=end)
+    w.seed_hold("airborne","outer",0,.9)
+    if time_s: w.advance(time_s,False)
+    snapshot=w.build_planning_snapshot()
+    if calendar_change is not None:
+        snapshot=replace(snapshot,pads=tuple(calendar_change(row) if row.resource==0 else row for row in snapshot.pads))
+    context=EvaluationContext(snapshot)
+    provider=CandidateProvider(planning_profile="downstream_service_v8")
+    frame=build_global_frame(snapshot,provider,context)
+    return w,snapshot,context,frame
+
+
+@pytest.mark.parametrize("time_s",[0.,10.])
+def test_A07_ground_frame_covered_service_interval_only_once(time_s):
+    from terminal_marl.core.rotating_slots.stage2_downstream import ticks
+    w,snapshot,context,frame=_ground_frame_fixture(time_s)
+    before=w.build_planning_snapshot().version
+    actual=tuple((row.resource,ticks(row.start),ticks(row.end),row.aircraft_id) for row in snapshot.pads)
+    assert frame.calendars==actual
+    for pad,end in ((0,15.),(2,30.),(4,45.)):
+        aid="initial_ground_pad"+str(pad)
+        raw=context.resources(snapshot.aircraft[aid],())
+        assert [(r.resource[1],ticks(r.start),ticks(r.end),aid) for r in raw]==[(pad,ticks(time_s),ticks(end),aid)]
+        assert frame.baseline_by_id[aid].real_intervals==()
+        assert (pad,0,ticks(end),aid) in frame.calendars
+    assert w.build_planning_snapshot().version==before
+    assert frame.downstream({},()).fixed_identity==set(actual)
+
+
+@pytest.mark.parametrize("change",["different_owner","partial_extension"])
+def test_A07_ground_frame_keeps_other_owner_and_partly_covered_intervals(change):
+    from terminal_marl.core.rotating_slots.stage2_downstream import ticks
+    def altered(row):
+        return replace(row,aircraft_id="other_owner") if change=="different_owner" else replace(row,end=12.)
+    w,snapshot,context,frame=_ground_frame_fixture(calendar_change=altered)
+    original_version=w.build_planning_snapshot().version
+    assert frame.baseline_by_id["initial_ground_pad0"].real_intervals==((0,100,150,"initial_ground_pad0"),)
+    expected_owner="other_owner" if change=="different_owner" else "initial_ground_pad0"
+    expected_end=150 if change=="different_owner" else 120
+    assert (0,0,expected_end,expected_owner) in frame.calendars
+    assert frame.calendars==tuple((r.resource,ticks(r.start),ticks(r.end),r.aircraft_id) for r in snapshot.pads)
+    assert w.build_planning_snapshot().version==original_version
+
+
+def test_A07_ground_frame_real_cp_old_duplicate_infeasible_normalized_feasible():
+    cp_model=pytest.importorskip("ortools.sat.python.cp_model",reason="real CP backend required for ground-interval regression; no substitute")
+    from terminal_marl.core.rotating_slots.stage2_downstream import ticks
+    w,snapshot,context,frame=_ground_frame_fixture()
+    before=w.build_planning_snapshot().version
+    # Reconstruct precisely the previous frame representation from the real
+    # current-state resource view, without changing a world/calendar.
+    legacy=[]
+    for demand in frame.baselines:
+        aircraft=snapshot.aircraft[demand.aircraft_id]
+        if aircraft.status=="LANDED_SERVICE":
+            raw=tuple((r.resource[1],ticks(r.start),ticks(r.end),aircraft.id) for r in context.resources(aircraft,()))
+            demand=replace(demand,real_intervals=raw)
+        legacy.append(demand)
+    old=replace(frame,baselines=tuple(legacy))
+    def solve(candidate):
+        model=cp_model.CpModel();candidate.downstream({},()).cp_expressions(model,{},{})
+        solver=cp_model.CpSolver();solver.parameters.num_search_workers=1;solver.parameters.max_time_in_seconds=2.
+        return solver.Solve(model)
+    assert solve(old)==cp_model.INFEASIBLE
+    assert solve(frame)==cp_model.OPTIMAL
+    assert frame.calendars==old.calendars and frame.assignment==old.assignment
+    assert frame.downstream({},()).evaluate(())==old.downstream({},()).evaluate(())
+    # A different owner's overlapping actual reservation is still a conflict.
+    _,_,_,conflicting=_ground_frame_fixture(calendar_change=lambda r:replace(r,aircraft_id="other_owner"))
+    assert solve(conflicting)==cp_model.INFEASIBLE
+    assert w.build_planning_snapshot().version==before
