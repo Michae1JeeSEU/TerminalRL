@@ -39,6 +39,17 @@ def test_digest_preserves_existing_all_string_source_hash():
     assert runner.digest(source)==old
 
 
+def test_terminal_result_prints_nested_real_sections_and_rejects_nonfinite(capsys):
+    from terminal_marl.core.rotating_slots.config import Section
+    value=dict(stage="job",status="COMPLETE",rows=[dict(configuration=Section(dict(physical=Section(dict(separation_m=80.)),label="实际配置")))])
+    runner.print_result(value)
+    observed=json.loads(capsys.readouterr().out)
+    assert observed==dict(stage="job",status="COMPLETE",rows=[dict(configuration=dict(physical=dict(separation_m=80.),label="实际配置"))])
+    with pytest.raises(ValueError):
+        runner.print_result(dict(status="COMPLETE",configuration=Section(dict(invalid=float("nan")))))
+    assert capsys.readouterr().out==""
+
+
 def test_A_contract_actually_parsed_and_B_C_rejected(tmp_path):
     parsed=runner.parse_contract()
     assert parsed["phase"]["settings"]["methods"]==list(runner.METHODS)

@@ -58,6 +58,12 @@ def module(path, name):
     return result
 
 
+def print_result(value):
+    """Use the same plain, finite JSON representation as saved atomic outputs."""
+    from terminal_marl.core.rotating_slots.stage2_campaign import canonical
+    print(canonical(value).decode("utf8"))
+
+
 def parse_contract(phase_path=PACKAGE / "phase_A_v1_0.yaml"):
     """Fail closed for any changed v1.0 control, including previously unknown keys.
 
@@ -566,7 +572,7 @@ def main(argv=None):
                     result=module(PROJECT/"scripts/stage3/report_selective_reoptimization_a.py","_selective_report").report(output,PROJECT)
             finally: ledger.pause()
     else: result=run_stage(output,args.stage,d)
-    print(json.dumps(dict(stage=args.stage,output=str(output),**result),sort_keys=True,allow_nan=False))
+    print_result(dict(stage=args.stage,output=str(output),**result))
 
 
 if __name__=="__main__":
