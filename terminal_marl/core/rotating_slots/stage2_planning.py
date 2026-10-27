@@ -2272,6 +2272,12 @@ class NormalSchedulerCallback:
                              "deterministic_only":runtime.deterministic_only if runtime is not None else False,
                              "ranking_scope":getattr(runtime,"ranking_scope","legacy"),
                              "fingerprint":runtime.fingerprint if runtime is not None else {}}
+        if self.selective_method is not None:
+            # Frozen global-frame diagnostics can retain nested Section values
+            # in FOLLOW records. Normalize through the existing archive view;
+            # retain the original finite JSON boundary and the OFF path.
+            from .replay import _plain
+            state=_plain(state)
         return json.loads(json.dumps(state,allow_nan=False))
 
     def load_state_dict(self,state):

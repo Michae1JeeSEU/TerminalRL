@@ -433,3 +433,75 @@ def test_A07_cp_real_reservation_identity_deduplicated():
     assert solver.Solve(model)==cp_model.OPTIMAL
     intervals=sum(r.has_interval() if hasattr(r,"has_interval") else r.HasField("interval") for r in model.Proto().constraints)
     assert intervals==1
+
+
+def test_A19_multiaircraft_follow_frozen_diagnostics_checkpoint_roundtrip(tmp_path,monkeypatch):
+    """Real FOLLOW/frame diagnostics and checkpoint path; fixed selection, no CP."""
+    from terminal_marl.core.rotating_slots.world import STAGE2_POLICY_ID
+    from terminal_marl.core.rotating_slots.config import Section
+    from terminal_marl.core.rotating_slots.replay import _plain
+    from terminal_marl.core.rotating_slots.stage2_campaign import checkpoint_identity,digest,save_checkpoint,restore_checkpoint
+    class FollowProvider(CandidateProvider):
+        def iter_progressive_columns(self,snapshot,budget,context,*,scope=None):
+            columns={aid:[self._column(snapshot,snapshot.aircraft[aid],(),"KEEP",context)] for aid in scope.replan_ids}
+            yield self._progressive_catalog(snapshot,budget,context,columns,
+                {aid:rows[0].reference for aid,rows in columns.items()},[snapshot.aircraft[aid] for aid in columns])
+    def choose_follow(self,snapshot,catalog,context,budget,*,incumbent=None):
+        selected=tuple(rows[0] for rows in catalog.columns.values())
+        checked,_=context.check_batch(selected)
+        assert checked.accepted
+        evaluation=context.check_commit_prefix(selected)
+        assert evaluation.accepted
+        return PlanningResult(selected,(),evaluation,"FIXED_FOLLOW_SERIALIZATION_FIXTURE",
+            catalog.downstream.key(selected),certified=True)
+    monkeypatch.setattr(RollingHorizonCPSATScheduler,"plan",choose_follow)
+    def scheduler():
+        cb=NormalSchedulerCallback("rh_cp_sat",candidate_provider=FollowProvider(planning_profile="downstream_service_v8"),
+            planning_profile="downstream_service_v8",selective_method="FULL_H")
+        return LatencyAwareScheduler(cb,lead_seconds=20.,search_handoff_reserve_seconds=4.)
+    w=RotatingSlotWorld(experiment_policy_id=STAGE2_POLICY_ID)
+    for aid,ring,slot in (("a","outer",0),("b","outer",5),("c","middle",2)):
+        w.seed_hold(aid,ring,slot,.9)
+    wrapper=scheduler();wrapper(w._scheduler_port)
+    cb=wrapper.callback
+    assert wrapper.pending["stage"]=="RESULT" and not wrapper.pending["proposal"]
+    assert cb.records[-1]["keep"]==3 and len(cb.records[-1]["downstream"])==3
+    assert all(isinstance(row["window_wait_seconds_by_ring"],Section) for row in cb.records[-1]["downstream"].values())
+    with pytest.raises(TypeError,match="Section"):
+        json.dumps(cb.records,allow_nan=False)
+    assert cb.selective_history.pending and len(cb.selective_history.entries)==3
+    # Match the observed failure boundary while executing only real holding.
+    w.advance(5.,False)
+    assert w.time==5. and not any(e["type"]=="maneuver_started" for e in w.events)
+    before=wrapper.state_dict()
+    assert before["callback"]["records"]==_plain(cb.records)
+    identity=checkpoint_identity(dict(source_hash="follow_serialization_test",base_config_hash=w.config.config_hash,
+        overlay_sha256="test",planning_profile="downstream_service_v8"),digest(w.manifest.to_dict()))
+    path=tmp_path/"follow_t5.json"
+    save_checkpoint(path,w,wrapper,identity)
+    loaded_scheduler=scheduler();loaded=restore_checkpoint(path,loaded_scheduler,identity)
+    assert loaded_scheduler.state_dict()==before
+    assert loaded_scheduler.pending==wrapper.pending
+    restored_history=loaded_scheduler.callback.selective_history
+    assert _plain(restored_history.state_dict())==_plain(cb.selective_history.state_dict())
+    review_key=next(iter(cb.selective_history.pending))
+    original_delivered=cb.selective_history.deliver(review_key,w.build_planning_snapshot(),5.)
+    restored_delivered=restored_history.deliver(review_key,loaded.build_planning_snapshot(),5.)
+    assert set(original_delivered)==set(restored_delivered)=={"a","b","c"}
+    assert restored_history.entries==cb.selective_history.entries
+    assert all(entry.reviewed==5. and entry.progressed is None for entry in restored_history.entries.values())
+    assert loaded.events==w.events and loaded.time==5.
+    assert loaded.aircraft==w.aircraft and loaded.active==w.active and loaded.soft==w.soft
+    assert not any(e["type"]=="maneuver_started" for e in loaded.events)
+
+
+def test_A19_selective_state_dict_nonfinite_fails_closed_and_off_unchanged():
+    from terminal_marl.core.rotating_slots.config import Section
+    cb=NormalSchedulerCallback("rh_cp_sat",planning_profile="downstream_service_v8",selective_method="FULL_H")
+    cb.records.append(dict(downstream=Section(dict(aircraft=Section(dict(invalid=float("nan")))))))
+    with pytest.raises(ValueError,match="Out of range float"):
+        cb.state_dict()
+    off=NormalSchedulerCallback("rh_cp_sat",planning_profile="downstream_service_v8")
+    off.records.append(dict(diagnostic=Section(dict(value=1.))))
+    with pytest.raises(TypeError,match="Section"):
+        off.state_dict()
