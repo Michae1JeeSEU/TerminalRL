@@ -124,6 +124,75 @@ def test_first_actual_prefix_and_strict_improvement_trace_are_scope_bound(monkey
     assert len(b.certificate_events)==5
 
 
+def test_empty_prefix_improvement_is_recorded_without_changing_final_selection(monkeypatch,tmp_path):
+    _,snapshot,_,runtime,a,_,_,_=grouped_setup()
+    clock=Clock();monkeypatch.setattr(sp.time,"perf_counter",clock)
+    move=replace(fake_move(a.id),objective=(0,0,18,449917810.,6729.5))
+    keep=sp.PredictionColumn(a.id,"KEEP",(),(),(0,0,18,417649492.9,6489.5),sp._node(snapshot,a))
+    cat=sp.CandidateCatalog({a.id:(keep,move)},{a.id:(0,)},{},())
+    provider=sp.CandidateProvider(advisor_runtime=runtime)
+    def catalogs(*args):
+        yield cat
+        yield cat
+    monkeypatch.setattr(provider,"iter_progressive_columns",catalogs)
+    import terminal_marl.core.rotating_slots.stage3_learning.catalog_control as control
+    monkeypatch.setattr(control,"expansion_reasons",lambda *args:["MORE"])
+    callback=sp.NormalSchedulerCallback("rh_cp_sat",candidate_provider=provider,online_policy="progressive_v1")
+    choices=iter((move,keep));calls=[]
+    def plan(s,c,context,budget,**kwargs):
+        column=next(choices);calls.append(column)
+        context.prefix_evaluator=lambda prefix:ValidationResult(True,"ACCEPTED")
+        clock.now=3. if column is move else 6.
+        evaluation=context.check_commit_prefix((column,))
+        if column is keep: clock.now=15.
+        return sp.PlanningResult((column,),context.prefix((column,)),evaluation,"FEASIBLE",column.objective,certified=True)
+    monkeypatch.setattr(callback.scheduler,"plan",plan)
+    port=SimpleNamespace(planning_wall_deadline=19.,search_wall_deadline=15.,planning_wall_origin=0.,
+        search_handoff_reserve_seconds=4.,build_planning_snapshot=lambda:snapshot,
+        commit_validated_prefix=lambda *args,**kwargs:ValidationResult(False,"DEFERRED"))
+    result=callback(port);trace=port.search_handoff
+    assert calls==[move,keep] and result.selected==(keep,) and result.certified and result.prefix==()
+    assert callback.records[-1]["noop"] is True
+    assert trace["first_nonempty_certified"]["objective"]==list(move.objective)
+    strict=[row for row in trace["events"] if row["event"]=="STRICT_CERTIFIED_IMPROVEMENT"]
+    assert len(strict)==1 and strict[0]["prefix_hashes"]==[]
+    assert strict[0]["objective"]==list(keep.objective) and strict[0]["wall_elapsed_s"]==15.
+    assert strict[0]["certificate_wall_elapsed_s"]==6.
+    assert any(row["event"]=="CATALOG_BEST_UPDATE" and row["prefix_hashes"]==[] for row in trace["events"])
+    assert trace["callback_return"]["prefix_hashes"]==[] and trace["callback_return"]["objective"]==list(keep.objective)
+    path=tmp_path/"empty_improvement_trace.json";path.write_text(json.dumps(trace,allow_nan=False),encoding="utf8")
+    assert json.loads(path.read_text(encoding="utf8"))["callback_return"]["certified"] is True
+
+
+def test_empty_first_cached_receipt_and_unknown_do_not_claim_first_nonempty(monkeypatch):
+    _,snapshot,_,_,a,_,_,_=grouped_setup()
+    clock=Clock();b=budget_at(clock,monkeypatch)
+    move=fake_move(a.id);keep=sp.PredictionColumn(a.id,"KEEP",(),(),(0,0,3,10.,100.),sp._node(snapshot,a))
+    b.bind_catalog(sp.CandidateCatalog({a.id:(keep,move)},{a.id:(0,)},{},()))
+    def certify(prefix): clock.now+=.2;return ValidationResult(True,"ACCEPTED")
+    context=sp.EvaluationContext(snapshot,budget=b,prefix_evaluator=certify,
+        reuse_prefix_results=True,prefix_evaluator_identity="fixed")
+    clock.now=1.
+    assert context.check_commit_prefix((keep,)).accepted
+    b.certificate_event("hint",(keep,),(),event="CERTIFIED_OBJECTIVE",objective=keep.objective)
+    assert b.first_nonempty_certified is None
+    assert context.check_commit_prefix((move,)).accepted
+    b.certificate_event("cp",(move,),move.plans,event="CERTIFIED_OBJECTIVE",objective=move.objective)
+    assert b.first_nonempty_certified["prefix_hashes"]==[move.plans[0].trajectory_hash]
+    clock.now=5.
+    assert context.check_commit_prefix((keep,)).accepted
+    better=(0,-2,0,0.,0.)
+    b.certificate_event("cp",(keep,),(),event="CERTIFIED_OBJECTIVE",objective=better)
+    last=b.certificate_events[-1]
+    assert last["event"]=="STRICT_CERTIFIED_IMPROVEMENT" and last["wall_elapsed_s"]==5.
+    assert last["prefix_hashes"]==[] and last["certificate_wall_elapsed_s"]==pytest.approx(1.2)
+    assert b._prefix_receipts[(b._catalog_scope,())]["objective"]==list(keep.objective)
+    before=len(b.certificate_events)
+    unknown=sp.EvaluationContext(snapshot,budget=b,prefix_evaluator=lambda prefix:ValidationResult(False,"UNKNOWN"))
+    assert not unknown.check_commit_prefix((keep,)).accepted and len(b.certificate_events)==before
+    assert b.first_nonempty_certified["objective"]==list(move.objective)
+
+
 @pytest.mark.parametrize("method",["energy_slack","rh_cp_sat"])
 def test_callback_returns_certified_best_at_search_stop_without_new_improvement_or_explanation(monkeypatch,method,tmp_path):
     _,snapshot,_,runtime,a,_,_,_=grouped_setup()

@@ -152,7 +152,7 @@ class PlanningBudget:
                 if self.search_wall_deadline is not None else 0.)
 
     def certificate_event(self,source,columns,prefix,*,event="CERTIFIED_PREFIX",comparison=None,objective=None):
-        if self.search_wall_deadline is None or not prefix: return
+        if self.search_wall_deadline is None: return
         row=dict(event=event,source=source,wall_elapsed_s=time.perf_counter()-(self.planning_wall_origin if self.planning_wall_origin is not None else self.wall_start),
             catalog_scope=self._catalog_scope,context_scope=self._certificate_context,objective=None if objective is None else list(objective),
             prefix_hashes=[p.trajectory_hash for p in prefix],search_certificate_not_publication=True)
@@ -160,7 +160,7 @@ class PlanningBudget:
         key=(self._catalog_scope,tuple(row["prefix_hashes"]))
         if event=="CERTIFIED_PREFIX":
             self._prefix_receipts[key]=row
-            if self.first_nonempty_certified is None:
+            if prefix and self.first_nonempty_certified is None:
                 row["event"]="FIRST_NONEMPTY_CERTIFIED"
                 self.first_nonempty_certified=row
                 self.certificate_events.append(row)
