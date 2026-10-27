@@ -1,0 +1,22 @@
+# FT-RS-SELECTIVE-1.0 — implementation specification; not an existing runner configuration.
+contract_id: FT-RS-SELECTIVE-1.0
+extends: selective_reoptimization_config_v1_0.yaml
+phase: C
+activate_only_after: APPROVED_B_OR_DOCUMENTED_RULE_ONLY_RESEARCH_DECISION
+settings:
+  subphases:
+  - C1_ADAPTIVE_K_FIXED_LEAD
+  - C2_TIMING_ONLY
+  C1_methods:
+  - RULE_LOCAL_K8
+  - RULE_LOCAL_ADAPTIVE
+  - LEARNED_LOCAL_ADAPTIVE
+  C1_lead_s: 20.0
+  C2_default_enabled: false
+  C2_leads_s:
+  - 20.0
+  - 10.0
+  C2_requires: C1_COMPLETE_TASK_COST_AND_HANDOFF_EVIDENCE
+  no_lead_sweep: true
+  entry_gate: APPROVED_B_OR_DOCUMENTED_RULE_ONLY_RESEARCH_DECISION
+authorization: SPECIFIED_BUT_NOT_RUN

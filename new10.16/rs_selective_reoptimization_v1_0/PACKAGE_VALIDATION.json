@@ -1,0 +1,122 @@
+{
+  "status": "PASS_DOCUMENT_PACKAGE_ONLY",
+  "checks_passed": 22,
+  "checks": [
+    {
+      "name": "contract_identity",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "contract_and_source_binding",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "no_implementation_claim",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "budget_total",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "phase_gates",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "scope_limits",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "safety_invariants",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "model_boundary",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "timing_headroom",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "C_not_silent",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "phase_A_mapping",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "phase_B_mapping",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "phase_C_mapping",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "split_seed_disjoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "root_ancestry_rules",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "test_catalog_count",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "test_catalog_identity",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "record_schema_and_example",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "example_semantic_scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "example_not_data",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "feature_boundaries",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "manifest_hashes",
+      "passed": true,
+      "detail": "14 substantive files checked"
+    }
+  ],
+  "simulator_executed": false,
+  "solver_executed": false,
+  "model_trained": false,
+  "repository_modified": false,
+  "research_tests_executed": 0,
+  "scope": "Configuration, documentation, schema, example and file integrity only."
+}

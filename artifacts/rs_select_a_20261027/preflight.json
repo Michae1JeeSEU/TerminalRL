@@ -1,0 +1,28 @@
+{
+  "observed_utc": "2026-10-27T15:45:19Z",
+  "cpu": {
+    "available_physical_paired_cores": 12,
+    "load": 2.0
+  },
+  "memory_available_gib": 23,
+  "python": "/home/user/envs/terminal_env/bin/python",
+  "PYTHONPATH": "/home/user/envs/terminal_stage2_v1/lib/python3.12/site-packages",
+  "packages": {
+    "numpy": "2.5.1",
+    "scipy": "1.18.1",
+    "ortools": "9.15.6755",
+    "PyYAML": "6.0.3"
+  },
+  "numerical_thread_env": {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "NUMEXPR_NUM_THREADS": "1",
+    "VECLIB_MAXIMUM_THREADS": "1"
+  },
+  "sources": [
+    "/home/user/training_outputs/terminal/stage3_learning_v1_0_20261023",
+    "/home/user/training_outputs/terminal/stage3_future_learning_high300_20261027"
+  ],
+  "source_sync": "Syncthing only"
+}

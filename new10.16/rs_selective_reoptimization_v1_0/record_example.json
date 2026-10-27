@@ -1,0 +1,40 @@
+{
+  "schema_version": "rs_select_record_v1",
+  "record_type": "Selection",
+  "run_id": "ILLUSTRATION_NOT_EXPERIMENT",
+  "source_binding": "UNBOUND_EXAMPLE",
+  "snapshot_id": "demo",
+  "ancestry_root_id": "demo",
+  "split": "development",
+  "snapshot_time": 100.0,
+  "effective_time": 120.0,
+  "scope": {
+    "eligible_ids": [
+      "A",
+      "B",
+      "C"
+    ],
+    "selected_ids": [
+      "A",
+      "B"
+    ],
+    "background_ids": [
+      "C",
+      "D"
+    ],
+    "mandatory_ids": [
+      "A"
+    ],
+    "nominal_k": 8,
+    "actual_k": 2,
+    "objective_frame_id": "demo-frame",
+    "overflow": false
+  },
+  "measurements": {
+    "note": "Synthetic schema example only; no planning performed."
+  },
+  "status": "EXAMPLE_NOT_RUN",
+  "objective": null,
+  "unknown_reasons": [],
+  "raw_evidence_refs": []
+}

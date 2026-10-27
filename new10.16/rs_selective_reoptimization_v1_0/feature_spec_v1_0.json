@@ -1,0 +1,74 @@
+{
+  "schema_id": "rs_select_global_relations_v1",
+  "timing": "PREDICTED_EFFECTIVE_STATE_AND_OBSERVATION_AGE",
+  "raw_ids_as_numeric_model_inputs": false,
+  "every_optional_numeric_has_observed_mask": true,
+  "aircraft": [
+    "soc",
+    "peak_power_seconds_remaining",
+    "energy_slack_estimate_s",
+    "reference_status",
+    "current_ring",
+    "sin_phase",
+    "cos_phase",
+    "service_seconds",
+    "earliest_modifiable_time_relative_s",
+    "active_remaining_s",
+    "review_age_s",
+    "progress_age_s",
+    "arrival_age_s",
+    "known_candidate_coverage",
+    "latest_rejection_type",
+    "mandatory_flag",
+    "committed_flag",
+    "emergency_disposition_flag"
+  ],
+  "slot": [
+    "ring",
+    "sin_phase_at_effective",
+    "cos_phase_at_effective",
+    "occupied_flag",
+    "known_release_offset_s",
+    "release_source_status"
+  ],
+  "pad": [
+    "current_service_remaining_s",
+    "next_reserved_intervals_relative",
+    "earliest_known_gap_s",
+    "fixed_workload_s"
+  ],
+  "edge_types": [
+    "committed_dependency",
+    "slot_occupancy",
+    "potential_slot_release",
+    "pad_competition",
+    "known_explicit_blocking",
+    "bounded_geometric_relation"
+  ],
+  "group": [
+    "membership_mask",
+    "mandatory_coverage",
+    "nominal_k",
+    "actual_k",
+    "internal_resource_coupling",
+    "boundary_blockers",
+    "review_age_distribution",
+    "progress_age_distribution",
+    "remaining_wall_budget_s",
+    "lead_s",
+    "background_workload"
+  ],
+  "prohibited": [
+    "future_unreleased_requests",
+    "counterfactual_local_solve_result_at_inference",
+    "actual_future_collision_or_failure",
+    "method_label",
+    "scenario_seed_as_feature",
+    "full_reference_candidate_generation_before_selection"
+  ],
+  "normalization": "EXPLICIT_UNITS_PLUS_TRAIN_ONLY_MOMENTS; MASKS_NEVER_STANDARDIZED",
+  "group_scores_compare_only_within_same_snapshot_and_budget": true,
+  "source_of_references": "EXISTING_CACHES_AND_ACTUAL_CALENDARS_WITH_VERSION_AND_UNKNOWN_FLAGS",
+  "graph_is_safety_certificate": false,
+  "encoding": "SHARED_ONCE; GROUP_MEMBERSHIP_POOLING_BATCHED"
+}

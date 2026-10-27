@@ -249,6 +249,7 @@ class ReplayController:
         stage3 = [_plain(r) for r in self.bundle.data.get("stage3_trace", ())
                   if r.get("record_type") in _STAGE3_OVERLAY_TYPES and r.get("as_of",0.)<=self.time]
         return {"minimum_current_3d_pair": current_min, "minimum_current_time": self.time,
+            "selective_replanning": self.selective_overlay(),
             "latest_dispatch_timing": _plain(dispatch[-1]) if dispatch else None,
             "tentative_predictions": _plain(predictions),
             "stage3_proposals": [r for r in stage3 if r.get("record_type")=="WorkDescriptor"],
@@ -275,6 +276,38 @@ class ReplayController:
                     r.get("plan_hash") in self._plans and self._plans[r["plan_hash"]].start_time > self.time)],
             "diagnostic_rejections_not_executed": [r for r in self.bundle.data.get("rejections", ()) if r["time"] <= self.time],
             "events": [e for e in self.bundle.data["events"] if e["time"] <= self.time]}
+
+    def selective_overlay(self):
+        """Recorded selection annotations; never infer execution from selection."""
+        applicable = []
+        for raw in self.bundle.data.get("decisions", ()):
+            row = _plain(raw)
+            telemetry = row.get("selective_replanning")
+            timing = row.get("planning_timing", {})
+            observed = timing.get("snapshot_time", row.get("time", 0.))
+            if telemetry and observed <= self.time:
+                applicable.append((observed, row, telemetry, timing))
+        if not applicable:
+            return None
+        _, row, telemetry, timing = max(applicable, key=lambda value: value[0])
+        scope = telemetry.get("scope") or {}
+        selected = list(scope.get("replan_ids", scope.get("selected_ids", ())))
+        background = list(scope.get("fixed_background_ids", scope.get("background_ids", ())))
+        mandatory = list(scope.get("mandatory_ids", ()))
+        effective = timing.get("effective_time", scope.get("effective_time"))
+        countdown = None if effective is None else max(0., effective-self.time)
+        # Final delivery fields in a saved callback must not reveal a future
+        # actual publication while seeking before its recorded effective time.
+        status = row.get("actual_delivery_status", row.get("commit_status", telemetry.get("status", "RECORDED")))
+        delivery = row.get("actual_delivery_time", effective)
+        if delivery is not None and self.time < delivery:
+            status = "AWAITING_RECORDED_DELIVERY"
+        return dict(selected_ids=selected, background_ids=background, mandatory_ids=mandatory,
+            labels={aid:("M/S" if aid in mandatory else "S") for aid in selected} | {aid:"B" for aid in background},
+            relations=_plain(telemetry.get("relations", ())), blockers=_plain(telemetry.get("background_blockers", ())),
+            ages=_plain(telemetry.get("ages", {})), effective_time=effective, countdown_s=countdown,
+            status=status, method=telemetry.get("method"), objective_frame_id=scope.get("objective_frame_id"),
+            authority="COMPUTATION_ANNOTATION_ONLY", human_review="HUMAN_PENDING")
 
     def resource_overlay_lines(self):
         lines = []
@@ -318,6 +351,11 @@ class ReplayController:
             f'{evidence["label"]}: [{bound(evidence["lower_bound_m"])}, {bound(evidence["upper_bound_m"])}]m',
             f'Slots F free / R committed incl.future / O occupied / D departing / S soft; paths t; details d',
             f'Actual maneuvers={len(overlay["current_commits"])}; future SOFT unstarted/removable={len(overlay["future_soft_dependencies"])}']
+        selective = overlay["selective_replanning"]
+        if selective is not None:
+            countdown = "unknown" if selective["countdown_s"] is None else f'{selective["countdown_s"]:.2f}s'
+            lines.append(f'Selective {selective["method"]}: S={len(selective["selected_ids"])} B={len(selective["background_ids"])} M={len(selective["mandatory_ids"])}; delivery in {countdown}; {selective["status"]}')
+            lines.append("S/B/M are recorded computation groups; trajectories retain execution authority; HUMAN_PENDING")
         if self.bundle.index.get("experiment_policy_id"):
             timing=overlay["latest_dispatch_timing"]
             lines.append("Stage2 HUMAN_PENDING | tentative suffix has no execution authority")

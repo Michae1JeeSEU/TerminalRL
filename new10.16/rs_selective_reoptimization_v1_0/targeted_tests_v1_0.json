@@ -1,0 +1,295 @@
+{
+  "contract_id": "FT-RS-SELECTIVE-1.0",
+  "test_count": 32,
+  "execution_status": "NOT_RUN",
+  "tests": [
+    {
+      "id": "A01",
+      "phase": "A",
+      "title": "OFF路径回归",
+      "setup": "关闭scope；相同固定工作量fixture及种子。",
+      "expected": "旧方法候选、认证、提交语义不变；wall模式不冒称逐位一致。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A02",
+      "phase": "A",
+      "title": "全集与scope守恒",
+      "setup": "全局snapshot包含所有飞机，选S真子集。",
+      "expected": "S属于U；S与背景不交；背景完整；decision集合恰为S。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A03",
+      "phase": "A",
+      "title": "不先全算再筛",
+      "setup": "给生成器/参考搜索插入逐机计数。",
+      "expected": "未选飞机新候选物化次数为0；允许读取其固定承诺和必要安全信息。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A04",
+      "phase": "A",
+      "title": "未选机未来冲突",
+      "setup": "未选机当前很远但未来与选中机交叉。",
+      "expected": "选中方案被原连续认证拒绝；当前距离不能直接豁免。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A05",
+      "phase": "A",
+      "title": "合法联合解除阻塞",
+      "setup": "低SOC A被高SOC B占位；B有合法向内路径。",
+      "expected": "单选A不可批准；有界闭包纳入B后可按联合规则检查，不增加特殊让座。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A06",
+      "phase": "A",
+      "title": "真实承诺保护",
+      "setup": "active/soft路径与新局部方案时间重叠。",
+      "expected": "已承诺轨迹不取消/改目标；未开始但受保护soft仍遵守当前合同。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A07",
+      "phase": "A",
+      "title": "背景资源与释放",
+      "setup": "背景持有槽位或未来pad预约并按已知时刻释放。",
+      "expected": "不得偷用占用区间；可正确利用已承诺释放；日历身份不重复。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A08",
+      "phase": "A",
+      "title": "背景能源与需求",
+      "setup": "未选低SOC机继续holding；选中进近增加背景排队。",
+      "expected": "SOC仍扣减、预警继续、全局tail等待/能源变化，不删除或设为常数。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A09",
+      "phase": "A",
+      "title": "同候选局部等价",
+      "setup": "小模型S外变量强制FOLLOW，对比局部模型。",
+      "expected": "可行结论和同frame目标一致；允许CP不同平局解。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A10",
+      "phase": "A",
+      "title": "全局frame不依赖选择",
+      "setup": "同一快照先后评估多个不同S。",
+      "expected": "共同虚拟队列基准不重排；整个系统需求相同，更新只由被选候选产生。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A11",
+      "phase": "A",
+      "title": "scope和cut缓存失效",
+      "setup": "改变S、背景轨迹、能源账本或资源版本。",
+      "expected": "仅满足精确依赖的证明可复用；旧cut不引用不存在的候选。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A12",
+      "phase": "A",
+      "title": "UNKNOWN语义",
+      "setup": "连续验证/搜索在预算耗尽时返回UNKNOWN。",
+      "expected": "不生成错误排斥cut，不标安全，不标物理无解。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A13",
+      "phase": "A",
+      "title": "审查和进展年龄",
+      "setup": "选中但未算完、已评估但未执行、真实启动三种事件。",
+      "expected": "三种事件不同：假选中不清审查年龄，实际进展只由执行清零。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A14",
+      "phase": "A",
+      "title": "必须集合溢出",
+      "setup": "M有13架且max_k12。",
+      "expected": "明确overflow、无静默丢失；降级只用剩余额度；不伪造失败。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A15",
+      "phase": "A",
+      "title": "集合极端情况",
+      "setup": "S为空、S=U、U<K、单机，以及选中但最终保持。",
+      "expected": "正确返回等待/全量/截断规模；每机最多授权一个当前首机动。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A16",
+      "phase": "A",
+      "title": "未来信息隔离",
+      "setup": "未来manifest访问设置为抛错。",
+      "expected": "选择、局部规划与投影仅访问当前已揭示信息。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A17",
+      "phase": "A",
+      "title": "完整承诺认证",
+      "setup": "机动长于240s或牵涉释放依赖，局部范围很小。",
+      "expected": "认证范围不能缩为心跳窗口或忽略真实机动尾部。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A18",
+      "phase": "A",
+      "title": "期限与原子交接",
+      "setup": "规划提前完成、重验耗时、晚交通、超时。",
+      "expected": "占用真实延迟；过期不执行；保持整组原子性，不免费补验。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A19",
+      "phase": "A",
+      "title": "pending恢复",
+      "setup": "在COMPUTING/PREPARED与已发布后分别checkpoint恢复。",
+      "expected": "不重复接入、不丢年龄/scope/账本、不修改事件时刻。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "A20",
+      "phase": "A",
+      "title": "全局物理不变量",
+      "setup": "对真实局部接入回放进行完整PVA/C2/连续间隔及资源复核。",
+      "expected": "批准轨迹hash=执行hash；无漏背景，无越界，无账本异常。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "B01",
+      "phase": "B",
+      "title": "候选组工厂共享",
+      "setup": "规则与学习生成同一集合池，含重复/无效集合。",
+      "expected": "同mandatory/闭包；去重；不使用结果标签生成输入。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "B02",
+      "phase": "B",
+      "title": "一次编码和组排列",
+      "setup": "重排飞机输入、资源输入、集合池顺序。",
+      "expected": "匹配ID后分数/选择语义不变；每任务最多一次场景编码及batch forward。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "B03",
+      "phase": "B",
+      "title": "组外关系与mandatory",
+      "setup": "移除组外关键pad关系或改变紧迫flag。",
+      "expected": "测试能发现缺失特征/错误mask；模型不能绕过mandatory及scope校验。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "B04",
+      "phase": "B",
+      "title": "标签与血缘",
+      "setup": "相邻检查点、同根分叉、UNKNOWN、无前缀、成本截尾。",
+      "expected": "同祖先不跨split；未知不造负例；无前缀不造碰撞；有限参考不叫oracle。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "B05",
+      "phase": "B",
+      "title": "归一化与模型版本",
+      "setup": "训练统计、lead/schema/目标变更和旧rank权重。",
+      "expected": "仅train拟合；不兼容明确报错/回退；旧权重不自动加载。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "B06",
+      "phase": "B",
+      "title": "回退计时和收益归因",
+      "setup": "模型缺失、非有限分数、实体越界；完整闭环。",
+      "expected": "同预算回退；全部开销计入；只能相对同局部规则方法判断学习收益。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C01",
+      "phase": "C",
+      "title": "动态规模与真实K",
+      "setup": "同流量不同拥堵、M大小及阻塞链。",
+      "expected": "K可变且不只读流量标签；真实K含扩展，超限不隐藏。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C02",
+      "phase": "C",
+      "title": "多K成本覆盖",
+      "setup": "K4/8/12样本不足、成本误差、模型未见大小。",
+      "expected": "不把K8训练自动推广为已验证；未知成本显式标记，deadline仍有权威上限。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C03",
+      "phase": "C",
+      "title": "较短提前量",
+      "setup": "同一当前状态用20/10秒未来点生成方案。",
+      "expected": "各自重新投影含等待能耗；无轨迹平移；时序贡献与模型贡献分开。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "C04",
+      "phase": "C",
+      "title": "不重置计算额度",
+      "setup": "size试探、冲突扩展及最终认证连用。",
+      "expected": "所有阶段同一外层期限；预测快不能把真实超时记成功。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "X01",
+      "phase": "ALL",
+      "title": "账本和报告口径",
+      "setup": "固定观察终点、pending、初始/新到达、可选drain。",
+      "expected": "需求守恒；pending非失败；工作时间/可用延迟/仿真时间独立；低能耗不脱离服务量。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "X02",
+      "phase": "ALL",
+      "title": "可视化与人审",
+      "setup": "既有平台显示S/B/M、阻塞边、接入倒计时。",
+      "expected": "视觉标注不改执行；人工未观看保持HUMAN_PENDING，自动测试不能替代人审。",
+      "severity": "BLOCKING_CORRECTNESS",
+      "status": "NOT_RUN"
+    }
+  ]
+}

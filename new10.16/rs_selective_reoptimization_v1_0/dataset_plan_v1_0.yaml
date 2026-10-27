@@ -1,0 +1,83 @@
+# FT-RS-SELECTIVE-1.0 — implementation specification; not an existing runner configuration.
+contract_id: FT-RS-SELECTIVE-1.0
+schema: rs_select_dataset_plan_v1
+development_existing:
+  s3r23:
+    seed: 7324
+    profile: medium24_rate150_v1
+    use: DEVELOPMENT_SEEN
+  s3r24:
+    seed: 7325
+    profile: stress36_rate180_v1
+    use: DEVELOPMENT_SEEN
+new_roots:
+  train:
+  - 910001
+  - 910002
+  - 910003
+  - 910004
+  - 910005
+  - 910006
+  - 910007
+  - 910008
+  validation:
+  - 910101
+  - 910102
+  test:
+  - 910201
+  - 910202
+root_profile_assignment: ALTERNATE_MEDIUM24_RATE150_AND_STRESS36_RATE180_WITH_EXISTING_GENERATOR
+collision_resolution: SKIP_EXISTING_SEED_OR_ANCESTRY_AND_TAKE_NEXT_UNUSED_INTEGER_IN_SAME_SPLIT_BLOCK_BEFORE_MANIFEST_FREEZE
+source_times_s:
+- 60
+- 150
+- 240
+lead_s_for_B: 20
+label_time_semantics: SOURCE_TIME_PLUS_PREDECLARED_LEAD
+root_ancestry_is_split_unit: true
+same_root_branches_same_split: true
+old_pair_labels_for_selector: PROHIBITED
+collection_policy: RULE_LOCAL_K8
+offline_labels_do_not_advance_world_clock: true
+online_inputs_include_no_future_manifest: true
+groups_per_snapshot_max: 6
+label_compare_on:
+- physical_snapshot
+- effective_time
+- global_frame
+- search_caps
+- cache_initial_state
+- hardware
+unknown_and_censoring: MASK_NOT_NEGATIVE
+quality_label: FINITE_BUDGET_GLOBAL_OBJECTIVE_PAIRWISE_PREFERENCE_NOT_ORACLE
+cost_label: LOG1P_SECONDS_GENERATION_PLUS_CP_PLUS_ALL_OBSERVED_LOCAL_CERTIFICATION_AND_PREPARATION;
+  PUBLIC_QUEUE_SEPARATE
+limits:
+  train_roots_target: 8
+  validation_roots_target: 2
+  heldout_roots_target: 2
+  train_states_target: 24
+  validation_states_target: 6
+data_gate:
+  training_context_min: 12
+  training_root_min: 4
+  validation_context_min: 4
+  validation_root_min: 2
+  training_non_tie_pairs_min: 24
+  validation_non_tie_pairs_min: 8
+  meaning: ENGINEERING_FLOOR_NOT_STATISTICAL_SUFFICIENCY
+  report_first_differing_objective_layers: true
+  on_failure: DATA_INSUFFICIENT_STOP_WITHOUT_FABRICATING_LABELS
+C_extension:
+  sizes:
+  - 4
+  - 8
+  - 12
+  train_state_max: 8
+  validation_state_max: 4
+  pools_per_size_max: 2
+  train_roots_only_for_fit: true
+  retrain_once_before_cross_k_scores: true
+  cost_by_size_report_required: true
+test_access: AFTER_FROZEN_MODEL_AND_CONFIG; NO_SELECTION_OR_TUNING
+auto_add_data_to_make_method_win: false

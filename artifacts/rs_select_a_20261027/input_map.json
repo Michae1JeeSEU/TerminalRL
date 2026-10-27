@@ -1,0 +1,49 @@
+{
+  "initial_parent": "/home/user/training_outputs/terminal/stage3_learning_v1_0_20261023",
+  "snapshots": {
+    "s3r23": [
+      {
+        "time": 15,
+        "path": "/home/user/training_outputs/terminal/stage3_learning_v1_0_20261023/evaluation/closed_loop/s3r23/heuristic_reduced/checkpoint_0015.json",
+        "sha256": "b99c9ea38806e052811acbc330c4a5f062d45eeed14fced19f0124cc9244d152"
+      },
+      {
+        "time": 30,
+        "path": "/home/user/training_outputs/terminal/stage3_learning_v1_0_20261023/evaluation/closed_loop/s3r23/heuristic_reduced/checkpoint_0030.json",
+        "sha256": "5157ab963a44b8dd78f27a7aae2d1c2e56e7881769751b692901733f3f510cd0"
+      },
+      {
+        "time": 45,
+        "path": "/home/user/training_outputs/terminal/stage3_learning_v1_0_20261023/evaluation/closed_loop/s3r23/heuristic_reduced/checkpoint_0045.json",
+        "sha256": "0b52f23a804d4931441d5895f019ac843831d103b6fca442ad467e28c872405b"
+      },
+      {
+        "time": 60,
+        "path": "/home/user/training_outputs/terminal/stage3_learning_v1_0_20261023/evaluation/closed_loop/s3r23/heuristic_reduced/checkpoint_0060.json",
+        "sha256": "b9f4ed4be4e935ab3bb3b2a27f58121a4969195a7b3845dbf511e3311016a4ac"
+      }
+    ],
+    "s3r24": [
+      {
+        "time": 60,
+        "path": "/home/user/training_outputs/terminal/stage3_future_learning_high300_20261027/evaluation/heuristic_reduced/checkpoint_0060.json",
+        "sha256": "22f19dc912083f3bbfe40a7d393def68a629b7155da5e4898ba062add3ffdfba"
+      },
+      {
+        "time": 120,
+        "path": "/home/user/training_outputs/terminal/stage3_future_learning_high300_20261027/evaluation/heuristic_reduced/checkpoint_0120.json",
+        "sha256": "5e54b4a849a11a101322954637fc4beb6afaa0a23885e5818540070b49ac181b"
+      },
+      {
+        "time": 180,
+        "path": "/home/user/training_outputs/terminal/stage3_future_learning_high300_20261027/evaluation/heuristic_reduced/checkpoint_0180.json",
+        "sha256": "7ae720c01fa28d9a6b3e9971633e49d43755219c9b87893d9925f21769fcdeaa"
+      },
+      {
+        "time": 240,
+        "path": "/home/user/training_outputs/terminal/stage3_future_learning_high300_20261027/evaluation/heuristic_reduced/checkpoint_0240.json",
+        "sha256": "dfc7d29e80b1ef1a33b89ad656dafc6fb977e6f4139baf84b605dd2fa0b452a2"
+      }
+    ]
+  }
+}

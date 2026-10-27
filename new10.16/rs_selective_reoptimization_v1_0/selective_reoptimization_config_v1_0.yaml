@@ -1,0 +1,218 @@
+# FT-RS-SELECTIVE-1.0 — implementation specification; not an existing runner configuration.
+contract_id: FT-RS-SELECTIVE-1.0
+schema_version: rs_select_config_v1
+created: '2026-10-27'
+status: SPECIFICATION_NOT_IMPLEMENTED
+research_family: centralized_global_observation_selective_reoptimization
+source:
+  repository: Michae1JeeSEU/TerminalRL
+  branch: codex/arrival-restructure
+  review_commit: cd9077d488906fd9a6d092916df6119d7b2ea8d9
+  historical_execution_commit: 79fc55c81c28a2b5e59e28c939d99cf40b438d1b
+  runtime_binding_file: resolved_run_binding.json
+  require_actual_binding: true
+  allow_silent_source_drift: false
+preserve:
+  physical_config: INHERIT_RESOLVED_SOURCE
+  energy_model: INHERIT_RESOLVED_SOURCE
+  safety_model: INHERIT_RESOLVED_SOURCE
+  emergency_policy: INHERIT_RESOLVED_SOURCE
+  admission_policy: INHERIT_RESOLVED_SOURCE
+  service_model: INHERIT_RESOLVED_SOURCE
+  minimum_separation_m: 80.0
+  no_new_maneuver_types: true
+  checked_equals_executed: true
+objective:
+  formula_profile: downstream_service_v8
+  ordering:
+  - F
+  - negative_L
+  - risk
+  - Ehat
+  - tau
+  evaluation_input_policy: global_preselection_frozen_v1
+  full_reference_uses_same_frame: true
+  background_demands_visible: true
+  background_wait_not_constant: true
+  selected_and_fixed_reservations_deduplicated: true
+  unknown_never_physical_infeasibility: true
+scope:
+  full_snapshot_retained: true
+  nominal_k: 8
+  hard_max_k: 12
+  mandatory_in_all_sets: true
+  review_age_trigger_s: 60.0
+  progress_age_priority_s: 120.0
+  review_age_update: DELIVERED_VALID_EVALUATION
+  progress_age_update: ACTUAL_MANEUVER_STARTED
+  energy_urgency: CURRENT_SHARED_ESTIMATES_WITH_SOURCE_AND_MASK
+  max_scope_expansions: 1
+  max_local_solve_calls: 2
+  max_relation_hops: 2
+  allow_cancel_committed: false
+  background_mode: COMMITTED_CONTINUATION_THEN_LEGAL_HOLD
+  preserve_historical_suffix_as_commitment: false
+  overflow_status: MANDATORY_OVERFLOW
+  overflow_fallback: ONE_EXPLICIT_FULL_SCOPE_ATTEMPT_WITH_REMAINING_BUDGET_OR_KEEP_VALID_COMMITMENTS
+timing:
+  forecast_horizon_s: 240.0
+  lead_s: 20.0
+  heartbeat_s: 5.0
+  preparation_margin_s: 1.0
+  search_handoff_reserve_s: 4.0
+  latency_accounting: INHERIT_AFFECTED_TRAFFIC_REVALIDATION_AND_SERVICE_TIMELINE
+  normal_pending_tasks: 1
+  selector_in_normal_clock: true
+  scope_expansion_resets_budget: false
+  no_free_final_validation: true
+  no_timestamp_translation: true
+search:
+  candidate_active_cap_s: 6.0
+  cp_total_cap_s: 8.0
+  hint_cap_s: 3.0
+  soft_cap_s: 30.0
+  watchdog_s: 60.0
+  attempts_per_selected_aircraft: 32
+  total_attempt_cap: 1024
+  inherit_per_aircraft_candidate_types: true
+  physical_attempts_for_unselected_must_be_zero: true
+  stop_at_search_deadline: true
+  keep_best_certified: true
+  old_descriptor_ranker: 'OFF'
+  background_safety_check: FULL_REQUIRED_HORIZON_WITH_VALID_CERTIFICATE_REUSE
+execution:
+  cp_workers: 1
+  numeric_library_threads: 1
+  online_pair_mode: SERIAL_SAME_PHYSICAL_CORE
+  physical_core: RESOLVE_AND_RECORD_AT_LAUNCH
+  profiler_formal_run: false
+  render_formal_run: false
+  training_trace_formal_run: COUNTERS_AND_REQUIRED_SELECTION_RECORDS
+  offline_label_workers_max: 2
+neighborhood_pool:
+  max_groups: 6
+  factory_id: mandatory_seed_resource_closure_v1
+  families:
+  - mixed_rule
+  - energy_seed
+  - pad_opportunity
+  - blocking_chain
+  - progress_age
+  - seeded_exploration
+  deduplicate: true
+  pad_distance_alone_is_not_relation: true
+  no_expensive_candidate_generation_for_selection: true
+  stage_a_family: mixed_rule
+model:
+  model_id: rs_select_group_relation64_v1
+  reuse_old_weights: false
+  latent_dim: 64
+  message_passing_layers: 2
+  parameter_cap: 250000
+  heads:
+  - group_rank
+  - log1p_local_complete_cost_s
+  scene_encodes_per_task: 1
+  batch_forwards_per_task: 1
+  max_group_batch: 6
+  normalizer_fit_split: train
+  arbitrary_binary_mask_policy: false
+  online_rl: false
+  feature_spec: feature_spec_v1_0.json
+training:
+  seed: 20261027
+  optimizer: AdamW
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  max_epochs: 30
+  early_stopping_patience: 5
+  batch_unit: WHOLE_SNAPSHOT_GROUP_POOL
+  batch_snapshots: 4
+  rank_loss: PAIRWISE_LOGISTIC_WITH_TIE_MASK
+  aux_cost_loss: MASKED_HUBER_LOG1P_SECONDS
+  aux_cost_weight: 0.1
+  formal_fits_B: 1
+  formal_fits_C_sizeaware: 1
+  hyperparameter_search: false
+  label_budget: SAME_SCOPE_SEARCH_CLOCK_AND_GLOBAL_FRAME
+  no_future_manifest: true
+adaptive_size:
+  enabled_in_A_B: false
+  choices:
+  - 4
+  - 8
+  - 12
+  cost_prediction: CALIBRATED_FULL_LOCAL_AND_PREPARATION_COST
+  cost_bound_is_worst_case_guarantee: false
+  multi_k_training_required: true
+  proposal_groups_per_k: 2
+  total_group_limit: 6
+  mandatory_or_dependency_incomplete_groups_forbidden: true
+  rule_size_control: SMALLEST_TIME_ELIGIBLE_SIZE_COVERING_KNOWN_REQUIRED_RELATIONS_ELSE_8
+  bandit_required: false
+campaign:
+  total_wall_cap_s: 36000
+  phase_caps_s:
+    A: 7200
+    B: 18000
+    C: 9000
+    archive: 1800
+  require_phase_review: true
+  auto_advance: false
+  budget_reset_on_failure: false
+  automatic_retry_for_better_result: false
+  default_episode_sim_s: 300
+  optional_drain_s: 300
+  drain_enabled: false
+  document_validation_is_experiment_acceptance: false
+phase_A:
+  methods:
+  - FULL_H
+  - RULE_LOCAL_K8
+  learned_selector: false
+  fixed_lead_s: 20.0
+  snapshot_comparisons: 8
+  development_cases:
+  - s3r23
+  - s3r24
+  scenario_pair_repetitions: 1
+  entry_gate: SOURCE_BINDING_AND_CORE_TESTS
+  exit_gate: A_CORRECTNESS_AND_STRUCTURAL_BENEFIT_REVIEW
+  no_speedup_factor_required: true
+phase_B:
+  methods:
+  - RULE_LOCAL_K8
+  - LEARNED_LOCAL_K8
+  fixed_nominal_k: 8
+  fixed_lead_s: 20.0
+  entry_gate: APPROVED_A_EVIDENCE
+  exit_gate: B_SAME_LOCAL_FRAMEWORK_BENEFIT_REVIEW
+  dataset_plan: dataset_plan_v1_0.yaml
+  scenario_pair_repetitions: 1
+phase_C:
+  subphases:
+  - C1_ADAPTIVE_K_FIXED_LEAD
+  - C2_TIMING_ONLY
+  C1_methods:
+  - RULE_LOCAL_K8
+  - RULE_LOCAL_ADAPTIVE
+  - LEARNED_LOCAL_ADAPTIVE
+  C1_lead_s: 20.0
+  C2_default_enabled: false
+  C2_leads_s:
+  - 20.0
+  - 10.0
+  C2_requires: C1_COMPLETE_TASK_COST_AND_HANDOFF_EVIDENCE
+  no_lead_sweep: true
+  entry_gate: APPROVED_B_OR_DOCUMENTED_RULE_ONLY_RESEARCH_DECISION
+verification:
+  catalog: targeted_tests_v1_0.json
+  schema: records.schema.json
+  required_model_tests:
+  - permutation_equivariance
+  - membership_mask
+  - no_information_leak
+  - same_budget_fallback
+  - one_encode_batch
+  human_replay_status: HUMAN_PENDING
+  results_status: NOT_RUN

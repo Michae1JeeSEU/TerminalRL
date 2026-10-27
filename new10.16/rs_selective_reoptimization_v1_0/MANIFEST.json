@@ -1,0 +1,24 @@
+{
+  "contract_id": "FT-RS-SELECTIVE-1.0",
+  "algorithm": "sha256",
+  "excluded": [
+    "MANIFEST.json",
+    "PACKAGE_VALIDATION.json"
+  ],
+  "files": {
+    "IMPLEMENTATION_ENTRY.md": "fe380a380de5dac200bbb423feb411c9472cb9774bbe1dac17d40ca4213b92db",
+    "README.md": "e265abbe613459fa8548d4879eab1e0eeb80096cbfff716eb3da7b0f83bf64ac",
+    "SOURCE_ADAPTATION.md": "0039169e09fa7c41c22aeb88a1bce4814069e6718130c3b45a59e197465c7fe5",
+    "STAGE3R_SELECTIVE_REOPTIMIZATION_CONTRACT_v1_0.md": "4b157547599410782c356e18d1698140e5d669676f707028fe3e968ad03eac7c",
+    "dataset_plan_v1_0.yaml": "84d77d4fd1173bd66b8a8b6d7bcca2d402a988b048b0eb7046bad1adc96d1e61",
+    "feature_spec_v1_0.json": "484824e43569e620a229fb31c3c9c33853c4ad8dc1aef1e135e62357334dd643",
+    "phase_A_v1_0.yaml": "c1da3f0092ea8c788f4b1f17e5ba2467e89d93eba1fa389a0e615c66de4d4bc2",
+    "phase_B_v1_0.yaml": "1b1dd53e64a9120735f7590ca446299a5562e6a60dbc0dc90666dbb255459a9e",
+    "phase_C_v1_0.yaml": "7b6bc053244bf9703604c280e02c3334bd055a80e6a511b5b23896c1265bd826",
+    "record_example.json": "0fc78baf79a217c8fb8ef1be5e41b8a13fe88be60f6fdb285ca7901dd72fbc4b",
+    "records.schema.json": "f75810bd16065967aa5d23523acbcbff7d7876b63eb1781980b9317f0e401899",
+    "selective_reoptimization_config_v1_0.yaml": "d21fb07d12661355280abbe37a77f3bfe8df12a0e69b1062433b7024fed5aa11",
+    "targeted_tests_v1_0.json": "53c24473aee6fce7707f2c474edf1bebce6f8d348b01743b12535e4eb7f3513d",
+    "validate_package.py": "710bfa4d9c70daeeb4642b1eb646a3980874bc6b52748bb6b4b47d110c61d189"
+  }
+}

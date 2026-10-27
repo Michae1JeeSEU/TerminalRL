@@ -1,0 +1,16 @@
+# FT-RS-SELECTIVE-1.0 — implementation specification; not an existing runner configuration.
+contract_id: FT-RS-SELECTIVE-1.0
+extends: selective_reoptimization_config_v1_0.yaml
+phase: B
+activate_only_after: APPROVED_A_EVIDENCE
+settings:
+  methods:
+  - RULE_LOCAL_K8
+  - LEARNED_LOCAL_K8
+  fixed_nominal_k: 8
+  fixed_lead_s: 20.0
+  entry_gate: APPROVED_A_EVIDENCE
+  exit_gate: B_SAME_LOCAL_FRAMEWORK_BENEFIT_REVIEW
+  dataset_plan: dataset_plan_v1_0.yaml
+  scenario_pair_repetitions: 1
+authorization: SPECIFIED_BUT_NOT_RUN

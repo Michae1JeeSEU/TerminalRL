@@ -1,0 +1,20 @@
+# FT-RS-SELECTIVE-1.0 — implementation specification; not an existing runner configuration.
+contract_id: FT-RS-SELECTIVE-1.0
+extends: selective_reoptimization_config_v1_0.yaml
+phase: A
+activate_only_after: SOURCE_BINDING_AND_CORE_TESTS
+settings:
+  methods:
+  - FULL_H
+  - RULE_LOCAL_K8
+  learned_selector: false
+  fixed_lead_s: 20.0
+  snapshot_comparisons: 8
+  development_cases:
+  - s3r23
+  - s3r24
+  scenario_pair_repetitions: 1
+  entry_gate: SOURCE_BINDING_AND_CORE_TESTS
+  exit_gate: A_CORRECTNESS_AND_STRUCTURAL_BENEFIT_REVIEW
+  no_speedup_factor_required: true
+authorization: SPECIFIED_BUT_NOT_RUN

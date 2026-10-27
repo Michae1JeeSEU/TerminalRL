@@ -182,6 +182,24 @@ class RotatingSlotsReplayViewer(Terminal3DViewer):
                 opacity=.055,name=name,render=False,pickable=False)
             self._extra_names.add(name)
         overlay=self.controller.overlays()
+        selective=overlay.get("selective_replanning")
+        if selective is not None:
+            physical={str(a["id"]):a for a in self.controller.aircraft_at() if a.get("status") not in _INVISIBLE}
+            labelled=[(aid,a) for aid,a in physical.items() if aid in selective["labels"]]
+            if labelled:
+                name="rs-selection-groups"
+                self._plotter.add_point_labels(np.array([a["p"] for _,a in labelled]),
+                    [selective["labels"][aid]+" "+aid for aid,_ in labelled],font_size=9,
+                    text_color="darkgreen",point_size=0,shape=None,always_visible=True,
+                    show_points=False,name=name,render=False)
+                self._extra_names.add(name)
+            for index,edge in enumerate(selective["blockers"]):
+                source,target=str(edge.get("source")),str(edge.get("target"))
+                if source in physical and target in physical:
+                    name=f"rs-selection-blocker-{index}"
+                    self._plotter.add_mesh(self._pv.Line(physical[source]["p"],physical[target]["p"]),
+                        color="orange",line_width=3,opacity=.7,name=name,pickable=False,render=False)
+                    self._extra_names.add(name)
         if overlay["fixture_banner"]:
             self._plotter.add_text(overlay["fixture_banner"],position=(10,803),font_size=10,
                 color="darkred",name="rs-fixture-banner")
