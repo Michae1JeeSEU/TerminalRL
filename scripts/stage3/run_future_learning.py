@@ -63,7 +63,7 @@ def protocol(d):
         feature_state_semantics=FEATURE_SEMANTICS,runtime_projection_version=d.projection_version,
         training_feature_state_semantics=TRAIN_SEMANTICS,training="ONE_NEW_FORMAL_TRAINING_RUN",
         model_sha256=None,normalizer_sha256=None,evaluation_role="DEVELOPMENT_SEEN",
-        label_policy_id=LABEL_POLICY,collection_roots=deepcopy(ROOTS),collection_times_s=[30.,90.],
+        label_policy_id=LABEL_POLICY,collection_roots=deepcopy(list(ROOTS)),collection_times_s=[30.,90.],
         labels_total=6,root_job_wall_cap_s=900.,collection_cpus=list(COLLECTION_CPUS),
         acquisition="H_LATENCY_AWARE_SHARED_RULES_NO_LEARNED_MODEL_ONE_CONTIGUOUS_ROLLOUT",
         label_projection="SOURCE_T_PLUS_20_VISIBLE_COMMITMENTS_ONLY_NO_MANIFEST_LOOKAHEAD",

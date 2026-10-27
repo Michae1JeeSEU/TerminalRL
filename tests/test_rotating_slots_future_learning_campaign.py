@@ -1,5 +1,6 @@
 """Pure campaign fixtures: no physics rollout, CP solve, inference or fit."""
 from copy import deepcopy
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -38,6 +39,45 @@ def test_protocol_freezes_one_training_and_one_seen_pair():
     assert p["model_sha256"] is None and p["normalizer_sha256"] is None
     assert sum(p["phase_caps"].values())==p["campaign_wall_cap_s"]==7200.
     assert p["validation"]=="NEW_FUTURE_S3R17_ONLY" and not p["automatic_stage_transition"]
+
+
+def test_complete_protocol_json_roundtrip_preserves_equality_and_serialized_bytes():
+    from scripts.stage3 import run_latency_interface
+    d=SimpleNamespace(latency=run_latency_interface,dependency_protocol="dependency",handoff_version="handoff",projection_version="projection")
+    protocol=runner.protocol(d)
+    serialized=json.dumps(protocol,sort_keys=True,allow_nan=False)
+    assert json.loads(serialized)==protocol
+    assert isinstance(protocol["collection_roots"],list)
+    previous_shape=dict(protocol,collection_roots=deepcopy(runner.ROOTS))
+    assert json.dumps(previous_shape,sort_keys=True,allow_nan=False)==serialized
+
+
+def test_verify_accepts_saved_protocol_readback_and_still_rejects_changed_budget(tmp_path,monkeypatch):
+    from scripts.stage3 import run_latency_interface
+    checkout=tmp_path.resolve();output=tmp_path/"campaign";output.mkdir()
+    parent=tmp_path/"old";parent.mkdir()
+    runner.exclusive(parent/"training_dataset.json",{})
+    runner.exclusive(parent/"run_binding.generated.json",{})
+    baseline=tmp_path/"baseline.json";runner.exclusive(baseline,{})
+    runner.exclusive(output/"prepare.finished.json",dict(status="COMPLETED"))
+    runner.exclusive(output/"split_manifest.json",{})
+    runner.exclusive(output/"source_freeze.json",dict(source_hash="frozen"))
+    runner.exclusive(output/"run_binding.generated.json",dict(source_hash="frozen"))
+    runner.exclusive(output/"budget_ledger.json",dict(phase_caps=runner.PHASE_CAPS,total_s=runner.TOTAL_CAP,compute_stop_s=runner.TOTAL_CAP))
+    d=SimpleNamespace(checkout=checkout,latency=run_latency_interface,dependency_protocol="dependency",
+        handoff_version="handoff",projection_version="projection",campaign=SimpleNamespace(
+            CampaignLedger=lambda path:SimpleNamespace(data=runner.load(path))))
+    saved=dict(protocol=runner.protocol(d),checkout=str(checkout),source_hash="frozen",parent_readonly=str(parent),
+        old_dataset=str(parent/"training_dataset.json"),old_dataset_sha256=runner.file_hash(parent/"training_dataset.json"),
+        old_binding_sha256=runner.file_hash(parent/"run_binding.generated.json"),baseline_execution_freeze=str(baseline),
+        baseline_execution_freeze_sha256=runner.file_hash(baseline),split_manifest_sha256=runner.file_hash(output/"split_manifest.json"))
+    runner.exclusive(output/"future_learning_protocol.json",saved)
+    monkeypatch.setattr(runner,"verify_source",lambda frozen,deps:None)
+    readback,_,_=runner.verify(output,d)
+    assert readback==saved and readback["protocol"]==runner.protocol(d)
+    saved["protocol"]["cp_seconds"]=9.
+    (output/"future_learning_protocol.json").write_text(json.dumps(saved),encoding="utf8")
+    with pytest.raises(ValueError,match="frozen campaign protocol changed"):runner.verify(output,d)
 
 
 def test_first_query_exact_ref_join_keeps_later_fact_out():
