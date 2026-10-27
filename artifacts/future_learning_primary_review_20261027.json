@@ -1,0 +1,45 @@
+{
+  "schema": "future_learning_primary_review_v1",
+  "review_date": "2026-10-27",
+  "reviewer": "primary_agent",
+  "primary_review": "PASSED_BOUNDED_PILOT",
+  "output_directory": "/home/user/training_outputs/terminal/stage3_future_learning_20261027",
+  "local_output_directory": "D:/7_codespace/training_outputs/terminal/stage3_future_learning_20261027",
+  "source_commit": "79fc55c81c28a2b5e59e28c939d99cf40b438d1b",
+  "source_hash": "52852f54bd7372a44f4ff7053ef94dcf67522b05779e03f9643c7167f9ccd524",
+  "model_sha256": "29d942674fad65805bd33598aecd880add6d9cad223b1fd8f11d2b90c6ac292d",
+  "images": [
+    {
+      "path": "/home/user/training_outputs/terminal/stage3_future_learning_20261027/planning_timeline.png",
+      "sha256": "5a0bc010aea7ce55b42b4aaadedd2334103750e6c58fc2cc668440977e5fb39c",
+      "review": "PASSED_PRIMARY_VIEW_IMAGE"
+    },
+    {
+      "path": "/home/user/training_outputs/terminal/stage3_future_learning_20261027/saved_xy_contact.png",
+      "sha256": "1595685ee16b0e95e0aff94049fbf4f5f80de669e9fe8bec850a6a358f5844f2",
+      "review": "PASSED_PRIMARY_VIEW_IMAGE"
+    },
+    {
+      "path": "/home/user/training_outputs/terminal/stage3_future_learning_20261027/training_curve.png",
+      "sha256": "13c6d01fd60148aa7e0480605f7fd23e65fea758a322b496ce4077dd7c7a06fa",
+      "review": "PASSED_PRIMARY_VIEW_IMAGE"
+    }
+  ],
+  "pair": {
+    "evidence_type": "newly_run",
+    "scope": "ONE_DEVELOPMENT_SEEN_H_L_PAIR",
+    "complete": true,
+    "heuristic_reduced": {"completed_sim_seconds": 120, "exit_code": 0},
+    "learned_reduced": {"completed_sim_seconds": 120, "exit_code": 0}
+  },
+  "historical_analysis": {
+    "evidence_type": "preexisting_artifact",
+    "scope": "ACCEPTED_SEARCH_HANDOFF_RECORDS_20261027"
+  },
+  "report_generation_exit_code": 0,
+  "human_replay_acceptance": "HUMAN_PENDING",
+  "generalization_claim": false,
+  "deployment_claim": false,
+  "isolated_training_update_causal_claim": false,
+  "no_more_fit_or_eval": true
+}
