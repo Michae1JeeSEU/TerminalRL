@@ -1,0 +1,625 @@
+{
+  "acceptance": {
+    "A01": {
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+        "tests/test_rotating_slots_selective_replanning.py::test_A01_off_fixed_work_catalog_and_no_extra_latency_snapshot"
+      ],
+      "status": "PASS_TARGETED_AND_IMPLEMENTATION_REVIEW",
+      "test_names": [
+        "test_A01_off_fixed_work_catalog_and_no_extra_latency_snapshot"
+      ]
+    },
+    "A02": {
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+        "tests/test_rotating_slots_selective_replanning.py::test_A02_scope_partition_and_decisions_complete_world"
+      ],
+      "status": "PASS_TARGETED_AND_IMPLEMENTATION_REVIEW",
+      "test_names": [
+        "test_A02_scope_partition_and_decisions_complete_world"
+      ]
+    },
+    "A03": {
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+        "tests/test_rotating_slots_selective_replanning.py::test_A03_all_candidate_entrypoints_and_cold_reference_scoped",
+        "tests/test_rotating_slots_selective_replanning.py::test_A03_actual_selected_materialization_unselected_zero"
+      ],
+      "status": "PASS_TARGETED_AND_IMPLEMENTATION_REVIEW",
+      "test_names": [
+        "test_A03_all_candidate_entrypoints_and_cold_reference_scoped",
+        "test_A03_actual_selected_materialization_unselected_zero"
+      ]
+    },
+    "A04": {
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+        "tests/test_rotating_slots_selective_replanning.py::test_A04_background_future_crossing_uses_full_pair_check"
+      ],
+      "status": "PASS_TARGETED_AND_IMPLEMENTATION_REVIEW",
+      "test_names": [
+        "test_A04_background_future_crossing_uses_full_pair_check"
+      ]
+    },
+    "A05": {
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+        "tests/test_rotating_slots_selective_replanning.py::test_A05_resource_blocker_and_expanded_joint_legal_inward_actions",
+        "tests/test_rotating_slots_selective_replanning.py::test_A05_A11_bounded_expansion_recertifies_with_same_budget"
+      ],
+      "status": "PASS_TARGETED_AND_IMPLEMENTATION_REVIEW",
+      "test_names": [
+        "test_A05_resource_blocker_and_expanded_joint_legal_inward_actions",
+        "test_A05_A11_bounded_expansion_recertifies_with_same_budget"
+      ]
+    },
+    "A06": {
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+        "tests/test_rotating_slots_selective_replanning.py::test_A06_A07_committed_background_resources_release_and_no_mutation"
+      ],
+      "status": "PASS_TARGETED_AND_IMPLEMENTATION_REVIEW",
+      "test_names": [
+        "test_A06_A07_committed_background_resources_release_and_no_mutation"
+      ]
+    },
+    "A07": {
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+        "tests/test_rotating_slots_selective_replanning.py::test_A06_A07_committed_background_resources_release_and_no_mutation",
+        "tests/test_rotating_slots_selective_replanning.py::test_A07_cp_real_reservation_identity_deduplicated",
+        "tests/test_rotating_slots_selective_replanning.py::test_A07_ground_frame_covered_service_interval_only_once",
+        "tests/test_rotating_slots_selective_replanning.py::test_A07_ground_frame_keeps_other_owner_and_partly_covered_intervals",
+        "tests/test_rotating_slots_selective_replanning.py::test_A07_ground_frame_real_cp_old_duplicate_infeasible_normalized_feasible"
+      ],
+      "status": "PASS_TARGETED_AND_IMPLEMENTATION_REVIEW",
+      "test_names": [
+        "test_A06_A07_committed_background_resources_release_and_no_mutation",
+        "test_A07_cp_real_reservation_identity_deduplicated",
+        "test_A07_ground_frame_covered_service_interval_only_once",
+        "test_A07_ground_frame_keeps_other_owner_and_partly_covered_intervals",
+        "test_A07_ground_frame_real_cp_old_duplicate_infeasible_normalized_feasible"
+      ]
+    },
+    "A08": {
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+        "tests/test_rotating_slots_selective_replanning.py::test_A08_background_queue_wait_and_energy_not_constant"
+      ],
+      "status": "PASS_TARGETED_AND_IMPLEMENTATION_REVIEW",
+      "test_names": [
+        "test_A08_background_queue_wait_and_energy_not_constant"
+      ]
+    },
+    "A09": {
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+        "tests/test_rotating_slots_selective_replanning.py::test_A09_A10_fixed_follow_equivalence_and_frozen_frame",
+        "tests/test_rotating_slots_selective_replanning.py::test_A09_cp_frozen_background_matches_full_fixed_follow"
+      ],
+      "status": "PASS_TARGETED_AND_IMPLEMENTATION_REVIEW",
+      "test_names": [
+        "test_A09_A10_fixed_follow_equivalence_and_frozen_frame",
+        "test_A09_cp_frozen_background_matches_full_fixed_follow"
+      ]
+    },
+    "A10": {
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+        "tests/test_rotating_slots_selective_replanning.py::test_A09_A10_fixed_follow_equivalence_and_frozen_frame",
+        "tests/test_rotating_slots_selective_replanning.py::test_A10_follow_frozen_despite_reference_cache_changes"
+      ],
+      "status": "PASS_TARGETED_AND_IMPLEMENTATION_REVIEW",
+      "test_names": [
+        "test_A09_A10_fixed_follow_equivalence_and_frozen_frame",
+        "test_A10_follow_frozen_despite_reference_cache_changes"
+      ]
+    },
+    "A11": {
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+        "tests/test_rotating_slots_selective_replanning.py::test_A11_scope_cache_and_cut_identity_invalidation",
+        "tests/test_rotating_slots_selective_replanning.py::test_A05_A11_bounded_expansion_recertifies_with_same_budget"
+      ],
+      "status": "PASS_TARGETED_AND_IMPLEMENTATION_REVIEW",
+      "test_names": [
+        "test_A11_scope_cache_and_cut_identity_invalidation",
+        "test_A05_A11_bounded_expansion_recertifies_with_same_budget"
+      ]
+    },
+    "A12": {
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+        "tests/test_rotating_slots_selective_replanning.py::test_A12_unknown_not_cached_safe_or_cut"
+      ],
+      "status": "PASS_TARGETED_AND_IMPLEMENTATION_REVIEW",
+      "test_names": [
+        "test_A12_unknown_not_cached_safe_or_cut"
+      ]
+    },
+    "A13": {
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+        "tests/test_rotating_slots_selective_replanning.py::test_A13_A19_delivery_ages_and_roundtrip_not_selection_or_execution",
+        "tests/test_rotating_slots_selective_replanning.py::test_A13_imported_unknown_and_completed_actual_start_recovery",
+        "tests/test_rotating_slots_selective_replanning.py::test_A13_expected_committed_completion_allows_delivered_review"
+      ],
+      "status": "PASS_TARGETED_AND_IMPLEMENTATION_REVIEW",
+      "test_names": [
+        "test_A13_A19_delivery_ages_and_roundtrip_not_selection_or_execution",
+        "test_A13_imported_unknown_and_completed_actual_start_recovery",
+        "test_A13_expected_committed_completion_allows_delivered_review"
+      ]
+    },
+    "A14": {
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+        "tests/test_rotating_slots_selective_replanning.py::test_A14_mandatory_overflow_explicit_full_shared_scope"
+      ],
+      "status": "PASS_TARGETED_AND_IMPLEMENTATION_REVIEW",
+      "test_names": [
+        "test_A14_mandatory_overflow_explicit_full_shared_scope"
+      ]
+    },
+    "A15": {
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+        "tests/test_rotating_slots_selective_replanning.py::test_A15_empty_full_single_and_keep"
+      ],
+      "status": "PASS_TARGETED_AND_IMPLEMENTATION_REVIEW",
+      "test_names": [
+        "test_A15_empty_full_single_and_keep"
+      ]
+    },
+    "A16": {
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+        "tests/test_rotating_slots_selective_replanning.py::test_A16_only_revealed_snapshot_and_selector_soc_sensitive",
+        "tests/test_rotating_slots_selective_replanning.py::test_A16_X01_revealed_upstream_identity_mask_without_fictitious_energy"
+      ],
+      "status": "PASS_TARGETED_AND_IMPLEMENTATION_REVIEW",
+      "test_names": [
+        "test_A16_only_revealed_snapshot_and_selector_soc_sensitive",
+        "test_A16_X01_revealed_upstream_identity_mask_without_fictitious_energy"
+      ]
+    },
+    "A17": {
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+        "tests/test_rotating_slots_selective_replanning.py::test_A17_full_long_background_horizon"
+      ],
+      "status": "PASS_TARGETED_AND_IMPLEMENTATION_REVIEW",
+      "test_names": [
+        "test_A17_full_long_background_horizon"
+      ]
+    },
+    "A18": {
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+        "tests/test_rotating_slots_selective_replanning.py::test_A18_frame_budget_exhaustion_is_explicit_unknown",
+        "tests/test_rotating_slots_selective_replanning.py::test_A18_callback_frame_unknown_returns_no_proposal",
+        "tests/test_rotating_slots_selective_replanning.py::test_A18_A19_real_latency_delivery_history_and_no_early_progress"
+      ],
+      "status": "PASS_TARGETED_AND_IMPLEMENTATION_REVIEW",
+      "test_names": [
+        "test_A18_frame_budget_exhaustion_is_explicit_unknown",
+        "test_A18_callback_frame_unknown_returns_no_proposal",
+        "test_A18_A19_real_latency_delivery_history_and_no_early_progress"
+      ]
+    },
+    "A19": {
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+        "tests/test_rotating_slots_selective_replanning.py::test_A19_callback_binding_roundtrip_and_phase_limits",
+        "tests/test_rotating_slots_selective_replanning.py::test_A19_real_selective_checkpoint_restore_all_pending_stages",
+        "tests/test_rotating_slots_selective_replanning.py::test_A18_A19_real_latency_delivery_history_and_no_early_progress",
+        "tests/test_rotating_slots_selective_replanning.py::test_A19_multiaircraft_follow_frozen_diagnostics_checkpoint_roundtrip"
+      ],
+      "status": "PASS_TARGETED_AND_IMPLEMENTATION_REVIEW",
+      "test_names": [
+        "test_A19_callback_binding_roundtrip_and_phase_limits",
+        "test_A19_real_selective_checkpoint_restore_all_pending_stages",
+        "test_A18_A19_real_latency_delivery_history_and_no_early_progress",
+        "test_A19_multiaircraft_follow_frozen_diagnostics_checkpoint_roundtrip"
+      ]
+    },
+    "A20": {
+      "coverage": [
+        {
+          "c2": 47,
+          "frames": 491,
+          "method": "FULL_H",
+          "missing_predecessors": 0,
+          "nonexecution_checks": 4,
+          "pva": 11794,
+          "reservations": 17993,
+          "root": "s3r23"
+        },
+        {
+          "c2": 19,
+          "frames": 448,
+          "method": "RULE_LOCAL_K8",
+          "missing_predecessors": 0,
+          "nonexecution_checks": 11,
+          "pva": 11352,
+          "reservations": 14488,
+          "root": "s3r23"
+        },
+        {
+          "c2": 52,
+          "frames": 476,
+          "method": "FULL_H",
+          "missing_predecessors": 0,
+          "nonexecution_checks": 4,
+          "pva": 16556,
+          "reservations": 23165,
+          "root": "s3r24"
+        },
+        {
+          "c2": 23,
+          "frames": 453,
+          "method": "RULE_LOCAL_K8",
+          "missing_predecessors": 0,
+          "nonexecution_checks": 4,
+          "pva": 16182,
+          "reservations": 20257,
+          "root": "s3r24"
+        }
+      ],
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_reoptimization_a_20261027/evaluation/s3r23/FULL_H/audit_result.json",
+        "/home/user/training_outputs/terminal/rs_selective_reoptimization_a_20261027/evaluation/s3r23/RULE_LOCAL_K8/audit_result.json",
+        "/home/user/training_outputs/terminal/rs_selective_reoptimization_a_20261027/evaluation/s3r24/FULL_H/audit_result.json",
+        "/home/user/training_outputs/terminal/rs_selective_reoptimization_a_20261027/evaluation/s3r24/RULE_LOCAL_K8/audit_result.json"
+      ],
+      "status": "PASS_AUTOMATED_SAVED_REPLAY"
+    },
+    "X01": {
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_reoptimization_a_20261027/system_counts.csv",
+        "/home/user/training_outputs/terminal/rs_selective_reoptimization_a_20261027/analysis_summary.json:pairs"
+      ],
+      "status": "PASS_AT_COMMON_300S"
+    },
+    "X02": {
+      "actual_human_viewing": false,
+      "evidence_refs": [
+        "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+        "D:/7_codespace/training_outputs/terminal/rs_selective_reoptimization_a_20261027_review/review_validation.json",
+        "terminal_marl/visualization/rotating_slots_controller.py:selective_overlay"
+      ],
+      "overlay_tests": "PASS",
+      "status": "HUMAN_PENDING"
+    }
+  },
+  "audit": {
+    "all_audit_job_exit_codes": 0,
+    "all_four": "PASS",
+    "c2": "PASS",
+    "continuous_separation": "CERTIFIED",
+    "max_a_error_m_per_s2": 1.51e-14,
+    "max_p_error_m": 1.07e-12,
+    "max_v_error_m_per_s": 1.07e-13,
+    "proposal_nonexecution": "PASS",
+    "pva": "CHECKED",
+    "resources": "PASS"
+  },
+  "automated_acceptance_status": "AUTOMATED_ACCEPTANCE_PASSED_HUMAN_PENDING",
+  "automatic_phase_advance": false,
+  "budget": {
+    "active_phase": null,
+    "all_failed_invalidated_and_delivery_validation_costs_retained": true,
+    "cap_s": 7200,
+    "elapsed_final_s": 3277.6263247883435,
+    "paused_at": 1793124042.0359457,
+    "phase_used_A_s": 3277.5098740017534,
+    "remaining_final_s": 3922.3736752116565
+  },
+  "closed_loop_observations": [
+    {
+      "air_pending": 25,
+      "dispatch_wall_s": 199.92368729307782,
+      "energy_J": 562743998.5158567,
+      "finished": 14,
+      "holding_s": 4555.688582744958,
+      "initial_airborne": 24,
+      "initial_ground": 3,
+      "job_wall_s": 460.0089006520575,
+      "late": 1,
+      "late_rate": 0.07142857142857142,
+      "local_tasks": 0,
+      "method": "FULL_H",
+      "new_offered": 16,
+      "normal": 15,
+      "normal_work_s": 191.24231896561105,
+      "overflow_full_fallbacks": 0,
+      "pending": 1,
+      "progress_max_s": 254.45195493682752,
+      "review_max_s": 20.546749960112038,
+      "root": "s3r23",
+      "task_terminal_delay": {
+        "count": 14,
+        "max_s": 20,
+        "p95_s": 20,
+        "quantile_rule": "NEAREST_RANK",
+        "total_s": 265.5765520197391
+      },
+      "tasks": 15
+    },
+    {
+      "air_pending": 30,
+      "dispatch_wall_s": 163.26513183687348,
+      "energy_J": 568420284.0679812,
+      "finished": 16,
+      "holding_s": 6120.769138656889,
+      "initial_airborne": 24,
+      "initial_ground": 3,
+      "job_wall_s": 404.2699669179274,
+      "late": 1,
+      "late_rate": 0.0625,
+      "local_tasks": 17,
+      "method": "RULE_LOCAL_K8",
+      "new_offered": 16,
+      "normal": 10,
+      "normal_work_s": 152.68541013577487,
+      "overflow_full_fallbacks": 0,
+      "pending": 1,
+      "progress_max_s": 294.86339212027895,
+      "review_max_s": 81.33580376778264,
+      "root": "s3r23",
+      "task_terminal_delay": {
+        "count": 16,
+        "max_s": 20,
+        "p95_s": 20,
+        "quantile_rule": "NEAREST_RANK",
+        "total_s": 255.4386516210888
+      },
+      "tasks": 17
+    },
+    {
+      "air_pending": 32,
+      "dispatch_wall_s": 226.83400596131105,
+      "energy_J": 830264069.4630556,
+      "finished": 12,
+      "holding_s": 7675.312467231571,
+      "initial_airborne": 36,
+      "initial_ground": 3,
+      "job_wall_s": 584.0098084189231,
+      "late": 2,
+      "late_rate": 0.16666666666666666,
+      "local_tasks": 0,
+      "method": "FULL_H",
+      "new_offered": 13,
+      "normal": 17,
+      "normal_work_s": 173.40769012260716,
+      "overflow_full_fallbacks": 0,
+      "pending": 1,
+      "progress_max_s": 299.247314453125,
+      "review_max_s": 42.33909501797979,
+      "root": "s3r24",
+      "task_terminal_delay": {
+        "count": 12,
+        "max_s": 57.22645959712099,
+        "p95_s": 57.22645959712099,
+        "quantile_rule": "NEAREST_RANK",
+        "total_s": 269.586493744435
+      },
+      "tasks": 13
+    },
+    {
+      "air_pending": 36,
+      "dispatch_wall_s": 152.76392181939445,
+      "energy_J": 798315904.7310814,
+      "finished": 13,
+      "holding_s": 9040.631352079074,
+      "initial_airborne": 36,
+      "initial_ground": 3,
+      "job_wall_s": 478.8775272689527,
+      "late": 2,
+      "late_rate": 0.15384615384615385,
+      "local_tasks": 11,
+      "method": "RULE_LOCAL_K8",
+      "new_offered": 13,
+      "normal": 13,
+      "normal_work_s": 138.570559965563,
+      "overflow_full_fallbacks": 3,
+      "pending": 1,
+      "progress_max_s": 282.99407958984375,
+      "review_max_s": 73.25737516127992,
+      "root": "s3r24",
+      "task_terminal_delay": {
+        "count": 13,
+        "max_s": 20,
+        "p95_s": 20,
+        "quantile_rule": "NEAREST_RANK",
+        "total_s": 253.22411002327885
+      },
+      "tasks": 14
+    }
+  ],
+  "closed_normal_work_relative_reductions": {
+    "s3r23": 0.20161284928138434,
+    "s3r24": 0.20089726200961855
+  },
+  "evidence": {
+    "analysis_summary": {
+      "path": "D:/7_codespace/training_outputs/terminal/rs_selective_reoptimization_a_20261027/analysis_summary.json",
+      "preserved_unchanged": true,
+      "raw_generated_research_status": "DATA_INSUFFICIENT_PENDING_PRIMARY_REVIEW",
+      "sha256": "71956a58f5b61078acf80c984d5a488333ad96eb9dde02aaa53c1140c5022485"
+    },
+    "current_tests": {
+      "failed": 0,
+      "passed": 72,
+      "server_path": "/home/user/training_outputs/terminal/rs_selective_a_preflight_20261027/pad_fix_all.xml",
+      "sha256": "d2ddb8e0a65419a962600e920675484106b4bb4baa3f7c778dd8c90e3ed17208",
+      "skipped": 0
+    },
+    "final_budget_ledger": {
+      "path": "D:/7_codespace/training_outputs/terminal/rs_selective_reoptimization_a_20261027/budget_ledger.json",
+      "sha256": "814b5f201af143e774ad16d839ec8e5ecf883c072fe9647a30d4096326fc299a"
+    },
+    "raw_audit_coverage": "SERVER_RAW_ARTIFACT_VERIFICATION_ACCEPTED_IN_PRIMARY_REVIEW",
+    "system_counts": {
+      "path": "D:/7_codespace/training_outputs/terminal/rs_selective_reoptimization_a_20261027/system_counts.csv",
+      "sha256": "35e60bc98a64e3da10d08af3b619407c48768bf0e1d67554c0e9fa84c36bf2fd"
+    }
+  },
+  "exit_gate": "A_TRADEOFF_REVIEW",
+  "human_replay_status": "HUMAN_PENDING",
+  "limits": {
+    "closed_arms": 4,
+    "development_roots": 2,
+    "energy_efficiency_claim": false,
+    "learning_gain_claim": false,
+    "lossless_online_gain_claim": false,
+    "original_nested_syncthing": "receive-only terminal-results failure/retry about 1h4m and deletion errors; verified separate local review copy available",
+    "replicates_per_method_root": 1,
+    "saved_snapshots": 8,
+    "seconds_per_arm": 300,
+    "source_or_service_config_changed_for_delivery": false,
+    "statistical_generalization_established": false,
+    "task_terminal_delay_scope": "SNAPSHOT_TO_TASK_TERMINAL_ALL_FINISHED_INCLUDING_REJECTIONS_NOT_SUCCESSFUL_PLANS_ONLY"
+  },
+  "local_review_copy": {
+    "human_visual_review": false,
+    "payload_hashes_verified": 125,
+    "replay_bundles_load_and_validate": 4,
+    "root": "D:/7_codespace/training_outputs/terminal/rs_selective_reoptimization_a_20261027_review",
+    "validation_receipt": "D:/7_codespace/training_outputs/terminal/rs_selective_reoptimization_a_20261027_review/review_validation.json",
+    "validation_sha256": "bf257a582883272a1d4f02417013f470e4ea2e6cea62d3db7b8f6133ab255531",
+    "zip_bytes": 25199032,
+    "zip_sha256": "8799431d686653dd17af4dda869d1e17c67bf989306b8d2f735e4d51746a19b6"
+  },
+  "phase": "A",
+  "phase_B_approved": false,
+  "phase_B_started": false,
+  "phase_C_started": false,
+  "research_status": "TRADEOFF_OBSERVED",
+  "review_authority": "PRIMARY_REVIEW",
+  "schema": "rs_selective_stage_a_primary_review_v1",
+  "snapshot_observations": {
+    "all_prepared_counterfactual": true,
+    "count": 8,
+    "local_lexicographically_better": 8,
+    "mean_full_work_s": 12.987447283347137,
+    "mean_local_work_s": 8.150251280589146,
+    "relative_reduction_of_means": 0.37245163712505513,
+    "rows": [
+      {
+        "attempted_k": 8,
+        "full_cp_max": 73,
+        "full_k": 19,
+        "full_s": 12.614238794893026,
+        "local_cp_max": 41,
+        "local_s": 8.147378219873644,
+        "returned_k": 8,
+        "root": "s3r23",
+        "time": 15
+      },
+      {
+        "attempted_k": 8,
+        "full_cp_max": 70,
+        "full_k": 18,
+        "full_s": 12.473045112914406,
+        "local_cp_max": 35,
+        "local_s": 7.178079626872204,
+        "returned_k": 8,
+        "root": "s3r23",
+        "time": 30
+      },
+      {
+        "attempted_k": 8,
+        "full_cp_max": 62,
+        "full_k": 17,
+        "full_s": 12.588182816980407,
+        "local_cp_max": 37,
+        "local_s": 7.270992465899326,
+        "returned_k": 8,
+        "root": "s3r23",
+        "time": 45
+      },
+      {
+        "attempted_k": 8,
+        "full_cp_max": 89,
+        "full_k": 18,
+        "full_s": 12.542051945813,
+        "local_cp_max": 47,
+        "local_s": 8.544697391916998,
+        "returned_k": 8,
+        "root": "s3r23",
+        "time": 60
+      },
+      {
+        "attempted_k": 8,
+        "full_cp_max": 112,
+        "full_k": 31,
+        "full_s": 12.997504381113686,
+        "local_cp_max": 29,
+        "local_s": 8.335477411048487,
+        "returned_k": 8,
+        "root": "s3r24",
+        "time": 60
+      },
+      {
+        "attempted_k": 8,
+        "full_cp_max": 129,
+        "full_k": 35,
+        "full_s": 13.479960354976356,
+        "local_cp_max": 56,
+        "local_s": 8.351292948122136,
+        "returned_k": 8,
+        "root": "s3r24",
+        "time": 120
+      },
+      {
+        "attempted_k": 11,
+        "full_cp_max": 121,
+        "full_k": 34,
+        "full_s": 13.926421453128569,
+        "local_cp_max": 38,
+        "local_s": 8.612542763003148,
+        "returned_k": 8,
+        "root": "s3r24",
+        "time": 180
+      },
+      {
+        "attempted_k": 12,
+        "full_cp_max": 121,
+        "full_k": 33,
+        "full_s": 13.278173406957649,
+        "local_cp_max": 31,
+        "local_s": 8.761549417977221,
+        "returned_k": 8,
+        "root": "s3r24",
+        "time": 240
+      }
+    ],
+    "scope": "OBSERVED_PROJECTION_FRAME_SETUP_PLANNING_PREPARATION_NOT_FULL_ONLINE_PIPELINE"
+  },
+  "source_binding": "8945ba891ae3c73af1d223f1ba7315f6bd8912c8444c55a2bfb00912ba969162",
+  "source_commit": "750cda67a7b2594fc3da740124eb9fcdca7b8c3f",
+  "document_version_reference": "git history of this file",
+  "document_versioning": "Scientific source and report delivery are versioned separately; report edits do not change the scientific binding.",
+  "cost_accounting": {
+    "snapshot_mean_callback_wall_s": {
+      "FULL_H": 12.14139817476098,
+      "RULE_LOCAL_K8": 7.696193844109075
+    },
+    "snapshot_mean_preparation_wall_s": {
+      "FULL_H": 0.7016918966255616,
+      "RULE_LOCAL_K8": 0.30425669126270805
+    },
+    "shared_mean_projection_wall_s": 0.12816972298605833,
+    "shared_mean_frame_wall_s": 0.015694895497290418,
+    "attribution_limit": "Callback totals do not uniquely separate selector/candidate/CP/certification costs. Same-state compute savings were observed without executing either proposal; closed-loop work savings coexist with fewer landings and cannot be disentangled from service volume in this single paired run.",
+    "common_costs_retained": [
+      "full visible background",
+      "global demands and objective",
+      "physical certification",
+      "monitoring/emergency/admission",
+      "actual delivery service and execution"
+    ]
+  }
+}

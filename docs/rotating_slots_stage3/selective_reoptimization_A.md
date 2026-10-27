@@ -1,5 +1,7 @@
 # Stage A: selective reoptimization
 
+阶段 A 结果与最终验收见 [结果报告](selective_reoptimization_A_results_20261027.md) 和 [结构化评审](../../artifacts/rs_select_a_20261027/primary_review.json)：TRADEOFF_OBSERVED，出口为 A_TRADEOFF_REVIEW，自动验收通过、人工回放 HUMAN_PENDING；未批准进入 B/C。
+
 This implementation consumes the immutable `FT-RS-SELECTIVE-1.0` parent and A
 specification. It runs only `FULL_H` and `RULE_LOCAL_K8`, with the shared v8
 objective and `global_preselection_frozen_v1` frame. B/C, training, the old
