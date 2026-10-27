@@ -75,6 +75,7 @@ def test_saved_report_preserves_inputs_and_separates_pending_work_and_readiness(
     assert value["human_replay_acceptance"]=="HUMAN_PENDING"
     text=(tmp_path/"FINAL_REPORT.md").read_text(encoding="utf8")
     assert "PENDING_PRIMARY_REVIEW" in text
+    assert "Search handoff trace: unavailable" in text
     assert "| Observed metric | H | L |\n| --- | ---: | ---: |" in text
     with pytest.raises(ValueError,match="already exist"): report.main(["--output",str(tmp_path)])
 
@@ -181,3 +182,28 @@ def test_report_timing_scope_uses_recorded_lead_and_missing_is_unavailable(tmp_p
         assert f"lead_seconds={lead:g} s; preparation_margin=1 s; scheduler_period=5 s" in text
         assert f"recorded lead - margin = {lead-1:g} s" in text
     assert "Ready deadline = snapshot time + lead - margin" in text
+
+
+def test_saved_search_certificate_return_and_final_authorization_are_distinct(tmp_path):
+    fixture(tmp_path)
+    scope=report.load(tmp_path/"execution_scope.json")
+    scope["protocol"].update(lead_seconds=20.,preparation_margin=1.,scheduler_period=5.,
+        search_handoff_reserve_seconds=4.,search_handoff_protocol="search_handoff_reserve_v1")
+    save(tmp_path/"execution_scope.json",scope)
+    trace=dict(protocol="search_handoff_reserve_v1",reserve_seconds=4.,planning_wall_origin=100.,
+        planning_wall_deadline=119.,search_wall_deadline=115.,first_nonempty_certified=dict(wall_elapsed_s=2.),
+        events=[dict(event="STRICT_CERTIFIED_IMPROVEMENT",wall_elapsed_s=9.)],
+        callback_return=dict(wall_elapsed_s=14.5,certified=True),heavy_checks={"validation":dict(started=1,skipped=2)})
+    for arm in report.ARMS:
+        base=tmp_path/"evaluation"/arm
+        tasks=report.load(base/"normal_tasks.json");tasks[0].update(search_handoff=trace,preparation_started_time=3.)
+        save(base/"normal_tasks.json",tasks)
+    value,timeline,*_=report.collect(tmp_path)
+    text=report.report_text(value,timeline)
+    assert "Search handoff reserve: 4 s; protocol: search_handoff_reserve_v1" in text
+    assert "actual search wall deadline 115 (perf-clock s), offset from planning origin 15 s" in text
+    assert "First nonempty search certificate at wall elapsed 2 s" in text
+    assert "strict certified improvements at wall elapsed [9.0] s" in text
+    assert "callback return at wall elapsed 14.5 s, certified True" in text
+    assert "Actual preparation start 3" in text and "search certificate is not final authorization" in text
+    assert timeline[0]["search_handoff"]==trace and timeline[0]["preparation_started_time"]==3.

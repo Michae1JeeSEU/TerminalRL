@@ -90,6 +90,7 @@ def task_facts(tasks,callbacks,observed_time):
         past=bool(pending and finite(observed_time) and finite(deadline) and observed_time>deadline and not timely)
         known_late=bool(pending and finite(ready) and finite(deadline) and ready>deadline)
         row=dict(task_index=index+1,snapshot_time=task["snapshot_time"],result_time=task.get("result_time"),
+            preparation_started_time=task.get("preparation_started_time"),
             ready_time=ready,ready_deadline=deadline,effective_time=task.get("effective_time"),finished_time=task.get("finished_time"),
             status=task["status"],reason=task.get("reason"),submitted=task.get("submitted"),pending=pending,
             nonempty_proposed=callback.get("deferred") is True and callback.get("noop") is False,
@@ -99,6 +100,7 @@ def task_facts(tasks,callbacks,observed_time):
             ready_registration_bookkeeping_cpu_s=task.get("ready_registration_bookkeeping_cpu_s"),
             timely_registered_ready=timely,pending_past_ready_deadline=past,pending_known_late_ready_time=known_late,
             full_observed_planning_work_s=math.fsum(task.get(k) or 0. for k in components))
+        row["search_handoff"]=task.get("search_handoff",callback.get("search_handoff"))
         row.update({k:task.get(k) for k in components}); timeline.append(row)
     proposed=[r for r in timeline if r["nonempty_proposed"]]
     finished=[r for r in proposed if not r["pending"]]
@@ -341,6 +343,7 @@ def figures(output,value,timeline,quality,contacts,contact_sheet=False):
             finish=r["finished_time"] if finite(r["finished_time"]) else end
             if finite(finish): ax.plot([r["snapshot_time"],finish],[i,i],color=COLORS[arm],ls="--" if r["pending"] else "-",lw=1.5)
             for key,marker,dy in (("snapshot_time","o",0),("result_time","s",0),("ready_time","^",0),
+                                  ("preparation_started_time","P",.12),
                                   ("ready_deadline","|",.16),("effective_time","D",-.16)):
                 if finite(r.get(key)):
                     hollow=key in ("effective_time",) or key=="ready_time" and finite(end) and r[key]>end
@@ -374,7 +377,7 @@ def figures(output,value,timeline,quality,contacts,contact_sheet=False):
     ax.legend(loc="upper left",ncol=2,frameon=False)
     handles=[Line2D([],[],color="#606060",marker=m,ls="none",mfc="white" if m=="D" else "#606060",label=label)
              for m,label in (("o","Snapshot"),("s","Actual result"),("^","Recorded ready"),("|","Ready deadline"),
-                             ("D","Effective"),("*","Committed"),("x","Rejected / no-prefix"),(">","Censored pending"),
+                             ("D","Effective"),("P","Preparation start"),("*","Committed"),("x","Rejected / no-prefix"),(">","Censored pending"),
                              ("+","Revalidation start"))]
     fig.legend(handles=handles,loc="upper center",ncol=4,bbox_to_anchor=(.5,.998),frameon=False)
     fig.subplots_adjust(top=.87,bottom=.07,left=.09,right=.98,hspace=.57)
@@ -408,11 +411,13 @@ def report_text(value,timeline=()):
     def counts(values): return "; ".join(f"{k}: {v}" for k,v in values.items()) or "none recorded"
     timing=value["scope"].get("protocol",{})
     lead,margin,period=(timing.get(key) for key in ("lead_seconds","preparation_margin","scheduler_period"))
+    reserve=timing.get("search_handoff_reserve_seconds")
     ready_offset=lead-margin if finite(lead) and finite(margin) else None
     lines=["# Normal planning latency interface — saved-artifact report","",
         "Final interpretation: PENDING_PRIMARY_REVIEW. Figure review and replay human acceptance remain pending.","",
         f"Common completed boundary: {value['common_completed_boundary_s']} s. Execution source `{value['scope'].get('source_commit')}` / `{value['scope'].get('source_hash')}`.","",
         f"Recorded timing scope: lead_seconds={fmt(lead)} s; preparation_margin={fmt(margin)} s; scheduler_period={fmt(period)} s. Ready deadline = snapshot time + lead - margin; recorded lead - margin = {fmt(ready_offset)} s.","",
+        f"Search handoff reserve: {fmt(reserve)} s; protocol: {fmt(timing.get('search_handoff_protocol'))}. Search stops at the recorded planning wall deadline minus the reserve; the original ready deadline remains unchanged. A search certificate is not final authorization or actual joining.","",
         "One preregistered H/L pair. H is heuristic candidate order with the same CP-SAT backend as L. Detailed observations and checks are in [analysis_summary.json](analysis_summary.json); raw inputs are unchanged.","",
         "## Quality and timing","","| Observed metric | H | L |","| --- | ---: | ---: |"]
     metrics=[("Terminal time (s) / process RC",lambda a:f"{fmt(cells[a]['terminal_observed_time_s'])} / {fmt(cells[a]['receipt'].get('exit_code'))}"),
@@ -483,6 +488,17 @@ def report_text(value,timeline=()):
         lines.append("")
         for row in (r for r in timeline if r["arm"]==arm):
             lines.append(f"- {LABELS[arm]} task {row['task_index']}: snapshot {fmt(row['snapshot_time'])}; result {fmt(row['result_time'])}; ready {fmt(row['ready_time'])}, deadline {fmt(row['ready_deadline'])}; effective {fmt(row['effective_time'])}; {row['status']} at {fmt(row['finished_time'])}, submitted {fmt(row['submitted'])}"+(f"; {row['reason']}." if row.get("reason") else "."))
+            trace=row.get("search_handoff")
+            if trace is None:
+                lines.append(f"  Search handoff trace: unavailable; actual preparation start {fmt(row.get('preparation_started_time'))}.")
+            else:
+                first=trace.get("first_nonempty_certified") or {}
+                returned=trace.get("callback_return") or {}
+                improvements=[event.get("wall_elapsed_s") for event in trace.get("events",[]) if event.get("event")=="STRICT_CERTIFIED_IMPROVEMENT"]
+                origin=trace.get("planning_wall_origin");deadline=trace.get("search_wall_deadline")
+                offset=deadline-origin if finite(deadline) and finite(origin) else None
+                lines.append(f"  Search reserve {fmt(trace.get('reserve_seconds'))} s; actual search wall deadline {fmt(deadline)} (perf-clock s), offset from planning origin {fmt(offset)} s. First nonempty search certificate at wall elapsed {fmt(first.get('wall_elapsed_s'))} s; strict certified improvements at wall elapsed {improvements} s; callback return at wall elapsed {fmt(returned.get('wall_elapsed_s'))} s, certified {fmt(returned.get('certified'))}. Actual preparation start {fmt(row.get('preparation_started_time'))}; actual join is recorded only by COMMITTED/submitted above. Search wall elapsed values are computation-clock observations, not simulation delivery timestamps.")
+                lines.append(f"  Heavy search checks (started/skipped and measured work by kind): {fmt(trace.get('heavy_checks'))}.")
             for event in row.get("revalidations") or []:
                 lines.append(f"  Revalidation {event.get('status','MISSING')}: started {fmt(event.get('started_time'))}; due {fmt(event.get('due'))}; completed {fmt(event.get('completed_time'))}; reason {fmt(event.get('reason'))}; checked/reused pairs {fmt(event.get('pairs_checked'))}/{fmt(event.get('reused_pairs'))}; measured wall/CPU {fmt(event.get('wall_s'))}/{fmt(event.get('cpu_s'))} s.")
         lines.append("")

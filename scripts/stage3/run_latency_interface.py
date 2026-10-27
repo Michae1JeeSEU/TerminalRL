@@ -26,6 +26,8 @@ NORMALIZER_HASH = "1e06b066dad2d657acbe16de6706b180dd4f4ed8ba1bc106cefcc2a3d4f4e
 THREAD_KEYS = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS", "VECLIB_MAXIMUM_THREADS")
 EXTRA_SOURCES = ("scripts/stage3/run_latency_interface.py", "tests/test_rotating_slots_latency_campaign.py",
                  "scripts/stage3/report_latency_interface.py", "tests/test_rotating_slots_latency_report.py",
+                 "scripts/stage3/probe_search_handoff.py", "tests/test_rotating_slots_search_handoff_probe.py",
+                 "tests/test_rotating_slots_search_handoff.py",
                  "tests/test_rotating_slots_planning_latency.py", "tests/test_rotating_slots_latency_ranking.py")
 
 
@@ -62,7 +64,7 @@ def dependencies(checkout):
     from terminal_marl.core.rotating_slots.stage3_learning.online_observer import OnlineObserver
     from terminal_marl.core.rotating_slots.stage2_campaign import atomic_json, digest, shared_fifo_admission, episode_metrics, save_checkpoint
     from terminal_marl.core.rotating_slots.stage2_planning import NormalSchedulerCallback
-    from terminal_marl.core.rotating_slots.planning_latency import LatencyAwareScheduler, DEPENDENCY_PROTOCOL_VERSION
+    from terminal_marl.core.rotating_slots.planning_latency import LatencyAwareScheduler, DEPENDENCY_PROTOCOL_VERSION, SEARCH_HANDOFF_VERSION
     from terminal_marl.core.rotating_slots.replay import ReplayBundle
     require(campaign.ROOT.resolve()==checkout and Path(evaluation.__file__).resolve().is_relative_to(checkout),
             "project imports are outside the selected checkout")
@@ -73,13 +75,15 @@ def dependencies(checkout):
     return SimpleNamespace(checkout=checkout,campaign=campaign,evaluation=evaluation,restore_root=restore_root,
         OnlineObserver=OnlineObserver,atomic_json=atomic_json,digest=digest,shared_fifo_admission=shared_fifo_admission,
         episode_metrics=episode_metrics,save_checkpoint=save_checkpoint,NormalSchedulerCallback=NormalSchedulerCallback,
-        LatencyAwareScheduler=LatencyAwareScheduler,dependency_protocol=DEPENDENCY_PROTOCOL_VERSION,
+        LatencyAwareScheduler=LatencyAwareScheduler,dependency_protocol=DEPENDENCY_PROTOCOL_VERSION,handoff_version=SEARCH_HANDOFF_VERSION,
         ReplayBundle=ReplayBundle,aggregate=aggregate.aggregate_decisions)
 
 
-def protocol(dependency_protocol, lead_seconds=30.):
+def protocol(dependency_protocol, lead_seconds=30., reserve_seconds=0., handoff_version=None):
     require(lead_seconds in (20.,30.), "lead seconds must be 20 or 30")
-    return dict(schema="normal_latency_120_v1",root_id=ROOT_ID,seed=SEED,scenario_profile="medium24_rate150_v1",
+    require(reserve_seconds in (0.,4.), "search handoff reserve must be 0 or 4")
+    require(not reserve_seconds or bool(handoff_version), "search handoff version is required")
+    value=dict(schema="normal_latency_120_v1",root_id=ROOT_ID,seed=SEED,scenario_profile="medium24_rate150_v1",
         target_sim_seconds=HORIZON,boundary_seconds=STEP,checkpoint_seconds=CHECKPOINT_STEP,
         cpu=CPU,arms=list(ARMS),formal_jobs=2,ordering="H_THEN_L_SERIAL",job_wall_cap_s=JOB_CAP,
         total_evaluation_wall_cap_s=TOTAL_CAP,lead_seconds=float(lead_seconds),preparation_margin=1.,scheduler_period=5.,
@@ -89,6 +93,9 @@ def protocol(dependency_protocol, lead_seconds=30.):
         attempts_per_aircraft=32,total_attempts=1024,model_sha256=MODEL_HASH,normalizer_sha256=NORMALIZER_HASH,
         endpoint_policy="settle_only_at_end; dispatch/delivery exactly at 120 is censored and remains pending",
         training="NONE",automatic_retries=False)
+    value["search_handoff_reserve_seconds"]=float(reserve_seconds)
+    if reserve_seconds: value["search_handoff_protocol"]=handoff_version
+    return value
 
 
 def verify_model(parent):
@@ -114,7 +121,9 @@ def verify_source(frozen, d):
 
 def prepare(args, d):
     selected_lead=getattr(args,"lead_seconds",None)
-    selected_protocol=protocol(d.dependency_protocol,30. if selected_lead is None else selected_lead)
+    reserve=getattr(args,"search_handoff_reserve_seconds",None)
+    selected_protocol=protocol(d.dependency_protocol,30. if selected_lead is None else selected_lead,
+        0. if reserve is None else reserve,getattr(d,"handoff_version",None))
     output, parent, initial = (Path(p).resolve() for p in (args.output,args.model_parent,args.initial_parent))
     require(not output.exists(), "fresh output required; no retry/reset")
     require(not any(output.is_relative_to(p) or p.is_relative_to(output) for p in (parent,initial)), "output overlaps an input archive")
@@ -169,7 +178,10 @@ def verify(output, d):
     prepared=load(output/"prepare.finished.json")
     require(prepared["status"]=="COMPLETED", "prepare did not complete")
     scope=load(output/"execution_scope.json"); verify_source(load(output/"source_freeze.json"),d)
-    require(scope["protocol"]==protocol(d.dependency_protocol,scope["protocol"]["lead_seconds"])
+    expected=protocol(d.dependency_protocol,scope["protocol"]["lead_seconds"],
+        scope["protocol"].get("search_handoff_reserve_seconds",0.),getattr(d,"handoff_version",None))
+    if "search_handoff_reserve_seconds" not in scope["protocol"]: expected.pop("search_handoff_reserve_seconds")
+    require(scope["protocol"]==expected
             and Path(scope["checkout"]).resolve()==d.checkout, "execution scope changed")
     require(scope["scope_id"]==prepared["scope_id"], "prepared scope identity changed")
     require(scope["scope_id"]==d.digest({k:v for k,v in scope.items() if k not in ("scope_id","prepared_file_sha256")}), "scope digest mismatch")
@@ -332,7 +344,8 @@ def run_job(output,arm,d,*,started=None):
         scheduler=d.evaluation._scheduler(output,arm,binding,observer,ROOT_ID,setup)
         scheduler.provider.advisor_runtime.ranking_scope=RANKING
         wrapper=d.LatencyAwareScheduler(scheduler,lead_seconds=scope["protocol"]["lead_seconds"],
-            preparation_margin=scope["protocol"]["preparation_margin"])
+            preparation_margin=scope["protocol"]["preparation_margin"],
+            search_handoff_reserve_seconds=scope["protocol"].get("search_handoff_reserve_seconds",0.))
         world.decision_callback=wrapper; world.admission_callback=d.shared_fifo_admission
         require(world.scheduler_period==5.,"original scheduling period changed")
         holding,restore_observer=d.evaluation.observe_executed_holding(world)
@@ -478,8 +491,12 @@ def main(argv=None):
     parser.add_argument("--arm",choices=ARMS)
     parser.add_argument("--lead-seconds",type=float,choices=(20.,30.),default=None,
         help="prepare only: freeze the normal-planning lead (default: 30 seconds)")
+    parser.add_argument("--search-handoff-reserve-seconds",type=float,choices=(0.,4.),default=None,
+        help="prepare only: freeze the search-stop reserve (default: 0 seconds)")
     args=parser.parse_args(argv)
     if args.stage!="prepare" and args.lead_seconds is not None: parser.error("--lead-seconds is prepare-only; run/job use the frozen scope")
+    if args.stage!="prepare" and args.search_handoff_reserve_seconds is not None:
+        parser.error("--search-handoff-reserve-seconds is prepare-only; run/job use the frozen scope")
     if args.stage=="prepare" and args.source_freeze is None: parser.error("prepare requires primary-provided --source-freeze")
     if args.stage=="job" and args.arm is None: parser.error("job requires --arm")
     output=args.output.resolve(); d=dependencies(args.checkout)

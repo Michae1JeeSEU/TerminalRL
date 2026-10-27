@@ -34,8 +34,8 @@ class Ledger:
 def lock(output): yield
 
 
-@pytest.mark.parametrize("lead_seconds",[20.,30.])
-def test_prepare_preserves_fingerprint_and_predeclares_exact_pair(tmp_path,monkeypatch,lead_seconds):
+@pytest.mark.parametrize("lead_seconds,reserve_seconds",[(20.,0.),(30.,0.),(20.,4.)])
+def test_prepare_preserves_fingerprint_and_predeclares_exact_pair(tmp_path,monkeypatch,lead_seconds,reserve_seconds):
     checkout=tmp_path/"checkout"; checkout.mkdir()
     for name in runner.EXTRA_SOURCES:
         p=checkout/name; p.parent.mkdir(parents=True,exist_ok=True)
@@ -66,11 +66,12 @@ def test_prepare_preserves_fingerprint_and_predeclares_exact_pair(tmp_path,monke
     def verify_sources(value):
         assert value["source_hash"]==digest(value["source_files"])
         assert all(runner.file_hash(checkout/k)==v for k,v in value["source_files"].items())
-    d=SimpleNamespace(checkout=checkout,atomic_json=atomic,digest=digest,dependency_protocol="affected_traffic_revalidation_v1",campaign=SimpleNamespace(
+    d=SimpleNamespace(checkout=checkout,atomic_json=atomic,digest=digest,dependency_protocol="affected_traffic_revalidation_v1",handoff_version="search_handoff_reserve_v1",campaign=SimpleNamespace(
         source_files=lambda:[checkout/p for p in runner.EXTRA_SOURCES],verify_sources=verify_sources,
         utc_now=lambda:"UTC",CampaignLedger=Ledger))
     output=tmp_path/"output"
-    args=SimpleNamespace(output=output,model_parent=parent,initial_parent=initial,source_freeze=freeze,lead_seconds=lead_seconds)
+    args=SimpleNamespace(output=output,model_parent=parent,initial_parent=initial,source_freeze=freeze,lead_seconds=lead_seconds,
+        search_handoff_reserve_seconds=reserve_seconds)
     assert runner.prepare(args,d)["status"]=="PREPARED"
     scope,bound,_=runner.verify(output,d)
     assert (output/"run_binding.generated.json").read_bytes()==(parent/"run_binding.generated.json").read_bytes()
@@ -80,6 +81,8 @@ def test_prepare_preserves_fingerprint_and_predeclares_exact_pair(tmp_path,monke
     assert p["arms"]==list(runner.ARMS) and p["formal_jobs"]==2 and p["target_sim_seconds"]==120
     assert p["dependency_protocol"]=="affected_traffic_revalidation_v1"
     assert (p["interface"],p["ranking_scope"])==(runner.INTERFACE,runner.RANKING)
+    assert p["search_handoff_reserve_seconds"]==reserve_seconds
+    assert p.get("search_handoff_protocol")==("search_handoff_reserve_v1" if reserve_seconds else None)
     assert (p["cpu"],p["lead_seconds"],p["preparation_margin"],p["job_wall_cap_s"],p["total_evaluation_wall_cap_s"])==(12,lead_seconds,1.,900.,1800.)
     for field,value,message in (("lead_seconds",25.,"lead seconds"),("cp_seconds",9.,"execution scope changed"),
                                 ("lead_seconds",50.-lead_seconds,"prepared scope identity changed")):
@@ -89,6 +92,20 @@ def test_prepare_preserves_fingerprint_and_predeclares_exact_pair(tmp_path,monke
         with pytest.raises(ValueError,match=message): runner.verify(output,d)
     atomic(output/"execution_scope.json",scope)
     assert runner.verify(output,d)[0]["protocol"]["lead_seconds"]==lead_seconds
+    forged=deepcopy(scope)
+    forged["protocol"]=runner.protocol(d.dependency_protocol,lead_seconds,4.-reserve_seconds,d.handoff_version)
+    forged["scope_id"]=digest({k:v for k,v in forged.items() if k not in ("scope_id","prepared_file_sha256")})
+    atomic(output/"execution_scope.json",forged)
+    with pytest.raises(ValueError,match="prepared scope identity changed"):runner.verify(output,d)
+    atomic(output/"execution_scope.json",scope)
+    if reserve_seconds==0.:
+        legacy=deepcopy(scope);legacy["protocol"].pop("search_handoff_reserve_seconds")
+        legacy["scope_id"]=digest({k:v for k,v in legacy.items() if k not in ("scope_id","prepared_file_sha256")})
+        atomic(output/"execution_scope.json",legacy)
+        atomic(output/"prepare.finished.json",dict(status="COMPLETED",scope_id=legacy["scope_id"]))
+        assert "search_handoff_reserve_seconds" not in runner.verify(output,d)[0]["protocol"]
+        atomic(output/"execution_scope.json",scope)
+        atomic(output/"prepare.finished.json",dict(status="COMPLETED",scope_id=scope["scope_id"]))
     args.output=tmp_path/"invalid_output"; args.lead_seconds=0.
     with pytest.raises(ValueError,match="lead seconds"): runner.prepare(args,d)
     assert not args.output.exists()
@@ -118,7 +135,7 @@ class World:
     def configure_practical_runtime(self,value): assert value is True
     def advance(self,boundary,wrapper,*,settle_only_at_end):
         assert callable(wrapper.planning_event) and self.decision_callback is wrapper and settle_only_at_end is True
-        assert wrapper.options==dict(lead_seconds=self.lead_seconds,preparation_margin=1.)
+        assert wrapper.options==dict(lead_seconds=self.lead_seconds,preparation_margin=1.,search_handoff_reserve_seconds=self.reserve_seconds)
         assert wrapper.callback.provider.advisor_runtime.ranking_scope==runner.RANKING
         self.steps.append(boundary); self.time=boundary
         if boundary==self.fail_at: raise RuntimeError("fixture failure")
@@ -126,12 +143,12 @@ class World:
     def to_dict(self): return dict(states=[dict(time=0.),dict(time=self.time)],events=[],trajectories={})
 
 
-def job_fixture(tmp_path,monkeypatch,fail_at=None,lead_seconds=30.):
+def job_fixture(tmp_path,monkeypatch,fail_at=None,lead_seconds=30.,reserve_seconds=0.):
     output=tmp_path/"output"; output.mkdir()
     atomic(output/"roots/s3r23/root.json",dict(identity={"original":"id"},manifest_hash="manifest",initial_state_hash="state"))
-    world=World(fail_at,lead_seconds); scheduler=Scheduler(); saved=[]; restored=[]
+    world=World(fail_at,lead_seconds);world.reserve_seconds=reserve_seconds; scheduler=Scheduler(); saved=[]; restored=[]
     scope=dict(source_hash="new_source",source_commit="new_commit",scope_id="scope",
-        protocol=runner.protocol("affected_traffic_revalidation_v1",lead_seconds))
+        protocol=runner.protocol("affected_traffic_revalidation_v1",lead_seconds,reserve_seconds,"search_handoff_reserve_v1"))
     binding=dict(fingerprint={"old":"fingerprint"})
     atomic(output/"run.started.json",dict(scope_id="scope"))
     ledger=SimpleNamespace(data=dict(active_phase=dict(phase="evaluation"),
@@ -158,9 +175,9 @@ def job_fixture(tmp_path,monkeypatch,fail_at=None,lead_seconds=30.):
     return output,d,world,saved,restored
 
 
-@pytest.mark.parametrize("lead_seconds",[20.,30.])
-def test_job_serialization_uses_wrapper_and_0_60_120_checkpoints(tmp_path,monkeypatch,lead_seconds):
-    output,d,w,saved,restored=job_fixture(tmp_path,monkeypatch,lead_seconds=lead_seconds)
+@pytest.mark.parametrize("lead_seconds,reserve_seconds",[(20.,0.),(30.,0.),(20.,4.)])
+def test_job_serialization_uses_wrapper_and_0_60_120_checkpoints(tmp_path,monkeypatch,lead_seconds,reserve_seconds):
+    output,d,w,saved,restored=job_fixture(tmp_path,monkeypatch,lead_seconds=lead_seconds,reserve_seconds=reserve_seconds)
     result=runner.run_job(output,runner.ARMS[0],d)
     base=output/"evaluation"/runner.ARMS[0]
     assert w.steps==list(range(5,121,5)) and saved==[0.,60.,120.]
@@ -294,3 +311,10 @@ def test_revalidation_work_once_multiple_joins_and_censored_round():
     assert rejection["external_traffic_missing_rejections"]==1
     assert rejection["revalidation_work_deadline_rejections"]==1
     assert runner.search_reuse_summary([{}])["cp"]["pair_cuts_reused"] is None
+
+
+def test_search_handoff_reserve_cannot_override_frozen_scope_from_cli():
+    for stage in ("run","job","summarize"):
+        with pytest.raises(SystemExit) as error:
+            runner.main([stage,"--checkout","unused","--search-handoff-reserve-seconds","4"])
+        assert error.value.code==2

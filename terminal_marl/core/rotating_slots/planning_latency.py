@@ -22,6 +22,7 @@ from .world import (AIRBORNE, HOLD, _planning_context,
 EFFECTIVE_STATE_VERSION = "planning_effective_state_v1"
 EMERGENCY_TIMING_MODE = "existing_priority_response_cpu_charged"
 DEPENDENCY_PROTOCOL_VERSION = "affected_traffic_revalidation_v1"
+SEARCH_HANDOFF_VERSION = "search_handoff_reserve_v1"
 EPS = 1.e-8
 
 
@@ -597,9 +598,14 @@ def publish_submission(world, token):
 
 class _FuturePort:
     """Read-only future state plus a deferred proposal sink."""
-    def __init__(self, snapshot, source, planning_wall_deadline=None):
+    def __init__(self, snapshot, source, planning_wall_deadline=None, *, search_wall_deadline=None,
+                 planning_wall_origin=None, search_handoff_reserve_seconds=0.):
         self._snapshot, self._source = snapshot, source
         self.planning_wall_deadline = planning_wall_deadline
+        self.search_wall_deadline = search_wall_deadline
+        self.planning_wall_origin = planning_wall_origin
+        self.search_handoff_reserve_seconds = search_handoff_reserve_seconds
+        self.search_handoff = None
         self.proposal, self.evidence = None, []
 
     @property
@@ -635,10 +641,14 @@ class _FuturePort:
 
 class LatencyAwareScheduler:
     """One normal task with coalesced triggers and executor-owned delivery events."""
-    def __init__(self, callback, *, lead_seconds=30., preparation_margin=1., clock=time.perf_counter):
+    def __init__(self, callback, *, lead_seconds=30., preparation_margin=1.,
+                 search_handoff_reserve_seconds=0., clock=time.perf_counter):
         PlanningTiming.from_lead(0.,lead_seconds,preparation_margin)
+        if not math.isfinite(search_handoff_reserve_seconds) or search_handoff_reserve_seconds<0:
+            raise ValueError("invalid search handoff reserve")
         self.callback = callback
         self.lead_seconds, self.preparation_margin = lead_seconds, preparation_margin
+        self.search_handoff_reserve_seconds = search_handoff_reserve_seconds
         self.clock = clock
         self.pending = None
         self.dirty = False
@@ -687,11 +697,15 @@ class LatencyAwareScheduler:
         self.dirty = False
         actual_started=time.perf_counter()
         planning_wall_deadline=actual_started+(timing.ready_deadline-timing.snapshot_time)-max(0.,self._service_until-port.time)
+        search_wall_deadline=(planning_wall_deadline-self.search_handoff_reserve_seconds
+                              if self.search_handoff_reserve_seconds else None)
         started, started_cpu = self.clock(), time.process_time()
-        proposal, evidence, reason = None, [], None
+        proposal, evidence, reason, future = None, [], None, None
         try:
             source = port.build_planning_snapshot()
-            future = _FuturePort(project_visible_snapshot(source,timing.effective_time,timing=timing),source,planning_wall_deadline)
+            future = _FuturePort(project_visible_snapshot(source,timing.effective_time,timing=timing),source,planning_wall_deadline,
+                search_wall_deadline=search_wall_deadline,planning_wall_origin=actual_started,
+                search_handoff_reserve_seconds=self.search_handoff_reserve_seconds)
             self.callback(future)
             proposal, evidence = future.proposal, future.evidence
             if proposal is None: reason = "NO_CERTIFIED_PREFIX"
@@ -709,6 +723,8 @@ class LatencyAwareScheduler:
             **asdict(timing),normal_work_s=duration,normal_work_cpu_s=time.process_time()-started_cpu,
             prepare_work_s=None,online_service_s=service,
             status="COMPUTING",submitted=0,commit_status="DEFERRED")
+        if self.search_handoff_reserve_seconds:
+            record["search_handoff"] = (future.search_handoff if future is not None else None)
         self.records.append(record)
         self.pending = dict(timing=timing,stage="RESULT",due=port.time+duration+service,
             proposal=proposal,evidence=evidence,reason=reason,token=None,online_service_s=service,
@@ -914,6 +930,7 @@ class LatencyAwareScheduler:
         return dict(interface=EFFECTIVE_STATE_VERSION,emergency_timing_mode=EMERGENCY_TIMING_MODE,
             dependency_protocol=DEPENDENCY_PROTOCOL_VERSION,
             lead_seconds=self.lead_seconds,preparation_margin=self.preparation_margin,
+            search_handoff_reserve_seconds=self.search_handoff_reserve_seconds,
             callback=self.callback.state_dict(),pending=self.pending,dirty=self.dirty,
             records=self.records,online_services=self.online_services,
             idle_service=self._idle_service,handoff_service=self._handoff_service,
@@ -924,6 +941,7 @@ class LatencyAwareScheduler:
                 or state.get("dependency_protocol")!=DEPENDENCY_PROTOCOL_VERSION
                 or state["emergency_timing_mode"]!=EMERGENCY_TIMING_MODE
                 or state["lead_seconds"]!=self.lead_seconds
+                or state.get("search_handoff_reserve_seconds",0.)!=self.search_handoff_reserve_seconds
                 or state["preparation_margin"]!=self.preparation_margin):
             raise ValueError("planning latency interface binding mismatch")
         self.callback.load_state_dict(state["callback"])
