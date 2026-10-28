@@ -10,6 +10,9 @@ from .geometry import slot_state, slot_phase, ring_config, pad_position
 from .models import ValidationResult, KinematicState
 from .trajectory import Interval, digest, poly, _intrinsic_bounds_from_polar, TrajectoryPlan
 from .energy import evaluate_power, power_bounds, _numeric_count
+from . import geometry_evidence as _geometry_evidence
+from .geometry_evidence import (clear_geometry_evidence_cache, geometry_evidence_cache_stats,
+                                geometry_evidence_counts)
 
 _NUMERIC_CERTIFICATES={}
 _PLAN_CERTIFICATES={}
@@ -366,15 +369,45 @@ def validate_separation(plan_a,plan_b,start,end,config=None,max_depth=32,min_int
                 cuts.update(t for t in (s.start_time,s.end_time) if start<t<end)
     cuts.update(start+(end-start)*i/8 for i in range(1,8))
     cuts=sorted(cuts); minimum=math.inf; fine=0
+    config_key=_geometry_evidence.config_identity(c); identities={}; pending=[]
     for a,b in zip(cuts,cuts[1:]):
+        key=_geometry_evidence.evidence_key(plan_a,plan_b,a,b,config_key,max_depth,
+                                          min_interval,_Traffic,identities)
+        cached=_geometry_evidence.lookup(key)
+        if cached is not None:
+            _numeric_count('geometry_evidence_hits')
+            minimum=min(minimum,cached.get('lower_bound_m',hard))
+            witness_upper=min(witness_upper,cached.get('upper_bound_m',math.inf))
+            continue
+        _geometry_evidence.count('compute'); _numeric_count('geometry_evidence_computes')
         _numeric_count('separation_box_intervals')
         ba=bounds(plan_a,a,b,0); bb=bounds(plan_b,a,b,0)
         low=_norm_lower(tuple((Interval(*x)-Interval(*y)).pair() for x,y in zip(ba,bb)))
         if low>=hard:
             _numeric_count('separation_box_accepts'); minimum=min(minimum,low)
+            _geometry_evidence.count('box')
+            _geometry_evidence.store_safe(key,ValidationResult(True,'SAFE','',{
+                'lower_bound_m':low,'method':'certified_spacetime_box','checked_until':b}))
             continue
-        fine+=1; result=fallback(a,b)
+        pending.append((low,a,b,key))
+    # Inspect the least-separated boxes first, without dropping any remaining
+    # slab. Every accepted result still covers the entire requested horizon.
+    for _,a,b,key in sorted(pending,key=lambda row:(row[0],row[1])):
+        def fragment_stable(p):
+            if type(p) is TrajectoryPlan: return p if _canonical_stable(p,c) else None
+            if type(p) is not _Traffic: return None
+            actual=p._at(a)
+            if p._at(b) is not actual or any(a<q.start_time<b for q in p.plans): return None
+            return actual if type(actual) is TrajectoryPlan and _canonical_stable(actual,c) else None
+        stable_a=fragment_stable(plan_a); stable_b=fragment_stable(plan_b)
+        if stable_a is not None and stable_b is not None:
+            _geometry_evidence.count('analytic'); _numeric_count('separation_analytic_calls')
+            result=validate_separation_original(stable_a,stable_b,a,b,c,max_depth,min_interval,
+                                                _query_cache=_query_cache)
+        else:
+            fine+=1; _geometry_evidence.count('fine'); result=fallback(a,b)
         if not result.accepted: return result
+        _geometry_evidence.store_safe(key,result)
         minimum=min(minimum,result.details.get('lower_bound_m',hard))
         witness_upper=min(witness_upper,result.details.get('upper_bound_m',math.inf))
     return ValidationResult(True,'SAFE','',{'lower_bound_m':minimum,'upper_bound_m':witness_upper,'method':'segmented_spacetime_boxes_with_original_fallback','fine_slabs':fine,'checked_until':end})

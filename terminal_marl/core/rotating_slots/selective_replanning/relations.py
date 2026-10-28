@@ -13,7 +13,7 @@ class Relation:
     resource: tuple = ()
 
 
-def build_relations(snapshot, eligible_ids, previous_blockers=(), frame=None):
+def build_relations(snapshot, eligible_ids, previous_blockers=(), frame=None, *, variant="baseline"):
     rows = set()
     # Real release dependencies and occupied next-ring slots are cheap. A slot
     # edge is an opportunity relation, not proof that this target is necessary.
@@ -22,7 +22,7 @@ def build_relations(snapshot, eligible_ids, previous_blockers=(), frame=None):
         a = snapshot.aircraft[aid]
         for r in snapshot.slots:
             resource = r.resource
-            if isinstance(resource, tuple) and resource[0] == next_ring.get(a.ring) and r.aircraft_id != aid:
+            if variant!="opportunity_cooperative_v2" and isinstance(resource, tuple) and resource[0] == next_ring.get(a.ring) and r.aircraft_id != aid:
                 rows.add(Relation(aid, r.aircraft_id, "next_ring_occupancy", False, False, resource))
         for p in (snapshot.active.get(aid), snapshot.soft.get(aid)):
             if p is None: continue
@@ -47,6 +47,16 @@ def build_relations(snapshot, eligible_ids, previous_blockers=(), frame=None):
         if row.get("snapshot_id") != snapshot.version: continue
         source, target = row["source"], row["target"]
         if source in snapshot.aircraft and target in snapshot.aircraft:
+            if variant=="opportunity_cooperative_v2":
+                from ..stage2_planning import _node
+                resource=tuple(row.get("resource",()))
+                node=_node(snapshot,snapshot.aircraft[source])
+                actual=tuple(snapshot.slots)+tuple(snapshot.pads)
+                if (not resource or node is None or row.get("reason")!="RESOURCE_CONFLICT" or not any(
+                        r.aircraft_id==target and
+                        (r.resource==resource or resource==("pad",r.resource)) and
+                        r.start<=node.time<r.end for r in actual)):
+                    continue
             rows.add(Relation(source, target, "validated_background_blocker", True, True, tuple(row.get("resource", ()))))
     return tuple(sorted(rows, key=lambda r:(r.source, r.target, r.kind, repr(r.resource))))
 

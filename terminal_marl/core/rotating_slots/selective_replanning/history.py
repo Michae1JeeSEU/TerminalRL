@@ -19,12 +19,17 @@ class AgeEntry:
     progressed: float | None = None
     last_started_hash: str | None = None
     review_origin_known: bool = True
+    progress_origin_known: bool = True
 
 
 class PlanningHistory:
-    def __init__(self): self.entries = {}; self.pending = {}; self.last_observed_time = None
+    def __init__(self, *, progress_policy="legacy"):
+        if progress_policy not in ("legacy","maneuver_started_v2"): raise ValueError("unknown progress policy")
+        self.progress_policy=progress_policy
+        self.entries = {}; self.pending = {}; self.last_observed_time = None
+        self.event_cursor=0
 
-    def observe(self, snapshot, now=None):
+    def observe(self, snapshot, now=None, *, events=()):
         """Only pass real revealed snapshots, never projected snapshots."""
         now = snapshot.time if now is None else now
         if getattr(snapshot, "planning_timing", None) is not None: raise ValueError("projected state cannot update actual ages")
@@ -34,6 +39,7 @@ class PlanningHistory:
             if origin is None: origin = getattr(a, "release_time", None)
             if origin is not None and (not math.isfinite(origin) or origin > now): origin = None
             entry = self.entries.setdefault(aid, AgeEntry(origin=origin))
+            if self.progress_policy=="maneuver_started_v2": continue
             # The executed energy ledger retains completed maneuver identities,
             # including starts and finishes between normal planning tasks.
             executed={r["trajectory_hash"] for r in snapshot.energy_ledger.get("executed",{}).get(aid,()) if r["end"]<=now and r["end"]>r["start"]}
@@ -46,22 +52,34 @@ class PlanningHistory:
             if p is not None and p.start_time <= now and p.kind in ("TRANSFER", "FINAL_NORMAL") and p.trajectory_hash != entry.last_started_hash:
                 entry.progressed = p.start_time
                 entry.last_started_hash = p.trajectory_hash
+        if self.progress_policy=="maneuver_started_v2":
+            batch=events.get("events",()) if isinstance(events,dict) else events
+            for event in batch:
+                details=event.get("details",{})
+                if (event.get("type")!="maneuver_started" or event.get("time",math.inf)>now
+                        or details.get("maneuver_kind") not in ("TRANSFER","FINAL_NORMAL")): continue
+                entry=self.entries.get(event.get("aircraft_id"))
+                if entry is not None and (entry.progressed is None or event["time"]>entry.progressed):
+                    entry.progressed=event["time"]; entry.last_started_hash=details.get("trajectory_hash")
+            if isinstance(events,dict): self.event_cursor=max(self.event_cursor,events.get("cursor",0))
 
     def ages(self, aid, now):
         e = self.entries.get(aid, AgeEntry())
         review = e.reviewed if e.reviewed is not None else e.origin if e.review_origin_known else None
-        progress = e.progressed if e.progressed is not None else e.origin
+        progress = e.progressed if e.progressed is not None else e.origin if e.progress_origin_known else None
         return dict(review_age=None if review is None else max(0., now-review),
                     progress_age=None if progress is None else max(0., now-progress),
                     review_unknown=review is None, progress_unknown=progress is None)
 
-    def queue_reviews(self, key, source, aircraft_ids):
-        self.pending[key] = {aid: dependency(source, aid) for aid in aircraft_ids if aid in source.aircraft}
+    def queue_reviews(self, key, source, aircraft_ids, *, unknown_ids=()):
+        self.pending[key] = {aid: dependency(source, aid) for aid in aircraft_ids if aid in source.aircraft and aid not in unknown_ids}
 
     def initialize_imported(self, snapshot, events=()):
         """Old checkpoints lack delivered per-aircraft review evidence."""
-        self.observe(snapshot)
+        self.observe(snapshot,events=events)
         for entry in self.entries.values(): entry.review_origin_known=False
+        if self.progress_policy=="maneuver_started_v2":
+            for entry in self.entries.values(): entry.progress_origin_known=False
         for event in events:
             if event.get("type")!="maneuver_started" or event.get("time",snapshot.time+1)>snapshot.time: continue
             details=event.get("details",{})
@@ -91,9 +109,12 @@ class PlanningHistory:
         return tuple(updates)
 
     def state_dict(self):
-        return dict(entries={k:asdict(v) for k,v in self.entries.items()}, pending=self.pending, last_observed_time=self.last_observed_time)
+        return dict(entries={k:asdict(v) for k,v in self.entries.items()}, pending=self.pending, last_observed_time=self.last_observed_time,
+            progress_policy=self.progress_policy,event_cursor=self.event_cursor)
 
     def load_state_dict(self, state):
+        if state.get("progress_policy","legacy")!=self.progress_policy: raise ValueError("history progress policy mismatch")
         self.entries={k:AgeEntry(**v) for k,v in state.get("entries", {}).items()}
         self.pending={k:{aid:tuple(v) for aid,v in rows.items()} for k,rows in state.get("pending", {}).items()}
         self.last_observed_time=state.get("last_observed_time")
+        self.event_cursor=state.get("event_cursor",0)

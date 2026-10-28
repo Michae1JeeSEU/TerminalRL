@@ -642,10 +642,16 @@ class _FuturePort:
 class LatencyAwareScheduler:
     """One normal task with coalesced triggers and executor-owned delivery events."""
     def __init__(self, callback, *, lead_seconds=30., preparation_margin=1.,
-                 search_handoff_reserve_seconds=0., clock=time.perf_counter):
+                 search_handoff_reserve_seconds=0., clock=time.perf_counter, restart_policy="legacy"):
         PlanningTiming.from_lead(0.,lead_seconds,preparation_margin)
         if not math.isfinite(search_handoff_reserve_seconds) or search_handoff_reserve_seconds<0:
             raise ValueError("invalid search handoff reserve")
+        if restart_policy not in ("legacy", "coalesced_restart_v2"):
+            raise ValueError("unknown normal restart policy")
+        self.restart_policy = restart_policy
+        self._restart_requested = None
+        self._last_normal_start_time = None
+        self._last_restart_time = None
         self.callback = callback
         self.lead_seconds, self.preparation_margin = lead_seconds, preparation_margin
         self.search_handoff_reserve_seconds = search_handoff_reserve_seconds
@@ -694,6 +700,10 @@ class LatencyAwareScheduler:
                 self.dirty = True
                 port.planning_latency_event("normal_trigger_coalesced")
             return
+        if self.restart_policy == "coalesced_restart_v2" and self._last_normal_start_time == port.time:
+            return
+        self._last_normal_start_time = port.time
+        self._restart_requested = None
         timing = PlanningTiming.from_lead(port.time,self.lead_seconds,self.preparation_margin)
         self.dirty = False
         actual_started=time.perf_counter()
@@ -705,7 +715,9 @@ class LatencyAwareScheduler:
         try:
             source = port.build_planning_snapshot()
             if getattr(self.callback,"selective_method",None) is not None:
-                self.callback.observe_execution_snapshot(source,port.time)
+                if getattr(self.callback.selective_history,"progress_policy","legacy")=="maneuver_started_v2":
+                    self.callback.observe_execution_snapshot(source,port.time,events=self._normal_start_events(port))
+                else: self.callback.observe_execution_snapshot(source,port.time)
             future = _FuturePort(project_visible_snapshot(source,timing.effective_time,timing=timing),source,planning_wall_deadline,
                 search_wall_deadline=search_wall_deadline,planning_wall_origin=actual_started,
                 search_handoff_reserve_seconds=self.search_handoff_reserve_seconds)
@@ -736,11 +748,35 @@ class LatencyAwareScheduler:
             record_index=len(self.records)-1)
         port.planning_latency_event("normal_task_started",**record)
 
+    def _normal_start_events(self, port):
+        read = getattr(port,"normal_maneuver_start_events",None)
+        history = getattr(self.callback,"selective_history",None)
+        return read(getattr(history,"event_cursor",0)) if callable(read) else ()
+
+    def restart_coalesced(self, port):
+        """Executor calls after public boundary work, never from _finish."""
+        if (self.restart_policy != "coalesced_restart_v2" or self.pending is not None
+                or self._restart_requested is None or not self.dirty
+                or self._last_restart_time == port.time or self._last_normal_start_time == port.time):
+            return False
+        previous = self._restart_requested
+        self._restart_requested = None
+        self._last_restart_time = port.time
+        self(port)
+        self.records[-1].update(restart_reason=previous["reason"],previous_finished_time=previous["finished_time"],
+            previous_record_index=previous["record_index"],finish_to_next_start_s=port.time-previous["finished_time"])
+        self.records[previous["record_index"]].update(next_started_time=port.time,
+            finish_to_next_start_s=port.time-previous["finished_time"],restart_reason=previous["reason"])
+        port.planning_latency_event("normal_coalesced_restart",**previous,next_started_time=port.time)
+        return True
+
     def _observe_selective(self, port, delivery_timing=None):
         if getattr(self.callback,"selective_method",None) is None: return
         started, cpu=time.perf_counter(),time.process_time()
         snapshot=port.build_planning_snapshot()
-        self.callback.observe_execution_snapshot(snapshot,port.time)
+        if getattr(self.callback.selective_history,"progress_policy","legacy")=="maneuver_started_v2":
+            self.callback.observe_execution_snapshot(snapshot,port.time,events=self._normal_start_events(port))
+        else: self.callback.observe_execution_snapshot(snapshot,port.time)
         if delivery_timing is not None: self.callback.record_evaluation_delivery(delivery_timing,snapshot,port.time)
         wall,used_cpu=time.perf_counter()-started,time.process_time()-cpu
         self.online_service(port.time,wall,used_cpu,"selective_history")
@@ -763,6 +799,9 @@ class LatencyAwareScheduler:
         if callable(acknowledge):
             acknowledge(p["timing"],record,tuple(p["proposal"] or ()))
         self.pending = None
+        if self.restart_policy == "coalesced_restart_v2" and self.dirty:
+            self._restart_requested = dict(record_index=p["record_index"],finished_time=port.time,
+                reason="COALESCED_AFTER_"+status)
         if self._handoff_service:
             # A rejection can end normal work while this priority dispatch's
             # service still occupies the virtual CPU. Do not give it away.
@@ -954,7 +993,9 @@ class LatencyAwareScheduler:
             callback=self.callback.state_dict(),pending=self.pending,dirty=self.dirty,
             records=self.records,online_services=self.online_services,
             idle_service=self._idle_service,handoff_service=self._handoff_service,
-            service_until=self._service_until)
+            service_until=self._service_until,restart_policy=self.restart_policy,
+            restart_requested=self._restart_requested,last_normal_start_time=self._last_normal_start_time,
+            last_restart_time=self._last_restart_time)
 
     def load_state_dict(self, state):
         if (state["interface"]!=EFFECTIVE_STATE_VERSION
@@ -962,10 +1003,14 @@ class LatencyAwareScheduler:
                 or state["emergency_timing_mode"]!=EMERGENCY_TIMING_MODE
                 or state["lead_seconds"]!=self.lead_seconds
                 or state.get("search_handoff_reserve_seconds",0.)!=self.search_handoff_reserve_seconds
-                or state["preparation_margin"]!=self.preparation_margin):
+                or state["preparation_margin"]!=self.preparation_margin
+                or state.get("restart_policy","legacy")!=self.restart_policy):
             raise ValueError("planning latency interface binding mismatch")
         self.callback.load_state_dict(state["callback"])
         self.pending,self.dirty = state["pending"],state["dirty"]
         self.records,self.online_services = state["records"],state["online_services"]
         self._idle_service,self._handoff_service = state["idle_service"],state["handoff_service"]
         self._service_until = state["service_until"]
+        self._restart_requested = state.get("restart_requested")
+        self._last_normal_start_time = state.get("last_normal_start_time")
+        self._last_restart_time = state.get("last_restart_time")

@@ -108,11 +108,18 @@ def _worker_cache_snapshot():
             if not isinstance(value, dict) or type(value.get("entries")) is not int or value["entries"] < 0:
                 raise RuntimeError("invalid optional worker cache observation: " + key)
             result[key] = dict(value, present=True)
+    safety = importlib.import_module("terminal_marl.core.rotating_slots.safety")
+    observe = getattr(safety,"geometry_evidence_cache_stats",None)
+    result["safety.geometry_evidence"] = (dict(observe(),present=True) if callable(observe)
+        else dict(present=False,entries=0))
     return result
 
 
 def _clear_worker_accelerators():
     before = _worker_cache_snapshot()
+    safety = importlib.import_module("terminal_marl.core.rotating_slots.safety")
+    clear = getattr(safety,"clear_geometry_evidence_cache",None)
+    if callable(clear): clear()
     for module_name, names in (("trajectory", ("poly_bounds",)),
                                ("energy", ("_integrable_plan", "_segment_table")),
                                ("safety", ("_NUMERIC_CERTIFICATES", "_PLAN_CERTIFICATES"))):

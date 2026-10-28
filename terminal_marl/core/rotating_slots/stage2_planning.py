@@ -371,6 +371,7 @@ class CandidateCatalog:
     downstream: object = None
     scope: object = None
     fixed_background: object = None
+    generation_coverage: object = None
 
 
 @dataclass(frozen=True)
@@ -560,6 +561,10 @@ class ReferenceProvider:
 
     def generate(self,snapshot,a,node,target,start,duration,budget,*,construction_stage="reference",prefix=(),base=None,work_descriptor=None):
         if budget.allowed_replan_ids is not None and a.id not in budget.allowed_replan_ids: raise ValueError("reference generation outside scope")
+        context=getattr(budget,"_strict_resource_context",None)
+        if context is not None and self.immutable_resource_conflict(snapshot,a,node,target,start,duration,context):
+            budget.screening["strict_immutable_resource_pruned"]+=1
+            return True,None
         runtime=self.advisor_runtime
         if (runtime is not None and (getattr(runtime,'ranking_scope','legacy') in ('comparable_group_v1','comparable_group_lazy_v2') or
                 budget.planning_wall_deadline is not None) and not budget.available(a.id)):
@@ -575,6 +580,21 @@ class ReferenceProvider:
         ok,p=self._generate_unobserved(snapshot,a,node,target,start,duration,budget)
         runtime.record_after(descriptor,token,ok,p,budget,dict(cache,reference_hits_after=self.hits))
         return ok,p
+
+    @staticmethod
+    def immutable_resource_conflict(snapshot,a,node,target,start,duration,context):
+        """Prove overlap using immutable committed finite occupancy only.
+
+        A selected holder may leave its target slot jointly; its current
+        uncommitted or open-ended occupancy is never a strict pruning proof.
+        """
+        next_ring={"outer":"middle","middle":"inner","inner":None}[node.ring]
+        resource=target if next_ring is None else (next_ring,target)
+        rows=snapshot.pads if next_ring is None else snapshot.slots
+        lo=start+duration
+        hi=lo+13.5+service_duration(snapshot.config,a.service_class) if next_ring is None else None
+        return any(r.resource==resource and r.aircraft_id!=a.id and r.committed and math.isfinite(r.end)
+            and (r.start<hi and lo<r.end if hi is not None else r.start<=lo<r.end) for r in rows)
 
     def _generate_unobserved(self,snapshot,a,node,target,start,duration,budget):
         if budget.allowed_replan_ids is not None and a.id not in budget.allowed_replan_ids: raise ValueError("trajectory materialization outside scope")
@@ -722,6 +742,7 @@ class EvaluationContext:
         self.prefix_evaluator_identity = prefix_evaluator_identity
         self._prefix_results = {}
         self.observed_definite_conflicts = []
+        self.joint_conflict_observations = []
         self.cache=validation_cache if validation_cache is not None else {}
         self.cache_stats=Counter()
         if self.reuse_prefix_results:
@@ -977,6 +998,16 @@ class EvaluationContext:
                 self._observe(r,(a,b))
                 if r.status=="UNKNOWN": unknown=r
                 else:
+                    if (a.aircraft_id in self.decisions and b.aircraft_id in self.decisions
+                            and a.kind!="BACKGROUND" and b.kind!="BACKGROUND" and len(self.joint_conflict_observations)<128):
+                        resource=next((x.resource for x in a.resources for y in b.resources
+                            if x.resource==y.resource and x.start<y.end and y.start<x.end),None)
+                        observation=dict(aircraft_ids=sorted((a.aircraft_id,b.aircraft_id)),reason=r.reason or r.status,
+                            snapshot_id=self.snapshot.version,context_scope=getattr(self.scope,"identity",None),
+                            local_round=getattr(self,"local_round",None),refinement_round=getattr(self.budget,"refinement_rounds_used",None),
+                            source="SELECTED_SELECTED_BATCH")
+                        if resource is not None: observation["resource"]=resource
+                        if observation not in self.joint_conflict_observations: self.joint_conflict_observations.append(observation)
                     conflicts.append((a,b)); first=first or r
                     if len(conflicts)>=max_conflicts: break
         self.cache_stats["batch_conflicts"]+=len(conflicts)
@@ -1426,7 +1457,10 @@ class CandidateProvider:
             item,work_descriptor=self._pop_ready(heap,snapshot,a,budget,"progress",lambda item:(node,(),item[3]))
             _,_,_,descriptor,cursor=item
             target,start,duration,_=descriptor
-            if self._current_progress_reservation_conflict(snapshot,a,node,target,start,duration):
+            blocked=(self.references.immutable_resource_conflict(snapshot,a,node,target,start,duration,context)
+                if getattr(budget,"_selective_progressive_v2",False) else
+                self._current_progress_reservation_conflict(snapshot,a,node,target,start,duration))
+            if blocked:
                 budget.screening["progress_existing_reservation_skipped"]+=1
                 push(cursor)
                 continue
@@ -1572,11 +1606,14 @@ class CandidateProvider:
         columns.remove(replaceable); columns.append(column)
         return True
 
-    def iter_progressive_columns(self,snapshot,budget,context,*,scope=None):
+    def iter_progressive_columns(self,snapshot,budget,context,*,scope=None,early_publish=False):
         """Resume one finite search across up to three growing catalog batches."""
         from .stage3_learning.catalog_control import retain_validated
         self.aligned_starts=[]; self._aligned_by_node={}
         runtime=self.advisor_runtime
+        if early_publish:
+            budget._selective_progressive_v2=True
+            budget._strict_resource_context=context
         scope=scope or getattr(context,"scope",None)
         if scope is not None:
             scope.validate(snapshot)
@@ -1620,6 +1657,12 @@ class CandidateProvider:
         for a in order:
             previous=self._previous_chain(snapshot,a,nodes[a.id],budget)
             if previous: add(a,previous)
+            retained=getattr(budget,"_selective_retained_columns",{}).get(a.id) if early_publish else None
+            if (retained is not None and getattr(budget,"_selective_retained_snapshot",None)==snapshot.version
+                    and retained.plans):
+                # Already certified in this real immutable snapshot; recreate
+                # and validate against the new scope, never translate epochs.
+                add(a,retained.plans,retained.emergency_prediction)
         stages={}
         for a in order:
             n=nodes[a.id]
@@ -1628,9 +1671,19 @@ class CandidateProvider:
             if self.planning_profile==PLANNING_PROFILE_DOWNSTREAM:
                 stages[a.id].append(("delayed",self._delayed_steps(snapshot,a,n,budget,context)))
             stages[a.id].append(("alternative",self._paths(snapshot,a,n,budget,context)))
+        initial_visited=set()
+        def catalog_with_coverage(phase):
+            catalog=self._progressive_catalog(snapshot,budget,context,columns,refs,ordered)
+            if early_publish:
+                catalog=replace(catalog,generation_coverage=dict(phase=phase,
+                    initial_visited_ids=sorted(initial_visited),initial_unvisited_ids=sorted(set(columns)-initial_visited),
+                    all_initial_aircraft_visited=len(initial_visited)==len(columns),
+                    claim="OBSERVED_BOUNDED_CATALOG_ONLY"))
+            return catalog
         try:
             for a in order:
                 if not budget.available(): break
+                if early_publish and not budget.available(a.id): continue
                 progress=stages[a.id][0][1]
                 while budget.available(a.id):
                     try: item=next(progress)
@@ -1640,8 +1693,14 @@ class CandidateProvider:
                         add(a,item[1],item[2]); break
                     if item[0]=="ATTEMPT": break
                 budget.screening["progressive_initial_aircraft_visited"]+=1
+                initial_visited.add(a.id)
             hook=getattr(runtime,"complete_initial_coverage",None)
             if hook is not None: hook()
+            if early_publish:
+                catalog=catalog_with_coverage("INITIAL_PROGRESS")
+                publish(catalog.downstream,catalog.columns)
+                yield catalog
+                publish(catalog.downstream,catalog.columns)
             for round_index,target in enumerate((2,4,8)):
                 quota=max(1,math.ceil(budget.max_per_aircraft*(.25,.5,1.)[round_index]))
                 visited=set()
@@ -1649,11 +1708,20 @@ class CandidateProvider:
                 # once before spending another slice on any one aircraft.
                 for _ in range(4096):
                     advanced=False
-                    for a in order:
+                    gaps=getattr(budget,"_selective_coverage_gaps",{}) if early_publish else {}
+                    round_order=sorted(order,key=lambda a:(not bool(gaps.get(a.id)),order.index(a))) if gaps else order
+                    for a in round_order:
                         if not budget.available(a.id) or budget.attempts[a.id]>=quota: continue
                         if a.id in visited and sum(c.kind=="MOVE" for c in columns[a.id])>=target: continue
                         visited.add(a.id)
-                        for kind,gen in tuple(stages[a.id]):
+                        families=tuple(stages[a.id])
+                        if gaps:
+                            missing=gaps.get(a.id,())
+                            priority=("progress" if "NO_ELIGIBLE_IMMEDIATE_MOVE_OBSERVED" in missing else
+                                "reference" if "NO_COMPLETE_CHAIN_OBSERVED" in missing else
+                                "delayed" if "NO_DELAYED_MOVE_OBSERVED" in missing else "alternative")
+                            families=tuple(sorted(families,key=lambda row:row[0]!=priority))
+                        for kind,gen in families:
                             if not budget.available(a.id) or budget.attempts[a.id]>=quota: break
                             advanced=True
                             try: item=next(gen)
@@ -1669,7 +1737,7 @@ class CandidateProvider:
                             if kind=="delayed_reference": add(a,*item)
                             elif kind!="reference" and item[0]=="COLUMN": add(a,item[1],item[2])
                     if not advanced or not budget.available(): break
-                catalog=self._progressive_catalog(snapshot,budget,context,columns,refs,ordered)
+                catalog=catalog_with_coverage("GROWTH_"+str(round_index))
                 publish(catalog.downstream,catalog.columns)
                 yield catalog
                 publish(catalog.downstream,catalog.columns)
@@ -2220,9 +2288,11 @@ class NormalSchedulerCallback:
     """Callable SchedulerPort adapter; runner owns admission/emergency timing."""
     def __init__(self,method="energy_slack",candidate_provider=None,budget_profile=QUALITY_BUDGET_PROFILE,planning_profile=PLANNING_PROFILE_LEGACY,
                  advisor_runtime=None,budget_scale=1.,online_policy=None,prefix_reuse=None,selective_method=None,global_frame=None,
-                 selective_rule_variant="baseline"):
+                 selective_rule_variant="baseline",opportunity_seed_offset=0):
         if selective_method not in (None,"FULL_H","RULE_LOCAL_K8"): raise ValueError("unknown Stage A selective method")
-        if selective_rule_variant not in ("baseline","outer_priority_v1"): raise ValueError("unknown selective rule variant")
+        if selective_rule_variant not in ("baseline","outer_priority_v1","opportunity_cooperative_v2"): raise ValueError("unknown selective rule variant")
+        if opportunity_seed_offset not in (0,1,2): raise ValueError("diagnostic opportunity offset must be 0..2")
+        self.opportunity_seed_offset=opportunity_seed_offset
         if selective_method is None and selective_rule_variant!="baseline": raise ValueError("selective rule variant requires selective method")
         if selective_method is not None:
             if method!="rh_cp_sat" or planning_profile!=PLANNING_PROFILE_DOWNSTREAM: raise ValueError("Stage A requires rh_cp_sat/downstream_service_v8")
@@ -2234,7 +2304,7 @@ class NormalSchedulerCallback:
         self.selective_rule_variant=selective_rule_variant
         if selective_method is not None:
             from .selective_replanning.history import PlanningHistory
-            self.selective_history=PlanningHistory()
+            self.selective_history=PlanningHistory(progress_policy="maneuver_started_v2" if selective_rule_variant=="opportunity_cooperative_v2" else "legacy")
             self.selective_blockers=[]
         self.scheduler=EnergySlackScheduler() if method=="energy_slack" else RollingHorizonCPSATScheduler() if method=="rh_cp_sat" else None
         if self.scheduler is None: raise ValueError("unknown Stage2 baseline")
@@ -2267,7 +2337,7 @@ class NormalSchedulerCallback:
                 "reference_hits":self.provider.references.hits}
         if self.selective_method is not None:
             state["selective_replanning"]=dict(method=self.selective_method,history=self.selective_history.state_dict(),blockers=self.selective_blockers,
-                rule_variant=self.selective_rule_variant)
+                rule_variant=self.selective_rule_variant,opportunity_seed_offset=self.opportunity_seed_offset)
         if self.planning_profile!=PLANNING_PROFILE_LEGACY: state["planning_profile"]=self.planning_profile
         if self.online_policy is not None: state["online_policy"]=self.online_policy
         if self.prefix_reuse or self.online_policy: state["prefix_reuse"]=self.prefix_reuse
@@ -2290,6 +2360,7 @@ class NormalSchedulerCallback:
         selective=state.get("selective_replanning")
         if (selective or {}).get("method")!=self.selective_method: raise ValueError("selective method binding mismatch")
         if (selective or {}).get("rule_variant","baseline")!=self.selective_rule_variant: raise ValueError("selective rule variant binding mismatch")
+        if (selective or {}).get("opportunity_seed_offset",0)!=self.opportunity_seed_offset: raise ValueError("opportunity seed binding mismatch")
         if selective is not None:
             self.selective_history.load_state_dict(selective["history"])
             self.selective_blockers=list(selective.get("blockers",()))
@@ -2321,6 +2392,8 @@ class NormalSchedulerCallback:
 
     def __call__(self,port,*args):
         if args: port=args[-1]  # executor callback(snapshot, port) convention
+        from .safety import geometry_evidence_counts
+        geometry_before=geometry_evidence_counts()
         budget=PlanningBudget.for_profile(self.budget_profile)
         if self.selective_method is not None:
             budget.candidate_seconds=6.; budget.solver_seconds=8.; budget.hint_seconds=3.
@@ -2368,17 +2441,22 @@ class NormalSchedulerCallback:
                     except FrameIncomplete as exc:
                         result=PlanningResult((),(),None,"GLOBAL_FRAME_INCOMPLETE",(),certified=False,details={"reason":str(exc)})
                         self.last_result=result
+                        geometry_after=geometry_evidence_counts()
                         self.records.append(dict(time=snapshot.time,method=self.scheduler.method,status=result.status,
                             wall_s=budget.elapsed,cpu_s=time.process_time()-budget.cpu_start,planning_budget=budget.settings(),
                             timings=dict(budget.timings),submitted=0,commit_status="NOT_COMMITTED",attempts=dict(budget.attempts),
+                            geometry_evidence_counts=dict(before=geometry_before,after=geometry_after,
+                                delta={key:geometry_after[key]-geometry_before[key] for key in geometry_after}),
                             selective_replanning=dict(method=self.selective_method,status="LOCAL_SEARCH_INCOMPLETE",reason=str(exc),
                                 solve_calls=0,scope_expansions=0,objective_frame_id=None,scope=None,rule_variant=self.selective_rule_variant)))
                         return result
                 if frame.snapshot_id!=snapshot.version or frame.effective_time!=snapshot.time: raise ValueError("injected frame snapshot mismatch")
                 with budget.measure("selective_selection"):
-                    relations=build_relations(snapshot,tuple(a.id for a in _decision_aircraft(snapshot)),self.selective_blockers,frame=frame)
-                    scope,selection=RuleSelector(variant=self.selective_rule_variant).select(snapshot,frame,self.selective_history,relations,method=self.selective_method,now=now)
-                local=LocalPlanner(self.provider,self.scheduler)
+                    relations=build_relations(snapshot,tuple(a.id for a in _decision_aircraft(snapshot)),self.selective_blockers,frame=frame,variant=self.selective_rule_variant)
+                    scope,selection=RuleSelector(variant=self.selective_rule_variant).select(snapshot,frame,self.selective_history,relations,
+                        method=self.selective_method,now=now,references=self.provider.references,opportunity_seed_offset=self.opportunity_seed_offset)
+                local=LocalPlanner(self.provider,self.scheduler,
+                    progressive_v2=self.selective_rule_variant=="opportunity_cooperative_v2")
                 result=local.plan(snapshot,scope,frame,budget)
                 catalog,context=local.last_catalog,local.last_context
                 selection["selection_status"]=selection.pop("status")
@@ -2632,7 +2710,14 @@ class NormalSchedulerCallback:
             source=getattr(port,"_source",snapshot)
             timing=getattr(snapshot,"planning_timing",None)
             review_key=self._selective_review_key(timing) if timing is not None else "immediate:"+snapshot.version
-            self.selective_history.queue_reviews(review_key,source,selective_completed)
+            unknown_reviews=()
+            if self.selective_rule_variant=="opportunity_cooperative_v2":
+                # A completed safety check with UNKNOWN normal continuation is
+                # not a delivered normal-path review certificate.
+                unknown_reviews={aid for aid in selective_completed if not any(
+                    getattr(c.reference,"status",None)=="KNOWN" for c in catalog.columns.get(aid,()))}
+                record["selective_replanning"]["review_unknown_ids"]=sorted(unknown_reviews)
+            self.selective_history.queue_reviews(review_key,source,selective_completed,unknown_ids=unknown_reviews)
             if timing is None: self.selective_history.deliver(review_key,build_planning_snapshot(port),port.time)
             record["selective_replanning"]["review_delivery_key"]=review_key
         explanation_stopped=search_deadline is not None and not budget.search_deadline_ok()
@@ -2683,6 +2768,11 @@ class NormalSchedulerCallback:
                     certified=result.certified,objective=list(result.objective),prefix_hashes=[p.trajectory_hash for p in result.prefix]))
             record['search_handoff']=trace
             port.search_handoff=trace
+        geometry_after=geometry_evidence_counts()
+        record["geometry_evidence_counts"]=dict(before=geometry_before,after=geometry_after,
+            delta={key:geometry_after[key]-geometry_before[key] for key in geometry_after})
+        if selective_telemetry is not None:
+            record["joint_conflict_observations"]=selective_telemetry.get("joint_conflict_observations",[])
         self.records.append(record)
         if runtime is not None and getattr(runtime,'ranking_scope','legacy') in ('comparable_group_v1','comparable_group_lazy_v2'):
             record['rank_batch_cache']=dict(hits=runtime.coverage['rank_cache_hits'],
@@ -2704,8 +2794,8 @@ class NormalSchedulerCallback:
     def _selective_review_key(timing):
         return "effective:"+repr((timing.snapshot_time,timing.effective_time,timing.ready_deadline))
 
-    def observe_execution_snapshot(self, snapshot, now=None):
-        if self.selective_method is not None: self.selective_history.observe(snapshot,now)
+    def observe_execution_snapshot(self, snapshot, now=None, *, events=()):
+        if self.selective_method is not None: self.selective_history.observe(snapshot,now,events=events)
 
     def initialize_imported_history(self, snapshot, events=()):
         if self.selective_method is None: raise ValueError("selective history requires Stage A method")

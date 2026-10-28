@@ -370,6 +370,12 @@ class SchedulerPort:
     def discard_latency_submission(self, token):
         self.__world.__dict__.get("_planning_latency_packets", {}).pop(token, None)
 
+    def normal_maneuver_start_events(self, after_index=0):
+        """Actual revealed starts only; proposals are not progress."""
+        return dict(cursor=len(self.__world.events),events=tuple(e for e in self.__world.events[after_index:] if e["type"]=="maneuver_started"
+            and e.get("details",{}).get("maneuver_kind") in ("TRANSFER","FINAL_NORMAL")
+            and e["time"]<=self.time))
+
     def planning_latency_event(self, kind, **details):
         self.__world._event(kind, **details)
 
@@ -2323,6 +2329,15 @@ class RotatingSlotWorld:
                         if latency.next_event_time > self.time:
                             break
                         latency.planning_event(self._scheduler_port)
+                    restart = getattr(latency,"restart_coalesced",None)
+                    if (callable(restart) and getattr(latency,"restart_policy","legacy")=="coalesced_restart_v2"
+                            and latency.pending is None and latency.dirty):
+                        # Complete activation before a fresh immutable snapshot.
+                        due_wall, due_cpu = walltime.perf_counter(), walltime.process_time()
+                        self._start_due()
+                        latency.online_service(self.time,walltime.perf_counter()-due_wall,
+                            walltime.process_time()-due_cpu,"coalesced_boundary_start")
+                        restart(self._scheduler_port)
                 if latency is None:
                     self._start_due()
                 normal_wall = walltime.perf_counter()-normal_wall

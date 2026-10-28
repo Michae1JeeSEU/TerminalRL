@@ -90,3 +90,9 @@ supervisor_requested aggregate cap 为 **3750 秒**，实际八个子进程 wall
 - 服务器对应根为 `/home/user/training_outputs/terminal/rs_selective_followup_20261028`。原 A 合同、报告和历史账本保持不变；本次追加预算异常单独披露。
 
 原始摘要 SHA256：`fed5df842994c33c65224a1e0f90d38c6e952d9e4f219ee7a8867a4aaf86fae2`；批次终态 SHA256：`00d95d12b84e24130d3320db919033be223b1e2bf1e21d736229601ea660adf3`。本稿只读取保存数据，没有追加测试、仿真、审计或 GUI 观看。
+
+## 2026-10-29 保存回放审计补充
+
+上文 `NOT_RUN` 描述的是 2026-10-28 成稿时的历史状态。2026-10-29 在新增修补额度内，两个根的 baseline20、outer20、baseline15、outer15 共八份既有保存回放完成了自动审计；八份 `audit_result.json` 均记录 `status=PASS`、`full_a20_covered=true`、连续间隔 `CERTIFIED`、资源/C2/未发布提案非执行检查 `PASS`，PVA 状态为 `CHECKED`。本补充只记录这些已保存自动结果，未改写旧数据、旧账本或原结果叙事，也不把自动结果等同于人工观看。
+
+审计独立写入 [2026-10-29 prior_audits](D:/7_codespace/training_outputs/terminal/rs_selective_repair_20261029/prior_audits)，逐臂路径为 `<root>/<variant>/audit_result.json`；服务器对应 `/home/user/training_outputs/terminal/rs_selective_repair_20261029/prior_audits`。本轮先前审计成本 **82.8723364593 child-wall seconds** 单独计入新修补额度；历史已测累计 **7323.47022066447 秒** 保留。八份审计仍记录 `human_review=HUMAN_PENDING`，未声明 GUI 已观看或完整科研验收。

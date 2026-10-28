@@ -245,9 +245,10 @@ def restore(path, d, directory):
     return world
 
 
-def scheduler(d, method, frame=None, *, selector_variant="baseline"):
+def scheduler(d, method, frame=None, *, selector_variant="baseline", opportunity_seed_offset=None):
+    options = {} if opportunity_seed_offset is None else {"opportunity_seed_offset": opportunity_seed_offset}
     return d.NormalSchedulerCallback("rh_cp_sat", planning_profile="downstream_service_v8",
-        online_policy="progressive_v1", selective_method=method, global_frame=frame,selective_rule_variant=selector_variant)
+        online_policy="progressive_v1", selective_method=method, global_frame=frame,selective_rule_variant=selector_variant, **options)
 
 
 def lifecycle_summary(tasks, callbacks, services, latency):
@@ -312,7 +313,8 @@ def save_logs(directory, world, callback, wrapper, binding, root, d):
         d.atomic_json(directory / name, value)
 
 
-def closed_job(output, root, method, binding, d, *, lead_seconds=20., selector_variant="baseline", episode_seconds=300):
+def closed_job(output, root, method, binding, d, *, lead_seconds=20., selector_variant="baseline", episode_seconds=300,
+               opportunity_seed_offset=None, restart_policy=None):
     require(isinstance(episode_seconds,int) and episode_seconds>0 and episode_seconds%5==0,"episode must contain positive five-second boundaries")
     started, cpu_started = time.perf_counter(), time.process_time()
     item = binding["inputs"][root]
@@ -320,8 +322,9 @@ def closed_job(output, root, method, binding, d, *, lead_seconds=20., selector_v
     directory = output / "evaluation" / root / method
     require(not directory.exists(), "closed-loop task already attempted; no retry")
     world = restore(item["run_checkpoint"], d, directory)
-    callback = scheduler(d, method,selector_variant=selector_variant)
-    wrapper = d.LatencyAwareScheduler(callback, lead_seconds=lead_seconds, preparation_margin=1., search_handoff_reserve_seconds=4.)
+    callback = scheduler(d, method,selector_variant=selector_variant, opportunity_seed_offset=opportunity_seed_offset)
+    restart_options = {} if restart_policy is None else {"restart_policy": restart_policy}
+    wrapper = d.LatencyAwareScheduler(callback, lead_seconds=lead_seconds, preparation_margin=1., search_handoff_reserve_seconds=4., **restart_options)
     world.decision_callback, world.admission_callback = wrapper, d.shared_fifo_admission
     require(world.time == 0 and world.scheduler_period == 5., "t0/heartbeat changed")
     identity = dict(item["row"]["identity"], source_hash=binding["source_hash"])
