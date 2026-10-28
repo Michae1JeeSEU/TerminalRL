@@ -3,7 +3,9 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 import json
+import math
 from pathlib import Path
+from statistics import median
 
 from scripts.stage3 import run_selective_reoptimization_a as base
 from scripts.stage3 import report_selective_reoptimization_a as audit
@@ -22,6 +24,131 @@ def lines(path):
 
 def ratio(numerator, denominator):
     return numerator/denominator if denominator else None
+
+
+def finite(value):
+    return isinstance(value,(int,float)) and not isinstance(value,bool) and math.isfinite(value)
+
+
+def work_stats(values):
+    observed=[value for value in values if finite(value)]
+    return dict(latency.measured(observed),median_s=median(observed) if observed else None)
+
+
+def canonical_hold_powers(config_path):
+    from terminal_marl.core.rotating_slots.config import load_config
+    from terminal_marl.core.rotating_slots.energy import stable_power
+    config=load_config(config_path)
+    return {ring:stable_power(ring,config).battery_w for ring in ("outer","middle","inner")}
+
+
+def derived_holding_times(energy_by_ring,total_holding_s,config_path):
+    """Analytic conversion of recorded executed holding energy, no trajectories."""
+    rings=("outer","middle","inner");config_path=Path(config_path)
+    result=dict(status="UNAVAILABLE",basis="DERIVED_EXECUTED_HOLD_ENERGY_DIV_CANONICAL_POWER",
+        holding_time_by_ring_s=None,power_battery_w=None,derived_sum_s=None,
+        recorded_total_holding_s=total_holding_s,sum_difference_s=None,verification_passed=False,
+        absolute_tolerance_s=1.e-6,config_path=str(config_path))
+    if not isinstance(energy_by_ring,dict) or any(ring not in energy_by_ring for ring in rings):
+        return dict(result,reason="MISSING_EXECUTED_HOLD_ENERGY_RING")
+    if any(not finite(energy_by_ring[ring]) or energy_by_ring[ring]<0. for ring in rings):
+        return dict(result,reason="INVALID_EXECUTED_HOLD_ENERGY")
+    if not finite(total_holding_s) or total_holding_s<0.:
+        return dict(result,reason="MISSING_OR_INVALID_RECORDED_TOTAL_HOLDING_TIME")
+    if not config_path.is_file(): return dict(result,reason="MISSING_REPLAY_CONFIG")
+    try: powers=canonical_hold_powers(config_path)
+    except Exception as exc:
+        return dict(result,reason="CANONICAL_POWER_UNAVAILABLE",error=dict(type=type(exc).__name__,message=str(exc)))
+    result["power_battery_w"]=powers
+    if any(not finite(powers.get(ring)) or powers[ring]<=0. for ring in rings):
+        return dict(result,reason="INVALID_CANONICAL_POWER")
+    seconds={ring:energy_by_ring[ring]/powers[ring] for ring in rings}
+    total=math.fsum(seconds.values());difference=total-total_holding_s
+    result.update(derived_sum_s=total,sum_difference_s=difference)
+    if abs(difference)>result["absolute_tolerance_s"]:
+        return dict(result,reason="DERIVED_SUM_MISMATCH_WITH_RECORDED_TOTAL")
+    return dict(result,status="VERIFIED_DERIVED",reason=None,verification_passed=True,holding_time_by_ring_s=seconds)
+
+
+def recorded_ring_pending(frame,endpoint=None):
+    from terminal_marl.core.rotating_slots.world import AIRBORNE
+    if not frame or "aircraft" not in frame:
+        return dict(status="UNAVAILABLE",reason="MISSING_SAVED_STATE",airborne_by_recorded_ring=None,unmapped=None)
+    if endpoint is not None and (not finite(frame.get("time")) or abs(frame["time"]-endpoint)>1.e-7):
+        return dict(status="UNAVAILABLE",reason="LAST_SAVED_FRAME_NOT_REQUESTED_ENDPOINT",
+            requested_endpoint_s=endpoint,last_saved_frame_s=frame.get("time"),airborne_by_recorded_ring=None,unmapped=None)
+    rings=("outer","middle","inner");counts={ring:0 for ring in rings};statuses={ring:Counter() for ring in rings}
+    unmapped=[];nonholding=[]
+    for row in frame["aircraft"]:
+        if row.get("status") not in AIRBORNE: continue
+        ring=row.get("ring")
+        if ring in counts: counts[ring]+=1;statuses[ring][row["status"]]+=1
+        else: unmapped.append(dict(aircraft_id=row.get("id"),status=row.get("status"),recorded_ring=ring))
+        if not row["status"].startswith("HOLD_"):
+            nonholding.append(dict(aircraft_id=row.get("id"),status=row["status"],recorded_ring=ring))
+    return dict(status="OBSERVED",basis="LAST_SAVED_PHYSICAL_AIRCRAFT_RING_AND_AIRBORNE_STATUS_NOT_PROJECTED_NODE",
+        saved_frame_time=frame.get("time"),airborne_by_recorded_ring=counts,
+        status_by_recorded_ring={ring:dict(value) for ring,value in statuses.items()},
+        unmapped=unmapped,unmapped_count=len(unmapped),airborne_total=sum(counts.values())+len(unmapped),
+        nonholding_airborne_rows=nonholding)
+
+
+def scope_work_facts(lifecycle,records):
+    by_time=defaultdict(list)
+    for record in records:
+        stamp=record.get("planning_timing",{}).get("snapshot_time")
+        if stamp is not None: by_time[stamp].append(record)
+    groups={kind:[] for kind in ("LOCAL","OVERFLOW_FULL","UNKNOWN")}
+    for work in lifecycle.get("per_task_work",[]):
+        matching=by_time.get(work["snapshot_time"],[])
+        telemetry=matching[0].get("selective_replanning",{}) if len(matching)==1 else {}
+        scope=telemetry.get("scope") or {};status=scope.get("status","")
+        kind="OVERFLOW_FULL" if "OVERFLOW" in status else "LOCAL" if status=="LOCAL" else "UNKNOWN"
+        groups[kind].append(dict(work,snapshot_time=work["snapshot_time"],scope_status=scope.get("status"),
+            actual_k=scope.get("actual_k"),overflow_cause=telemetry.get("overflow_cause"),
+            mandatory_ids=scope.get("mandatory_ids"),selection_reasons=scope.get("selection_reasons"),
+            join_status="MATCHED_UNIQUE_SNAPSHOT_TIME" if len(matching)==1 else "MISSING_CALLBACK" if not matching else "AMBIGUOUS_CALLBACK_TIME"))
+    per_task_total=math.fsum(row["full_normal_planning_work_s"] for rows in groups.values() for row in rows if finite(row.get("full_normal_planning_work_s")))
+    full_total=lifecycle.get("full_normal_planning_work",{}).get("total_s")
+    return dict(basis="FULL_PER_TASK_NORMAL_WORK_JOINED_BY_RECORDED_SNAPSHOT_TIME_PENDING_PARTIAL_INCLUDED",
+        per_task_total_s=per_task_total,lifecycle_full_normal_work_total_s=full_total,
+        unattributed_history_service_s=lifecycle.get("selective_history_work",{}).get("unattributed_service_s"),
+        lifecycle_minus_per_task_s=full_total-per_task_total if finite(full_total) else None,
+        groups={kind:dict(task_count=len(rows),pending_task_count=sum(not row["finished"] for row in rows),
+            work=work_stats(row.get("full_normal_planning_work_s") for row in rows),
+            actual_k_counts={"UNKNOWN" if key is None else str(key):value for key,value in Counter(row["actual_k"] for row in rows).items()},
+            recorded_overflow_cause_counts=dict(Counter(row["overflow_cause"] for row in rows if row["overflow_cause"] is not None)),
+            rows=rows) for kind,rows in groups.items()})
+
+
+def task_continuation_facts(tasks):
+    ordered=sorted(tasks,key=lambda row:row["snapshot_time"]);rows=[]
+    for index,task in enumerate(ordered):
+        finished=task.get("finished_time");next_task=ordered[index+1] if index+1<len(ordered) else None
+        recorded_next_start=task.get("next_started_time")
+        next_start=next_task["snapshot_time"] if next_task is not None else recorded_next_start
+        gap=next_start-finished if finite(finished) and finite(next_start) else None
+        matched_handoff=finite(recorded_next_start) and finite(next_start) and abs(recorded_next_start-next_start)<=1.e-7
+        restart=task.get("restart_reason") if matched_handoff else None
+        rows.append(dict(snapshot_time=task["snapshot_time"],finished_sim_time=finished,next_started_sim_time=next_start,
+            finish_to_next_start_sim_s=gap,recorded_finish_to_next_start_s=task.get("finish_to_next_start_s"),
+            recorded_next_started_time=recorded_next_start,
+            restart_reason_source="CURRENT_TASK_RESTART_REASON_WITH_MATCHED_NEXT_STARTED_TIME" if matched_handoff and restart is not None else "UNKNOWN_NO_EXPLICIT_MATCHING_HANDOFF_REASON",
+            next_restart_reason=restart,same_time=bool(finite(gap) and abs(gap)<=1.e-7),
+            coalesced_same_time=bool(finite(gap) and abs(gap)<=1.e-7 and (restart or "").startswith("COALESCED_")),
+            status=task.get("status"),reason=task.get("reason")))
+    reasons=Counter(task["reason"] for task in tasks if task.get("reason"))
+    return dict(clock="EXECUTOR_SIMULATION_TIME",rows=rows,
+        finish_to_next_start=work_stats(row["finish_to_next_start_sim_s"] for row in rows),
+        same_time_finish_next_start_count=sum(row["same_time"] for row in rows),
+        explicitly_coalesced_same_time_count=sum(row["coalesced_same_time"] for row in rows),
+        negative_gap_count=sum(finite(row["finish_to_next_start_sim_s"]) and row["finish_to_next_start_sim_s"] < -1.e-7 for row in rows),
+        finished_without_observed_next_count=sum(finite(row["finished_sim_time"]) and row["next_started_sim_time"] is None for row in rows),
+        reason_counts=dict(reasons),deadline_reason_counts={reason:count for reason,count in reasons.items()
+            if "DEADLINE" in reason or reason.split(":",1)[0]=="LATENCY_PACKET_EXPIRED"},
+        no_executable_prefix_count=reasons.get("NO_EXECUTABLE_PREFIX",0),
+        revalidation_recorded_reason_counts=dict(Counter(event["reason"] for task in tasks for event in task.get("revalidations",[]) if event.get("reason"))),
+        interpretation="Reason counts are saved observations; pending revalidation reasons are not final task rejection claims.")
 
 
 def selection_facts(records):
@@ -114,16 +241,19 @@ def task_timelines(tasks, records, events, plans):
         # authoritative, while later suffix starts are listed separately.
         actual=[e for e in actual if abs(plans.get(e["trajectory_hash"], {}).get("start_time", -1.)-e["time"]) < 1.e-7]
         rows.append(dict(snapshot_time=task["snapshot_time"],
-            first_certified_wall_elapsed_s=None if first is None else first.get("wall_elapsed_s"),
-            first_certified=first, first_certificate=first,
+            first_certified_call_return_wall_elapsed_s=None if first is None else first.get("wall_elapsed_s"),
+            first_certified_call_return=first,
+            first_certified_call_return_raw_source="scheduler_records[].selective_replanning.first_certified",
+            first_any_certificate_instant=None,first_any_certificate_instant_wall_elapsed_s=None,
+            first_any_certificate_instant_status="UNKNOWN_NO_DIRECT_FIRST_ANY_CERTIFICATE_EVENT",
             first_nonempty_certified_wall_elapsed_s=None if nonempty is None else nonempty.get("wall_elapsed_s"),
             first_nonempty_certified=nonempty, final_ready_sim_time=task.get("ready_time"),
             actual_publish_sim_time=record.get("actual_delivery_time") if record.get("actual_delivery_status") == "COMMITTED" else None,
             actual_maneuver_starts=actual, next_snapshot_sim_time=next((t for t in starts if t>task["snapshot_time"]),None),
             final_objective=record.get("final_objective", record.get("objective")), status=task.get("status"), reason=task.get("reason"),
-            certificate_wall_clock_basis=dict(first_certified="SELECTIVE_LOCAL_PLANNING_BUDGET_ELAPSED_WALL_TIME_INCLUDES_CERTIFIED_WAIT",
+            certificate_wall_clock_basis=dict(first_certified_call_return="SELECTIVE_LOCAL_PLAN_CALL_RETURN_ELAPSED_WALL_TIME_NOT_CERTIFICATE_INSTANT_INCLUDES_WAIT",
                 first_nonempty_certified="SEARCH_HANDOFF_PLANNING_WALL_ORIGIN_ELAPSED_TIME_NONEMPTY_PREFIX_ONLY"),
-            clocks="Certificate fields use elapsed wall time; snapshot/ready/publication/maneuver-start/next-snapshot fields use executor simulation time. No inferred publication or conversion between clocks."))
+            clocks="Certificate-event and call-return fields use elapsed wall time; snapshot/ready/publication/maneuver-start/next-snapshot fields use executor simulation time. No inferred publication or conversion between clocks."))
     return rows
 
 
@@ -185,10 +315,15 @@ def saved_cell(directory, endpoint=None, *, audit_override=None):
     plans=load(directory/"replay/trajectories.json", {})
     frames=lines(directory/"replay/states.jsonl"); terminal=frames[-1] if frames else {}
     terminal_aircraft={row["id"]:row for row in terminal.get("aircraft", [])}
+    life=base.lifecycle_summary(tasks,records,services,latency)
+    holding_energy=None if boundary is None else boundary.get("holding_energy_by_ring")
+    quality={} if boundary is None else boundary.get("quality",{})
     return dict(directory=str(directory), endpoint_s=None if boundary is None else boundary["time"],
-        system_counts={} if boundary is None else boundary.get("quality", {}),
-        holding_energy_by_ring=None if boundary is None else boundary.get("holding_energy_by_ring"),
-        selection=selection_facts(records), normal_lifecycle=base.lifecycle_summary(tasks,records,services,latency),
+        system_counts=quality,holding_energy_by_ring=holding_energy,
+        holding_time_by_ring=derived_holding_times(holding_energy,quality.get("holding_time"),directory/"replay/config.yaml"),
+        endpoint_ring_pending=recorded_ring_pending(terminal,None if boundary is None else boundary["time"]),
+        selection=selection_facts(records), normal_lifecycle=life,normal_work_by_scope=scope_work_facts(life,records),
+        task_continuations=task_continuation_facts(tasks),
         admission=admission_facts(tasks,records,plans), timing=timing_facts(records),
         task_timeline=task_timelines(tasks,records,events,plans),
         nonlanding=nonlanding_facts(records,events,plans,terminal_aircraft,tasks),
@@ -222,6 +357,40 @@ def snapshot_comparisons(output):
     return roots
 
 
+def supplemental_evidence_index(output):
+    """Compact index only: leave canonical fullpayloads in their saved files."""
+    output=Path(output);manual={};canonical={}
+    for variant in ("A","B"):
+        path=output/"diagnostic_scope_alternatives"/variant/"result.json";row=load(path)
+        if row is None:
+            manual[variant]=dict(status="UNAVAILABLE",evidence_path=str(path));continue
+        record=(row.get("scheduler_records") or [{}])[0];t=record.get("selective_replanning",{})
+        manual[variant]=dict(status=row.get("status"),evidence_path=str(path),root=row.get("root"),
+            explicit_manual_scope_override=row.get("explicit_manual_scope_override"),
+            initial_selected_ids=row.get("initial_selected_ids"),returned_selected_ids=row.get("returned_selected_ids"),
+            attempted_union=row.get("attempted_union"),canonical_content_sha256=row.get("content_comparison",{}).get("canonical_sha256"),
+            first_nonempty_certified=record.get("search_handoff",{}).get("first_nonempty_certified"),
+            first_certified_call_return=t.get("first_certified"),preparation=row.get("preparation"),
+            physical_source_unchanged=row.get("physical_source_unchanged"),physical_execution=row.get("physical_execution"),
+            actual_publication=row.get("actual_publication"),source_commit=row.get("source_commit"),
+            artifact_script_sha256=row.get("artifact_script_sha256"),
+            constraint_checks=[observation.get("checks") for observation in row.get("manual_selection_observations",[])])
+    for root in base.ROOTS:
+        path=output/"identity_content_checks"/root/"result.json";row=load(path)
+        if row is None:
+            canonical[root]=dict(status="UNAVAILABLE",evidence_path=str(path));continue
+        canonical[root]=dict(status=row.get("status"),evidence_path=str(path),
+            canonical_content_equal=row.get("canonical_content_equal"),
+            production_projected_version_equal=row.get("production_projected_version_equal"),
+            production_frame_id_equal=row.get("production_frame_id_equal"),
+            repeated_content_sha256=[r.get("content_comparison",{}).get("canonical_sha256") for r in row.get("rows",[])],
+            repr_address_observations=[r.get("content_comparison",{}).get("raw_repr_has_default_memory_address") for r in row.get("rows",[])],
+            fullpayload_refs=[str(path.parent/f"rebuild{index}"/"content.json") for index,_ in enumerate(row.get("rows",[]))],
+            authorization_scope="CONTENT_COMPARISON_ONLY_NOT_PRODUCTION_IDENTITY_OR_CACHE_AUTHORIZATION")
+    return dict(manual_scope_alternatives=manual,canonical_content_checks=canonical,
+        token_identity_comparison="NOT_ASSERTED_PREPARATION_DISCARD_OBSERVED_PER_JOB",fullpayloads_embedded=False)
+
+
 def report(output, followup_output):
     output=Path(output); followup_output=Path(followup_output); cells={}
     for root in base.ROOTS:
@@ -232,7 +401,12 @@ def report(output, followup_output):
         cells[root]=dict(common_endpoint_s=common, current=saved_cell(new,common),
             baseline20=saved_cell(old,common,audit_override=output/"prior_audits"/root/"baseline20"/"audit_result.json"),
             comparison_scope="WHOLE_VERSION_BEFORE_AFTER_NOT_FULLY_FAIR_CONTROL")
-    summary=dict(schema="rs_selective_repair_saved_report_v1", cells=cells, snapshots=snapshot_comparisons(output),
+    report_path=Path(__file__).resolve();test_path=report_path.parents[2]/"tests/test_rotating_slots_selective_repair_campaign.py"
+    summary=dict(schema="rs_selective_repair_saved_report_v2", cells=cells, snapshots=snapshot_comparisons(output),
+        supplemental_evidence=supplemental_evidence_index(output),
+        postprocessing_source=dict(report_path=str(report_path),report_sha256=base.file_hash(report_path),
+            test_path=str(test_path),test_sha256=base.file_hash(test_path) if test_path.is_file() else None,
+            scope="SAVED_EVIDENCE_POSTPROCESSING_ONLY_PHYSICAL_RUN_SOURCE_REMAINS_ORIGINAL_BINDING"),
         budget_ledger=load(output/"repair_budget_ledger.json"), human_replay_status="HUMAN_PENDING",
         automated_audit_policy="PENDING_UNLESS_SAVED_AUDIT_RESULT_EXISTS", scientific_acceptance="PENDING_PRIMARY_REVIEW",
         no_learning=True, no_dynamic_k=True, no_lead_scan=True,
@@ -246,6 +420,7 @@ def report(output, followup_output):
             row=pair[version]; q=row["system_counts"]
             text+="| "+" | ".join(map(str,(root,version,row["endpoint_s"],q.get("L_normal"),q.get("L_emergency"),q.get("F_energy_total"),q.get("N_airborne_pending"),q.get("N_upstream_pending"))))+" |\n"
     text+="\nMachine-readable evidence includes per-ring holding/energy, fairness unknown/overdue, overflow times/K/recorded hard causes, full lifecycle work (including pending partial work), separate admission denominators, exclusive phase timing and the certificate/ready/publication/start/next-snapshot chain. Null fields are unavailable evidence. Rejection labels can coexist and do not establish causation.\n\n"
+    text+="Per-ring holding time is derived from executed holding energy divided by the saved configuration's canonical battery power, accepted only after its sum matches recorded total holding time. Endpoint ring counts use saved physical ring/status and retain unmapped aircraft. first_certified_call_return is the first certified local call return, not the first certificate instant; the direct first-nonempty event remains separate and first-any instant stays unknown. Manual A/B and canonical checks are compact evidence indexes, not execution or cache-authorization claims.\n\n"
     text+="Automated replay audits remain pending until an actual audit_result.json exists. Human viewing remains HUMAN_PENDING. Candidate CP suffixes are predictions; only saved executor starts and physical states are execution evidence. Snapshot preparation discards its token and never publishes.\n\n"
     text+="Open each saved replay with `ReplayController('/absolute/path/to/replay')` and `RotatingSlotsReplayViewer(controller).run()` from `terminal_marl.visualization.rotating_slots_replay`. Record actual human observations separately.\n"
     (output/"REPAIR_REPORT.md").write_text(text,encoding="utf8")

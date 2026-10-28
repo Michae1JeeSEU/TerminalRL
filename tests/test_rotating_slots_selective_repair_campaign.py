@@ -123,6 +123,10 @@ class RepairCampaignTests(unittest.TestCase):
         self.assertEqual(observed["candidate_insufficiency_reasons"],sample["candidate_insufficiency_reasons"])
         self.assertIn("NOT_PHYSICAL_INFEASIBILITY",observed["meaning"])
         self.assertEqual(facts["joint_conflict_evidence"],"UNKNOWN_NO_SAVED_OBSERVATION")
+        boundary=base.load(directory/"boundary_0300.json")
+        holding=report.derived_holding_times(boundary["holding_energy_by_ring"],boundary["quality"]["holding_time"],directory/"replay/config.yaml")
+        self.assertEqual(holding["status"],"VERIFIED_DERIVED")
+        self.assertLess(abs(holding["sum_difference_s"]),1.e-6)
         with tempfile.TemporaryDirectory() as tmp:
             audit_path=Path(tmp)/"prior_audit.json"; audit_path.write_text(json.dumps(dict(status="PASS",full_a20_covered=True)))
             cell=report.saved_cell(Path(tmp)/"empty",audit_override=audit_path)
@@ -190,16 +194,19 @@ class RepairCampaignTests(unittest.TestCase):
         self.assertIn("JOINT_CONFLICT",rows["a"]); self.assertIn("JOINT_CONFLICT",rows["b"])
         self.assertEqual(rows["c"],{"UNKNOWN":[]})
 
-    def test_timeline_distinguishes_first_wait_certificate_and_later_nonempty(self):
+    def test_timeline_distinguishes_certified_call_return_and_real_nonempty_event(self):
         wait=dict(call=0,wall_elapsed_s=.2,objective=[0,0,1],prefix_hashes=[])
         nonempty=dict(wall_elapsed_s=1.1,prefix_hashes=["proposal"],event="FIRST_NONEMPTY_CERTIFIED")
         task=dict(snapshot_time=5,status="PREPARED",ready_time=7.)
         record=dict(planning_timing={"snapshot_time":5},selective_replanning={"first_certified":wait},
             search_handoff={"first_nonempty_certified":nonempty})
         row=report.task_timelines([task],[record],[],{})[0]
-        self.assertEqual(row["first_certified"],wait)
-        self.assertEqual(row["first_certificate"],wait)
-        self.assertEqual(row["first_certified_wall_elapsed_s"],.2)
+        self.assertEqual(row["first_certified_call_return"],wait)
+        self.assertEqual(row["first_certified_call_return_wall_elapsed_s"],.2)
+        self.assertEqual(row["first_certified_call_return_raw_source"],"scheduler_records[].selective_replanning.first_certified")
+        self.assertIsNone(row["first_any_certificate_instant"])
+        self.assertIsNone(row["first_any_certificate_instant_wall_elapsed_s"])
+        self.assertNotIn("first_certified",row)
         self.assertEqual(row["first_nonempty_certified"],nonempty)
         self.assertEqual(row["first_nonempty_certified_wall_elapsed_s"],1.1)
         self.assertEqual(row["final_ready_sim_time"],7.)
@@ -211,13 +218,97 @@ class RepairCampaignTests(unittest.TestCase):
         task=dict(snapshot_time=0,status="COMMITTED")
         legacy=dict(planning_timing={"snapshot_time":0},search_handoff={"first_nonempty_certified":nonempty})
         row=report.task_timelines([task],[legacy],[],{})[0]
-        self.assertIsNone(row["first_certified"])
-        self.assertIsNone(row["first_certified_wall_elapsed_s"])
-        self.assertIsNone(row["first_certificate"])
+        self.assertIsNone(row["first_certified_call_return"])
+        self.assertIsNone(row["first_certified_call_return_wall_elapsed_s"])
+        self.assertIsNone(row["first_any_certificate_instant"])
         self.assertEqual(row["first_nonempty_certified"],nonempty)
         missing=report.task_timelines([task],[dict(planning_timing={"snapshot_time":0})],[],{})[0]
         self.assertIsNone(missing["first_nonempty_certified"])
         self.assertIsNone(missing["first_nonempty_certified_wall_elapsed_s"])
+
+    def test_holding_duration_derivation_checks_sum_and_preserves_missing(self):
+        energy=dict(outer=6.,middle=8.,inner=5.)
+        with tempfile.TemporaryDirectory() as tmp:
+            config=Path(tmp)/"config.yaml";config.write_text("unit fixture only")
+            with patch.object(report,"canonical_hold_powers",return_value=dict(outer=2.,middle=4.,inner=5.)):
+                good=report.derived_holding_times(energy,6.,config)
+                self.assertEqual(good["holding_time_by_ring_s"],dict(outer=3.,middle=2.,inner=1.))
+                self.assertEqual(good["status"],"VERIFIED_DERIVED")
+                self.assertEqual(good["sum_difference_s"],0.)
+                mismatch=report.derived_holding_times(energy,7.,config)
+                self.assertIsNone(mismatch["holding_time_by_ring_s"])
+                self.assertEqual(mismatch["reason"],"DERIVED_SUM_MISMATCH_WITH_RECORDED_TOTAL")
+                self.assertEqual(mismatch["sum_difference_s"],-1.)
+                missing=report.derived_holding_times(dict(outer=6.,inner=5.),6.,config)
+                self.assertIsNone(missing["holding_time_by_ring_s"])
+                self.assertEqual(missing["reason"],"MISSING_EXECUTED_HOLD_ENERGY_RING")
+                missing_config=report.derived_holding_times(energy,6.,Path(tmp)/"absent.yaml")
+                self.assertEqual(missing_config["reason"],"MISSING_REPLAY_CONFIG")
+
+    def test_pending_ring_counts_use_recorded_ring_and_keep_unmapped(self):
+        frame=dict(time=300.,aircraft=[dict(id="outer",status="HOLD_OUTER",ring="outer"),
+            dict(id="transfer",status="TRANSFER_M_I",ring="middle"),
+            dict(id="final",status="FINAL_NORMAL",ring="inner"),
+            dict(id="inbound",status="INBOUND",ring=None),dict(id="done",status="CLEARED",ring=None)])
+        observed=report.recorded_ring_pending(frame,300.)
+        self.assertEqual(observed["airborne_by_recorded_ring"],dict(outer=1,middle=1,inner=1))
+        self.assertEqual(observed["airborne_total"],4)
+        self.assertEqual(observed["unmapped"],[dict(aircraft_id="inbound",status="INBOUND",recorded_ring=None)])
+        self.assertEqual(observed["status_by_recorded_ring"]["middle"],{"TRANSFER_M_I":1})
+        mismatch=report.recorded_ring_pending(frame,295.)
+        self.assertIsNone(mismatch["airborne_by_recorded_ring"])
+
+    def test_scope_work_join_includes_pending_and_unknown_without_duplicate_work(self):
+        lifecycle=dict(per_task_work=[dict(snapshot_time=0.,finished=True,full_normal_planning_work_s=1.5),
+            dict(snapshot_time=5.,finished=False,full_normal_planning_work_s=2.5),
+            dict(snapshot_time=10.,finished=True,full_normal_planning_work_s=.5)])
+        records=[dict(planning_timing={"snapshot_time":0.},selective_replanning={"scope":{"status":"LOCAL","actual_k":8}}),
+            dict(planning_timing={"snapshot_time":5.},selective_replanning={"scope":{"status":"MANDATORY_OVERFLOW_FULL","actual_k":14},
+                "overflow_cause":"HARD_MANDATORY_GT_MAX12"})]
+        groups=report.scope_work_facts(lifecycle,records)["groups"]
+        self.assertEqual(groups["LOCAL"]["work"]["total_s"],1.5)
+        self.assertEqual(groups["OVERFLOW_FULL"]["work"]["total_s"],2.5)
+        self.assertEqual(groups["OVERFLOW_FULL"]["pending_task_count"],1)
+        self.assertEqual(groups["OVERFLOW_FULL"]["work"]["median_s"],2.5)
+        self.assertEqual(groups["OVERFLOW_FULL"]["actual_k_counts"],{"14":1})
+        self.assertEqual(groups["UNKNOWN"]["work"]["total_s"],.5)
+        self.assertEqual(sum(g["work"]["total_s"] for g in groups.values()),4.5)
+
+    def test_continuation_gaps_require_finished_task_and_explicit_coalesced_reason(self):
+        tasks=[dict(snapshot_time=0.,finished_time=20.,next_started_time=20.,status="COMMITTED",reason=""),
+            dict(snapshot_time=20.,finished_time=26.,status="REJECTED",reason="NO_EXECUTABLE_PREFIX",restart_reason="COALESCED_AFTER_COMMITTED"),
+            dict(snapshot_time=26.,status="COMPUTING",restart_reason="COALESCED_AFTER_NO_EXECUTABLE_PREFIX")]
+        facts=report.task_continuation_facts(tasks)
+        self.assertEqual(facts["finish_to_next_start"]["count"],2)
+        self.assertEqual(facts["finish_to_next_start"]["total_s"],0.)
+        self.assertEqual(facts["explicitly_coalesced_same_time_count"],0)
+        self.assertTrue(all(row["next_restart_reason"] is None for row in facts["rows"]))
+        self.assertEqual(facts["no_executable_prefix_count"],1)
+        self.assertIsNone(facts["rows"][-1]["finish_to_next_start_sim_s"])
+
+    def test_handoff_reasons_use_own_finished_task_not_later_overwritten_next_task(self):
+        tasks=[dict(snapshot_time=0.,finished_time=20.,next_started_time=20.,status="COMMITTED",reason="",
+                    restart_reason="COALESCED_AFTER_COMMITTED"),
+            dict(snapshot_time=20.,finished_time=26.,next_started_time=26.,status="REJECTED",reason="NO_EXECUTABLE_PREFIX",
+                 restart_reason="COALESCED_AFTER_NO_EXECUTABLE_PREFIX"),
+            dict(snapshot_time=26.,status="COMPUTING",restart_reason="COALESCED_AFTER_NO_EXECUTABLE_PREFIX")]
+        facts=report.task_continuation_facts(tasks)
+        self.assertEqual([row["next_restart_reason"] for row in facts["rows"]],
+            ["COALESCED_AFTER_COMMITTED","COALESCED_AFTER_NO_EXECUTABLE_PREFIX",None])
+        self.assertEqual(facts["explicitly_coalesced_same_time_count"],2)
+        self.assertEqual(facts["same_time_finish_next_start_count"],2)
+
+    def test_supplemental_index_is_compact_and_does_not_copy_fullpayload(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);path=root/"diagnostic_scope_alternatives/A/result.json";path.parent.mkdir(parents=True)
+            path.write_text(json.dumps(dict(status="COMPLETE",root="s3r24",content_comparison={"canonical_sha256":"same-content",
+                "payload":{"must_not_copy":"FULL_PAYLOAD_SENTINEL"}},initial_selected_ids=["a"],
+                preparation={"token_discarded":True,"published":False})))
+            summary=report.supplemental_evidence_index(root)
+            self.assertEqual(summary["manual_scope_alternatives"]["A"]["canonical_content_sha256"],"same-content")
+            self.assertNotIn("FULL_PAYLOAD_SENTINEL",json.dumps(summary))
+            self.assertFalse(summary["fullpayloads_embedded"])
+            self.assertEqual(summary["token_identity_comparison"],"NOT_ASSERTED_PREPARATION_DISCARD_OBSERVED_PER_JOB")
 
 
 if __name__ == "__main__": unittest.main()
