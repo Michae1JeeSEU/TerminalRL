@@ -2219,8 +2219,11 @@ class RollingHorizonCPSATScheduler:
 class NormalSchedulerCallback:
     """Callable SchedulerPort adapter; runner owns admission/emergency timing."""
     def __init__(self,method="energy_slack",candidate_provider=None,budget_profile=QUALITY_BUDGET_PROFILE,planning_profile=PLANNING_PROFILE_LEGACY,
-                 advisor_runtime=None,budget_scale=1.,online_policy=None,prefix_reuse=None,selective_method=None,global_frame=None):
+                 advisor_runtime=None,budget_scale=1.,online_policy=None,prefix_reuse=None,selective_method=None,global_frame=None,
+                 selective_rule_variant="baseline"):
         if selective_method not in (None,"FULL_H","RULE_LOCAL_K8"): raise ValueError("unknown Stage A selective method")
+        if selective_rule_variant not in ("baseline","outer_priority_v1"): raise ValueError("unknown selective rule variant")
+        if selective_method is None and selective_rule_variant!="baseline": raise ValueError("selective rule variant requires selective method")
         if selective_method is not None:
             if method!="rh_cp_sat" or planning_profile!=PLANNING_PROFILE_DOWNSTREAM: raise ValueError("Stage A requires rh_cp_sat/downstream_service_v8")
             if advisor_runtime is not None or getattr(candidate_provider,"advisor_runtime",None) is not None: raise ValueError("Stage A disables old descriptor ranker")
@@ -2228,6 +2231,7 @@ class NormalSchedulerCallback:
             if online_policy not in (None,"progressive_v1"): raise ValueError("Stage A requires progressive_v1")
             online_policy="progressive_v1"
         self.selective_method,self.global_frame=selective_method,global_frame
+        self.selective_rule_variant=selective_rule_variant
         if selective_method is not None:
             from .selective_replanning.history import PlanningHistory
             self.selective_history=PlanningHistory()
@@ -2262,7 +2266,8 @@ class NormalSchedulerCallback:
                 "templates":[(key,p.to_dict() if p is not None else None) for key,p in self.provider.references.templates.items()],
                 "reference_hits":self.provider.references.hits}
         if self.selective_method is not None:
-            state["selective_replanning"]=dict(method=self.selective_method,history=self.selective_history.state_dict(),blockers=self.selective_blockers)
+            state["selective_replanning"]=dict(method=self.selective_method,history=self.selective_history.state_dict(),blockers=self.selective_blockers,
+                rule_variant=self.selective_rule_variant)
         if self.planning_profile!=PLANNING_PROFILE_LEGACY: state["planning_profile"]=self.planning_profile
         if self.online_policy is not None: state["online_policy"]=self.online_policy
         if self.prefix_reuse or self.online_policy: state["prefix_reuse"]=self.prefix_reuse
@@ -2284,6 +2289,7 @@ class NormalSchedulerCallback:
         from .trajectory import TrajectoryPlan
         selective=state.get("selective_replanning")
         if (selective or {}).get("method")!=self.selective_method: raise ValueError("selective method binding mismatch")
+        if (selective or {}).get("rule_variant","baseline")!=self.selective_rule_variant: raise ValueError("selective rule variant binding mismatch")
         if selective is not None:
             self.selective_history.load_state_dict(selective["history"])
             self.selective_blockers=list(selective.get("blockers",()))
@@ -2366,12 +2372,12 @@ class NormalSchedulerCallback:
                             wall_s=budget.elapsed,cpu_s=time.process_time()-budget.cpu_start,planning_budget=budget.settings(),
                             timings=dict(budget.timings),submitted=0,commit_status="NOT_COMMITTED",attempts=dict(budget.attempts),
                             selective_replanning=dict(method=self.selective_method,status="LOCAL_SEARCH_INCOMPLETE",reason=str(exc),
-                                solve_calls=0,scope_expansions=0,objective_frame_id=None,scope=None)))
+                                solve_calls=0,scope_expansions=0,objective_frame_id=None,scope=None,rule_variant=self.selective_rule_variant)))
                         return result
                 if frame.snapshot_id!=snapshot.version or frame.effective_time!=snapshot.time: raise ValueError("injected frame snapshot mismatch")
                 with budget.measure("selective_selection"):
                     relations=build_relations(snapshot,tuple(a.id for a in _decision_aircraft(snapshot)),self.selective_blockers,frame=frame)
-                    scope,selection=RuleSelector().select(snapshot,frame,self.selective_history,relations,method=self.selective_method,now=now)
+                    scope,selection=RuleSelector(variant=self.selective_rule_variant).select(snapshot,frame,self.selective_history,relations,method=self.selective_method,now=now)
                 local=LocalPlanner(self.provider,self.scheduler)
                 result=local.plan(snapshot,scope,frame,budget)
                 catalog,context=local.last_catalog,local.last_context

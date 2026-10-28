@@ -5,9 +5,11 @@ from .relations import relation_digest
 
 
 class RuleSelector:
-    def __init__(self, nominal_k=8, max_k=12):
+    def __init__(self, nominal_k=8, max_k=12, *, variant="baseline"):
         if nominal_k != 8 or max_k != 12: raise ValueError("Stage A freezes K8/max12")
+        if variant not in ("baseline","outer_priority_v1"): raise ValueError("unknown selective rule variant")
         self.nominal_k, self.max_k = nominal_k, max_k
+        self.variant=variant
 
     def select(self, snapshot, frame, history, relations=(), *, method="RULE_LOCAL_K8", now=None):
         from ..stage2_planning import _decision_aircraft, _node
@@ -63,6 +65,11 @@ class RuleSelector:
                     sorted(ids,key=lambda aid:(ages[aid]["progress_unknown"], -(ages[aid]["progress_age"] or 0), tie(aid))),
                     sorted(ids,key=lambda aid:(ages[aid]["review_unknown"], -(ages[aid]["review_age"] or 0), tie(aid)))]
             labels=("ENERGY_QUEUE", "DOWNSTREAM_OPPORTUNITY_QUEUE", "PROGRESS_AGE_QUEUE", "REVIEW_AGE_QUEUE")
+            if self.variant=="outer_priority_v1":
+                outer=[aid for aid in ids if _node(snapshot,eligible[aid]).ring=="outer"]
+                queues.insert(0,sorted(outer,key=lambda aid:(ages[aid]["progress_unknown"],
+                    -(ages[aid]["progress_age"] or 0),tie(aid))))
+                labels=("OUTER_RING_QUEUE",)+labels
             limit=min(len(ids), max(self.nominal_k, len(mandatory)))
             while len(selected)<limit:
                 advanced=False
@@ -80,4 +87,5 @@ class RuleSelector:
             tuple((aid,tuple(reasons[aid])) for aid in selected),relation_digest(relations),frame.identity,status)
         return scope.validate(snapshot), dict(ages=ages, energy_masks={aid:dict(known=v[0],margin_soc=v[1],source=v[2],estimate_epoch=v[3],
             estimate_source=v[4],next_opportunity_wait_soc=v[5],can_safely_postpone=False if not v[0] else None) for aid,v in energy.items()},
-            status="MANDATORY_OVERFLOW" if overflow else status, unserved_mandatory_ids=[])
+            status="MANDATORY_OVERFLOW" if overflow else status, unserved_mandatory_ids=[],rule_variant=self.variant,
+            eligible_ring_by_id={aid:_node(snapshot,eligible[aid]).ring for aid in ids})

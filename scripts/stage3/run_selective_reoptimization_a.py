@@ -245,9 +245,9 @@ def restore(path, d, directory):
     return world
 
 
-def scheduler(d, method, frame=None):
+def scheduler(d, method, frame=None, *, selector_variant="baseline"):
     return d.NormalSchedulerCallback("rh_cp_sat", planning_profile="downstream_service_v8",
-        online_policy="progressive_v1", selective_method=method, global_frame=frame)
+        online_policy="progressive_v1", selective_method=method, global_frame=frame,selective_rule_variant=selector_variant)
 
 
 def lifecycle_summary(tasks, callbacks, services, latency):
@@ -312,15 +312,16 @@ def save_logs(directory, world, callback, wrapper, binding, root, d):
         d.atomic_json(directory / name, value)
 
 
-def closed_job(output, root, method, binding, d):
+def closed_job(output, root, method, binding, d, *, lead_seconds=20., selector_variant="baseline", episode_seconds=300):
+    require(isinstance(episode_seconds,int) and episode_seconds>0 and episode_seconds%5==0,"episode must contain positive five-second boundaries")
     started, cpu_started = time.perf_counter(), time.process_time()
     item = binding["inputs"][root]
     require(file_hash(item["run_checkpoint"]) == item["initial_checkpoint_sha256"], "copied t0 checkpoint changed")
     directory = output / "evaluation" / root / method
     require(not directory.exists(), "closed-loop task already attempted; no retry")
     world = restore(item["run_checkpoint"], d, directory)
-    callback = scheduler(d, method)
-    wrapper = d.LatencyAwareScheduler(callback, lead_seconds=20., preparation_margin=1., search_handoff_reserve_seconds=4.)
+    callback = scheduler(d, method,selector_variant=selector_variant)
+    wrapper = d.LatencyAwareScheduler(callback, lead_seconds=lead_seconds, preparation_margin=1., search_handoff_reserve_seconds=4.)
     world.decision_callback, world.admission_callback = wrapper, d.shared_fifo_admission
     require(world.time == 0 and world.scheduler_period == 5., "t0/heartbeat changed")
     identity = dict(item["row"]["identity"], source_hash=binding["source_hash"])
@@ -330,7 +331,7 @@ def closed_job(output, root, method, binding, d):
     initial_counts = d.episode_metrics(world)
     try:
         d.save_checkpoint(directory / "checkpoint_0000.json", world, wrapper, identity)
-        for boundary in range(5, 301, 5):
+        for boundary in range(5, episode_seconds+1, 5):
             d.atomic_json(output / "progress" / f"{root}_{method}.json", dict(root=root, method=method, pid=os.getpid(), phase="ADVANCING", completed_boundary_s=completed, target=boundary, wall_s=time.perf_counter()-started))
             before, before_cpu = time.perf_counter(), time.process_time()
             world.advance(float(boundary), wrapper, settle_only_at_end=True)
@@ -368,7 +369,7 @@ def closed_job(output, root, method, binding, d):
                       tentative_predictions=[dict(aircraft_id=aid, as_of=world.time, plans=[p.to_dict() for p in plans]) for aid, plans in callback.provider.previous.items()])
         d.ReplayBundle.write(directory / "replay", record=record, code_commit=binding["source_commit"],
                             config_path=world.config.path, command=str(DRIVER), seed=ROOTS[root][0], eager=False)
-        result = dict(status="COMPLETE" if completed==300 and error is None else "EVALUATION_PARTIAL",
+        result = dict(status="COMPLETE" if completed==episode_seconds and error is None else "EVALUATION_PARTIAL",
             root_id=root, method=method, completed_boundary_s=completed, terminal_observation=terminal,
             error=error, full_job_wall_s=time.perf_counter()-started, process_cpu_s=time.process_time()-cpu_started,
             actual_cpu=sorted(os.sched_getaffinity(0)) if hasattr(os,"sched_getaffinity") else None,
