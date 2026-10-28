@@ -1,5 +1,7 @@
 # 阶段 A 后的规则与接入时间探索
 
+八臂结果与预算异常见 [结果报告](selective_reoptimization_followup_results_20261028.md)。当前为 PRELIMINARY_MIXED_EFFECTS / BUDGET_LIMITED_FINAL_REPLAY_AUDIT_PENDING；八臂均推进至300秒并退出0，但累计预算超限，尚未完成新回放物理审计，不是完整验收，也未进入 B。
+
 本轮为用户明确授权的两个因素 2×2 对照，不是阶段 B、训练或旧 A 结果的改写。起点均为原始 s3r23/seed7324、s3r24/seed7325 的 t0；每臂 300 模拟秒，无额外八快照采集。四臂共用同一新科学源码，每根内依次运行，两个根可在物理 CPU12（中流量）和 CPU14（高流量）并行。
 
 | 臂 ID | 规则 | lead |
