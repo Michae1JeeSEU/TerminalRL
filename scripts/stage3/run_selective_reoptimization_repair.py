@@ -52,8 +52,10 @@ def active_elapsed(data, now=None):
 
 
 @contextmanager
-def ledger_transaction(output, *, write=True):
+def ledger_transaction(output, *, write=True, policy=None):
     """Short interprocess lock; never held while a subprocess runs."""
+    policy = dict(cap_child_wall_s=CAP, prior_audits_child_wall_s=PRIOR_AUDIT_S,
+                  historical_campaign_used_s=HISTORICAL_USED_S) if policy is None else dict(policy)
     output = Path(output); output.mkdir(parents=True, exist_ok=True)
     with (output/"repair_budget.lock").open("a+b") as lock:
         if os.name == "nt":
@@ -68,11 +70,13 @@ def ledger_transaction(output, *, write=True):
         try:
             path = output/"repair_budget_ledger.json"
             data = base.load(path) if path.exists() else dict(schema="repair_child_wall_ledger_v1",
-                cap_child_wall_s=CAP, settled_child_wall_s=PRIOR_AUDIT_S,
-                prior_audits_child_wall_s=PRIOR_AUDIT_S, prior_audits="prior_audits",
-                historical_campaign_used_s=HISTORICAL_USED_S,
+                cap_child_wall_s=policy["cap_child_wall_s"], settled_child_wall_s=policy["prior_audits_child_wall_s"],
+                prior_audits_child_wall_s=policy["prior_audits_child_wall_s"], prior_audits="prior_audits",
+                historical_campaign_used_s=policy["historical_campaign_used_s"],
                 historical_campaign_budget_reset=False, jobs={}, no_automatic_retry=True)
-            base.require(data["cap_child_wall_s"] == CAP and data["historical_campaign_used_s"] == HISTORICAL_USED_S,
+            for key, value in policy.items():
+                if key not in data: data[key] = value
+            base.require(all(data[key] == value for key, value in policy.items()),
                          "repair ledger limits/history changed")
             yield data
             if write:
@@ -100,7 +104,7 @@ def _stop(process):
     process.wait()
 
 
-def run_bounded_job(output, job_id, command, *, cap_s, poll_s=.05):
+def run_bounded_job(output, job_id, command, *, cap_s, poll_s=.05, policy=None):
     """Parent-enforced per-job and concurrent aggregate child wall limits.
 
     Used by Luna's explicit test/audit wrapper as well as the four entrypoints.
@@ -109,9 +113,9 @@ def run_bounded_job(output, job_id, command, *, cap_s, poll_s=.05):
     """
     output = Path(output)
     base.require(cap_s > 0 and poll_s > 0 and poll_s <= .25, "bounded positive watchdog required")
-    with ledger_transaction(output) as ledger:
+    with ledger_transaction(output, policy=policy) as ledger:
         base.require(job_id not in ledger["jobs"], "job already attempted; no automatic retry")
-        remaining = CAP-active_elapsed(ledger)
+        remaining = ledger["cap_child_wall_s"]-active_elapsed(ledger)
         base.require(remaining > 0, "repair child-wall budget exhausted")
         started = time.time(); started_mono=time.monotonic()
         ledger["jobs"][job_id] = dict(status="running", started_epoch=started, started_monotonic=started_mono,parent_pid=os.getpid(),
@@ -122,23 +126,23 @@ def run_bounded_job(output, job_id, command, *, cap_s, poll_s=.05):
         with log.open("x", encoding="utf8") as stream:
             process = subprocess.Popen(list(map(str, command)), cwd=PROJECT, stdout=stream, stderr=subprocess.STDOUT,
                 start_new_session=os.name != "nt")
-            with ledger_transaction(output) as ledger: ledger["jobs"][job_id]["child_pid"] = process.pid
+            with ledger_transaction(output, policy=policy) as ledger: ledger["jobs"][job_id]["child_pid"] = process.pid
             while process.poll() is None:
-                with ledger_transaction(output, write=False) as ledger:
+                with ledger_transaction(output, write=False, policy=policy) as ledger:
                     elapsed = time.monotonic()-started_mono
                     total = active_elapsed(ledger)
                     running = sum(row["status"] == "running" for row in ledger["jobs"].values())
                     # Reserve one polling quantum per active child and stop
                     # before the budget boundary, rather than detect it later.
                     if elapsed+poll_s >= cap_s: stop_reason = "JOB_WALL_LIMIT"
-                    elif total+running*poll_s >= CAP: stop_reason = "CAMPAIGN_CHILD_WALL_LIMIT"
+                    elif total+running*poll_s >= ledger["cap_child_wall_s"]: stop_reason = "CAMPAIGN_CHILD_WALL_LIMIT"
                 if stop_reason: _stop(process); break
                 time.sleep(poll_s)
             exit_code = process.wait()
     finally:
         if process is not None and process.poll() is None: _stop(process)
         ended = time.time(); elapsed = max(0., time.monotonic()-started_mono)
-        with ledger_transaction(output) as ledger:
+        with ledger_transaction(output, policy=policy) as ledger:
             row = ledger["jobs"][job_id]
             row.update(status="BUDGET_LIMITED" if stop_reason else "completed" if exit_code == 0 else "failed",
                 finished_epoch=ended, child_wall_s=elapsed, exit_code=exit_code, stop_reason=stop_reason, log=str(log))

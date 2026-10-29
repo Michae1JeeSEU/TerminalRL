@@ -7,14 +7,14 @@ from .relations import relation_digest
 class RuleSelector:
     def __init__(self, nominal_k=8, max_k=12, *, variant="baseline"):
         if nominal_k != 8 or max_k != 12: raise ValueError("Stage A freezes K8/max12")
-        if variant not in ("baseline","outer_priority_v1","opportunity_cooperative_v2"): raise ValueError("unknown selective rule variant")
+        if variant not in ("baseline","outer_priority_v1","opportunity_cooperative_v2","opportunity_executable_v3"): raise ValueError("unknown selective rule variant")
         self.nominal_k, self.max_k = nominal_k, max_k
         self.variant=variant
 
     def select(self, snapshot, frame, history, relations=(), *, method="RULE_LOCAL_K8", now=None,
                references=None, opportunity_seed_offset=0):
         if opportunity_seed_offset not in (0,1,2): raise ValueError("diagnostic opportunity offset must be 0..2")
-        if self.variant=="opportunity_cooperative_v2":
+        if self.variant in ("opportunity_cooperative_v2","opportunity_executable_v3"):
             return self._select_v2(snapshot,frame,history,relations,method=method,now=now,
                 references=references,opportunity_seed_offset=opportunity_seed_offset)
         from ..stage2_planning import _decision_aircraft, _node
@@ -99,15 +99,17 @@ class RuleSelector:
         from ..stage2_planning import _decision_aircraft, _node
         from ..energy import stable_power
         from ..rescue_rules import normal_energy_lower_bound
-        from .near_term import summarize_opportunities,cooperative_seed_groups
+        from .near_term import summarize_opportunities,cooperative_seed_groups,cooperative_pad_groups,adjustment_access
+        executable=self.variant=="opportunity_executable_v3"
         eligible={a.id:a for a in _decision_aircraft(snapshot)}; ids=tuple(sorted(eligible))
         timing=getattr(snapshot,"planning_timing",None)
         observed=getattr(timing,"snapshot_time",snapshot.time)
         now=observed if now is None else now
         ages={aid:history.ages(aid,now) for aid in ids}
-        reasons={aid:[] for aid in ids}; masks={}; hard=set()
+        reasons={aid:[] for aid in ids}; masks={}; hard=set(); access_by_id={}
         for aid,a in eligible.items():
             node=_node(snapshot,a); e=a.emergency
+            if executable: access_by_id[aid]=adjustment_access(snapshot,a,node)
             epoch=getattr(e,"normal_estimate_epoch",None); source=getattr(e,"normal_estimate_source",None)
             known=bool(source is not None and epoch is not None and 0<=now-epoch<=5.+1.e-8
                 and e.normal_path_soc is not None and tuple(source[:3])==(node.ring,node.slot,node.version))
@@ -149,8 +151,10 @@ class RuleSelector:
         for aid in hard-urgent_hard: reasons[aid].append("VALIDATED_REQUIRED_BLOCKER")
         def tie(aid): return (getattr(eligible[aid],"release_time",math.inf),aid)
         mandatory=tuple(sorted(hard,key=lambda aid:(not masks[aid]["urgent_evidence"],tie(aid))))
-        opportunities=summarize_opportunities(snapshot,eligible,references)
-        groups=cooperative_seed_groups(opportunities) if ids else ()
+        opportunities=summarize_opportunities(snapshot,eligible,references,executable=executable)
+        pad_groups=cooperative_pad_groups(opportunities) if executable else ()
+        groups=tuple(row["members"] for row in pad_groups) if executable else (cooperative_seed_groups(opportunities) if ids else ())
+        ordinary_ids=tuple(aid for aid in ids if not executable or access_by_id[aid]["adjustable"])
         overflow=len(hard)>self.max_k
         overdue=[aid for aid in ids if ages[aid]["review_age"] is not None and ages[aid]["review_age"]>=60.]
         fair_bonus={aid:max(0.,(ages[aid]["review_age"] or 0.)-40.) for aid in ids}
@@ -161,8 +165,8 @@ class RuleSelector:
         else:
             selected=list(mandatory); status="LOCAL"
             seats=min(2,max(0,self.nominal_k-len(selected)))
-            old=sorted((aid for aid in ids if aid not in hard and fair_bonus[aid]>0),key=lambda aid:(-fair_bonus[aid],tie(aid)))
-            unknown=sorted((aid for aid in ids if aid not in hard and ages[aid]["review_unknown"]),key=tie)
+            old=sorted((aid for aid in ordinary_ids if aid not in hard and fair_bonus[aid]>0),key=lambda aid:(-fair_bonus[aid],tie(aid)))
+            unknown=sorted((aid for aid in ordinary_ids if aid not in hard and ages[aid]["review_unknown"]),key=tie)
             # Unknown age receives bounded review access, never invented debt.
             if seats and old: fair.append(old.pop(0))
             if len(fair)<seats and unknown: fair.append(unknown.pop(0))
@@ -170,7 +174,11 @@ class RuleSelector:
             if len(fair)<seats: fair.extend(unknown[:seats-len(fair)])
             accepted_fair=[]; skipped=[]
             for aid in fair:
-                additions=closure((aid,))-set(selected)
+                dependency=closure((aid,))
+                unavailable=sorted(member for member in dependency if executable and not access_by_id[member]["adjustable"])
+                if unavailable:
+                    skipped.append(dict(members=[aid],unavailable_ids=unavailable,reason="DEPENDENCY_NOT_ADJUSTABLE_AT_EFFECTIVE")); continue
+                additions=dependency-set(selected)
                 if len(selected)+len(additions)>self.max_k:
                     skipped.append(dict(members=[aid],reason="FAIRNESS_DEPENDENCY_CLOSURE_EXCEEDS_MAX12")); continue
                 accepted_fair.append(aid)
@@ -186,7 +194,11 @@ class RuleSelector:
             if seed_order:
                 offset=min(opportunity_seed_offset,len(seed_order)-1)
                 seed_order=seed_order[offset:]+seed_order[:offset]
-            ordered=sorted(ids,key=lambda aid:(opportunities[aid]["unknown"],
+            if executable:
+                anchors={tuple(row["members"]):row["anchor_id"] for row in pad_groups}
+                seed_order=[seed for group in seed_order for seed in
+                    ((group,(anchors[group],)) if len(group)>1 else (group,))]
+            ordered=sorted(ordinary_ids,key=lambda aid:(opportunities[aid]["unknown"],
                 (opportunities[aid]["earliest_arrival"] or math.inf)-fair_bonus[aid],
                 masks[aid]["known"],masks[aid]["margin_soc"],tie(aid)))
             for seed in seed_order+[(aid,) for aid in ordered]:
@@ -194,7 +206,11 @@ class RuleSelector:
                 if not add: continue
                 if len(set(selected)|set(seed))>self.nominal_k:
                     skipped.append(dict(members=list(seed),reason="GROUP_EXCEEDS_REMAINING_NOMINAL_SEATS")); continue
-                expanded=closure(seed)-set(selected)
+                dependency=closure(seed)
+                unavailable=sorted(member for member in dependency if executable and not access_by_id[member]["adjustable"])
+                if unavailable:
+                    skipped.append(dict(members=list(seed),unavailable_ids=unavailable,reason="DEPENDENCY_NOT_ADJUSTABLE_AT_EFFECTIVE")); continue
+                expanded=dependency-set(selected)
                 if len(selected)+len(expanded)>self.max_k:
                     skipped.append(dict(members=list(seed),reason="DEPENDENCY_CLOSURE_EXCEEDS_MAX12")); continue
                 for aid in sorted(expanded,key=tie):
@@ -203,8 +219,10 @@ class RuleSelector:
         scope=PlanningScope(snapshot.version,snapshot.time,ids,tuple(sorted(selected)),
             tuple(sorted(set(snapshot.aircraft)-set(selected))),mandatory,self.nominal_k,len(selected),self.max_k,
             tuple((aid,tuple(reasons[aid])) for aid in selected),relation_digest(relations),frame.identity,status).validate(snapshot)
-        group_rows=[dict(group_id=i,members=list(group),reason="SPECIFIC_RESOURCE_RELEASE_CHAIN",
-            selected_members=sorted(set(group)&set(selected))) for i,group in enumerate(groups)]
+        group_rows=([dict(row,group_id=i,members=list(row["members"]),selected_members=sorted(set(row["members"])&set(selected)))
+                     for i,row in enumerate(pad_groups)] if executable else
+                    [dict(group_id=i,members=list(group),reason="SPECIFIC_RESOURCE_RELEASE_CHAIN",
+                     selected_members=sorted(set(group)&set(selected))) for i,group in enumerate(groups)])
         return scope,dict(ages=ages,energy_masks=masks,rule_variant=self.variant,status="MANDATORY_OVERFLOW" if overflow else status,
             hard_mandatory_count=len(hard),hard_urgent_count=sum(masks[aid]["urgent_evidence"] for aid in hard),
             overflow_cause="HARD_MANDATORY_GT_MAX12" if overflow else None,actual_k=len(selected),unserved_mandatory_ids=[],
@@ -213,5 +231,7 @@ class RuleSelector:
             unknown_review_age_ids=[aid for aid in ids if ages[aid]["review_unknown"]],
             near_term_opportunities=opportunities,cooperative_groups=group_rows,opportunity_seed_offset=opportunity_seed_offset,
             skipped_optional_groups=skipped if status=="LOCAL" else [],
-            unselected_reasons={aid:"FIXED_BACKGROUND_NOMINAL_SCOPE_CAPACITY" for aid in ids if aid not in selected},
+            adjustment_access=access_by_id if executable else {},
+            unselected_reasons={aid:("NOT_ADJUSTABLE_AT_EFFECTIVE" if executable and not access_by_id[aid]["adjustable"] else
+                "FIXED_BACKGROUND_NOMINAL_SCOPE_CAPACITY") for aid in ids if aid not in selected},
             eligible_ring_by_id={aid:_node(snapshot,eligible[aid]).ring for aid in ids})

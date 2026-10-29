@@ -5,9 +5,10 @@ from .scope import PlanningScope
 
 
 class LocalPlanner:
-    def __init__(self, provider, scheduler, *, progressive_v2=False):
+    def __init__(self, provider, scheduler, *, progressive_v2=False, executable_v3=False):
         self.provider, self.scheduler = provider, scheduler
-        self.progressive_v2=progressive_v2
+        self.progressive_v2=progressive_v2 or executable_v3
+        self.executable_v3=executable_v3
 
     def plan(self, snapshot, scope, global_frame, shared_budget):
         if self.progressive_v2: return self._plan_v2(snapshot,scope,global_frame,shared_budget)
@@ -39,8 +40,12 @@ class LocalPlanner:
                 if key.startswith("pair_"): aggregate_pairs[key]=aggregate_pairs.get(key,0)+value
             calls.append(dict(scope=scope.to_dict(),scope_identity=scope.identity,certified=result.certified,status=result.status,
                 objective=list(result.objective),blockers=list(context.background_blockers),
+                pair_conflict_evidence=list(context.pair_conflict_evidence),
+                pair_conflict_evidence_dropped=context.pair_conflict_evidence_dropped,
                 solver_records=list(result.solver_records),candidate_count=sum(map(len,catalog.columns.values())),
                 candidate_generation_by_aircraft={aid:budget.screening.get("materialized:"+aid,0)-before_materialized[aid] for aid in snapshot.aircraft}))
+            if context.diagnostics is not None:
+                calls[-1]["candidate_diagnostics"]=context.diagnostics.export(catalog,result.selected)
             if first is None: first=(result,catalog,context,scope)
             if result.certified and (incumbent is None or result.objective<=incumbent.objective):
                 incumbent=result; best=(result,catalog,context,scope)
@@ -110,8 +115,9 @@ class LocalPlanner:
         scope.validate(snapshot)
         calls=[]; catalog_rows=[]; completed=set(); blockers=[]; joints=[]; pair_counts={}
         first=None; best=None; incumbent=None; expansions=0; catalogs=None; context=None
-        scope_round=0; old_call_limit=getattr(budget,"solver_call_seconds",None); first_certified=None
+        scope_round=0; old_call_limit=getattr(budget,"solver_call_seconds",None); first_certified=None; skipped_expansions=[]
         budget._selective_progressive_v2=True
+        if self.executable_v3: budget._selective_executable_v3=True
         try:
             for index in range(2):
                 before_materialized={aid:budget.screening.get("materialized:"+aid,0) for aid in snapshot.aircraft}
@@ -172,15 +178,28 @@ class LocalPlanner:
                     previous_best_retained=retained_previous,incumbent_mapped=mapped is not None,
                     first_certified=first_certified,blockers=list(context.background_blockers),
                     joint_conflict_observations=list(context.joint_conflict_observations),pair_checks=dict(context.cache_stats),
+                    pair_conflict_evidence=list(context.pair_conflict_evidence),
+                    pair_conflict_evidence_dropped=context.pair_conflict_evidence_dropped,
                     solver_records=list(result.solver_records),candidate_count=sum(map(len,catalog.columns.values())),
                     generation_wall_s=generation_wall,solve_wall_s=solve_wall,wall_elapsed_s=budget.elapsed,
                     search_remaining_s=budget.remaining_seconds(),solver_remaining_s=max(0.,budget.solver_seconds-budget.solver_wall_used),
                     solver_call_allocation_s=budget.solver_call_seconds,solver_wall_used_this_call_s=budget.solver_wall_used-solver_before,
                     candidate_generation_by_aircraft={aid:budget.screening.get("materialized:"+aid,0)-before_materialized[aid] for aid in snapshot.aircraft}))
+                if context.diagnostics is not None:
+                    calls[-1]["candidate_diagnostics"]=context.diagnostics.export(catalog,result.selected)
                 if index or not budget.search_available(): break
                 eligible=set(scope.eligible_ids); opened=set(scope.replan_ids)
                 targets=sorted({row["target"] for row in context.background_blockers if row["target"] in eligible-opened
                     and row["snapshot_id"]==snapshot.version and row["reason"]=="RESOURCE_CONFLICT" and row["resource"]})
+                if self.executable_v3:
+                    from .near_term import releasable_at_effective
+                    executable_targets=[]
+                    for aid in targets:
+                        evidence=[releasable_at_effective(snapshot,aid,row["resource"]) for row in context.background_blockers
+                            if row["target"]==aid and row["reason"]=="RESOURCE_CONFLICT" and row["resource"]]
+                        if any(row["releasable"] for row in evidence): executable_targets.append(aid)
+                        else: skipped_expansions.append(dict(aircraft_id=aid,reason="BLOCKER_CANNOT_RELEASE_AT_EFFECTIVE",access=evidence))
+                    targets=executable_targets
                 add=targets[:max(0,scope.max_k-len(opened))] if scope.status=="LOCAL" else []
                 if add:
                     catalogs.close(); catalogs=None; opened.update(add); expansions+=1; scope_round+=1
@@ -197,6 +216,7 @@ class LocalPlanner:
             if old_call_limit is None: budget.__dict__.pop("solver_call_seconds",None)
             else: budget.solver_call_seconds=old_call_limit
             budget.__dict__.pop("_strict_resource_context",None)
+            budget.__dict__.pop("_selective_executable_v3",None)
         result,catalog,context,accepted_scope=best if best is not None else first
         self.last_catalog,self.last_context,self.last_scope=catalog,context,accepted_scope
         self.completed_evaluations=completed
@@ -205,6 +225,7 @@ class LocalPlanner:
             objective_eligibility=frame.objective_eligibility,upstream_requests=[dict(request_id=r[0],release_time=r[1],initial_soc=r[2],
                 service_class=r[3],gate_id=r[4],admission_ready_time=r[5],admission_readiness=r[6],mask=r[7]) for r in frame.upstream_requests],
             solve_calls=len(calls),scope_expansions=expansions,calls=calls,catalog_coverage=catalog_rows,
+            skipped_unexecutable_expansions=skipped_expansions,
             attempted_replan_ids=sorted({aid for call in calls for aid in call["scope"]["replan_ids"]}),
             candidate_generation_by_aircraft={aid:budget.screening.get("materialized:"+aid,0) for aid in snapshot.aircraft},
             pair_checks=pair_counts,background_blockers=blockers,joint_conflict_observations=joints,

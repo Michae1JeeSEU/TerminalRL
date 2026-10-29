@@ -808,8 +808,16 @@ class LatencyAwareScheduler:
             self._service_until = max(port.time,self._service_until)+self._handoff_service
         self._handoff_service = 0.
 
+    def _revalidation_budget(self, port, *, extra_delay=0.):
+        queued=max(0.,self._service_until-port.time)+self._handoff_service+extra_delay
+        started=port.time+queued
+        return dict(dispatch_time=port.time,queued_service_s=queued,planned_started_time=started,
+            available_work_s=max(0.,self.pending["timing"].ready_deadline-port.time-queued))
+
     def _begin_revalidation(self, port, *, extra_delay=0.):
         p=self.pending; record=self.records[p["record_index"]]
+        budget=self._revalidation_budget(port,extra_delay=extra_delay)
+        record["last_revalidation_budget"]=budget
         if port.time>p["timing"].ready_deadline:
             self._handoff_service+=extra_delay
             self._finish(port,"REJECTED","TRAFFIC_CHANGED_AFTER_DEADLINE")
@@ -817,15 +825,13 @@ class LatencyAwareScheduler:
         previous_ready=record.get("ready_time")
         record["ready_time"]=None
         started,started_cpu=self.clock(),time.process_time()
-        queued=max(0.,self._service_until-port.time)+self._handoff_service+extra_delay
-        max_work=max(0.,p["timing"].ready_deadline-port.time-queued)
-        evaluation=port.revalidate_latency_submission(p["token"],max_work_s=max_work)
+        evaluation=port.revalidate_latency_submission(p["token"],max_work_s=budget["available_work_s"])
         duration=self.clock()-started; cpu=time.process_time()-started_cpu
         if duration<0 or not math.isfinite(duration): raise ValueError("invalid revalidation duration")
         duration=max(duration,evaluation.details.get("minimum_work_s",0.))
-        delay=queued
+        delay=budget["queued_service_s"]
         self._service_until=port.time; self._handoff_service=0.
-        row=dict(started_time=port.time+delay,due=port.time+delay+duration,
+        row=dict(**budget,started_time=port.time+delay,due=port.time+delay+duration,
             affected_aircraft_ids=list(evaluation.details.get("affected_aircraft_ids",())),
             pairs_checked=evaluation.details.get("pairs_checked",0),reused_pairs=evaluation.details.get("reused_pairs",0),
             full_fallback=evaluation.details.get("full_fallback",False),
@@ -896,6 +902,9 @@ class LatencyAwareScheduler:
             record["ready_guard_work_s"] = guard_work
             record["prepare_work_s"] += guard_work
             record["prepare_work_cpu_s"] += time.process_time()-started_cpu
+            if guarded is not None and guarded.reason=="TRAFFIC_REVALIDATION_REQUIRED":
+                self._begin_revalidation(port,extra_delay=guard_work)
+                return
             ready = port.time+self._handoff_service+guard_work
             self._handoff_service = 0.
             p.update(stage="READY_SERVICE",due=ready,

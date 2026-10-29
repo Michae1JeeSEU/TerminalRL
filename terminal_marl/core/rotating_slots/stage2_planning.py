@@ -107,6 +107,7 @@ class PlanningBudget:
     _catalog_counter: int = field(default=0,repr=False)
     certificate_source: str = "search_prefix"
     allowed_replan_ids: object = None
+    diagnostics: object = None
 
     def search_deadline_ok(self):
         if self.search_wall_deadline is None or time.perf_counter()<self.search_wall_deadline: return True
@@ -743,6 +744,9 @@ class EvaluationContext:
         self._prefix_results = {}
         self.observed_definite_conflicts = []
         self.joint_conflict_observations = []
+        self.pair_conflict_evidence = []
+        self.pair_conflict_evidence_dropped = 0
+        self._pair_conflict_seen = {}
         self.cache=validation_cache if validation_cache is not None else {}
         self.cache_stats=Counter()
         if self.reuse_prefix_results:
@@ -769,6 +773,10 @@ class EvaluationContext:
         self.rejection_reasons=Counter()
         self.rejections_by_aircraft={}
         self.pad_rejections={}
+        self.diagnostics=None
+        if budget is not None and getattr(budget,"diagnostics",None) is not None:
+            from .selective_replanning.diagnostics import CandidateDiagnostics
+            self.diagnostics=CandidateDiagnostics(budget.diagnostics,snapshot)
 
     def _time_ok(self): return self.budget is None or self.budget.evaluation_available()
 
@@ -784,6 +792,7 @@ class EvaluationContext:
             return validate_separation(*args)
 
     def _observe(self,result,columns):
+        if self.diagnostics is not None: self.diagnostics.query("OBSERVE",columns,result)
         if not result.accepted:
             reason=getattr(result,"reason",None) or result.status
             self.rejection_reasons[reason]+=1
@@ -883,16 +892,54 @@ class EvaluationContext:
     def resource_conflict(a, b):
         return any(x.resource == y.resource and x.start < y.end and y.start < x.end for x in a.resources for y in b.resources)
 
+    def _pair_observation(self,a,b,result,check_interval=None):
+        if not result.accepted:
+            interval=result.details.get("pair_evidence",{}).get("check_interval",check_interval)
+            raw_details=tuple(sorted((k,v) for k,v in result.details.items() if k!="pair_evidence"))
+            key=repr((self.snapshot_key,tuple(sorted((a.signature,b.signature))),result.status,result.reason,interval,raw_details))
+            previous=self._pair_conflict_seen.get(key)
+            if previous is not None:
+                self.pair_conflict_evidence[previous]["count"]+=1
+                if self.diagnostics is not None: self.diagnostics.query("PAIR",(a,b),result)
+                return result
+            if len(self.pair_conflict_evidence)>=128:
+                self.pair_conflict_evidence_dropped+=1
+                if self.diagnostics is None: return result
+            from .selective_replanning.diagnostics import identity
+            if "pair_evidence" not in result.details:
+                participants=[]
+                for column in (a,b):
+                    aircraft=self.snapshot.aircraft[column.aircraft_id]
+                    participants.append(dict(identity(column),snapshot_ring=aircraft.ring,snapshot_slot=aircraft.slot,
+                        committed_trajectory_hashes=[p.trajectory_hash for p in
+                            (self.snapshot.active.get(column.aircraft_id),self.snapshot.soft.get(column.aircraft_id)) if p is not None]))
+                result=replace(result,details=dict(result.details,pair_evidence=dict(
+                    participants=participants,check_interval=check_interval,
+                    hard_separation_m=self.snapshot.config.safety.hard_separation_m)))
+            if len(self.pair_conflict_evidence)<128:
+                self._pair_conflict_seen[key]=len(self.pair_conflict_evidence)
+                self.pair_conflict_evidence.append(dict(status=result.status,reason=result.reason,
+                    snapshot_id=self.snapshot.version,context_scope=getattr(self.scope,"identity",None),
+                    local_round=getattr(self,"local_round",None),count=1,details=dict(result.details)))
+        if self.diagnostics is not None: self.diagnostics.query("PAIR",(a,b),result)
+        return result
+
     def check_pair(self, a, b):
-        if not self._time_ok(): return self._time_rejection()
+        if not self._time_ok(): return self._pair_observation(a,b,self._time_rejection())
         key = (self.snapshot_key,tuple(sorted(((a.signature,a.resources),(b.signature,b.resources)))))
         if key in self.pairs:
             self.cache_stats["pair_hits"]+=1
-            return self.pairs[key]
+            result=self.pairs[key]
+            return self._pair_observation(a,b,result)
         self.cache_stats["pair_misses"]+=1
         self.cache_stats["pair_selected_background" if a.kind=="BACKGROUND" or b.kind=="BACKGROUND" else "pair_selected_selected"]+=1
         if self.resource_conflict(a,b):
-            result = ValidationResult(False,"CONFLICT","RESOURCE_CONFLICT")
+            overlaps=[dict(resource=x.resource,interval=[max(x.start,y.start),min(x.end,y.end)],
+                           first_interval=[x.start,x.end],second_interval=[y.start,y.end])
+                for x in a.resources for y in b.resources
+                if x.resource==y.resource and x.start<y.end and y.start<x.end]
+            result = ValidationResult(False,"CONFLICT","RESOURCE_CONFLICT",{"resource_overlaps":overlaps})
+            check_interval=None
         else:
             ta, tb = self.traffic(a), self.traffic(b)
             # Include every maneuver/service endpoint, then one full common
@@ -903,10 +950,14 @@ class EvaluationContext:
                 if math.isfinite(t.end_time): endpoints.append(t.end_time)
             end = max(endpoints)+2*math.pi/.035
             end = min(end,ta.end_time,tb.end_time)
+            check_interval=[self.snapshot.time,end]
             if end>self.snapshot.time:
                 with (self.budget.measure("trajectory_validation") if self.budget else nullcontext()):
                     result=self._geometry_validation(ta,tb,self.snapshot.time,end,self.snapshot.config)
             else: result=ValidationResult(True,"SAFE")
+        # Retain the exact certificate details; no witness or distance is
+        # inferred from a rejected interval. This metadata is not a new check.
+        result=self._pair_observation(a,b,result,check_interval)
         if result.status!="UNKNOWN": _bounded_put(self.pairs,key,result)
         return result
 
@@ -927,6 +978,7 @@ class EvaluationContext:
             result=self._check_single(column)
         if key is not None and result.status!="UNKNOWN": _bounded_put(self.singles,key,result)
         if result.status!="UNKNOWN": self.completed_evaluations.add(column.aircraft_id)
+        if self.diagnostics is not None: self.diagnostics.query("SINGLE",(column,),result)
         return result
 
     def _check_single(self, column):
@@ -1484,6 +1536,41 @@ class CandidateProvider:
                 budget.screening["progress_energy_rejected"]+=1
             yield ("ATTEMPT",None,None)
 
+    def _target_coverage_steps(self,snapshot,a,node,budget,context,state):
+        """One immediate descriptor per target before duration refinement.
+
+        This cursor is resumed round-robin across aircraft. Current occupancy
+        changes ordering only; selected owners may release jointly.
+        """
+        seen=set(); pending=[]
+        for cursor in self._offset_cursors(snapshot,a,node,budget,0.,include_aligned=False):
+            descriptor=self._next_descriptor(snapshot,a,node,budget,cursor,seen,True)
+            if descriptor is None:
+                state["screened_without_descriptor_targets"].add(cursor["target"]); continue
+            target,start,duration,_=descriptor
+            state["viable_targets"].add(target)
+            if target in state["attempted_targets"]: continue
+            occupied=self._current_progress_reservation_conflict(snapshot,a,node,target,start,duration)
+            pending.append((occupied,start+duration,target,descriptor))
+        pending.sort(key=lambda row:row[:3])
+        yield ("SCREEN",None,None)
+        for _,_,target,descriptor in pending:
+            if not budget.available(a.id): return
+            _,start,duration,_=descriptor
+            ok,p=self.references.generate(snapshot,a,node,target,start,duration,budget)
+            if not ok: return
+            state["attempted_targets"].add(target)
+            budget.screening["executable_v3_target_queries"]+=1
+            if p is not None:
+                q=self.references.move_energy(node,p,snapshot.config)
+                if node.soc-q[1]>=(.25 if p.pad_id is not None else 0.) and node.peak+q[2]<=120:
+                    terminal=(PlanningNode(p.target_ring,p.target_slot,p.end_time,node.soc-q[1],node.peak+q[2],
+                                          node.version+1,node.error_j+q[3],node.peak_error_s+q[4])
+                              if p.target_ring is not None else node)
+                    yield ("COLUMN",(p,),self._emergency_prediction(snapshot,a,terminal)); continue
+                budget.screening["executable_v3_target_energy_rejected"]+=1
+            yield ("ATTEMPT",None,None)
+
     def _delayed_steps(self,snapshot,a,node,budget,context):
         """A bounded independent delayed primitive pass before reference work."""
         if node.ring=="inner": return
@@ -1663,7 +1750,7 @@ class CandidateProvider:
                 # Already certified in this real immutable snapshot; recreate
                 # and validate against the new scope, never translate epochs.
                 add(a,retained.plans,retained.emergency_prediction)
-        stages={}
+        stages={}; target_states={}; family_turn={}
         for a in order:
             n=nodes[a.id]
             stages[a.id]=[("progress",self._progress_steps(snapshot,a,n,budget,context)),
@@ -1671,6 +1758,16 @@ class CandidateProvider:
             if self.planning_profile==PLANNING_PROFILE_DOWNSTREAM:
                 stages[a.id].append(("delayed",self._delayed_steps(snapshot,a,n,budget,context)))
             stages[a.id].append(("alternative",self._paths(snapshot,a,n,budget,context)))
+            if getattr(budget,"_selective_executable_v3",False):
+                from .selective_replanning.near_term import adjustment_access
+                access=adjustment_access(snapshot,a,n)
+                reused={c.first_target[2] if n.ring=="inner" else c.first_target[1]
+                    for c in columns[a.id] if c.kind=="MOVE" and c.plans and _executable_start(snapshot,c.plans[0].start_time)}
+                state=dict(attempted_targets=set(reused),reused_targets=set(reused),viable_targets=set(),
+                    screened_without_descriptor_targets=set(),adjustment_access=access)
+                target_states[a.id]=state
+                if access["adjustable"]:
+                    stages[a.id].insert(0,("target_coverage",self._target_coverage_steps(snapshot,a,n,budget,context,state)))
         initial_visited=set()
         def catalog_with_coverage(phase):
             catalog=self._progressive_catalog(snapshot,budget,context,columns,refs,ordered)
@@ -1679,16 +1776,23 @@ class CandidateProvider:
                     initial_visited_ids=sorted(initial_visited),initial_unvisited_ids=sorted(set(columns)-initial_visited),
                     all_initial_aircraft_visited=len(initial_visited)==len(columns),
                     claim="OBSERVED_BOUNDED_CATALOG_ONLY"))
+                if target_states:
+                    report={aid:dict(attempted_targets=sorted(row["attempted_targets"]),reused_targets=sorted(row["reused_targets"]),
+                        viable_targets=sorted(row["viable_targets"]),remaining_unseen_targets=sorted(row["viable_targets"]-row["attempted_targets"]),
+                        screened_without_descriptor_targets=sorted(row["screened_without_descriptor_targets"]),
+                        adjustment_access=row["adjustment_access"],claim="BOUNDED_DESCRIPTOR_QUERIES_NOT_FEASIBILITY")
+                        for aid,row in target_states.items()}
+                    catalog=replace(catalog,generation_coverage=dict(catalog.generation_coverage,target_attempt_coverage=report))
             return catalog
         try:
             for a in order:
                 if not budget.available(): break
                 if early_publish and not budget.available(a.id): continue
-                progress=stages[a.id][0][1]
+                initial_kind,progress=stages[a.id][0]
                 while budget.available(a.id):
                     try: item=next(progress)
                     except StopIteration:
-                        stages[a.id].remove(("progress",progress)); break
+                        stages[a.id].remove((initial_kind,progress)); break
                     if item[0]=="COLUMN":
                         add(a,item[1],item[2]); break
                     if item[0]=="ATTEMPT": break
@@ -1712,10 +1816,23 @@ class CandidateProvider:
                     round_order=sorted(order,key=lambda a:(not bool(gaps.get(a.id)),order.index(a))) if gaps else order
                     for a in round_order:
                         if not budget.available(a.id) or budget.attempts[a.id]>=quota: continue
-                        if a.id in visited and sum(c.kind=="MOVE" for c in columns[a.id])>=target: continue
+                        if (not target_states and a.id in visited and sum(c.kind=="MOVE" for c in columns[a.id])>=target): continue
                         visited.add(a.id)
                         families=tuple(stages[a.id])
-                        if gaps:
+                        if target_states:
+                            coverage=next((family for family in families if family[0]=="target_coverage"),None)
+                            if coverage is not None and len(target_states[a.id]["attempted_targets"])<2:
+                                families=(coverage,)
+                            else:
+                                # After two targets, keep full/delayed chains in
+                                # the same round-robin as unseen targets. A new
+                                # duration on an old target waits behind these.
+                                pool=tuple(family for family in families if coverage is None or family[0] not in ("progress","alternative"))
+                                if pool:
+                                    turn=family_turn.get(a.id,0)%len(pool)
+                                    families=(pool[turn],); family_turn[a.id]=turn+1
+                                else: families=()
+                        elif gaps:
                             missing=gaps.get(a.id,())
                             priority=("progress" if "NO_ELIGIBLE_IMMEDIATE_MOVE_OBSERVED" in missing else
                                 "reference" if "NO_COMPLETE_CHAIN_OBSERVED" in missing else
@@ -2160,6 +2277,8 @@ class RollingHorizonCPSATScheduler:
                             if r.status in ("CONFLICT","REJECTED","UNSAFE","INVALID"):
                                 single_exclusions.add(c.signature);model.Add(variables[c.signature]==0)
                             else: model_complete=False
+                    if getattr(context,"diagnostics",None) is not None:
+                        context.diagnostics.model(candidates.columns,exclusions,single_exclusions,nogoods,refinement)
                     if incumbent:
                         chosen={c.signature for c in incumbent.selected}
                         for key,v in variables.items(): model.AddHint(v,int(key in chosen))
@@ -2204,6 +2323,8 @@ class RollingHorizonCPSATScheduler:
                     if status not in (cp_model.OPTIMAL,cp_model.FEASIBLE):
                         all_optimal=False; stop_reason="SOLVER_"+solver.StatusName(status); break
                     selected=tuple(c for key,c in lookup.items() if solver.Value(variables[key]))
+                    if getattr(context,"diagnostics",None) is not None:
+                        rec.update(context.diagnostics.selection(candidates,selected))
                     rec["objective"]=solver.ObjectiveValue()
                     if candidates.downstream is not None:
                         rec["canonical_selected_integer_key"]=_selection_solver_key(candidates,selected)
@@ -2288,9 +2409,10 @@ class NormalSchedulerCallback:
     """Callable SchedulerPort adapter; runner owns admission/emergency timing."""
     def __init__(self,method="energy_slack",candidate_provider=None,budget_profile=QUALITY_BUDGET_PROFILE,planning_profile=PLANNING_PROFILE_LEGACY,
                  advisor_runtime=None,budget_scale=1.,online_policy=None,prefix_reuse=None,selective_method=None,global_frame=None,
-                 selective_rule_variant="baseline",opportunity_seed_offset=0):
+                 selective_rule_variant="baseline",opportunity_seed_offset=0,diagnostics=None):
+        self.diagnostics=diagnostics
         if selective_method not in (None,"FULL_H","RULE_LOCAL_K8"): raise ValueError("unknown Stage A selective method")
-        if selective_rule_variant not in ("baseline","outer_priority_v1","opportunity_cooperative_v2"): raise ValueError("unknown selective rule variant")
+        if selective_rule_variant not in ("baseline","outer_priority_v1","opportunity_cooperative_v2","opportunity_executable_v3"): raise ValueError("unknown selective rule variant")
         if opportunity_seed_offset not in (0,1,2): raise ValueError("diagnostic opportunity offset must be 0..2")
         self.opportunity_seed_offset=opportunity_seed_offset
         if selective_method is None and selective_rule_variant!="baseline": raise ValueError("selective rule variant requires selective method")
@@ -2304,7 +2426,7 @@ class NormalSchedulerCallback:
         self.selective_rule_variant=selective_rule_variant
         if selective_method is not None:
             from .selective_replanning.history import PlanningHistory
-            self.selective_history=PlanningHistory(progress_policy="maneuver_started_v2" if selective_rule_variant=="opportunity_cooperative_v2" else "legacy")
+            self.selective_history=PlanningHistory(progress_policy="maneuver_started_v2" if selective_rule_variant in ("opportunity_cooperative_v2","opportunity_executable_v3") else "legacy")
             self.selective_blockers=[]
         self.scheduler=EnergySlackScheduler() if method=="energy_slack" else RollingHorizonCPSATScheduler() if method=="rh_cp_sat" else None
         if self.scheduler is None: raise ValueError("unknown Stage2 baseline")
@@ -2323,6 +2445,16 @@ class NormalSchedulerCallback:
         self.budget_profile=budget_profile
         self.records=[]
         self.last_result=None
+        self.last_diagnostic_problem=None
+
+    def probe_last_choices(self,forced_choices,**kwargs):
+        """Read-only counterfactual of the latest opt-in, actual local catalog."""
+        if self.last_diagnostic_problem is None: raise ValueError("no retained diagnostic catalog")
+        from .selective_replanning.diagnostics import probe_catalog_choices
+        problem=self.last_diagnostic_problem
+        kwargs.setdefault("baseline",problem["selected"])
+        kwargs.setdefault("global_frame",problem["global_frame"])
+        return probe_catalog_choices(problem["snapshot"],problem["catalog"],forced_choices,**kwargs)
 
     def state_dict(self):
         from .trajectory import TrajectoryPlan
@@ -2392,9 +2524,11 @@ class NormalSchedulerCallback:
 
     def __call__(self,port,*args):
         if args: port=args[-1]  # executor callback(snapshot, port) convention
+        self.last_diagnostic_problem=None
         from .safety import geometry_evidence_counts
         geometry_before=geometry_evidence_counts()
         budget=PlanningBudget.for_profile(self.budget_profile)
+        budget.diagnostics=self.diagnostics
         if self.selective_method is not None:
             budget.candidate_seconds=6.; budget.solver_seconds=8.; budget.hint_seconds=3.
             budget.soft_seconds=30.; budget.watchdog_seconds=60.
@@ -2456,9 +2590,12 @@ class NormalSchedulerCallback:
                     scope,selection=RuleSelector(variant=self.selective_rule_variant).select(snapshot,frame,self.selective_history,relations,
                         method=self.selective_method,now=now,references=self.provider.references,opportunity_seed_offset=self.opportunity_seed_offset)
                 local=LocalPlanner(self.provider,self.scheduler,
-                    progressive_v2=self.selective_rule_variant=="opportunity_cooperative_v2")
+                    progressive_v2=self.selective_rule_variant in ("opportunity_cooperative_v2","opportunity_executable_v3"),
+                    executable_v3=self.selective_rule_variant=="opportunity_executable_v3")
                 result=local.plan(snapshot,scope,frame,budget)
                 catalog,context=local.last_catalog,local.last_context
+                if self.diagnostics is not None:
+                    self.last_diagnostic_problem=dict(snapshot=snapshot,catalog=catalog,selected=result.selected,global_frame=frame)
                 selection["selection_status"]=selection.pop("status")
                 selective_telemetry=dict(local.telemetry,**selection,method=self.selective_method,
                     relations=[vars(r) for r in relations],selection_reasons=dict(local.last_scope.selection_reasons),
@@ -2711,7 +2848,7 @@ class NormalSchedulerCallback:
             timing=getattr(snapshot,"planning_timing",None)
             review_key=self._selective_review_key(timing) if timing is not None else "immediate:"+snapshot.version
             unknown_reviews=()
-            if self.selective_rule_variant=="opportunity_cooperative_v2":
+            if self.selective_rule_variant in ("opportunity_cooperative_v2","opportunity_executable_v3"):
                 # A completed safety check with UNKNOWN normal continuation is
                 # not a delivered normal-path review certificate.
                 unknown_reviews={aid for aid in selective_completed if not any(
