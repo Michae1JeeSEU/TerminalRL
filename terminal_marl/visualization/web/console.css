@@ -53,6 +53,9 @@ button:hover { background: #ececec; }
 .workspace-toolbar { display: flex; align-items: center; gap: 6px; padding: 0 7px; min-width: 0; }
 .workspace-toolbar button { padding-top: 3px; padding-bottom: 3px; }
 .workspace-toolbar [aria-expanded="true"], .mode-button.active, .tool-button.active { color: #111; background: #e6e6e6; border-color: #888; }
+.uid-locator { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; margin: 0 0 0 5px; }
+.uid-locator input { width: 108px; min-width: 0; padding: 3px 6px; border: 1px solid var(--line-strong); border-radius: 4px; background: #fff; color: var(--text); font-size: 11px; }
+.uid-locate-status { min-width: 0; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 11px; }
 #focusViewButton { margin-left: auto; }
 .workspace { min-height: 0; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 0 6px 6px; overflow: hidden; }
 .workspace.settings-open { grid-template-columns: 252px minmax(0, 1fr); }
@@ -146,6 +149,7 @@ button:hover { background: #ececec; }
   .app-shell { height: auto; min-height: 100dvh; display: flex; flex-direction: column; overflow: visible; }
   .topbar { flex-wrap: wrap; padding: 8px 10px; gap: 7px 10px; }.brand-block { flex: 1 1 auto; }.brand-title { font-size: 11px; letter-spacing: .04em; }.session-status { order: 3; width: 100%; }.top-actions { flex-wrap: wrap; }
   .workspace-toolbar { padding: 6px; flex-wrap: wrap; min-height: 38px; }.workspace-toolbar button { font-size: 11px; }
+  .uid-locator { margin-left: 0; }.uid-locate-status { max-width: none; flex: 1 1 120px; }
   .workspace, .workspace.settings-open, .workspace.details-open, .workspace.settings-open.details-open { display: flex; flex-direction: column; overflow: visible; }
   .center-stage { order: 0; flex: 0 0 auto; grid-template-rows: 84px minmax(480px, 75dvh) 220px; }.drawer-collapsed .center-stage { grid-template-rows: 84px minmax(480px, 75dvh) 34px; }
   .left-rail { order: 1; }.right-rail { order: 2; }.left-rail, .right-rail { max-height: 65dvh; }

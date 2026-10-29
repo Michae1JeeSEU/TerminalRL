@@ -912,8 +912,8 @@ function renderFlights(frame) {
   for (const uav of uavs) {
     const row = document.createElement("tr");
     row.tabIndex = 0;
-    row.setAttribute("aria-selected", String(state.selectedUid != null && Number(uav.uid) === Number(state.selectedUid)));
-    if (state.selectedUid != null && Number(uav.uid) === Number(state.selectedUid)) row.classList.add("selected");
+    row.setAttribute("aria-selected", String(uav.uid != null && state.selectedUid != null && Number(uav.uid) === Number(state.selectedUid)));
+    if (uav.uid != null && state.selectedUid != null && Number(uav.uid) === Number(state.selectedUid)) row.classList.add("selected");
     row.addEventListener("click", () => selectUid(uav.uid));
     row.addEventListener("keydown", (event) => {
       if (event.key !== "Enter" && event.key !== " ") return;
@@ -1038,7 +1038,7 @@ function renderRings(frame) {
 
 function escapeHtml(value) { return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character])); }
 
-function findSelected(frame) { return state.selectedUid == null ? null : safeArray(frame?.uavs).find((uav) => Number(uav.uid) === Number(state.selectedUid)) || null; }
+function findSelected(frame) { return state.selectedUid == null ? null : safeArray(frame?.uavs).find((uav) => uav.uid != null && Number(uav.uid) === Number(state.selectedUid)) || null; }
 
 function drawHistoryChart(uid, index) {
   const canvas = $("detailHistoryCanvas");
@@ -1049,7 +1049,7 @@ function drawHistoryChart(uid, index) {
   const ctx = canvas.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, rect.width, rect.height);
   ctx.fillStyle = "#fafafa"; ctx.fillRect(0, 0, rect.width, rect.height);
   const rows = state.frames.slice(0, index + 1).map((frame) => {
-    const uav = safeArray(frame.uavs).find((candidate) => Number(candidate.uid) === Number(uid));
+    const uav = safeArray(frame.uavs).find((candidate) => candidate.uid != null && Number(candidate.uid) === Number(uid));
     return uav && finiteNumber(frame.time) !== null && finiteNumber(uav.soc) !== null && finitePoint(uav.position) ? { time: Number(frame.time), soc: Number(uav.soc), altitude: Number(uav.position[2]) } : null;
   }).filter(Boolean);
   if (rows.length < 2) { ctx.fillStyle = "#666666"; ctx.font = "11px Inter, system-ui, sans-serif"; ctx.fillText("等待两帧历史样本", 8, rect.height / 2 + 3); return; }
@@ -1128,6 +1128,39 @@ function selectUid(uid) {
   state.followLost = false;
   state.uiDirty = true;
   renderUI(true);
+}
+
+function parseLocatorUid(value) {
+  const match = /^(?:UID\s+)?(\d+)$/i.exec(String(value ?? "").trim());
+  const uid = match ? Number(match[1]) : NaN;
+  return Number.isSafeInteger(uid) && uid >= 0 ? uid : null;
+}
+
+function locateUid(value) {
+  const feedback = $("uidLocateStatus");
+  const report = (message) => { feedback.textContent = message; feedback.title = message; };
+  const uid = parseLocatorUid(value);
+  if (uid === null) { report("请输入非负整数 UID，例如 17 或 UID 17"); return false; }
+  const frame = displayFrame();
+  if (!frame) { report("当前没有场景帧，请先加载回放或场景"); return false; }
+  const uav = safeArray(frame.uavs).find((candidate) => candidate.uid != null && Number(candidate.uid) === uid);
+  if (!uav) { report(`当前帧未找到 UID ${uid}`); return false; }
+  if (!Array.isArray(uav.position) || uav.position.length < 3 || !uav.position.slice(0, 3).every((coordinate) => typeof coordinate === "number" && Number.isFinite(coordinate))) {
+    report(`UID ${uid} 当前没有有效位置，无法定位`); return false;
+  }
+  state.followUid = null;
+  selectUid(uid);
+  // Opening the details rail changes canvas width. setFrame renders with the
+  // new layout before focusOn projects the selected aircraft into its center.
+  renderScene(frame);
+  state.scene.focusOn(uid, frame);
+  report(`已定位 UID ${uid}`);
+  return true;
+}
+
+function wireUidLocator() {
+  $("uidLocateForm").addEventListener("submit", (event) => { event.preventDefault(); locateUid($("uidLocateInput").value); });
+  $("uidLocateForm").addEventListener("keydown", (event) => event.stopPropagation());
 }
 
 function toggleFollow() {
@@ -1409,6 +1442,7 @@ function openDrawerPanel(panelId) {
 }
 
 function wireControls() {
+  wireUidLocator();
   $("openReplayButton").addEventListener("click", () => openLocalReplay(false));
   $("referenceReplayButton").addEventListener("click", () => openLocalReplay(true));
   $("replayPathInput").addEventListener("keydown", (event) => { if (event.key === "Enter") openLocalReplay(false); });

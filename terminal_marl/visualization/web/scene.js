@@ -115,7 +115,7 @@ export default class Scene {
   }
 
   focusOn(uid, frame = this.frame) {
-    const target = frame && Array.isArray(frame.uavs) ? frame.uavs.find((u) => Number(u.uid) === Number(uid)) : null;
+    const target = uid != null && frame && Array.isArray(frame.uavs) ? frame.uavs.find((u) => u.uid != null && Number(u.uid) === Number(uid)) : null;
     if (!target || !Array.isArray(target.position)) return false;
     const p = this._project(target.position, true);
     this.camera.panX += this.metrics.cssWidth * .5 - p.x;
@@ -408,7 +408,7 @@ export default class Scene {
 
   _drawSlots() {
     const colors = { FREE: "#4c8059", OCCUPIED: "#2864b7", RESERVED: "#a87517", DEPARTING: "#b64a4a", SOFT: "#8553ad" };
-    const selected = (this.frame?.uavs || []).find((uav) => String(uav.uid) === String(this.selectedUid));
+    const selected = this.selectedUid == null ? null : (this.frame?.uavs || []).find((uav) => uav.uid != null && String(uav.uid) === String(this.selectedUid));
     for (const slot of this.frame?.rotating_slots?.slots || []) {
       if (!this._finitePoint(slot.position)) continue;
       const p = this._project(slot.position);
@@ -454,7 +454,7 @@ export default class Scene {
   _drawCommitted(uav) {
     const points = Array.isArray(uav.trajectory_points) ? uav.trajectory_points.filter((p) => this._finitePoint(p)) : [];
     if (points.length < 2) return;
-    const selected = this.selectedUid != null && Number(uav.uid) === Number(this.selectedUid);
+    const selected = uav.uid != null && this.selectedUid != null && Number(uav.uid) === Number(this.selectedUid);
     const emergency = Scene.emergencyFlight(uav);
     const color = emergency ? "#b23c43" : this._colorFor(uav.uid);
     this._path(points, emergency ? color : selected ? color : `${color}6e`, emergency ? 4.5 : selected ? 1.7 : .95, false, emergency ? [8, 4] : [7, 4]);
@@ -479,7 +479,7 @@ export default class Scene {
     ctx.setLineDash([]);
     ctx.beginPath(); ctx.arc(0, 0, size * .72, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.restore();
-    if (this.layers.labels && (this.referenceFrame?.uavs?.length <= 8 || (match && String(match.uid) === String(this.selectedUid)))) { ctx.save(); ctx.font = "9px Inter, system-ui, sans-serif"; ctx.fillStyle = `${color}bb`; ctx.fillText(`R ${Scene.uidLabel(uav)}`, p.x + 9, p.y + 3); ctx.restore(); }
+    if (this.layers.labels && (this.referenceFrame?.uavs?.length <= 8 || (match?.uid != null && this.selectedUid != null && String(match.uid) === String(this.selectedUid)))) { ctx.save(); ctx.font = "9px Inter, system-ui, sans-serif"; ctx.fillStyle = `${color}bb`; ctx.fillText(`R ${Scene.uidLabel(uav)}`, p.x + 9, p.y + 3); ctx.restore(); }
   }
 
   _drawReferenceFrame(frame) {
@@ -519,8 +519,8 @@ export default class Scene {
     if (!this._finitePoint(uav.position)) return;
     const p = this._project(uav.position);
     const color = this._colorFor(uav.uid);
-    const selected = this.selectedUid != null && Number(uav.uid) === Number(this.selectedUid);
-    const hovered = this.hoverUid != null && Number(uav.uid) === Number(this.hoverUid);
+    const selected = uav.uid != null && this.selectedUid != null && Number(uav.uid) === Number(this.selectedUid);
+    const hovered = uav.uid != null && this.hoverUid != null && Number(uav.uid) === Number(this.hoverUid);
     const heading = this._heading(uav);
     const size = selected || hovered ? 9 : 7;
     const ctx = this.ctx;

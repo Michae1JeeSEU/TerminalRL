@@ -15,7 +15,7 @@ function consoleHarness(overrides = {}) {
     .replace(/^import Scene from .*;\r?\n/, "")
     .replace(/\binitialize\(\);\s*$/, "");
   const sceneSource = readFileSync(new URL("../terminal_marl/visualization/web/scene.js", import.meta.url), "utf8").replace("export default class Scene", "class Scene");
-  vm.runInContext(`${sceneSource}\n${source}\nglobalThis.harness = {state, sameAircraft, discreteReplay, interpolateFrame, displayFrame, renderFlights, renderEvents, renderDetails, renderResources, renderKpis, updateHistory, appendServerPayload, metricsForFrame, referenceAtTime, validateReplayPayload, formatSoc, requestJson};`, context);
+  vm.runInContext(`${sceneSource}\n${source}\nglobalThis.harness = {state, sameAircraft, discreteReplay, interpolateFrame, displayFrame, renderFlights, renderEvents, renderDetails, renderResources, renderKpis, updateHistory, appendServerPayload, metricsForFrame, referenceAtTime, validateReplayPayload, formatSoc, requestJson, parseLocatorUid, locateUid, wireUidLocator, useDetailsOnlyUi: () => { renderUI = () => renderDetails(displayFrame()); }};`, context);
   return context.harness;
 }
 
@@ -86,15 +86,89 @@ function uidUiHarness() {
   const elements = new Map();
   const ctx = new Proxy({}, { get: () => () => {} });
   const node = () => ({
-    children: [], value: "", textContent: "", classList: { add() {}, toggle() {} },
+    children: [], value: "", textContent: "", listeners: {}, attributes: {},
+    classList: { values: new Set(), add(value) { this.values.add(value); }, toggle(value, on) { on ? this.values.add(value) : this.values.delete(value); } },
     append(...items) { this.children.push(...items); }, replaceChildren(...items) { this.children = items; },
-    setAttribute() {}, addEventListener() {}, getBoundingClientRect: () => ({ width: 200, height: 60 }), getContext: () => ctx,
+    setAttribute(name, value) { this.attributes[name] = value; }, addEventListener(name, handler) { this.listeners[name] = handler; }, getBoundingClientRect: () => ({ width: 200, height: 60 }), getContext: () => ctx,
     querySelector() { if (!this.body) this.body = node(); return this.body; },
   });
-  const document = { createElement: node, getElementById(id) { if (!elements.has(id)) elements.set(id, node()); return elements.get(id); } };
+  const document = { createElement: node, querySelector: (selector) => document.getElementById(selector), getElementById(id) { if (!elements.has(id)) elements.set(id, node()); return elements.get(id); } };
   const h = consoleHarness({ document, Option: function(text, value) { this.textContent = text; this.value = value; } });
   return { h, get: document.getElementById };
 }
+
+test("locator accepts complete nonnegative safe UIDs and rejects partial or unsafe input", () => {
+  const h = consoleHarness();
+  for (const [input, expected] of [["0", 0], [" 17 ", 17], [" uId 17 ", 17], ["UID 0", 0], ["9007199254740991", Number.MAX_SAFE_INTEGER]]) assert.equal(h.parseLocatorUid(input), expected);
+  for (const input of ["", "  ", "UID", "UID17", "17abc", "-1", "+1", "1.0", "1e2", "Infinity", "NaN", "9007199254740992", "UID -1"]) assert.equal(h.parseLocatorUid(input), null, input);
+});
+
+test("locator selects exact UID zero, opens details and renders the resized frame before focus without changing playback", () => {
+  for (const playing of [false, true]) {
+    const { h, get } = uidUiHarness(); h.useDetailsOnlyUi();
+    const current = frame(12, { console_replay_kind: "rotating_slots", uavs: [
+      { uid: null, position: [1, 2, 3] }, { uid: 10, position: [10, 10, 10] }, { uid: 0, position: [20, 30, 40], low_soc: true },
+    ] });
+    h.state.frames = [frame(0), current, frame(20)]; h.state.currentIndex = 1;
+    h.state.playheadTime = 12.5; h.state.playbackSpeed = 4; h.state.playing = playing;
+    h.state.selectedUid = 10; h.state.selectedEvent = { uid: 10 }; h.state.followUid = 10;
+    get("detailsRail").hidden = true;
+    const calls = [];
+    h.state.scene = {
+      setFrame(f, options) {
+        assert.equal(get("detailsRail").hidden, false);
+        assert.equal(get(".workspace").classList.values.has("details-open"), true);
+        assert.equal(h.state.followUid, null); assert.equal(options.selectedUid, 0);
+        calls.push(["render", f]);
+      },
+      focusOn(uid, f) { assert.equal(calls.at(-1)[0], "render"); calls.push(["focus", uid, f]); return true; },
+    };
+    assert.equal(h.locateUid("UID 0"), true);
+    assert.equal(calls.length, 2); assert.equal(calls[0][1], current);
+    assert.equal(calls[1][1], 0); assert.equal(calls[1][2], current);
+    assert.equal(h.state.selectedUid, 0); assert.equal(h.state.selectedEvent, null); assert.equal(h.state.followUid, null);
+    assert.equal(get("selectedTitle").textContent, "UID 0"); assert.equal(get("uidLocateStatus").textContent, "已定位 UID 0");
+    assert.equal(h.state.currentIndex, 1); assert.equal(h.state.playheadTime, 12.5);
+    assert.equal(h.state.playing, playing); assert.equal(h.state.playbackSpeed, 4);
+  }
+});
+
+test("invalid, absent and unpositioned locator results leave selection, camera and playback untouched", () => {
+  const { h, get } = uidUiHarness();
+  const selectedEvent = { uid: 3 };
+  Object.assign(h.state, { selectedUid: 3, selectedEvent, followUid: 3, currentIndex: 1, playheadTime: 12, playing: true, playbackSpeed: 2 });
+  get("detailsRail").hidden = true;
+  const calls = [];
+  h.state.scene = { setFrame: () => calls.push("render"), focusOn: () => calls.push("focus") };
+  const unchanged = () => {
+    assert.equal(h.state.selectedUid, 3); assert.equal(h.state.selectedEvent, selectedEvent); assert.equal(h.state.followUid, 3);
+    assert.equal(h.state.currentIndex, 1); assert.equal(h.state.playheadTime, 12); assert.equal(h.state.playing, true); assert.equal(h.state.playbackSpeed, 2);
+    assert.equal(get("detailsRail").hidden, true); assert.deepEqual(calls, []);
+  };
+  for (const input of ["", "17junk", "-17", "1.7", "9007199254740992"]) { assert.equal(h.locateUid(input), false); assert.match(get("uidLocateStatus").textContent, /非负整数 UID/); unchanged(); }
+  assert.equal(h.locateUid("17"), false); assert.match(get("uidLocateStatus").textContent, /没有场景帧/); unchanged();
+  h.state.frames = [frame(0, { uavs: [{ uid: 17, position: [1, 2, 3] }] }), frame(12, { uavs: [{ uid: 170, position: [1, 2, 3] }] })];
+  h.state.reference = { frames: [frame(12, { uavs: [{ uid: 17, position: [1, 2, 3] }] })] };
+  assert.equal(h.locateUid("17"), false); assert.match(get("uidLocateStatus").textContent, /当前帧未找到 UID 17/); unchanged();
+  for (const position of [undefined, [1, 2], [1, null, 3], [1, NaN, 3], [1, Infinity, 3]]) {
+    h.state.frames[1] = frame(12, { uavs: [{ uid: 17, position }] });
+    assert.equal(h.locateUid("17"), false); assert.match(get("uidLocateStatus").textContent, /没有有效位置/); unchanged();
+  }
+});
+
+test("locator form binds native submit and keeps input keyboard events away from playback shortcuts", () => {
+  const { h, get } = uidUiHarness();
+  h.wireUidLocator(); get("uidLocateInput").value = "UID 17";
+  let prevented = false, stopped = false;
+  get("uidLocateForm").listeners.submit({ preventDefault() { prevented = true; } });
+  assert.equal(prevented, true); assert.match(get("uidLocateStatus").textContent, /没有场景帧/);
+  get("uidLocateForm").listeners.keydown({ key: "Enter", stopPropagation() { stopped = true; } });
+  assert.equal(stopped, true);
+  const html = readFileSync(new URL("../terminal_marl/visualization/web/index.html", import.meta.url), "utf8");
+  assert.match(html, /<form id="uidLocateForm"[\s\S]*?id="uidLocateInput"[\s\S]*?<button[^>]*type="submit"[^>]*>定位<\/button>[\s\S]*?<\/form>/);
+  assert.match(html, /for="uidLocateInput">定位无人机 UID/);
+  assert.match(html, /id="uidLocateStatus"[^>]*aria-live="polite"/);
+});
 
 test("flight, event and details labels use UID including zero, missing and absent records", () => {
   const { h, get } = uidUiHarness();

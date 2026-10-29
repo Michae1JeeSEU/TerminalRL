@@ -37,6 +37,12 @@
       <button id="settingsToggleButton" class="tool-button" type="button" aria-controls="settingsRail" aria-expanded="false">场景设置</button>
       <button id="detailsToggleButton" class="tool-button" type="button" aria-controls="detailsRail" aria-expanded="false">飞机详情</button>
       <button id="compareToggleButton" class="tool-button" type="button" aria-controls="comparisonPanel" aria-expanded="false">对比面板</button>
+      <form id="uidLocateForm" class="uid-locator" role="search" aria-label="定位无人机">
+        <label class="sr-only" for="uidLocateInput">定位无人机 UID</label>
+        <input id="uidLocateInput" type="text" inputmode="numeric" autocomplete="off" placeholder="无人机 UID" aria-describedby="uidLocateStatus">
+        <button class="tool-button" type="submit">定位</button>
+      </form>
+      <span id="uidLocateStatus" class="uid-locate-status" role="status" aria-live="polite" aria-atomic="true"></span>
       <button id="focusViewButton" class="text-button" type="button" title="收起设置、详情和底部面板，扩大场景">专注场景</button>
     </nav>
     <main class="workspace">

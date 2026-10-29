@@ -172,6 +172,21 @@ test("ordinary, selected, hovered, reference and failed labels use explicit UIDs
   assert.deepEqual(labels, ["UID 0", "UID 0", "UID 0", "R UID 0", "UID 0 · ENERGY_FAILURE", "UID 0 · failed", "UID —"]);
 });
 
+test("UID zero focus and highlight exclude missing UID aircraft", () => {
+  const instance = scene();
+  const missing = { ...flying, uid: null, position: [100, 110, 20] };
+  const zero = { ...flying, uid: 0, position: [20, 30, 40] };
+  instance.frame = { uavs: [missing, zero] };
+  instance.selectedUid = 0; instance.hoverUid = 0;
+  instance._drawUav(missing, false, false);
+  assert.equal(instance.calls.some((call) => call.kind === "text" || call.kind === "stroke" && call.color === "#202428"), false);
+  instance.render = () => {};
+  instance.camera.panX = 0; instance.camera.panY = 0;
+  assert.equal(instance.focusOn(0, instance.frame), true);
+  assert.equal(instance.camera.panX, 430); assert.equal(instance.camera.panY, 295);
+  assert.equal(instance.focusOn(null, instance.frame), false);
+});
+
 test("low SOC and emergency bodies and safety outlines have visibly bolder strokes", () => {
   const instance = scene();
   for (const [declaration, width] of [[{}, 1.5], [{ low_soc: true }, 2.8], [{ emergency_landing: true }, 3.4]]) {
