@@ -1,6 +1,7 @@
 """Cheap revealed resource relations; these are never safety certificates."""
 from dataclasses import dataclass
 from .scope import digest
+from .policy import PROGRESSIVE_VARIANTS
 
 
 @dataclass(frozen=True)
@@ -22,7 +23,7 @@ def build_relations(snapshot, eligible_ids, previous_blockers=(), frame=None, *,
         a = snapshot.aircraft[aid]
         for r in snapshot.slots:
             resource = r.resource
-            if variant not in ("opportunity_cooperative_v2","opportunity_executable_v3") and isinstance(resource, tuple) and resource[0] == next_ring.get(a.ring) and r.aircraft_id != aid:
+            if variant not in PROGRESSIVE_VARIANTS and isinstance(resource, tuple) and resource[0] == next_ring.get(a.ring) and r.aircraft_id != aid:
                 rows.add(Relation(aid, r.aircraft_id, "next_ring_occupancy", False, False, resource))
         for p in (snapshot.active.get(aid), snapshot.soft.get(aid)):
             if p is None: continue
@@ -47,7 +48,7 @@ def build_relations(snapshot, eligible_ids, previous_blockers=(), frame=None, *,
         if row.get("snapshot_id") != snapshot.version: continue
         source, target = row["source"], row["target"]
         if source in snapshot.aircraft and target in snapshot.aircraft:
-            if variant in ("opportunity_cooperative_v2","opportunity_executable_v3"):
+            if variant in PROGRESSIVE_VARIANTS:
                 from ..stage2_planning import _node
                 resource=tuple(row.get("resource",()))
                 node=_node(snapshot,snapshot.aircraft[source])

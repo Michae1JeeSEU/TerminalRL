@@ -25,6 +25,7 @@ from .resources import Reservation
 from .safety import validate_separation
 from .trajectory import (generate_transfer, generate_final, make_stable_plan, make_ground_plan,
                          screen_normal_templates)
+from .selective_replanning.policy import PROGRESSIVE_VARIANTS, REFERENCE_VARIANT, resolve_search_policy
 
 HORIZON = 240.0
 OFFSETS = (0., 5., 10., 15., 20., 30.)
@@ -1758,7 +1759,7 @@ class CandidateProvider:
             if self.planning_profile==PLANNING_PROFILE_DOWNSTREAM:
                 stages[a.id].append(("delayed",self._delayed_steps(snapshot,a,n,budget,context)))
             stages[a.id].append(("alternative",self._paths(snapshot,a,n,budget,context)))
-            if getattr(budget,"_selective_executable_v3",False):
+            if getattr(budget,"_selective_target_coverage_order",getattr(budget,"_selective_executable_v3",False)):
                 from .selective_replanning.near_term import adjustment_access
                 access=adjustment_access(snapshot,a,n)
                 reused={c.first_target[2] if n.ring=="inner" else c.first_target[1]
@@ -2409,10 +2410,10 @@ class NormalSchedulerCallback:
     """Callable SchedulerPort adapter; runner owns admission/emergency timing."""
     def __init__(self,method="energy_slack",candidate_provider=None,budget_profile=QUALITY_BUDGET_PROFILE,planning_profile=PLANNING_PROFILE_LEGACY,
                  advisor_runtime=None,budget_scale=1.,online_policy=None,prefix_reuse=None,selective_method=None,global_frame=None,
-                 selective_rule_variant="baseline",opportunity_seed_offset=0,diagnostics=None):
+                 selective_rule_variant="baseline",opportunity_seed_offset=0,diagnostics=None,search_policy=None):
         self.diagnostics=diagnostics
         if selective_method not in (None,"FULL_H","RULE_LOCAL_K8"): raise ValueError("unknown Stage A selective method")
-        if selective_rule_variant not in ("baseline","outer_priority_v1","opportunity_cooperative_v2","opportunity_executable_v3"): raise ValueError("unknown selective rule variant")
+        self.search_policy=resolve_search_policy(selective_rule_variant,search_policy)
         if opportunity_seed_offset not in (0,1,2): raise ValueError("diagnostic opportunity offset must be 0..2")
         self.opportunity_seed_offset=opportunity_seed_offset
         if selective_method is None and selective_rule_variant!="baseline": raise ValueError("selective rule variant requires selective method")
@@ -2426,7 +2427,7 @@ class NormalSchedulerCallback:
         self.selective_rule_variant=selective_rule_variant
         if selective_method is not None:
             from .selective_replanning.history import PlanningHistory
-            self.selective_history=PlanningHistory(progress_policy="maneuver_started_v2" if selective_rule_variant in ("opportunity_cooperative_v2","opportunity_executable_v3") else "legacy")
+            self.selective_history=PlanningHistory(progress_policy="maneuver_started_v2" if selective_rule_variant in PROGRESSIVE_VARIANTS else "legacy")
             self.selective_blockers=[]
         self.scheduler=EnergySlackScheduler() if method=="energy_slack" else RollingHorizonCPSATScheduler() if method=="rh_cp_sat" else None
         if self.scheduler is None: raise ValueError("unknown Stage2 baseline")
@@ -2470,6 +2471,8 @@ class NormalSchedulerCallback:
         if self.selective_method is not None:
             state["selective_replanning"]=dict(method=self.selective_method,history=self.selective_history.state_dict(),blockers=self.selective_blockers,
                 rule_variant=self.selective_rule_variant,opportunity_seed_offset=self.opportunity_seed_offset)
+            if self.selective_rule_variant==REFERENCE_VARIANT:
+                state["selective_replanning"]["search_policy"]=self.search_policy.to_dict()
         if self.planning_profile!=PLANNING_PROFILE_LEGACY: state["planning_profile"]=self.planning_profile
         if self.online_policy is not None: state["online_policy"]=self.online_policy
         if self.prefix_reuse or self.online_policy: state["prefix_reuse"]=self.prefix_reuse
@@ -2493,6 +2496,14 @@ class NormalSchedulerCallback:
         if (selective or {}).get("method")!=self.selective_method: raise ValueError("selective method binding mismatch")
         if (selective or {}).get("rule_variant","baseline")!=self.selective_rule_variant: raise ValueError("selective rule variant binding mismatch")
         if (selective or {}).get("opportunity_seed_offset",0)!=self.opportunity_seed_offset: raise ValueError("opportunity seed binding mismatch")
+        if self.selective_rule_variant==REFERENCE_VARIANT:
+            saved_policy=(selective or {}).get("search_policy")
+            if (not isinstance(saved_policy,dict) or any(type(value) is not bool for value in saved_policy.values())
+                    or saved_policy!=self.search_policy.to_dict()):
+                raise ValueError("selective search policy binding mismatch")
+        elif selective is not None and "search_policy" in selective:
+            if resolve_search_policy(self.selective_rule_variant,selective["search_policy"])!=self.search_policy:
+                raise ValueError("selective search policy binding mismatch")
         if selective is not None:
             self.selective_history.load_state_dict(selective["history"])
             self.selective_blockers=list(selective.get("blockers",()))
@@ -2573,6 +2584,10 @@ class NormalSchedulerCallback:
                 with budget.measure("global_evaluation_frame"):
                     try: frame=self.global_frame or build_global_frame(snapshot,self.provider,context)
                     except FrameIncomplete as exc:
+                        access_failure={}
+                        if self.selective_rule_variant==REFERENCE_VARIANT:
+                            from .selective_replanning.near_term import adjustment_access
+                            access_failure={a.id:adjustment_access(snapshot,a) for a in _decision_aircraft(snapshot)}
                         result=PlanningResult((),(),None,"GLOBAL_FRAME_INCOMPLETE",(),certified=False,details={"reason":str(exc)})
                         self.last_result=result
                         geometry_after=geometry_evidence_counts()
@@ -2582,16 +2597,18 @@ class NormalSchedulerCallback:
                             geometry_evidence_counts=dict(before=geometry_before,after=geometry_after,
                                 delta={key:geometry_after[key]-geometry_before[key] for key in geometry_after}),
                             selective_replanning=dict(method=self.selective_method,status="LOCAL_SEARCH_INCOMPLETE",reason=str(exc),
-                                solve_calls=0,scope_expansions=0,objective_frame_id=None,scope=None,rule_variant=self.selective_rule_variant)))
+                                solve_calls=0,scope_expansions=0,objective_frame_id=None,scope=None,rule_variant=self.selective_rule_variant,
+                                **(dict(search_policy=self.search_policy.to_dict(),adjustment_access=access_failure,
+                                    round_execution={}) if self.selective_rule_variant==REFERENCE_VARIANT else {}))))
                         return result
                 if frame.snapshot_id!=snapshot.version or frame.effective_time!=snapshot.time: raise ValueError("injected frame snapshot mismatch")
                 with budget.measure("selective_selection"):
                     relations=build_relations(snapshot,tuple(a.id for a in _decision_aircraft(snapshot)),self.selective_blockers,frame=frame,variant=self.selective_rule_variant)
-                    scope,selection=RuleSelector(variant=self.selective_rule_variant).select(snapshot,frame,self.selective_history,relations,
+                    scope,selection=RuleSelector(variant=self.selective_rule_variant,search_policy=self.search_policy).select(snapshot,frame,self.selective_history,relations,
                         method=self.selective_method,now=now,references=self.provider.references,opportunity_seed_offset=self.opportunity_seed_offset)
                 local=LocalPlanner(self.provider,self.scheduler,
-                    progressive_v2=self.selective_rule_variant in ("opportunity_cooperative_v2","opportunity_executable_v3"),
-                    executable_v3=self.selective_rule_variant=="opportunity_executable_v3")
+                    progressive_v2=self.selective_rule_variant in PROGRESSIVE_VARIANTS,
+                    executable_v3=self.selective_rule_variant=="opportunity_executable_v3",search_policy=self.search_policy)
                 result=local.plan(snapshot,scope,frame,budget)
                 catalog,context=local.last_catalog,local.last_context
                 if self.diagnostics is not None:
@@ -2742,6 +2759,15 @@ class NormalSchedulerCallback:
                     evidence_report=report(tuple(rows),snapshot_version=current.version)
         self.last_result=result
         committed_prefix=result.prefix if commit is not None and commit.accepted else ()
+        if selective_telemetry is not None and self.selective_rule_variant==REFERENCE_VARIANT:
+            executable_ids={p.aircraft_id for p in context.prefix(result.selected)}
+            committed_ids={p.aircraft_id for p in committed_prefix}
+            selective_telemetry["round_execution"]={c.aircraft_id:dict(
+                evidence_phase="CALLBACK_RETURN",
+                kind=c.kind,first_start_time=c.plans[0].start_time if c.plans else None,
+                executable_prefix=c.aircraft_id in executable_ids,
+                prefix_committed=c.aircraft_id in committed_ids,
+                certified=result.certified) for c in result.selected}
         updated_previous={c.aircraft_id:tuple(p for p in c.plans if p not in committed_prefix) for c in result.selected if c.kind=="MOVE"}
         if self.selective_method is None: self.provider.previous=updated_previous
         else:
@@ -2848,7 +2874,7 @@ class NormalSchedulerCallback:
             timing=getattr(snapshot,"planning_timing",None)
             review_key=self._selective_review_key(timing) if timing is not None else "immediate:"+snapshot.version
             unknown_reviews=()
-            if self.selective_rule_variant in ("opportunity_cooperative_v2","opportunity_executable_v3"):
+            if self.selective_rule_variant in PROGRESSIVE_VARIANTS:
                 # A completed safety check with UNKNOWN normal continuation is
                 # not a delivered normal-path review certificate.
                 unknown_reviews={aid for aid in selective_completed if not any(

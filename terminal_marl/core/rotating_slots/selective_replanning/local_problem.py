@@ -2,13 +2,16 @@
 from dataclasses import replace, asdict
 import time
 from .scope import PlanningScope
+from .policy import SearchPolicy
 
 
 class LocalPlanner:
-    def __init__(self, provider, scheduler, *, progressive_v2=False, executable_v3=False):
+    def __init__(self, provider, scheduler, *, progressive_v2=False, executable_v3=False, search_policy=None):
         self.provider, self.scheduler = provider, scheduler
         self.progressive_v2=progressive_v2 or executable_v3
         self.executable_v3=executable_v3
+        self.search_policy=search_policy if search_policy is not None else SearchPolicy(executable_v3,executable_v3,executable_v3)
+        if not isinstance(self.search_policy,SearchPolicy): raise ValueError("resolved SearchPolicy required")
 
     def plan(self, snapshot, scope, global_frame, shared_budget):
         if self.progressive_v2: return self._plan_v2(snapshot,scope,global_frame,shared_budget)
@@ -117,7 +120,7 @@ class LocalPlanner:
         first=None; best=None; incumbent=None; expansions=0; catalogs=None; context=None
         scope_round=0; old_call_limit=getattr(budget,"solver_call_seconds",None); first_certified=None; skipped_expansions=[]
         budget._selective_progressive_v2=True
-        if self.executable_v3: budget._selective_executable_v3=True
+        budget._selective_target_coverage_order=self.search_policy.target_coverage_order
         try:
             for index in range(2):
                 before_materialized={aid:budget.screening.get("materialized:"+aid,0) for aid in snapshot.aircraft}
@@ -191,7 +194,7 @@ class LocalPlanner:
                 eligible=set(scope.eligible_ids); opened=set(scope.replan_ids)
                 targets=sorted({row["target"] for row in context.background_blockers if row["target"] in eligible-opened
                     and row["snapshot_id"]==snapshot.version and row["reason"]=="RESOURCE_CONFLICT" and row["resource"]})
-                if self.executable_v3:
+                if self.search_policy.ordinary_immediate_filter:
                     from .near_term import releasable_at_effective
                     executable_targets=[]
                     for aid in targets:
@@ -216,7 +219,7 @@ class LocalPlanner:
             if old_call_limit is None: budget.__dict__.pop("solver_call_seconds",None)
             else: budget.solver_call_seconds=old_call_limit
             budget.__dict__.pop("_strict_resource_context",None)
-            budget.__dict__.pop("_selective_executable_v3",None)
+            budget.__dict__.pop("_selective_target_coverage_order",None)
         result,catalog,context,accepted_scope=best if best is not None else first
         self.last_catalog,self.last_context,self.last_scope=catalog,context,accepted_scope
         self.completed_evaluations=completed

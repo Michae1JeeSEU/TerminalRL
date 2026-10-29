@@ -760,13 +760,19 @@ class LatencyAwareScheduler:
                 or self._last_restart_time == port.time or self._last_normal_start_time == port.time):
             return False
         previous = self._restart_requested
+        previous_index = previous["record_index"]
+        if previous_index is None and not previous.get("external_predecessor"):
+            raise ValueError("external restart predecessor provenance required")
         self._restart_requested = None
         self._last_restart_time = port.time
         self(port)
         self.records[-1].update(restart_reason=previous["reason"],previous_finished_time=previous["finished_time"],
             previous_record_index=previous["record_index"],finish_to_next_start_s=port.time-previous["finished_time"])
-        self.records[previous["record_index"]].update(next_started_time=port.time,
-            finish_to_next_start_s=port.time-previous["finished_time"],restart_reason=previous["reason"])
+        if previous_index is not None:
+            self.records[previous_index].update(next_started_time=port.time,
+                finish_to_next_start_s=port.time-previous["finished_time"],restart_reason=previous["reason"])
+        else:
+            self.records[-1]["external_predecessor"] = previous["external_predecessor"]
         port.planning_latency_event("normal_coalesced_restart",**previous,next_started_time=port.time)
         return True
 

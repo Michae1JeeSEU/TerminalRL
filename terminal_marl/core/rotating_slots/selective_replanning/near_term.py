@@ -30,11 +30,13 @@ def releasable_at_effective(snapshot, aircraft_id, resource):
                 releasable=access["adjustable"] and matches)
 
 
-def summarize_opportunities(snapshot, eligible, references=None, *, horizon_seconds=240., executable=False):
+def summarize_opportunities(snapshot, eligible, references=None, *, horizon_seconds=240., executable=False, include_access=False):
     if executable: return _executable_opportunities(snapshot,eligible,references,horizon_seconds=horizon_seconds)
     from ..stage2_planning import _node, remaining_normal_time_lower
     from ..trajectory import ring_config
     nodes={aid:_node(snapshot,a) for aid,a in eligible.items()}
+    access={aid:adjustment_access(snapshot,a,nodes[aid]) for aid,a in eligible.items()} if include_access else {}
+    effective=getattr(getattr(snapshot,"planning_timing",None),"effective_time",snapshot.time)
     end=snapshot.time+horizon_seconds
     cache=getattr(references,"cache",{})
     rows={}
@@ -57,7 +59,7 @@ def summarize_opportunities(snapshot, eligible, references=None, *, horizon_seco
                 and r.aircraft_id!=aid and r.end>node.time]
             finite=max((r.end for r in occupied if math.isfinite(r.end)),default=node.time)
             indefinite=[r for r in occupied if not math.isfinite(r.end)]
-            members=[]; unknown=False
+            members=[]; unknown=False; dependencies=[]
             for r in indefinite:
                 owner=nodes.get(r.aircraft_id)
                 # Only this specific owner/slot can supply the potential release.
@@ -68,6 +70,10 @@ def summarize_opportunities(snapshot, eligible, references=None, *, horizon_seco
                 owner_step=max(20.,owner_lower-(remaining_normal_time_lower(snapshot,after) if after else 13.5))
                 finite=max(finite,owner.time+owner_step)
                 members.append(r.aircraft_id)
+                if include_access:
+                    dependencies.append(dict(owner=r.aircraft_id,resource=resource,
+                        owner_start_time=owner.time,owner_start_available=access[r.aircraft_id]["adjustable"],
+                        estimated_release_time=owner.time+owner_step,certified=False))
             if unknown: continue
             start=max(node.time,finite)
             arrival=start+step
@@ -77,6 +83,8 @@ def summarize_opportunities(snapshot, eligible, references=None, *, horizon_seco
                 joint_members=tuple(sorted(set(members))),
                 source="applicable_cached_path" if applicable else "shortest_arrival_resource_estimate",
                 release_source="potential_owner_maneuver" if members else "finite_calendar_or_free_resource",
+                **(dict(start_time=start,start_available=access[aid]["adjustable"] and abs(start-effective)<=1.e-8,
+                    pad_id=target if next_ring is None else None,release_dependencies=dependencies) if include_access else {}),
                 certified=False))
         options.sort(key=lambda row:(row["earliest_arrival"],len(row["joint_members"]),repr(row["resource"])))
         best=options[0] if options else None
@@ -84,7 +92,8 @@ def summarize_opportunities(snapshot, eligible, references=None, *, horizon_seco
             earliest_arrival=None if best is None else best["earliest_arrival"],
             resource=None if best is None else best["resource"],
             joint_members=() if best is None else best["joint_members"],
-            options=tuple(options),horizon_end=end,cached_reference_applicable=applicable)
+            options=tuple(options),horizon_end=end,cached_reference_applicable=applicable,
+            **(dict(adjustment_access=access[aid]) if include_access else {}))
     return rows
 
 
@@ -146,17 +155,17 @@ def _executable_opportunities(snapshot,eligible,references,*,horizon_seconds):
     return rows
 
 
-def cooperative_pad_groups(opportunities, *, max_groups=3):
-    """Order executable pad anchors with specific reverse source-release links."""
+def cooperative_pad_groups(opportunities, *, max_groups=3, allow_future=False):
+    """Order pad anchors and their specific, explicitly timed release links."""
     candidates=[]
     for anchor,row in opportunities.items():
         for option in row["options"]:
-            if option["resource"][0]!="pad" or not option["start_available"]: continue
+            if option["resource"][0]!="pad" or (not allow_future and not option["start_available"]): continue
             members={anchor}; links=[]; used_resources=set()
             while True:
                 followers=[]
                 for aid,other in opportunities.items():
-                    if aid in members or not other["adjustment_access"]["adjustable"]: continue
+                    if aid in members or (not allow_future and not other["adjustment_access"]["adjustable"]): continue
                     for path in other["options"]:
                         if path["resource"] in used_resources: continue
                         owners=set(path["joint_members"])
@@ -168,9 +177,9 @@ def cooperative_pad_groups(opportunities, *, max_groups=3):
                 used_resources.add(path["resource"])
                 links.extend(dict(follower=follower,**link) for link in path["release_dependencies"])
             candidates.append(dict(members=tuple(sorted(members)),anchor_id=anchor,pad_id=option["pad_id"],
-                anchor_start_time=option["start_time"],anchor_start_available=True,
+                anchor_start_time=option["start_time"],anchor_start_available=option["start_available"],
                 estimated_pad_release_time=option["release_time"],estimated_arrival=option["earliest_arrival"],
-                release_dependencies=links,reason="EXECUTABLE_PAD_ANCHORED_RELEASE_CHAIN",certified=False))
+                release_dependencies=links,reason="PAD_ANCHORED_RELEASE_CHAIN_ESTIMATE" if allow_future else "EXECUTABLE_PAD_ANCHORED_RELEASE_CHAIN",certified=False))
     candidates.sort(key=lambda row:(row["estimated_arrival"],not bool(row["release_dependencies"]),row["anchor_id"],row["pad_id"]))
     groups=[]; seen=set()
     for row in candidates:
