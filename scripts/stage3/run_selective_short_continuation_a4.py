@@ -399,7 +399,9 @@ def main(argv=None):
     with a4.ledger_transaction(args.output, write=False) as ledger:
         job = ledger["jobs"].get(job_id, {})
         base.require(job.get("status") == "running" and job.get("parent_pid") == os.getppid(), "active parent watchdog required")
+    launch_threads = {key: os.environ.get(key) for key in base.THREADS}
     d = base.dependencies(PROJECT)
+    d.launch_threads = launch_threads
     old.set_cpu(argparse.Namespace(stage="snapshot", cpu=args.cpu, root="s3r24"), d)
     problem, physical, checkpoint, binding = load_inputs(args.output, args.server_root, args.case, source)
     root = args.output/"diagnostic_continuations"/args.case

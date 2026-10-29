@@ -449,7 +449,9 @@ def main(argv=None):
     with ledger_transaction(args.output) as ledger:
         bound=ledger.setdefault("a4_source_hash", source["source_hash"])
         base.require(bound == source["source_hash"], "A4 diagnostic source differs between factors")
-    d=base.dependencies(PROJECT); args.stage="snapshot"; old.set_cpu(args,d)
+    launch_threads={key:os.environ.get(key) for key in base.THREADS}
+    d=base.dependencies(PROJECT); d.launch_threads=launch_threads
+    args.stage="snapshot"; old.set_cpu(args,d)
     directory=args.output / args.case / args.factor; directory.mkdir(parents=True, exist_ok=False)
     write_new(directory / "binding.json", dict(source=source, case=CASES[args.case], factor=args.factor, cpu=args.cpu,
         run_role="OFFLINE_DIAGNOSTIC", accounting=POLICY, job_id=job_id, lead_seconds=20., continuation=continuation_inputs()))

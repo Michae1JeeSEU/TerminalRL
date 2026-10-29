@@ -3,6 +3,9 @@ from dataclasses import dataclass
 import json
 import math
 from types import MappingProxyType, SimpleNamespace as NS
+from contextlib import contextmanager
+import os
+from pathlib import Path
 
 import pytest
 
@@ -245,3 +248,70 @@ def test_fixed_solver_contexts_have_equal_limits_except_solver_allocation(monkey
     assert first.options["validation_cache"] == second.options["validation_cache"] == {}
     assert first.options["validation_cache"] is not second.options["validation_cache"]
     assert first.options["scope"] is second.options["scope"]
+
+
+@pytest.mark.parametrize("entry", ("diagnostic", "short", "common"))
+@pytest.mark.parametrize("launch_value", ("1", None, "2"))
+def test_a4_cli_real_cpu_preflight_uses_environment_before_dependencies(monkeypatch, tmp_path, entry, launch_value):
+    """Exercise real old.set_cpu; imports cannot repair missing launch settings."""
+    from scripts.stage3 import run_selective_common_initial_a4 as common
+    from scripts.stage3 import run_selective_short_continuation_a4 as short
+    from scripts.stage3 import run_selective_reoptimization_repair as old
+    class PassedPreflight(Exception): pass
+    def stop(*args, **kwargs): raise PassedPreflight()
+    for key in a4.base.THREADS:
+        monkeypatch.setenv(key, "1")
+    target = "OPENBLAS_NUM_THREADS"
+    if launch_value is None: monkeypatch.delenv(target)
+    else: monkeypatch.setenv(target, launch_value)
+    probes, affinity, created = [], [], []
+    real_dependencies = a4.base.dependencies
+    def dependencies(*args):
+        # Call the actual dependency importer, which sets thread variables.
+        d = real_dependencies(*args)
+        monkeypatch.setattr(d.campaign, "resource_probe",
+            lambda: probes.append(True) or {"free_physical_cores": [12, 14]})
+        created.append(d)
+        return d
+    monkeypatch.setattr(a4.base, "dependencies", dependencies)
+    monkeypatch.setattr(old.os, "sched_setaffinity", lambda pid, cores: affinity.append((pid, cores)), raising=False)
+    source = dict(source_hash="frozen", commit="test", files={
+        "scripts/stage3/run_selective_quality_gap_a4.py": "test", "tests/test_selective_quality_gap_a4.py": "test",
+        "scripts/stage3/run_selective_short_continuation_a4.py": "test", "tests/test_selective_short_continuation_a4.py": "test",
+        "scripts/stage3/run_selective_common_initial_a4.py": "test"})
+    freeze = tmp_path/"source.json"
+    def load(path):
+        if Path(path) == freeze: return source
+        raise PassedPreflight()
+    monkeypatch.setattr(a4.base, "load", load)
+    monkeypatch.setattr(a4.base, "verify_sources", lambda source: None)
+    monkeypatch.setattr(a4, "validated_output", lambda path: path)
+    monkeypatch.setattr(a4, "baseline", stop)
+    monkeypatch.setattr(short, "load_inputs", stop)
+    jobs = {"R1_baseline": {}, "short_continuation:R4:prepare": {}, "common_initial:s3r23": {}}
+    for job in jobs.values(): job.update(status="running", parent_pid=os.getppid())
+    ledger = dict(jobs=jobs)
+    @contextmanager
+    def transaction(*args, **kwargs): yield ledger
+    monkeypatch.setattr(a4, "ledger_transaction", transaction)
+    output = tmp_path/"output"
+    if entry == "diagnostic":
+        main, args = a4.main, ["baseline", "--case", "R1", "--_child-job-id", "R1_baseline", "--cpu", "14"]
+    elif entry == "short":
+        main, args = short.main, ["--stage", "prepare-child", "--case", "R4", "--cpu", "12"]
+    else:
+        main, args = common.main, ["--stage", "initialize-child", "--root", "s3r23", "--cpu", "12",
+            "--origin-output", str(tmp_path/"origin")]
+    args += ["--output", str(output), "--source-freeze", str(freeze)]
+    if launch_value == "1":
+        with pytest.raises(PassedPreflight): main(args)
+        assert probes == [True] and affinity == [(0, {14 if entry == "diagnostic" else 12})]
+        assert len(created) == 1
+        d = created[0]
+        assert d.launch_threads == {key: "1" for key in a4.base.THREADS}
+    else:
+        with pytest.raises(ValueError, match="one numerical thread at launch required"): main(args)
+        assert len(created) == 1
+        d = created[0]
+        assert d.launch_threads[target] == launch_value
+        assert not probes and not affinity and not output.exists()

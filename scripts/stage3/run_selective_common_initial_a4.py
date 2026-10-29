@@ -258,7 +258,8 @@ def main(argv=None):
         job=ledger["jobs"].get("common_initial:"+args.root,{})
         base.require(job.get("status")=="running" and job.get("parent_pid")==os.getppid(),
                      "active common-initial parent watchdog required")
-    d=_dependencies(None)
+    launch_threads={key:os.environ.get(key) for key in base.THREADS}
+    d=_dependencies(None); d.launch_threads=launch_threads
     # Resource probing and affinity are inside the charged child. No world is
     # constructed until the original root and reviewed source are bound.
     resource_args=argparse.Namespace(stage="snapshot",cpu=args.cpu,root=args.root)
