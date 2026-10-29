@@ -124,12 +124,30 @@ def pack_problem(problem, callback_state=None):
 
 def unpack_problem(path):
     from terminal_marl.core.rotating_slots.stage2_planning import CandidateCatalog
-    from terminal_marl.core.rotating_slots.stage2_downstream import JointDownstream
-    row = base.load(path); base.require(row["sha256"] == base.digest(row["payload"]), "fixed problem archive changed")
+    from terminal_marl.core.rotating_slots.stage2_downstream import JointDownstream, ticks
+    row = base.load(path)
+    base.require(row["schema"] == "a4_fixed_problem_v1" and row["sha256"] == base.digest(row["payload"]), "fixed problem archive changed")
     s = codec().decode(row["payload"])
     c = CandidateCatalog(**s["catalog"], downstream=JointDownstream(**s["downstream"]))
     base.require(catalog_hash(c) == row["catalog_hash"], "fixed candidate identities changed")
-    return dict(snapshot=s["snapshot"], catalog=c, global_frame=s["frame"], selected=s["selected"]), s["callback_state"]
+    frame, snapshot, scope = s["frame"], s["snapshot"], c.scope
+    saved_id = s["downstream"]["frame_id"]
+    base.require(scope is not None and bool(saved_id) and scope.objective_frame_id == saved_id,
+        "saved scope/downstream frame binding mismatch")
+    base.require(snapshot is not None and scope.snapshot_id == frame.snapshot_id == snapshot.version
+        and scope.effective_time == frame.effective_time == snapshot.time
+        and c.downstream.now == ticks(snapshot.time), "fixed archive snapshot/time binding mismatch")
+    canonical_frame_sha256 = base.digest(codec().encode(frame))
+    decoded_id = frame.identity
+    c.downstream.frame_id = decoded_id
+    c = replace(c, scope=replace(scope, objective_frame_id=decoded_id))
+    rebinding = dict(saved_frame_id=saved_id, decoded_frame_id=decoded_id,
+        canonical_frame_sha256=canonical_frame_sha256, snapshot_id=snapshot.version,
+        effective_time=snapshot.time, rebinding_applied=saved_id != decoded_id,
+        only_changed=["catalog.scope.objective_frame_id", "catalog.downstream.frame_id"],
+        reused_accepted_certificates=False)
+    return dict(snapshot=snapshot, catalog=c, global_frame=frame, selected=s["selected"],
+        archive_identity_rebinding=rebinding), s["callback_state"]
 
 
 def memory_evidence():
@@ -466,6 +484,7 @@ def main(argv=None):
                 problem, _=unpack_problem(args.output / args.case / "augment/problem.json")
             result=solve_fixed(problem, 24. if args.factor == "catalog_cp24" else 8.)
             if args.factor == "augment_cp8": result["only_changed"]=["explicit_single_valid_catalog_additions"]
+        result["archive_identity_rebinding"]=problem["archive_identity_rebinding"]
     result["run_role"]="OFFLINE_DIAGNOSTIC"
     write_new(directory / "result.json", result)
     print(json.dumps(finite_view(dict(status="COMPLETE", result=str(directory / "result.json"))), allow_nan=False))

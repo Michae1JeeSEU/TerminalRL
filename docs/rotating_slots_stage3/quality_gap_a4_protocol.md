@@ -70,6 +70,19 @@ reused path or job cannot silently overwrite results. Nonfinite reservation
 ends are encoded explicitly; archived executable inputs use the existing
 whitelisted hexadecimal-float codec with three named diagnostic dataclasses.
 
+Decoded Section diagnostics can change a frame's repr-based identity while
+its codec content is identical. Archive loading first verifies payload and
+candidate hashes, the saved scope-to-downstream frame binding, and every
+snapshot/time binding. It then refreshes only the scope's objective-frame ID
+and downstream frame ID to the decoded frame identity. New outputs record
+`archive_identity_rebinding`, including saved/decoded IDs and canonical frame
+SHA; frame values and columns stay unchanged, and validation starts in a new
+context without reused ACCEPTED results. Short-continuation inputs may differ
+from their baseline source manifest only in the quality-gap/short-continuation
+scripts and their two tests. Their source differences are recorded; every
+other file's presence and hash, including core/config files, must match.
+Ledger source revisions remain an explicit primary action.
+
 Short continuation has an external entrypoint and is never launched by a
 diagnostic factor. `run_selective_short_continuation_a4.py --stage prepare`
 prepares only R4/R12, taking the smallest-hash existing immediate partial for

@@ -28,6 +28,9 @@ SWITCHES = dict(pad_anchor_priority=False, target_coverage_order=False, ordinary
 HORIZON = 120.
 CHILD_CAP = 300.
 ROLE = "DIAGNOSTIC_SHORT_CONTINUATION"
+SOURCE_ADAPTER_FILES = frozenset(("scripts/stage3/run_selective_quality_gap_a4.py",
+    "scripts/stage3/run_selective_short_continuation_a4.py", "tests/test_selective_quality_gap_a4.py",
+    "tests/test_selective_short_continuation_a4.py"))
 
 
 def hashes(columns):
@@ -70,7 +73,8 @@ def prepare_pair(problem, case):
     started, cpu = time.perf_counter(), time.process_time()
     choices, row = branch_choices(problem, case)
     row.update(physical_execution=False, solver_called=False, online_performance_evidence=False,
-        accounting_scope="OFFLINE_DISCOVERY_AND_CERTIFICATION_ONLY")
+        accounting_scope="OFFLINE_DISCOVERY_AND_CERTIFICATION_ONLY",
+        archive_identity_rebinding=problem.get("archive_identity_rebinding"))
     if choices is not None:
         baseline_key = problem["catalog"].downstream.key(choices["baseline_choice"])
         forced_key = problem["catalog"].downstream.key(choices["forced_partial"])
@@ -293,13 +297,26 @@ def fixed_checkpoint_seed(payload):
     return manifest.seed
 
 
+def source_adapter_differences(baseline, current):
+    """Only the four named diagnostic adapters may differ from a baseline."""
+    for source in (baseline, current):
+        base.require(source["source_hash"] == base.digest(source["files"]), "source manifest hash differs")
+    differences = [dict(path=path, baseline_sha256=baseline["files"].get(path), current_sha256=current["files"].get(path))
+        for path in sorted(set(baseline["files"]) | set(current["files"]))
+        if path not in baseline["files"] or path not in current["files"]
+        or baseline["files"].get(path) != current["files"].get(path)]
+    base.require(all(row["path"] in SOURCE_ADAPTER_FILES for row in differences),
+        "baseline source differs outside authorized instrumentation files")
+    return differences
+
+
 def load_inputs(output, server_root, case, source):
     base.require(case in CASES, "only R4/R12 inputs permitted")
     baseline = Path(output)/case/"baseline"
     paths = {name:baseline/name for name in ("problem.json", "source_snapshot.json", "binding.json", "selector_history_before.json")}
     base.require(all(path.is_file() for path in paths.values()), "required baseline problem/source/history artifacts missing")
     baseline_binding = base.load(paths["binding.json"])
-    base.require(baseline_binding["source"]["source_hash"] == source["source_hash"], "baseline source freeze differs")
+    source_differences = source_adapter_differences(baseline_binding["source"], source)
     item = a4.CASES[case]
     checkpoint = Path(server_root)/"rs_selective_repair_20261029/arms/s3r24/evaluation/s3r24/RULE_LOCAL_K8"/(
         "checkpoint_"+item["checkpoint"]+".json")
@@ -310,6 +327,8 @@ def load_inputs(output, server_root, case, source):
     payload = base.load(checkpoint)["payload"]
     seed = fixed_checkpoint_seed(payload)
     binding = dict(case=case, a4_source_hash=source["source_hash"], source_commit=source["commit"],
+        baseline_source_hash=baseline_binding["source"]["source_hash"], source_differences=source_differences,
+        canonical_frame_sha256=problem["archive_identity_rebinding"]["canonical_frame_sha256"],
         checkpoint=str(checkpoint), checkpoint_sha256=item["sha256"], checkpoint_identity=payload["identity"],
         seed=seed, seed_basis="IDENTITY_BOUND_CHECKPOINT_MANIFEST",
         baseline_files={name:a4.file_hash(path) for name,path in paths.items()}, source_version=physical.version,
@@ -343,7 +362,8 @@ def run_branch(directory, problem, physical, checkpoint, prepared, binding, bran
     touch = {aid for aid,a in world.aircraft.items() if a.touchdown_time is not None}
     a4.write_new(directory/"binding.json", dict(binding, branch=branch, cache_reset=cache_reset,
         history=delegate.selective_history.state_dict(), historical_pending_not_resumed=True,
-        candidates_references_previous="COLD_BOTH_BRANCHES", offline_discovery_online_charge=False))
+        candidates_references_previous="COLD_BOTH_BRANCHES", offline_discovery_online_charge=False,
+        archive_identity_rebinding=problem.get("archive_identity_rebinding")))
     holding, restore_observer = holding_observer(world)
     error = None
     try:

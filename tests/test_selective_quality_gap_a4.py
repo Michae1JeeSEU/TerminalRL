@@ -1,5 +1,5 @@
 """Bounded A4 artifact/protocol tests; no solver or physical world is run."""
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import json
 import math
 from types import MappingProxyType, SimpleNamespace as NS
@@ -160,7 +160,12 @@ def fixed_problem():
     downstream=frame.downstream({keep.signature: a_demand}, {"a"})
     catalog=CandidateCatalog(MappingProxyType({"a": (keep,)}), {}, {}, (), downstream=downstream, scope=scope,
                              fixed_background=MappingProxyType(dict(downstream.fixed_demands)))
-    return dict(snapshot=None, catalog=catalog, global_frame=frame, selected=(keep,))
+    from terminal_marl.core.rotating_slots.config import load_service_profile
+    from terminal_marl.core.rotating_slots.world import PlanningSnapshot
+    empty=MappingProxyType({})
+    snapshot=PlanningSnapshot(20., "snapshot", load_service_profile("service_half_v1"), empty, empty, empty,
+        empty, (), (), empty, empty, empty, empty)
+    return dict(snapshot=snapshot, catalog=catalog, global_frame=frame, selected=(keep,))
 
 
 def test_safe_archive_roundtrip_fixed_hash_and_background(tmp_path):
@@ -186,6 +191,75 @@ def test_safe_archive_preserves_real_snapshot_and_config_identity(tmp_path):
     assert restored["snapshot"] == problem["snapshot"]
     assert restored["snapshot"].config.config_hash == problem["snapshot"].config.config_hash
     assert restored["snapshot"].planning_timing.effective_time == 20.
+
+
+def section_frame_problem():
+    from terminal_marl.core.rotating_slots.world import RotatingSlotWorld
+    from terminal_marl.core.rotating_slots.stage2_planning import CandidateProvider, EvaluationContext, PlanningBudget
+    from terminal_marl.core.rotating_slots.selective_replanning import PlanningScope, build_global_frame
+    world=RotatingSlotWorld(); world.seed_hold("a", "outer", 0, .9)
+    snapshot=world.build_planning_snapshot()
+    provider=CandidateProvider(planning_profile="downstream_service_v8")
+    frame=build_global_frame(snapshot, provider, EvaluationContext(snapshot))
+    scope=PlanningScope(snapshot.version, snapshot.time, ("a",), ("a",), (), actual_k=1,
+        objective_frame_id=frame.identity)
+    context=EvaluationContext(snapshot, scope=scope, global_frame=frame)
+    keep=provider._column(snapshot, snapshot.aircraft["a"], (), "KEEP", context)
+    catalog=provider._progressive_catalog(snapshot, PlanningBudget(), context, {"a": [keep]},
+        {"a": keep.reference}, [snapshot.aircraft["a"]])
+    return dict(snapshot=snapshot, catalog=catalog, global_frame=frame, selected=(catalog.columns["a"][0],))
+
+
+def test_section_frame_archive_rebinds_only_identity_links_and_opens_fresh_context(tmp_path):
+    from terminal_marl.core.rotating_slots.config import Section
+    problem=section_frame_problem()
+    assert isinstance(problem["global_frame"].baselines[0].diagnostics, Section)
+    encoded_frame=a4.codec().encode(problem["global_frame"])
+    before=a4.pack_problem(problem)
+    path=tmp_path/"section_problem.json"; a4.write_new(path, before)
+    restored, _=a4.unpack_problem(path)
+    frame, catalog=restored["global_frame"], restored["catalog"]
+    assert frame.identity != problem["global_frame"].identity
+    assert a4.codec().encode(frame) == encoded_frame
+    assert a4.codec().encode(catalog.columns) == a4.codec().encode(problem["catalog"].columns)
+    assert a4.catalog_hash(catalog) == before["catalog_hash"]
+    assert catalog.scope.objective_frame_id == catalog.downstream.frame_id == frame.identity
+    evidence=restored["archive_identity_rebinding"]
+    assert evidence["saved_frame_id"] == problem["catalog"].scope.objective_frame_id
+    assert evidence["decoded_frame_id"] == frame.identity and evidence["rebinding_applied"]
+    assert evidence["canonical_frame_sha256"] == a4.base.digest(encoded_frame)
+    assert not evidence["reused_accepted_certificates"]
+    context, _=a4.offline_context(restored)
+    assert context.scope == catalog.scope and context.global_frame is frame
+    assert not context.singles and not context._prefix_results
+    again, _=a4.unpack_problem(path)
+    assert again["archive_identity_rebinding"]["canonical_frame_sha256"] == evidence["canonical_frame_sha256"]
+    assert a4.codec().encode(again["global_frame"]) == encoded_frame
+    assert a4.base.load(path) == before  # No archive rewrite.
+
+
+@pytest.mark.parametrize("broken", ("scope_frame", "downstream_frame", "scope_snapshot", "scope_time",
+    "frame_snapshot", "frame_time", "snapshot_version", "downstream_time", "payload_sha", "catalog_hash"))
+def test_archive_rebinding_rejects_broken_saved_bindings(tmp_path, broken):
+    original=a4.pack_problem(section_frame_problem())
+    row=dict(original)
+    state=a4.codec().decode(row["payload"])
+    scope=state["catalog"]["scope"]
+    if broken == "scope_frame": state["catalog"]["scope"]=replace(scope, objective_frame_id="changed")
+    elif broken == "downstream_frame": state["downstream"]["frame_id"]="changed"
+    elif broken == "scope_snapshot": state["catalog"]["scope"]=replace(scope, snapshot_id="changed")
+    elif broken == "scope_time": state["catalog"]["scope"]=replace(scope, effective_time=1.)
+    elif broken == "frame_snapshot": state["frame"]=replace(state["frame"], snapshot_id="changed")
+    elif broken == "frame_time": state["frame"]=replace(state["frame"], effective_time=1.)
+    elif broken == "snapshot_version": state["snapshot"]=replace(state["snapshot"], version="changed")
+    elif broken == "downstream_time": state["downstream"]["now"]+=1
+    row["payload"]=a4.codec().encode(state)
+    row["sha256"]=a4.base.digest(row["payload"])
+    if broken == "payload_sha": row["sha256"]="changed"
+    if broken == "catalog_hash": row["catalog_hash"]="changed"
+    path=tmp_path/(broken+".json"); a4.write_new(path, row)
+    with pytest.raises(ValueError, match="binding|archive changed|candidate identities changed"):
+        a4.unpack_problem(path)
 
 
 def test_augmentation_retains_all_old_columns_and_complete_background(monkeypatch):

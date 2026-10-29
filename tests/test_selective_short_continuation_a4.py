@@ -292,6 +292,31 @@ def test_replay_seed_comes_from_identity_bound_high_flow_manifest():
         runner.fixed_checkpoint_seed(payload)
 
 
+def test_source_adapter_compatibility_records_only_four_allowed_file_changes():
+    def source(files): return dict(files=files, source_hash=runner.base.digest(files))
+    core="terminal_marl/core/rotating_slots/stage2_planning.py"
+    original={core: "unchanged", "configs/stage3/frozen.yaml": "unchanged"}
+    original.update({path: "old" for path in runner.SOURCE_ADAPTER_FILES})
+    changed={**original, **{path: "new" for path in runner.SOURCE_ADAPTER_FILES}}
+    differences=runner.source_adapter_differences(source(original), source(changed))
+    assert {item["path"] for item in differences} == runner.SOURCE_ADAPTER_FILES
+    assert all(item["baseline_sha256"] == "old" and item["current_sha256"] == "new" for item in differences)
+    assert runner.source_adapter_differences(source(original), source(original)) == []
+    for path in (core, "configs/stage3/frozen.yaml", "scripts/stage3/unapproved.py"):
+        outside=dict(original); outside[path]="different"
+        with pytest.raises(ValueError, match="outside authorized instrumentation"):
+            runner.source_adapter_differences(source(original), source(outside))
+    removed=dict(original); removed.pop(core)
+    with pytest.raises(ValueError, match="outside authorized instrumentation"):
+        runner.source_adapter_differences(source(original), source(removed))
+    added=dict(original); added["configs/stage3/new.yaml"]=None
+    with pytest.raises(ValueError, match="outside authorized instrumentation"):
+        runner.source_adapter_differences(source(original), source(added))
+    invalid=source(original); invalid["source_hash"]="changed"
+    with pytest.raises(ValueError, match="source manifest hash differs"):
+        runner.source_adapter_differences(invalid, source(original))
+
+
 def test_parent_dispatch_has_one_branch_and_shared_300_second_ledger(monkeypatch, tmp_path):
     from contextlib import contextmanager
     output = tmp_path/a4.OUTPUT_NAME
