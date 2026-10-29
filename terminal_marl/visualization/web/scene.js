@@ -52,6 +52,7 @@ export default class Scene {
       landingZones: true,
       grid: true,
       labels: true,
+      allUids: false,
       trails: true,
       committed: true,
       conflicts: true,
@@ -479,7 +480,7 @@ export default class Scene {
     ctx.setLineDash([]);
     ctx.beginPath(); ctx.arc(0, 0, size * .72, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.restore();
-    if (this.layers.labels && (this.referenceFrame?.uavs?.length <= 8 || (match?.uid != null && this.selectedUid != null && String(match.uid) === String(this.selectedUid)))) { ctx.save(); ctx.font = "9px Inter, system-ui, sans-serif"; ctx.fillStyle = `${color}bb`; ctx.fillText(`R ${Scene.uidLabel(uav)}`, p.x + 9, p.y + 3); ctx.restore(); }
+    if (this.layers.allUids || this.layers.labels && (this.referenceFrame?.uavs?.length <= 8 || (match?.uid != null && this.selectedUid != null && String(match.uid) === String(this.selectedUid)))) { ctx.save(); ctx.font = "9px Inter, system-ui, sans-serif"; ctx.fillStyle = `${color}bb`; ctx.fillText(`R ${Scene.uidLabel(uav)}`, p.x + 9, p.y + 3); ctx.restore(); }
   }
 
   _drawReferenceFrame(frame) {
@@ -510,7 +511,7 @@ export default class Scene {
       ctx.lineWidth = 2;
       ctx.lineCap = "round";
       ctx.beginPath(); ctx.moveTo(-6, -6); ctx.lineTo(6, 6); ctx.moveTo(6, -6); ctx.lineTo(-6, 6); ctx.stroke();
-      if (this.layers.labels) { ctx.font = "8px Inter, system-ui, sans-serif"; ctx.fillStyle = "#9b3037"; ctx.fillText(`${Scene.uidLabel(event)} · ${event.outcome || event.reason || "failed"}`, 9, 3); }
+      if (this.layers.labels || this.layers.allUids) { ctx.font = "8px Inter, system-ui, sans-serif"; ctx.fillStyle = "#9b3037"; ctx.fillText(`${Scene.uidLabel(event)} · ${event.outcome || event.reason || "failed"}`, 9, 3); }
       ctx.restore();
     }
   }
@@ -528,7 +529,7 @@ export default class Scene {
       ctx.save(); ctx.translate(p.x, p.y); ctx.strokeStyle = "#b23c43"; ctx.lineWidth = selected ? 3 : 2;
       ctx.beginPath(); ctx.moveTo(-6, -6); ctx.lineTo(6, 6); ctx.moveTo(6, -6); ctx.lineTo(-6, 6); ctx.stroke();
       if (selected) { ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.stroke(); }
-      if (this.layers.labels && (showLabel || selected || hovered)) { ctx.font = "9px Inter, system-ui, sans-serif"; ctx.fillStyle = "#9b3037"; ctx.fillText(`${Scene.uidLabel(uav)} · ${uav.status ?? uav.original_status ?? uav.phase}`, 10, -9); }
+      if (this.layers.allUids || this.layers.labels && (showLabel || selected || hovered)) { ctx.font = "9px Inter, system-ui, sans-serif"; ctx.fillStyle = "#9b3037"; ctx.fillText(`${Scene.uidLabel(uav)} · ${uav.status ?? uav.original_status ?? uav.phase}`, 10, -9); }
       ctx.restore(); return;
     }
     ctx.save();
@@ -545,7 +546,7 @@ export default class Scene {
     ctx.fillStyle = color; ctx.beginPath(); ctx.arc(0, 0, 2.6, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "#25292d"; ctx.beginPath(); ctx.moveTo(size + 5, 0); ctx.lineTo(size - 1, -3); ctx.lineTo(size - 1, 3); ctx.closePath(); ctx.fill();
     ctx.restore();
-    if (showLabel || selected || hovered) {
+    if (this.layers.allUids || showLabel || selected || hovered) {
       ctx.save(); ctx.font = `${selected ? "600 " : ""}10px Inter, system-ui, sans-serif`; ctx.fillStyle = selected ? "#171a1d" : "#444a50"; ctx.fillText(Scene.uidLabel(uav), p.x + 12, p.y - 9); ctx.restore();
     }
   }
@@ -663,7 +664,7 @@ export default class Scene {
       this._drawEmergencyHistory();
     }
     if (this.layers.committed) uavs.forEach((uav) => this._drawCommitted(uav));
-    const showUavLabels = this.layers.labels && uavs.length <= 8;
+    const showUavLabels = this.layers.allUids || this.layers.labels && uavs.length <= 8;
     uavs.sort((a, b) => this._depth(a.position) - this._depth(b.position)).forEach((uav) => this._drawUav(uav, conflicts.has(Number(uav.uid)), showUavLabels));
     this._drawEnergyAlerts(uavs);
     if (this.layers.landingZones) (this.frame.landing_zones || []).forEach((zone) => this._drawLandingZoneLabel(zone));

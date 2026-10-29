@@ -60,7 +60,7 @@ const state = {
   followLost: false,
   reference: null,
   layers: {
-    slots: true, rings: true, targetRings: true, gates: true, landingZones: true, grid: true, labels: true, trails: true, committed: true, conflicts: true,
+    slots: true, rings: true, targetRings: true, gates: true, landingZones: true, grid: true, labels: true, allUids: false, trails: true, committed: true, conflicts: true,
   },
   heightScale: 1.6,
   historyCache: { index: -1, map: new Map() },
@@ -701,13 +701,14 @@ async function handleSpeed(value) {
 }
 
 function resetLayers() {
-  state.layers = { slots: true, rings: true, targetRings: true, gates: true, landingZones: true, grid: true, labels: true, trails: true, committed: true, conflicts: true };
+  state.layers = { slots: true, rings: true, targetRings: true, gates: true, landingZones: true, grid: true, labels: true, allUids: false, trails: true, committed: true, conflicts: true };
   syncLayerInputs();
+  state.scene?.setLayers(state.layers);
   state.uiDirty = true;
 }
 
 function syncLayerInputs() {
-  const ids = { slots: "layerSlots", rings: "layerRings", targetRings: "layerTargetRings", gates: "layerGates", landingZones: "layerLandingZones", grid: "layerGrid", labels: "layerLabels", trails: "layerTrails", committed: "layerCommitted", conflicts: "layerConflicts" };
+  const ids = { slots: "layerSlots", rings: "layerRings", targetRings: "layerTargetRings", gates: "layerGates", landingZones: "layerLandingZones", grid: "layerGrid", labels: "layerLabels", allUids: "layerAllUids", trails: "layerTrails", committed: "layerCommitted", conflicts: "layerConflicts" };
   for (const [key, id] of Object.entries(ids)) $(id).checked = Boolean(state.layers[key]);
 }
 
@@ -1062,6 +1063,23 @@ function drawHistoryChart(uid, index) {
   drawLine("#333333", (row) => row.soc, 0, 1); drawLine("#a66b13", (row) => row.altitude, minAlt, maxAlt);
 }
 
+function selectedService(frame, uav) {
+  if (!uav) return null;
+  const uidMatches = (owner) => owner != null && uav.uid != null && Number(owner) === Number(uav.uid);
+  if (frame?.rotating_slots) {
+    const pad = safeArray(frame.rotating_slots.pads).find((candidate) => candidate.occupied_by != null
+      ? uidMatches(candidate.occupied_by)
+      : candidate.occupant_id != null && uav.aircraft_id != null && String(candidate.occupant_id) === String(uav.aircraft_id));
+    if (!pad) return null;
+    const end = finiteNumber(pad.service_end), time = finiteNumber(frame.time);
+    return { pad: `PAD ${pad.id ?? "—"}`, remaining: end === null || time === null ? null : Math.max(0, end - time) };
+  }
+  const zone = safeArray(frame?.landing_zones).find((candidate) => uidMatches(candidate.occupied_by));
+  if (!zone) return null;
+  const remaining = finiteNumber(zone.service_remaining);
+  return { pad: `LZ ${zone.lz_id ?? zone.id ?? "—"}`, remaining: remaining === null ? null : Math.max(0, remaining) };
+}
+
 function renderDetails(frame) {
   const uav = findSelected(frame);
   const selectedExists = Boolean(uav);
@@ -1071,6 +1089,9 @@ function renderDetails(frame) {
   const eventText = state.selectedEvent ? ` · 事件 ${state.selectedEvent.outcome ?? "—"} / ${state.selectedEvent.reason ?? "—"} @ ${formatTime(state.selectedEvent.time)}` : "";
   const baseState = uav ? `${uav.status ?? uav.original_status ?? (uav.committed ? "已承诺轨迹" : "等待 / 可决策")}${refUav ? ` · 参考 ${Scene.uidLabel(refUav)} 已匹配` : state.reference ? ` · 参考 ${Scene.uidLabel(uav)} 无匹配` : ""}${eventText}` : state.selectedUid == null ? state.selectedEvent ? `终态事件 ${state.selectedEvent.outcome ?? "—"} / ${state.selectedEvent.reason ?? "—"} @ ${formatTime(state.selectedEvent.time)}${finitePoint(state.selectedEvent.position) ? " · 已定位事件位置" : ""}` : "点击场景中的 UAV 或航班表行查看详情。" : `${state.followLost ? "已离开当前帧，跟随已退出；" : ""}选中 UAV 不在当前帧。${eventText}`;
   $("selectedState").textContent = baseState;
+  const service = selectedService(frame, uav);
+  $("detailService").textContent = service?.remaining == null ? "—" : `${formatNumber(service.remaining, 1)} s`;
+  $("detailServicePad").textContent = service?.pad ?? "";
   $("selectedState").classList.toggle("missing", !selectedExists && state.selectedUid != null);
   $("followSelectedButton").disabled = !selectedExists || state.offline;
   $("followSelectedButton").textContent = state.followUid != null && Number(state.followUid) === Number(state.selectedUid) ? "退出跟随" : "跟随飞机";
@@ -1145,16 +1166,10 @@ function locateUid(value) {
   if (!frame) { report("当前没有场景帧，请先加载回放或场景"); return false; }
   const uav = safeArray(frame.uavs).find((candidate) => candidate.uid != null && Number(candidate.uid) === uid);
   if (!uav) { report(`当前帧未找到 UID ${uid}`); return false; }
-  if (!Array.isArray(uav.position) || uav.position.length < 3 || !uav.position.slice(0, 3).every((coordinate) => typeof coordinate === "number" && Number.isFinite(coordinate))) {
-    report(`UID ${uid} 当前没有有效位置，无法定位`); return false;
-  }
   state.followUid = null;
   selectUid(uid);
-  // Opening the details rail changes canvas width. setFrame renders with the
-  // new layout before focusOn projects the selected aircraft into its center.
   renderScene(frame);
-  state.scene.focusOn(uid, frame);
-  report(`已定位 UID ${uid}`);
+  report(`已选择 UID ${uid}`);
   return true;
 }
 
@@ -1457,7 +1472,7 @@ function wireControls() {
   $("timelineInput").addEventListener("input", (event) => { enterReplay(Number(event.target.value)); }); $("followSelectedButton").addEventListener("click", toggleFollow); $("clearSelectedButton").addEventListener("click", clearSelection); $("followCameraButton").addEventListener("click", toggleFollow);
   $("perspectiveButton").addEventListener("click", () => { state.scene.setProjection("perspective"); $("perspectiveButton").classList.add("active"); $("topButton").classList.remove("active"); state.uiDirty = true; }); $("topButton").addEventListener("click", () => { state.scene.setProjection("top"); $("topButton").classList.add("active"); $("perspectiveButton").classList.remove("active"); state.uiDirty = true; }); $("resetCameraButton").addEventListener("click", () => { state.scene.resetCamera(); $("topButton").classList.remove("active"); $("perspectiveButton").classList.add("active"); state.uiDirty = true; });
   $("heightScaleInput").addEventListener("input", (event) => { state.heightScale = finiteNumber(event.target.value, 1.6) || 1.6; $("heightScaleOutput").textContent = `${state.heightScale.toFixed(1)}×`; state.scene.setHeightScale(state.heightScale); state.uiDirty = true; });
-  const layerIds = { slots: "layerSlots", rings: "layerRings", targetRings: "layerTargetRings", gates: "layerGates", landingZones: "layerLandingZones", grid: "layerGrid", labels: "layerLabels", trails: "layerTrails", committed: "layerCommitted", conflicts: "layerConflicts" }; Object.entries(layerIds).forEach(([key, id]) => $(id).addEventListener("change", (event) => { state.layers[key] = event.target.checked; state.scene.setLayers(state.layers); state.uiDirty = true; })); $("resetLayersButton").addEventListener("click", resetLayers);
+  const layerIds = { slots: "layerSlots", rings: "layerRings", targetRings: "layerTargetRings", gates: "layerGates", landingZones: "layerLandingZones", grid: "layerGrid", labels: "layerLabels", allUids: "layerAllUids", trails: "layerTrails", committed: "layerCommitted", conflicts: "layerConflicts" }; Object.entries(layerIds).forEach(([key, id]) => $(id).addEventListener("change", (event) => { state.layers[key] = event.target.checked; state.scene.setLayers(state.layers); state.uiDirty = true; })); $("resetLayersButton").addEventListener("click", resetLayers);
   $("flightSearch").addEventListener("input", () => { state.uiDirty = true; renderUI(true); }); $("phaseFilter").addEventListener("change", () => { state.uiDirty = true; renderUI(true); }); $("flightSort").addEventListener("change", () => { state.uiDirty = true; renderUI(true); });
   document.querySelectorAll(".drawer-tab").forEach((tab) => tab.addEventListener("click", () => openDrawerPanel(tab.dataset.panel)));
   $("drawerToggleButton").addEventListener("click", () => setDrawerOpen($("drawerContent").hidden));

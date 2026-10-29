@@ -15,7 +15,7 @@ function consoleHarness(overrides = {}) {
     .replace(/^import Scene from .*;\r?\n/, "")
     .replace(/\binitialize\(\);\s*$/, "");
   const sceneSource = readFileSync(new URL("../terminal_marl/visualization/web/scene.js", import.meta.url), "utf8").replace("export default class Scene", "class Scene");
-  vm.runInContext(`${sceneSource}\n${source}\nglobalThis.harness = {state, sameAircraft, discreteReplay, interpolateFrame, displayFrame, renderFlights, renderEvents, renderDetails, renderResources, renderKpis, updateHistory, appendServerPayload, metricsForFrame, referenceAtTime, validateReplayPayload, formatSoc, requestJson, parseLocatorUid, locateUid, wireUidLocator, useDetailsOnlyUi: () => { renderUI = () => renderDetails(displayFrame()); }};`, context);
+  vm.runInContext(`${sceneSource}\n${source}\nglobalThis.harness = {state, sameAircraft, discreteReplay, interpolateFrame, displayFrame, renderFlights, renderEvents, renderDetails, renderResources, renderKpis, updateHistory, appendServerPayload, metricsForFrame, referenceAtTime, validateReplayPayload, formatSoc, requestJson, parseLocatorUid, locateUid, wireUidLocator, resetLayers, syncLayerInputs, useDetailsOnlyUi: () => { renderUI = () => renderDetails(displayFrame()); }};`, context);
   return context.harness;
 }
 
@@ -103,37 +103,39 @@ test("locator accepts complete nonnegative safe UIDs and rejects partial or unsa
   for (const input of ["", "  ", "UID", "UID17", "17abc", "-1", "+1", "1.0", "1e2", "Infinity", "NaN", "9007199254740992", "UID -1"]) assert.equal(h.parseLocatorUid(input), null, input);
 });
 
-test("locator selects exact UID zero, opens details and renders the resized frame before focus without changing playback", () => {
+test("UID search selects exact zero and opens details without changing camera or playback, even without a position", () => {
   for (const playing of [false, true]) {
     const { h, get } = uidUiHarness(); h.useDetailsOnlyUi();
     const current = frame(12, { console_replay_kind: "rotating_slots", uavs: [
-      { uid: null, position: [1, 2, 3] }, { uid: 10, position: [10, 10, 10] }, { uid: 0, position: [20, 30, 40], low_soc: true },
+      { uid: null, position: [1, 2, 3] }, { uid: 10, position: [10, 10, 10] }, { uid: 0, position: playing ? [20, 30, 40] : undefined, low_soc: true },
     ] });
     h.state.frames = [frame(0), current, frame(20)]; h.state.currentIndex = 1;
     h.state.playheadTime = 12.5; h.state.playbackSpeed = 4; h.state.playing = playing;
     h.state.selectedUid = 10; h.state.selectedEvent = { uid: 10 }; h.state.followUid = 10;
     get("detailsRail").hidden = true;
     const calls = [];
+    const camera = { yaw: .2, pitch: -.7, zoom: 1.5, panX: 23, panY: -41 };
     h.state.scene = {
+      camera: { ...camera },
       setFrame(f, options) {
         assert.equal(get("detailsRail").hidden, false);
         assert.equal(get(".workspace").classList.values.has("details-open"), true);
         assert.equal(h.state.followUid, null); assert.equal(options.selectedUid, 0);
         calls.push(["render", f]);
       },
-      focusOn(uid, f) { assert.equal(calls.at(-1)[0], "render"); calls.push(["focus", uid, f]); return true; },
+      focusOn() { assert.fail("UID search must not focus the camera"); },
     };
     assert.equal(h.locateUid("UID 0"), true);
-    assert.equal(calls.length, 2); assert.equal(calls[0][1], current);
-    assert.equal(calls[1][1], 0); assert.equal(calls[1][2], current);
+    assert.equal(calls.length, 1); assert.equal(calls[0][1], current);
+    assert.deepEqual(h.state.scene.camera, camera);
     assert.equal(h.state.selectedUid, 0); assert.equal(h.state.selectedEvent, null); assert.equal(h.state.followUid, null);
-    assert.equal(get("selectedTitle").textContent, "UID 0"); assert.equal(get("uidLocateStatus").textContent, "已定位 UID 0");
+    assert.equal(get("selectedTitle").textContent, "UID 0"); assert.equal(get("uidLocateStatus").textContent, "已选择 UID 0");
     assert.equal(h.state.currentIndex, 1); assert.equal(h.state.playheadTime, 12.5);
     assert.equal(h.state.playing, playing); assert.equal(h.state.playbackSpeed, 4);
   }
 });
 
-test("invalid, absent and unpositioned locator results leave selection, camera and playback untouched", () => {
+test("invalid and absent UID search results leave selection, camera and playback untouched", () => {
   const { h, get } = uidUiHarness();
   const selectedEvent = { uid: 3 };
   Object.assign(h.state, { selectedUid: 3, selectedEvent, followUid: 3, currentIndex: 1, playheadTime: 12, playing: true, playbackSpeed: 2 });
@@ -150,10 +152,46 @@ test("invalid, absent and unpositioned locator results leave selection, camera a
   h.state.frames = [frame(0, { uavs: [{ uid: 17, position: [1, 2, 3] }] }), frame(12, { uavs: [{ uid: 170, position: [1, 2, 3] }] })];
   h.state.reference = { frames: [frame(12, { uavs: [{ uid: 17, position: [1, 2, 3] }] })] };
   assert.equal(h.locateUid("17"), false); assert.match(get("uidLocateStatus").textContent, /当前帧未找到 UID 17/); unchanged();
-  for (const position of [undefined, [1, 2], [1, null, 3], [1, NaN, 3], [1, Infinity, 3]]) {
-    h.state.frames[1] = frame(12, { uavs: [{ uid: 17, position }] });
-    assert.equal(h.locateUid("17"), false); assert.match(get("uidLocateStatus").textContent, /没有有效位置/); unchanged();
-  }
+});
+
+test("selected service countdown follows replay time and only actual occupancy, including UID zero", () => {
+  const { h, get } = uidUiHarness();
+  const uav = { uid: 0, aircraft_id: "original-zero", phase: "LANDED_SERVICE", assigned_lz: 1 };
+  const show = (time, pads, extra = {}) => {
+    const f = frame(time, { uavs: [uav], rotating_slots: { pads }, ...extra });
+    h.state.frames = [f]; h.state.selectedUid = 0; h.renderDetails(f);
+    return [get("detailService").textContent, get("detailServicePad").textContent];
+  };
+  const actual = { id: 2, occupied_by: 0, service_end: 20, service_remaining: 999 };
+  assert.deepEqual(show(10.2, [actual]), ["9.8 s", "PAD 2"]);
+  h.state.playing = false;
+  assert.deepEqual(show(10.2, [actual]), ["9.8 s", "PAD 2"]);
+  assert.deepEqual(show(19, [actual]), ["1.0 s", "PAD 2"]);
+  assert.deepEqual(show(25, [actual]), ["0.0 s", "PAD 2"]);
+  assert.deepEqual(show(10, [actual]), ["10.0 s", "PAD 2"]);
+  assert.deepEqual(show(10, [{ id: 1, reserved_by: 0, service_end: 20 }]), ["—", ""]);
+  assert.deepEqual(show(10, [{ id: 1, occupied_by: 8, occupant_id: "original-zero", reserved_by: 0, service_end: 20 }]), ["—", ""]);
+  assert.deepEqual(show(10, [{ id: 3, occupant_id: "original-zero", service_end: 20 }]), ["10.0 s", "PAD 3"]);
+  assert.deepEqual(show(10, [{ ...actual, service_end: null, service_remaining: 0 }]), ["—", "PAD 2"]);
+  assert.deepEqual(show(10, [{ ...actual, service_end: undefined, service_remaining: 12 }]), ["—", "PAD 2"]);
+  assert.deepEqual(show(0, [{ ...actual, service_end: 0 }]), ["0.0 s", "PAD 2"]);
+  assert.deepEqual(show(10, [], { rotating_slots: undefined, landing_zones: [{ lz_id: 4, occupied_by: 0, service_remaining: 12.3 }] }), ["12.3 s", "LZ 4"]);
+  assert.deepEqual(show(10, [], { rotating_slots: undefined, landing_zones: [{ lz_id: 4, occupied_by: 0, service_remaining: 0 }] }), ["0.0 s", "LZ 4"]);
+  assert.deepEqual(show(10, [], { rotating_slots: undefined, landing_zones: [{ lz_id: 4, reserved_by: 0, service_remaining: 12.3 }] }), ["—", ""]);
+});
+
+test("all UID layer defaults off, synchronizes its checkbox and resets the scene", () => {
+  const { h, get } = uidUiHarness();
+  assert.equal(h.state.layers.allUids, false);
+  let layers;
+  h.state.scene = { setLayers: (value) => { layers = value; } };
+  h.state.layers.allUids = true; h.state.layers.labels = false; h.syncLayerInputs();
+  assert.equal(get("layerAllUids").checked, true); assert.equal(get("layerLabels").checked, false);
+  h.resetLayers();
+  assert.equal(h.state.layers.allUids, false); assert.equal(get("layerAllUids").checked, false);
+  assert.equal(layers.allUids, false); assert.equal(layers.labels, true);
+  const html = readFileSync(new URL("../terminal_marl/visualization/web/index.html", import.meta.url), "utf8");
+  assert.match(html, /id="layerAllUids"[^>]*type="checkbox"[^>]*>[\s\S]*?<span>显示UID<\/span>/);
 });
 
 test("locator form binds native submit and keeps input keyboard events away from playback shortcuts", () => {

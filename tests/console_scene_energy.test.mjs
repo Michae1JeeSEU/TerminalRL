@@ -187,6 +187,26 @@ test("UID zero focus and highlight exclude missing UID aircraft", () => {
   assert.equal(instance.focusOn(null, instance.frame), false);
 });
 
+test("all UID toggle labels every aircraft once above the density limit with ordinary labels off", () => {
+  const instance = scene();
+  const uavs = Array.from({ length: 12 }, (_, uid) => ({ ...flying, uid, position: [50 + uid * 15, 70, 20], ...(uid === 11 ? { status: "ENERGY_FAILURE" } : {}) }));
+  instance.frame = { uavs }; instance.layers = { labels: false, allUids: false };
+  instance.camera.zoom = 1; instance._resize = () => ({ width: 900, height: 650 });
+  instance._bounds = () => ({ extent: 100 }); instance._depth = () => 0;
+  instance._drawReferenceFrame = () => {}; instance._drawTerminalEvents = () => {}; instance._drawEnergyAlerts = () => {};
+  instance.render(); assert.equal(instance.calls.filter((call) => call.kind === "text").length, 0);
+  instance.calls.length = 0; instance.selectedUid = 0;
+  instance.setLayers({ allUids: true });
+  const labels = instance.calls.filter((call) => call.kind === "text").map((call) => call.args[0]);
+  assert.equal(labels.length, 12); assert.equal(labels[0], "UID 0"); assert.equal(labels[10], "UID 10");
+  assert.equal(labels[11], "UID 11 · ENERGY_FAILURE");
+  instance.calls.length = 0; instance.selectedUid = null; instance.setLayers({ allUids: false });
+  assert.equal(instance.calls.filter((call) => call.kind === "text").length, 0);
+  instance.setLayers({ allUids: true }); instance.calls.length = 0;
+  instance.referenceFrame = { uavs }; instance._drawReferenceUav(uavs[5]);
+  assert.equal(instance.calls.filter((call) => call.kind === "text")[0].args[0], "R UID 5");
+});
+
 test("low SOC and emergency bodies and safety outlines have visibly bolder strokes", () => {
   const instance = scene();
   for (const [declaration, width] of [[{}, 1.5], [{ low_soc: true }, 2.8], [{ emergency_landing: true }, 3.4]]) {

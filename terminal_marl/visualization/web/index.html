@@ -105,6 +105,7 @@
             <label class="toggle-row"><input id="layerLandingZones" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch lz-swatch"></span><span>降落区</span></label>
             <label class="toggle-row"><input id="layerGrid" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch grid-swatch"></span><span>地面网格</span></label>
             <label class="toggle-row"><input id="layerLabels" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch label-swatch"></span><span>标签</span></label>
+            <label class="toggle-row"><input id="layerAllUids" type="checkbox"><span class="check-box"></span><span class="layer-swatch label-swatch"></span><span>显示UID</span></label>
             <label class="toggle-row"><input id="layerTrails" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch trail-swatch"></span><span>历史尾迹</span></label>
             <label class="toggle-row"><input id="layerCommitted" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch committed-swatch"></span><span>承诺轨迹采样</span></label>
             <label class="toggle-row"><input id="layerConflicts" type="checkbox" checked><span class="check-box"></span><span class="layer-swatch conflict-swatch"></span><span>冲突高亮</span></label>
@@ -208,6 +209,7 @@
       <aside class="right-rail panel" id="detailsRail" aria-label="选中飞机详情" hidden>
         <div class="detail-heading"><div><span class="eyebrow">SELECTED AIRCRAFT</span><h2 id="selectedTitle">未选择 UAV</h2></div><span class="selection-pulse" id="selectionPulse"></span></div>
         <div class="selected-state" id="selectedState">点击场景中的 UAV 或航班表行查看详情。</div>
+        <div class="service-countdown"><span>剩余服务时间</span><strong id="detailService">—</strong><span id="detailServicePad"></span></div>
         <div class="selected-actions">
           <button id="followSelectedButton" class="primary-button compact" type="button" title="让相机跟随选中的 UAV" aria-label="跟随选中的 UAV" disabled>跟随飞机</button>
           <button id="clearSelectedButton" class="tool-button compact" type="button" title="清除当前选择" aria-label="清除当前选择">清除</button>
