@@ -1,6 +1,7 @@
 """Fixed-catalog observations; no rollout or candidate generation required."""
 from dataclasses import replace
 import json
+import math
 import pytest
 
 from terminal_marl.core.rotating_slots.world import RotatingSlotWorld
@@ -10,7 +11,7 @@ from terminal_marl.core.rotating_slots.stage2_planning import (
     EvaluationContext,PlanningBudget,PredictionColumn,PlanningNode,CandidateCatalog,RollingHorizonCPSATScheduler,NormalSchedulerCallback)
 from terminal_marl.core.rotating_slots.selective_replanning.scope import PlanningScope
 from terminal_marl.core.rotating_slots.selective_replanning.diagnostics import (
-    DiagnosticConfig,CandidateDiagnostics,candidate_hash,probe_catalog_choices)
+    DiagnosticConfig,CandidateDiagnostics,candidate_hash,probe_catalog_choices,plain)
 
 
 def fixture(n=2):
@@ -81,6 +82,44 @@ def test_synthetic_catalog_has_complete_slacks_for_real_hint_scheduler(monkeypat
     context=EvaluationContext(s,budget=budget,prefix_evaluator=lambda p: ValidationResult(True,"SAFE"))
     result=EnergySlackScheduler().plan(s,cat,context,budget)
     assert result.certified and set(cat.slacks)==set(cat.columns)
+
+
+@pytest.mark.parametrize("config",[None,DiagnosticConfig()])
+def test_infinite_resource_overlap_telemetry_is_canonical_without_changing_raw_result(config):
+    from terminal_marl.core.rotating_slots.resources import Reservation
+    from terminal_marl.core.rotating_slots.stage2_campaign import canonical
+    s,cat=fixture()
+    a=replace(cat.columns["a"][1],resources=(Reservation(("inner",1),"a",0.,math.inf),))
+    b=replace(cat.columns["b"][0],resources=(Reservation(("inner",1),"b",5.,math.inf),))
+    context=EvaluationContext(s,budget=PlanningBudget(diagnostics=config))
+    result=context.check_pair(a,b)
+    assert not result.accepted and result.status=="CONFLICT" and result.reason=="RESOURCE_CONFLICT"
+    raw=result.details["resource_overlaps"][0]
+    assert raw["first_interval"]==[0.,math.inf] and raw["second_interval"]==[5.,math.inf]
+    assert raw["interval"]==[5.,math.inf] and math.isinf(a.resources[0].end) and math.isinf(b.resources[0].end)
+    telemetry=dict(selective_replanning=dict(calls=[dict(pair_conflict_evidence=context.pair_conflict_evidence)]))
+    saved=json.loads(canonical(telemetry))
+    overlap=saved["selective_replanning"]["calls"][0]["pair_conflict_evidence"][0]["details"]["resource_overlaps"][0]
+    for name in ("first_interval","second_interval","interval"):
+        assert overlap[name][1]=={"$nonfinite_float":"+inf"}
+    assert context.check_pair(a,b) is result and context.pair_conflict_evidence[0]["count"]==2
+    assert math.isinf(next(iter(context.pairs.values())).details["resource_overlaps"][0]["interval"][1])
+    if context.diagnostics is not None:
+        context.diagnostics.model({"a":(a,),"b":(b,)},{(a.signature,b.signature)},set(),set(),1)
+        out=context.diagnostics.export(replace(cat,columns={"a":(a,),"b":(b,)}),(a,b))
+        canonical(out)
+        assert out["cp_models"][0]["constraints"][0]["resource_overlaps"][0]["interval"][1]=={"$nonfinite_float":"+inf"}
+
+
+def test_diagnostic_infinity_encoding_is_explicit_and_nan_still_rejected():
+    from terminal_marl.core.rotating_slots.stage2_campaign import canonical
+    source={"interval":[-math.inf,math.inf],"finite":80.}
+    saved=plain(source)
+    assert saved=={"interval":[{"$nonfinite_float":"-inf"},{"$nonfinite_float":"+inf"}],"finite":80.}
+    assert source["interval"]==[-math.inf,math.inf]
+    canonical(saved)
+    with pytest.raises(ValueError,match="NaN"): plain({"interval":[0.,math.nan]})
+    with pytest.raises(ValueError): canonical({"interval":[0.,math.nan]})
 
 
 def test_bounded_catalog_payload_queries_and_cp_variable_mapping():

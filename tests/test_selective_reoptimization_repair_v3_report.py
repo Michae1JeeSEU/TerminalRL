@@ -134,3 +134,74 @@ def test_writer_emits_only_requested_new_outputs_and_explicit_not_run_status():
     assert [path for path,_ in writes]==[Path("new/v3_analysis_summary.json"),Path("new/REPORT.md")]
     assert "NOT_RUN" in writes[1][1]
     write_csv.assert_called_once_with(Path("new/rounds.csv"),[])
+
+
+def test_default_arm_paths_remain_compatible_and_explicit_override_selects_continuation():
+    with patch.object(report,"boundaries",return_value={300}), \
+         patch.object(report,"cell",return_value={}) as cell,patch.object(report,"diagnostic_inputs",return_value=[]):
+        result=report.build_summary("new","old",roots=("s3r23",))
+    assert cell.call_args_list[1].args==(Path("new/arms/s3r23/evaluation/s3r23/RULE_LOCAL_K8"),300)
+    assert not result["cells"]["s3r23"]["new_arm_overridden"]
+    overrides=report.parse_arm_overrides(["s3r23=new/continuations/s3r23_serialization_fix"])
+    with patch.object(report,"boundaries",return_value={300}), \
+         patch.object(report,"cell",return_value={}) as cell,patch.object(report,"diagnostic_inputs",return_value=[]):
+        result=report.build_summary("new","old",roots=("s3r23",),new_arms=overrides)
+    assert cell.call_args_list[1].args==(Path("new/continuations/s3r23_serialization_fix/evaluation/s3r23/RULE_LOCAL_K8"),300)
+    assert result["cells"]["s3r23"]["new_arm_overridden"]
+    with pytest.raises(ValueError): report.parse_arm_overrides(["s3r23=a","s3r23=b"])
+    with pytest.raises(ValueError): report.build_summary("new","old",roots=(),new_arms={"unknown":"x"})
+
+
+def test_continuation_provenance_and_three_wall_scopes_stay_separate_and_partial_is_not_complete():
+    directory=Path("new/continuations/fix/evaluation/s3r23/RULE_LOCAL_K8")
+    provenance=dict(old_source_hash="old",new_source_hash="new",original_failed_job={"child_wall_s":175.},
+        unsaved_cache_policy={"provider_validation_cache":"NOT_SERIALIZED_STARTS_EMPTY"})
+    segment=dict(continuation_job_wall_s=90.,job_elapsed_wall_s=140.)
+    finished=dict(status="COMPLETE",completed_boundary_s=300,error=None,full_job_wall_s=90.,
+        continuation_costs=segment,original_failed_child_wall_s=175.,
+        full_job_wall_scope="CONTINUATION_CHILD_ONLY",terminal_observation=dict(observed_time_s=300.,failed=False,terminated_invalid=False))
+    payloads={"resolved_run_binding.json":dict(source_hash="new",continuation=provenance),
+        "arm.finished.json":finished,"continuation_provenance.json":provenance,
+        "continuation_finished_provenance.json":dict(provenance,continuation_costs=segment),
+        "boundary_0300.json":dict(costs=dict(job_elapsed_wall_s=140.,continuation_job_wall_s=90.))}
+    def load(path,default=None): return payloads.get(Path(path).name,default)
+    with patch.object(report.saved,"load",side_effect=load),patch.object(Path,"is_file",return_value=True):
+        evidence=report.arm_evidence(directory,300)
+        assert evidence["completion_status"]=="COMPLETE_300"
+        assert evidence["continuation_provenance"] is provenance
+        assert evidence["run_binding"]["source_hash"]=="new"
+        assert evidence["binding_path"]==str(directory.parent.parent.parent/"resolved_run_binding.json")
+        wall=evidence["wall_accounting"]
+        assert wall["cumulative_boundary_costs"]["job_elapsed_wall_s"]==140.
+        assert wall["continuation_job_wall_s"]==90. and wall["original_failed_child_wall_s"]==175.
+        assert "total_wall_s" not in wall
+        finished["completed_boundary_s"]=60
+        assert report.arm_evidence(directory,300)["completion_status"]=="INCOMPLETE_OR_UNKNOWN"
+    with patch.object(report.saved,"load",return_value=None),patch.object(Path,"glob",return_value=[]):
+        missing=report.arm_evidence(directory)
+    assert missing["run_binding"] is None and missing["continuation_provenance"] is None
+    assert missing["wall_accounting"]["continuation_job_wall_s"] is None
+    assert missing["completion_status"]=="INCOMPLETE_OR_UNKNOWN"
+
+
+def test_dual_source_binding_preserves_original_high_arm_and_requires_exact_continuation_sources():
+    old=("oldhash","oldcommit"); new=("newhash","newcommit")
+    original=dict(source_hash=old[0],source_commit=old[1])
+    assert report.validate_source_bindings(original,original_source=old,continuation_source=new)["kind"]=="ORIGINAL_ARM"
+    continuation=dict(old_source_hash=old[0],old_source_commit=old[1],new_source_hash=new[0],new_source_commit=new[1])
+    bound=dict(source_hash=new[0],source_commit=new[1],continuation=continuation)
+    assert report.validate_source_bindings(bound,original_source=old,continuation_source=new)["continuation"] is continuation
+    with pytest.raises(ValueError): report.validate_source_bindings(bound,original_source=old)
+    with pytest.raises(ValueError): report.validate_source_bindings(dict(original,source_hash="newhash"),original_source=old)
+    with pytest.raises(ValueError):
+        report.validate_source_bindings(dict(bound,continuation=dict(continuation,old_source_hash="wrong")),
+            original_source=old,continuation_source=new)
+
+
+def test_actual_k_statistics_use_final_scope_not_top_level_nominal_eight():
+    record=dict(planning_timing={"snapshot_time":0.},selective_replanning=dict(actual_k=8,
+        scope=dict(actual_k=10,status="LOCAL",replan_ids=[str(i) for i in range(10)])))
+    assert report.saved.selection_facts([record])["actual_k_counts"]=={10:1}
+    selected=report.decisions.selection(record)
+    assert selected["actual_k_field"]==8 and selected["returned_scope_actual_k_field"]==10
+    assert selected["returned_scope_size"]==10

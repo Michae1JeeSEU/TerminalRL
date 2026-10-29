@@ -13,6 +13,7 @@ import json
 import math
 import os
 from pathlib import Path
+import shutil
 import sys
 import time
 
@@ -30,6 +31,10 @@ POLICY = dict(cap_child_wall_s=5400., prior_audits_child_wall_s=0.,
     previous_repair_settled_child_wall_s=1477.5308457711415,
     previous_repair_ledger_readonly="rs_selective_repair_20261029/repair_budget_ledger.json")
 PROBE_IDS = ("initial_middle_01", "initial_middle_02")
+CONTINUATION_NAME = "s3r23_serialization_fix"
+CONTINUATION_CHECKPOINT_SHA256 = "091469fdf2ca568885241953c84df3c37f7813488e3e10c0904ab909b35073fc"
+CONTINUATION_PARENT_SOURCE_HASH = "2a5629bf756be0b48273b1f47523818370d0fa23f8a4f787f35b06e301a0ac76"
+CONTINUATION_BOUNDARIES = tuple(range(65,301,5))
 
 
 def ledger_transaction(output, *, write=True):
@@ -211,6 +216,204 @@ def arm(args, d):
     return result
 
 
+def continuation_inputs(args):
+    """Bind the one failed medium arm's saved 60s state, never a t0 retry."""
+    base.require(args.root=="s3r23" and args.cpu==12 and args.variant==RULE,"fixed s3r23 CPU12 v3 continuation required")
+    parent=args.output/"arms/s3r23"
+    expected=parent/"evaluation/s3r23/RULE_LOCAL_K8/checkpoint_0060.json"
+    base.require(Path(args.checkpoint).resolve()==expected.resolve(),"only the original failed arm's checkpoint0060 is authorized")
+    base.require(base.file_hash(expected)==CONTINUATION_CHECKPOINT_SHA256,"authorized continuation checkpoint bytes differ")
+    envelope=base.load(expected);payload=envelope["payload"]
+    base.require(envelope["sha256"]==base.digest(payload) and payload["time"]==60.,"continuation checkpoint digest/time differs")
+    base.require(payload["identity"]["source_hash"]==CONTINUATION_PARENT_SOURCE_HASH
+                 and payload["identity"]["manifest_sha256"]==base.RAW_HASHES["s3r23"][0],"continuation checkpoint source/root differs")
+    old_binding_path=parent/"resolved_run_binding.json";old_binding=base.load(old_binding_path)
+    base.require(old_binding["binding_id"]==base.digest({k:v for k,v in old_binding.items() if k!="binding_id"}),"failed arm binding digest differs")
+    base.require(old_binding["source_hash"]==CONTINUATION_PARENT_SOURCE_HASH and old_binding["seed"]==7324
+                 and old_binding["treatment"]==treatment(RULE),"failed arm treatment/seed/source differs")
+    source=base.load(args.source_freeze);base.verify_sources(source)
+    base.require(DRIVER.relative_to(PROJECT).as_posix() in source["files"] and
+        "tests/test_rotating_slots_selective_repair_v3_campaign.py" in source["files"],"reviewed continuation runner/tests freeze required")
+    with ledger_transaction(args.output,write=False) as ledger:
+        failed=deepcopy(ledger["jobs"].get("arm_s3r23",{}))
+        base.require(failed.get("status")=="failed" and failed.get("exit_code")==1,"original FAILED arm receipt must remain present")
+        base.require(ledger.get("formal_source_hash")==CONTINUATION_PARENT_SOURCE_HASH,"original formal source binding changed")
+    summary=payload["boundary_summary"]
+    base.require(summary["time"]==60. and summary["root_id"]=="s3r23","prefix boundary summary differs")
+    provenance=dict(schema="rs_selective_checkpoint_continuation_v1",reason="AUTHORIZED_SERIALIZATION_METADATA_FIX",
+        ledger_job_id="continuation_"+CONTINUATION_NAME,
+        source_checkpoint=str(expected),source_checkpoint_sha256=CONTINUATION_CHECKPOINT_SHA256,
+        source_checkpoint_payload_sha256=envelope["sha256"],resume_sim_time=60.,target_sim_time=300.,
+        parent_arm_binding=str(old_binding_path),parent_arm_binding_sha256=base.file_hash(old_binding_path),
+        parent_arm_binding_id=old_binding["binding_id"],old_source_hash=old_binding["source_hash"],old_source_commit=old_binding["source_commit"],
+        old_freeze_basis="EMBEDDED_SOURCE_MANIFEST_IN_PARENT_ARM_BINDING",new_source_freeze=str(args.source_freeze),
+        new_source_hash=source["source_hash"],new_source_commit=source["commit"],original_failed_job=failed,
+        original_failed_child_wall_s=failed.get("child_wall_s"),prefix_boundary_costs=deepcopy(summary["costs"]),
+        prefix_frames_policy="RESTORE_ALL_SAVED_0_TO_60_FRAMES_EVENTS_TRAJECTORIES",
+        pending_policy="RESTORE_FULL_WRAPPER_AND_PREPARED_PACKET_NO_PROPOSAL_RESOLVE",
+        unsaved_cache_policy=dict(provider_validation_cache="NOT_SERIALIZED_STARTS_EMPTY",process_global_accelerators="NOT_SERIALIZED",
+            reference_cache_templates_previous="RESTORED_FROM_CALLBACK_STATE",world_energy_cache="RESTORED_FROM_WORLD_STATE",
+            exact_future_wall_service_reproduction=False),
+        interruption_policy="NO_RECOMPUTATION_AT_OR_BEFORE_60_REMAINING_65_TO_300_AFTER_PROCESS_RESTART",
+        accounting_scope="PREFIX_BOUNDARY_COST_PLUS_CONTINUATION_ONLY_FAILED_SERIALIZATION_OVERHEAD_EXCLUDED",
+        original_failed_output_readonly=str(parent),historical_callback_and_service_records_counted_once=True)
+    row=deepcopy(old_binding)
+    row.pop("binding_id",None)
+    row.update(schema="rs_selective_repair_continuation_binding_v3",source=source,source_hash=source["source_hash"],
+        source_commit=source["commit"],run_role="CHECKPOINT_CONTINUATION_SAME_EPISODE",continuation=provenance)
+    row["binding_id"]=base.digest(row)
+    return payload,row
+
+
+def restore_continuation(checkpoint,payload,d,directory):
+    """Restore scheduler and world together; intentionally never ColdRestore."""
+    callback=base.scheduler(d,"RULE_LOCAL_K8",selector_variant=RULE,opportunity_seed_offset=0)
+    wrapper=d.LatencyAwareScheduler(callback,lead_seconds=20.,preparation_margin=1.,
+        search_handoff_reserve_seconds=4.,restart_policy=old.RESTART)
+    world=d.restore_checkpoint(checkpoint,wrapper,payload["identity"],stream_copy=directory/"restored_states.jsonl")
+    world.decision_callback,world.admission_callback=wrapper,d.shared_fifo_admission
+    base.require(world.time==60. and world.scheduler_period==5.,"restored continuation time/heartbeat differs")
+    return world,callback,wrapper
+
+
+def continuation_invariants(world,callback,wrapper,payload,codec):
+    """Observe exact persisted state before any callback, publication or advance."""
+    saved_world=codec.decode(payload["world"]);saved_scheduler=codec.decode(payload["scheduler"])
+    saved_callback=saved_scheduler["callback"];actual_callback=callback.state_dict()
+    checks=dict(world_serialized_fields_match=all(codec.encode(getattr(world,key))==codec.encode(value)
+        for key,value in saved_world.items()),
+        pending_matches=codec.encode(wrapper.pending)==codec.encode(saved_scheduler["pending"]),
+        wrapper_records_match=codec.encode(wrapper.records)==codec.encode(saved_scheduler["records"]),
+        online_services_match=codec.encode(wrapper.online_services)==codec.encode(saved_scheduler["online_services"]),
+        selector_history_matches=actual_callback["selective_replanning"]["history"]==saved_callback["selective_replanning"]["history"],
+        previous_matches=actual_callback["previous"]==saved_callback["previous"],
+        reference_cache_matches=actual_callback["references"]==saved_callback["references"],
+        reference_templates_match=actual_callback["templates"]==saved_callback["templates"],
+        reference_hits_match=actual_callback["reference_hits"]==saved_callback["reference_hits"])
+    wrapper_state=wrapper.state_dict()
+    checks["wrapper_simulation_clock_and_restart_matches"]=all(codec.encode(wrapper_state[key])==codec.encode(saved_scheduler[key])
+        for key in ("dirty","idle_service","handoff_service","service_until","restart_policy","restart_requested","last_normal_start_time","last_restart_time"))
+    pending=wrapper.pending;packets=getattr(world,"_planning_latency_packets",{})
+    checks["prepared_pending_packet_present"]=bool(pending and pending["stage"]=="PREPARED" and pending["token"] in packets)
+    times=[record["time"] for record in world.records]
+    checks["complete_saved_0_to_60_frame_prefix"]=bool(times and times[0]==0. and times[-1]==60. and all(a<b for a,b in zip(times,times[1:])))
+    return dict(status="PASS" if all(checks.values()) else "FAIL",checks=checks,physical_execution=False,solver_called=False,
+        time=world.time,frame_count=len(times),first_frame_time=times[0] if times else None,last_frame_time=times[-1] if times else None,
+        callback_record_count=len(callback.records),normal_task_count=len(wrapper.records),online_service_count=len(wrapper.online_services),
+        active_count=len(world.active),soft_count=len(world.soft),pending_stage=pending["stage"] if pending else None,
+        pending_due=pending["due"] if pending else None,provider_validation_cache_size=len(callback.provider.validation_cache),
+        comparison_scope="ALL_SERIALIZED_WORLD_FIELDS_AND_PERSISTED_SCHEDULER_STATE_NO_ADVANCE")
+
+
+def continuation_costs(prefix,*,job_wall_s,process_cpu_s,advance_wall_s,advance_cpu_s):
+    return dict(job_elapsed_wall_s=prefix["job_elapsed_wall_s"]+job_wall_s,
+        process_cpu_s=prefix["process_cpu_s"]+process_cpu_s,
+        world_advance_wall_s=prefix["world_advance_wall_s"]+advance_wall_s,
+        world_advance_cpu_s=prefix["world_advance_cpu_s"]+advance_cpu_s,
+        continuation_job_wall_s=job_wall_s,continuation_process_cpu_s=process_cpu_s,
+        continuation_world_advance_wall_s=advance_wall_s,continuation_world_advance_cpu_s=advance_cpu_s,
+        cumulative_cost_scope="PREFIX_BOUNDARY_COST_PLUS_CONTINUATION_ONLY_FAILED_SERIALIZATION_OVERHEAD_EXCLUDED",
+        ledger_cost_scope="ORIGINAL_FAILED_CHILD_AND_CONTINUATION_CHILD_CHARGED_SEPARATELY_NO_PREFIX_RECREDIT")
+
+
+def continuation(args,d):
+    from terminal_marl.core.rotating_slots.stage2_campaign import Stage2Codec
+    from terminal_marl.core.rotating_slots.world import AIRBORNE
+    started,cpu_started=time.perf_counter(),time.process_time()
+    payload,row=continuation_inputs(args)
+    if args.stage=="continue":
+        check_root=args.output/"restore_checks"/CONTINUATION_NAME
+        checked=base.load(check_root/"result.json");checked_binding=base.load(check_root/"resolved_run_binding.json")
+        base.require(checked.get("status")=="RESTORE_ONLY_PASS" and checked.get("physical_execution") is False,
+                     "successful restore-only validation required before continuation")
+        base.require(checked_binding["source_hash"]==row["source_hash"] and
+            checked_binding["continuation"]["source_checkpoint_sha256"]==CONTINUATION_CHECKPOINT_SHA256,
+            "restore-only validation used a different source or checkpoint")
+    old.set_cpu(args,d)
+    arm_root=args.output/("restore_checks" if args.stage=="restore-check" else "continuations")/CONTINUATION_NAME
+    arm_root.mkdir(parents=True,exist_ok=False)
+    directory=arm_root/"evaluation/s3r23/RULE_LOCAL_K8";directory.mkdir(parents=True,exist_ok=False)
+    write_new_json(arm_root/"resolved_run_binding.json",row)
+    write_new_json(arm_root/"continuation_provenance.json",row["continuation"])
+    world,callback,wrapper=restore_continuation(args.checkpoint,payload,d,directory)
+    invariants=continuation_invariants(world,callback,wrapper,payload,Stage2Codec())
+    write_new_json(arm_root/"restore_invariants.json",invariants)
+    base.require(invariants["status"]=="PASS","restored continuation state invariants failed")
+    if args.stage=="restore-check":
+        result=dict(status="RESTORE_ONLY_PASS",restore_invariants=str(arm_root/"restore_invariants.json"),
+            physical_execution=False,solver_called=False,restored_time=world.time,pending_not_recomputed=True)
+        write_new_json(arm_root/"result.json",result)
+        return result
+    with ledger_transaction(args.output) as ledger:
+        source_hash=ledger.setdefault("continuation_serialization_fix_source_hash",row["source_hash"])
+        base.require(source_hash==row["source_hash"],"continuation source differs from its first attempt")
+    # Prefix boundary artifacts retain their original binding/identity verbatim.
+    parent_directory=Path(args.checkpoint).parent
+    for boundary in range(5,61,5):
+        source_path=parent_directory/f"boundary_{boundary:04d}.json"
+        base.require(source_path.is_file(),"saved prefix boundary missing")
+        shutil.copyfile(source_path,directory/source_path.name)
+    shutil.copyfile(args.checkpoint,directory/"checkpoint_0060.json")
+    summary=payload["boundary_summary"];prefix=summary["costs"]
+    initial_counts=deepcopy(summary["initial_counts"])
+    holding,restore_observer=d.evaluation.observe_executed_holding(world)
+    holding.update(summary["holding_energy_by_ring"])
+    advance_wall=advance_cpu=0.;completed=60;error=None
+    identity=dict(payload["identity"],source_hash=row["source_hash"])
+    try:
+        for boundary in CONTINUATION_BOUNDARIES:
+            d.atomic_json(arm_root/"progress/s3r23_RULE_LOCAL_K8.json",dict(root="s3r23",method="RULE_LOCAL_K8",pid=os.getpid(),
+                phase="CONTINUING_FROM_SAVED_60",completed_boundary_s=completed,target=boundary,continuation_job_wall_s=time.perf_counter()-started))
+            before,before_cpu=time.perf_counter(),time.process_time()
+            world.advance(float(boundary),wrapper,settle_only_at_end=True)
+            advance_wall+=time.perf_counter()-before;advance_cpu+=time.process_time()-before_cpu
+            if abs(world.time-boundary)>1.e-7 or world.failed or getattr(world,"terminated_invalid",False):break
+            completed=boundary
+            quality=d.episode_metrics(world)
+            quality.update(unresolved_low_soc_count=sum(a.status in AIRBORNE and a.soc<.25 for a in world.aircraft.values()),unresolved_low_soc_threshold=.25)
+            costs=continuation_costs(prefix,job_wall_s=time.perf_counter()-started,process_cpu_s=time.process_time()-cpu_started,
+                advance_wall_s=advance_wall,advance_cpu_s=advance_cpu)
+            costs.update(dispatch_wall_s=sum(item.get("dispatch_wall_s",0.) for item in world.dispatch_timings),
+                simulation_timing_scope=prefix["simulation_timing_scope"])
+            boundary_row=dict(root_id="s3r23",method="RULE_LOCAL_K8",time=world.time,quality=quality,initial_counts=initial_counts,
+                normal_lifecycle=base.lifecycle_summary(wrapper.records,callback.records,wrapper.online_services,d.latency),
+                holding_energy_by_ring=dict(holding),costs=costs,pending=wrapper.pending is not None,source_binding=row["binding_id"],
+                continuation=dict(resume_sim_time=60.,prefix_callbacks_inherited=True),
+                selection_summary=base.module(PROJECT/"scripts/stage3/report_selective_reoptimization_a.py","_selective_cont_boundary").selection_summary(callback.records))
+            d.save_checkpoint(directory/f"checkpoint_{boundary:04d}.json",world,wrapper,identity,boundary_summary=boundary_row)
+            d.atomic_json(directory/f"boundary_{boundary:04d}.json",boundary_row)
+            base.save_logs(directory,world,callback,wrapper,row,"s3r23",d)
+    except Exception as exc:
+        error=dict(type=type(exc).__name__,message=str(exc))
+    finally:
+        restore_observer()
+    # Finalization is explicit and only writes the new continuation tree.
+    base.save_logs(directory,world,callback,wrapper,row,"s3r23",d)
+    terminal=d.evaluation.terminal_observation(world)
+    d.atomic_json(directory/"terminal_observation.json",terminal)
+    d.save_checkpoint(directory/"checkpoint_terminal.json",world,wrapper,identity)
+    record=world.to_dict()
+    record.update(decisions=callback.records,stage3_trace=[dict(record_type="NormalTask",**item) for item in wrapper.records],
+        stage2_provenance=dict(execution_scope=row),tentative_predictions=[dict(aircraft_id=aid,as_of=world.time,plans=[plan.to_dict() for plan in plans])
+            for aid,plans in callback.provider.previous.items()])
+    d.ReplayBundle.write(directory/"replay",record=record,code_commit=row["source_commit"],config_path=world.config.path,
+        command=str(DRIVER)+" continue",seed=7324,eager=False)
+    costs=continuation_costs(prefix,job_wall_s=time.perf_counter()-started,process_cpu_s=time.process_time()-cpu_started,
+        advance_wall_s=advance_wall,advance_cpu_s=advance_cpu)
+    result=dict(status="COMPLETE" if completed==300 and error is None else "EVALUATION_PARTIAL",root_id="s3r23",method="RULE_LOCAL_K8",
+        completed_boundary_s=completed,terminal_observation=terminal,error=error,full_job_wall_s=costs["continuation_job_wall_s"],
+        process_cpu_s=costs["continuation_process_cpu_s"],continuation_costs=costs,original_failed_child_wall_s=row["continuation"]["original_failed_child_wall_s"],
+        actual_cpu=sorted(os.sched_getaffinity(0)),replay_status="WRITTEN_HUMAN_PENDING",source_binding=row["binding_id"],
+        continued_from_sim_time=60.,inherited_callback_records=invariants["callback_record_count"],
+        full_job_wall_scope="CONTINUATION_CHILD_ONLY_ORIGINAL_FAILED_CHILD_REMAINS_SEPARATE_IN_LEDGER")
+    d.atomic_json(directory/"result.json",result)
+    write_new_json(arm_root/"arm.finished.json",result)
+    write_new_json(arm_root/"continuation_finished_provenance.json",dict(row["continuation"],continuation_costs=costs,
+        final_status=result["status"],final_sim_time=world.time))
+    if error:raise RuntimeError(str(error))
+    return result
+
+
 def snapshot(args, d):
     """One cold local solve and optional fixed-catalog probes; no publication."""
     from terminal_marl.core.rotating_slots.selective_replanning.diagnostics import DiagnosticConfig, CandidateDiagnostics, plain
@@ -293,7 +496,7 @@ def snapshot(args, d):
 
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("stage",choices=("snapshot","smoke","arm"))
+    parser.add_argument("stage",choices=("snapshot","smoke","arm","restore-check","continue"))
     parser.add_argument("--output",type=Path,default=Path.home()/"training_outputs/terminal"/OUTPUT_NAME)
     parser.add_argument("--origin-output",type=Path,default=Path.home()/"training_outputs/terminal/rs_selective_reoptimization_a_20261027")
     parser.add_argument("--source-freeze",type=Path,required=True)
@@ -315,19 +518,26 @@ def main(argv=None):
         base.require(args.case.isascii() and all(c.isalnum() or c in "_-" for c in args.case), "simple unique case name required")
         base.require(math.isfinite(args.expected_source_time) and args.expected_source_time>=0.,"finite historical source time required")
         base.require(0<args.probe_seconds<=10.,"probe validation allowance must be at most ten seconds")
+    elif args.stage in ("restore-check","continue"):
+        base.require(args.root=="s3r23" and args.cpu==12 and args.checkpoint and args.variant==RULE,
+                     "explicit s3r23 CPU12 v3 checkpoint continuation required")
+        base.require(not args.probe_immediate and not args.case,"snapshot case/probes forbidden for continuation")
     else:
         base.require(not args.checkpoint and not args.probe_immediate and not args.case,"snapshot options forbidden for rollout")
-    job_id=args.stage+"_"+args.root+("_"+args.case if args.stage=="snapshot" else "")
+    job_id=("continuation_"+CONTINUATION_NAME if args.stage=="continue" else
+            "restore_check_"+CONTINUATION_NAME if args.stage=="restore-check" else
+            args.stage+"_"+args.root+("_"+args.case if args.stage=="snapshot" else ""))
     if not args._child_job_id:
         command=[sys.executable,str(DRIVER),*(sys.argv[1:] if argv is None else argv),"--_child-job-id",job_id]
-        result=run_bounded_job(args.output,job_id,command,cap_s=1200. if args.stage=="arm" else 180.)
+        result=run_bounded_job(args.output,job_id,command,cap_s=1200. if args.stage in ("arm","continue") else 180.)
         base.print_result(dict(job_id=job_id,**result));return
     base.require(args._child_job_id==job_id,"child job identity differs")
     with ledger_transaction(args.output,write=False) as ledger:
         row=ledger["jobs"].get(job_id,{})
         base.require(row.get("status")=="running" and row.get("parent_pid")==os.getppid(),"active parent watchdog required")
     d=base.dependencies(PROJECT);d.launch_threads={key:os.environ.get(key) for key in base.THREADS}
-    base.print_result(snapshot(args,d) if args.stage=="snapshot" else arm(args,d))
+    base.print_result(snapshot(args,d) if args.stage=="snapshot" else
+                      continuation(args,d) if args.stage in ("restore-check","continue") else arm(args,d))
 
 
 if __name__=="__main__":main()

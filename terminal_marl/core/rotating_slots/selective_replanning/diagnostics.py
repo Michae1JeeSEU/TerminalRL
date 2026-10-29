@@ -10,6 +10,9 @@ import time
 
 
 def plain(value):
+    if isinstance(value,float):
+        if math.isnan(value): raise ValueError("NaN is not diagnostic evidence")
+        if math.isinf(value): return {"$nonfinite_float":"+inf" if value>0 else "-inf"}
     if is_dataclass(value): return plain(asdict(value))
     if hasattr(value, "items"): return {str(k): plain(v) for k, v in value.items()}
     if isinstance(value, (tuple, list)): return [plain(v) for v in value]
@@ -108,7 +111,7 @@ class CandidateDiagnostics:
                     row["resource_overlaps"]=[dict(resource=plain(x.resource),interval=[max(x.start,y.start),min(x.end,y.end)])
                         for x in a.resources for y in b.resources
                         if x.resource==y.resource and x.start<y.end and y.start<x.end]
-                constraints.append(row)
+                constraints.append(plain(row))
         self.models.append(dict(refinement_round=refinement,exactly_one=exactly_one,constraints=constraints))
         self.wall_s += time.perf_counter()-started
 

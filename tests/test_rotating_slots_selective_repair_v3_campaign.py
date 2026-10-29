@@ -1,5 +1,6 @@
 """Tiny schema, accounting and serialization checks; never run the solver."""
 import json
+from copy import deepcopy
 from pathlib import Path
 import tempfile
 from types import MappingProxyType, SimpleNamespace
@@ -16,6 +17,56 @@ def number(value): return {"$":"float","hex":float(value).hex()}
 
 
 class RepairV3Tests(unittest.TestCase):
+    def test_continuation_restores_real_wrapper_without_cold_restore_or_advance(self):
+        observed={}
+        callback=object();wrapper=object()
+        world=SimpleNamespace(time=60.,scheduler_period=5.)
+        def scheduler(*args,**kwargs):
+            observed["scheduler_options"]=kwargs;return callback
+        def make_wrapper(actual_callback,**kwargs):
+            self.assertIs(actual_callback,callback);observed["wrapper_options"]=kwargs;return wrapper
+        def restore(path,actual_wrapper,identity,**kwargs):
+            self.assertIs(actual_wrapper,wrapper);observed["restore"]=(path,identity,kwargs);return world
+        d=SimpleNamespace(LatencyAwareScheduler=make_wrapper,restore_checkpoint=restore,shared_fifo_admission=object())
+        with patch.object(base,"scheduler",side_effect=scheduler),patch.object(base,"restore",side_effect=AssertionError("ColdRestore forbidden")):
+            restored,returned_callback,returned_wrapper=runner.restore_continuation(Path("saved60.json"),{"identity":{"original":"identity"}},d,Path("new"))
+        self.assertIs(restored,world);self.assertIs(returned_callback,callback);self.assertIs(returned_wrapper,wrapper)
+        self.assertIs(world.decision_callback,wrapper)
+        self.assertEqual(observed["wrapper_options"],dict(lead_seconds=20.,preparation_margin=1.,search_handoff_reserve_seconds=4.,restart_policy=old.RESTART))
+        self.assertEqual(observed["restore"][2]["stream_copy"],Path("new/restored_states.jsonl"))
+
+    def test_continuation_restore_invariants_cover_pending_prefix_history_and_caches(self):
+        class Codec:
+            def encode(self,value):return deepcopy(value)
+            def decode(self,value):return deepcopy(value)
+        cbstate=dict(selective_replanning={"history":{"entries":{"a":{"reviewed":20.}}}},previous={"a":[]},references=[],templates=[],reference_hits=0)
+        callback=SimpleNamespace(records=[{"snapshot_time":40.}],provider=SimpleNamespace(validation_cache={}),state_dict=lambda:deepcopy(cbstate))
+        pending=dict(stage="PREPARED",due=60.,token="saved",proposal=["stored_proposal"])
+        saved=dict(callback=cbstate,pending=pending,records=[{"status":"PREPARED"}],online_services=[{"wall_s":1.}],
+            dirty=True,idle_service=(None,0.),handoff_service=0.,service_until=59.,restart_policy=old.RESTART,
+            restart_requested=None,last_normal_start_time=40.,last_restart_time=40.)
+        wrapper=SimpleNamespace(pending=deepcopy(pending),records=deepcopy(saved["records"]),online_services=deepcopy(saved["online_services"]),state_dict=lambda:deepcopy(saved))
+        worldstate=dict(time=60.,records=[{"time":0.},{"time":60.}],active={"a":"active"},soft={},_planning_latency_packets={"saved":{"plans":["stored_proposal"]}})
+        world=SimpleNamespace(**deepcopy(worldstate))
+        result=runner.continuation_invariants(world,callback,wrapper,{"world":worldstate,"scheduler":saved},Codec())
+        self.assertEqual(result["status"],"PASS");self.assertFalse(result["physical_execution"] or result["solver_called"])
+        self.assertEqual(result["pending_due"],60.)
+        wrapper.pending["due"]=61.
+        changed=runner.continuation_invariants(world,callback,wrapper,{"world":worldstate,"scheduler":saved},Codec())
+        self.assertEqual(changed["status"],"FAIL");self.assertFalse(changed["checks"]["pending_matches"])
+
+    def test_continuation_costs_keep_prefix_and_new_segment_distinct(self):
+        prefix=dict(job_elapsed_wall_s=53.,process_cpu_s=52.,world_advance_wall_s=44.,world_advance_cpu_s=43.)
+        costs=runner.continuation_costs(prefix,job_wall_s=100.,process_cpu_s=98.,advance_wall_s=90.,advance_cpu_s=89.)
+        self.assertEqual(costs["job_elapsed_wall_s"],153.)
+        self.assertEqual(costs["continuation_job_wall_s"],100.)
+        self.assertEqual(costs["world_advance_wall_s"],134.)
+        self.assertIn("NO_PREFIX_RECREDIT",costs["ledger_cost_scope"])
+        self.assertNotIn("original_failed_child_wall_s",costs)
+        self.assertEqual(runner.CONTINUATION_BOUNDARIES[0],65)
+        self.assertEqual(runner.CONTINUATION_BOUNDARIES[-1],300)
+        self.assertEqual(len(runner.CONTINUATION_BOUNDARIES),48)
+
     def test_new_ledger_separates_history_without_old_prior_audit(self):
         with tempfile.TemporaryDirectory() as tmp:
             with runner.ledger_transaction(tmp) as ledger:

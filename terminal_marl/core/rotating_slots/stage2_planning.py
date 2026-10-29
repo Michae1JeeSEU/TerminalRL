@@ -905,7 +905,7 @@ class EvaluationContext:
             if len(self.pair_conflict_evidence)>=128:
                 self.pair_conflict_evidence_dropped+=1
                 if self.diagnostics is None: return result
-            from .selective_replanning.diagnostics import identity
+            from .selective_replanning.diagnostics import identity,plain
             if "pair_evidence" not in result.details:
                 participants=[]
                 for column in (a,b):
@@ -920,7 +920,7 @@ class EvaluationContext:
                 self._pair_conflict_seen[key]=len(self.pair_conflict_evidence)
                 self.pair_conflict_evidence.append(dict(status=result.status,reason=result.reason,
                     snapshot_id=self.snapshot.version,context_scope=getattr(self.scope,"identity",None),
-                    local_round=getattr(self,"local_round",None),count=1,details=dict(result.details)))
+                    local_round=getattr(self,"local_round",None),count=1,details=plain(result.details)))
         if self.diagnostics is not None: self.diagnostics.query("PAIR",(a,b),result)
         return result
 
