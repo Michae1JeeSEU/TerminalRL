@@ -2,7 +2,7 @@
 
 本轮研究在固定多环终端区内，改进局部重规划对象、候选覆盖和跨环补给的组织方式，并修正交付阶段已知交通变化的处理时序。研究问题是：在相同物理、安全、能源、pad 服务与全局目标下，有限的搜索工作能否产生更多可实际交付的正常动作，进而改善正常着陆效率与应急代价。
 
-本文先记录实现与定向诊断。正式 300 秒对照结果尚未纳入，预测目标的改善不等于实际着陆收益。旧合同与旧结果文档保持原样。
+两种负载的新版本均已完成 300 秒，并通过保存轨迹的自动检查。四项实现及定向机制修复得到支持，但本轮整版开发配对没有显示整体质量改善：中负载正常着陆数持平，高负载下降，两者能耗、holding 与完整正常规划工作均增加。预测目标改善没有转化为已观察的整体收益。本记录不宣布优化成功、不进入 B，也不据此继续调权；旧合同与旧结果文档保持原样。
 
 ## 1. 设计范围与固定条件
 
@@ -45,8 +45,11 @@ near-term 小组以可在 effective time 出发的 pad 机会为 anchor，再沿
 | 核心、选择、候选、安全说明与 latency 相关回归 | 123 通过，0 失败，0 跳过 | [core.xml](D:/7_codespace/training_outputs/terminal/rs_selective_repair_v3_20261029/tests/core.xml) |
 | v3 runner | 10 通过；该文件另含 9 项较早的报告测试 | [runner_report.xml](D:/7_codespace/training_outputs/terminal/rs_selective_repair_v3_20261029/tests/runner_report.xml) |
 | 最新报告与可读 replay 检查 | 15 通过，0 失败，0 跳过 | [report_final.xml](D:/7_codespace/training_outputs/terminal/rs_selective_repair_v3_20261029/tests/report_final.xml) |
+| 遥测 JSON 修复定向检查 | 24 通过，0 失败，0 跳过 | [telemetry_json_fix.xml](D:/7_codespace/training_outputs/terminal/rs_selective_repair_v3_20261029/tests/telemetry_json_fix.xml) |
+| 接续 runner 检查 | 13 通过，0 失败，0 跳过 | [continuation_runner.xml](D:/7_codespace/training_outputs/terminal/rs_selective_repair_v3_20261029/tests/continuation_runner.xml) |
+| 接续后的最新报告检查 | 19 通过，0 失败，0 跳过 | [continuation_report.xml](D:/7_codespace/training_outputs/terminal/rs_selective_repair_v3_20261029/tests/continuation_report.xml) |
 
-这些检查按范围列出。报告测试存在重复，不能将三行简单相加作为独立测试总数。
+这些检查按范围列出。报告测试存在重复，不能将这些测试批次简单相加作为独立测试总数。
 
 候选诊断在本次真实回调生成的目录中保存 candidate hash、轨迹与资源、五维分值、已选组合和原始冲突说明。强制组合 probe 仅替换指定候选，其余对象保持该次实际 selected；完整固定背景和同一全局目标参与评价。probe 不发布、不执行，不追加正式 CP 调用；额外验证耗时单列。无精确 witness 时保留原区间或 UNKNOWN。
 
@@ -56,7 +59,13 @@ near-term 小组以可在 effective time 出发的 pad 机会为 anchor，再沿
 
 正式两臂 launcher 已经主对话检查，配置内建 1200 秒/臂和本轮新增工作的 5400 秒 aggregate 上限；旧历史 ledger 不改。这些预算设置不补写遗漏的 setup 耗时，也不改变上述 smoke 的下界标记。
 
-正式中负载臂在最近成功保存 60 秒边界后中断，进度记录正在推进至 65 秒，日志显示 `save_logs → canonical` 因 `inf` 无法写入严格 JSON 而失败。[中断日志](D:/7_codespace/training_outputs/terminal/rs_selective_repair_v3_20261029/logs/arm_s3r23.log) 失败对象未落盘；已保存 60 秒 checkpoint 中的 scheduler 记录没有非有限 float，因此不能将某一潜在字段路径写成已证实的唯一根因。新增资源重叠遥测允许无穷区间末端，本轮最小修复仅在其输出副本中用 `{"$nonfinite_float":"+inf"}` 或 `-inf` 标记保留原意，NaN 仍拒绝；资源对象、返回认证结果及缓存中的数值不变。该中断不记为完成的 300 秒结果，后续结果与续接记录另行补入。
+正式中负载臂在最近成功保存 60 秒边界后中断，进度记录正在推进至 65 秒，日志显示 `save_logs → canonical` 因 `inf` 无法写入严格 JSON 而失败。[中断日志](D:/7_codespace/training_outputs/terminal/rs_selective_repair_v3_20261029/logs/arm_s3r23.log) 失败对象未落盘；已保存 60 秒 checkpoint 中的 scheduler 记录没有非有限 float，因此不能将某一潜在字段路径写成已证实的唯一根因。新增资源重叠遥测允许无穷区间末端，`cb707605` 的最小修复仅在输出副本中用 `{"$nonfinite_float":"+inf"}` 或 `-inf` 标记保留原意，NaN 仍拒绝；资源对象、返回认证结果、缓存数值与策略不变。
+
+中负载随后从保存的 60 秒 checkpoint 接续至 300 秒，保留历史帧、selector history、pending wrapper/packet、references/templates/previous 与 world energy cache；未序列化的 provider validation cache 和进程全局缓存从空状态重建。因此该臂不是从零重跑，也不能声称重新产生了中断前相同的 wall 服务时序。原正式 launcher 的 FAILED 与原目录只读保留；最终报告显式将中负载结果入口改为 continuation 目录。[接续记录](D:/7_codespace/training_outputs/terminal/rs_selective_repair_v3_20261029/continuations/s3r23_serialization_fix/continuation_finished_provenance.json)
+
+失败 child 的实测 wall 为 65.544925 秒，接续 child 为 418.871810 秒，两者在新预算账本中分别计费。接续程序内部 job 为 418.385304 秒，与保存的前缀边界成本组合后记录 471.537634 秒；这一累计口径排除了未保存的失败尾段及其序列化开销，不能冒充全部消耗，也不能再与两个 child wall 相加。[预算账本](D:/7_codespace/training_outputs/terminal/rs_selective_repair_v3_20261029/repair_budget_ledger.json)
+
+本轮账本最终结算 child wall 为 1374.067592 秒（22.90 分钟），未超过 5400 秒上限，已无 running 或 budget stop。30 项记录包括 25 项 completed、2 项 failed、2 项已计量旧记录 credit 和 1 项上述下界 smoke。两项 failed 分别是中负载正式臂的 65.544925 秒中断，以及 source-freeze 路径拼写错误造成的 1.314528 秒 smoke setup 失败。这个结算含下界 credit，额外 setup 耗时仍未知，不能称为全部历史总计算量；旧历史账本未改。
 
 ## 3. 各问题状态的定向诊断
 
@@ -122,4 +131,54 @@ source 170 → effective 190 秒的 v3 新检查点给出了具体 witness：UID
 
 ## 4. 正式 300 秒对照结果
 
-待正式结果与交付、执行记录完成后填写。本节当前不填入运行指标，不将 smoke、邻近状态 probe 或预测目标差异作为正式对照结果。
+本节比较每种负载各一个开发样例的旧 v2 与新 v3 整版结果，公共端点均为 300 秒。中负载的新结果采用上述 continuation，原失败输出不覆盖。完整逐轮选择、每环能量/时间、超龄记录、回退、准入分母、证据时序和 P2 事件分别保存在 [完整摘要 JSON](D:/7_codespace/training_outputs/terminal/rs_selective_repair_v3_20261029/v3_analysis_summary.json)、[可读报告](D:/7_codespace/training_outputs/terminal/rs_selective_repair_v3_20261029/REPORT.md) 与 [逐轮 rounds.csv](D:/7_codespace/training_outputs/terminal/rs_selective_repair_v3_20261029/rounds.csv)。这些是整版开发配对，未隔离各项修改的因果贡献。
+
+### 4.1 实际着陆、能耗与等待
+
+| 负载 | 正常着陆 v2 → v3 | 总能耗 MJ | holding 飞机秒 | 完整正常规划工作 s |
+| --- | --- | --- | --- | --- |
+| 中：s3r23 | 14 → 14 | 552.523207 → 560.596198 | 5385.848641 → 5410.136790 | 170.456709 → 186.908410 |
+| 高：s3r24 | 15 → 12 | 799.097823 → 816.733533 | 8750.572076 → 8909.641108 | 165.746352 → 183.122021 |
+
+四个单元的应急着陆、着陆前失败及未解决低 SOC 计数均为 0。中负载末态 airborne pending 为 26 → 26，高负载为 34 → 37；upstream pending 均为 0。没有观察到正常着陆和应急代价的整体改善。
+
+| 负载 | 内环 holding 飞机秒 v2 → v3 | 中环 | 外环 | 每轮超龄 review 对象数：峰值/末轮 v2 → v3 |
+| --- | --- | --- | --- | --- |
+| 中 | 734.3161 → 975.8947 | 1408.2040 → 1329.2227 | 3243.3285 → 3105.0194 | 19/19 → 18/17 |
+| 高 | 1034.0541 → 1265.3464 | 2992.3687 → 3070.9984 | 4724.1492 → 4573.2963 | 30/29 → 30/29 |
+
+两种负载的内环 holding 均增加；相应内环 holding 能量，中负载由 68.1248 增至 90.5368 MJ，高负载由 95.9324 增至 117.3901 MJ。每环完整能量及末态环别计数见摘要，不把 inbound 强行归入某一 holding 环。超龄对象数按各轮记录的 review debt 统计，不等同于失败。
+
+### 4.2 选择规模、交付与落地时刻
+
+| 负载 | 任务数 v2 → v3 | committed 非空组 | join（已完成非空组） | NO_PREFIX | deadline 类拒绝 | actual K 分布 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 中 | 21 → 16 | 12 → 10 | 12/13 → 10/13 | 7 → 2 | 1 → 3 | `{8:11,9:8,10:1,11:1}` → `{8:16}` |
+| 高 | 16 → 17 | 12 → 13 | 12/13 → 13/13 | 2 → 3 | 1 → 0 | `{8:5,9:4,10:7}` → `{8:17}` |
+
+四单元均留有 1 个 pending task，未计入已完成非空组的 join 分母。新中负载 join 为 76.92%，新高负载为 100%；任务、committed 和 join 不能替代实际着陆数。actual K 采用最终返回 `scope.actual_k`，不采用顶层初选名义值。中负载扩展轮数由 10 降为 0，高负载由 11 降为 0；两种版本在两根上记录的全量重规划回退（`full_fallback_rounds`）均为 0，overflow scope 也均为 0。
+
+新中负载三个拒绝均为 `TRAFFIC_CHANGED_AFTER_DEADLINE`：snapshot 分别为 80、139.222680 和 243.979572 秒，其最后复验预算已为 0，排队公共服务分别为 0.593630、0.998693 和 0.667964 秒。这些任务的搜索工作为 8.377732、12.125119 和 11.082138 秒，并非搜索本身均耗满 19 秒；后期交通变化已无剩余时间复验，保留拒绝符合原 deadline。本轮没有通过延长 deadline 绕过它们。高负载旧版的一次 `READY_DEADLINE_MISSED` 在新结果中消失，但这一交付变化未带来更多 300 秒前的着陆。
+
+中负载正常 FINAL 实际启动由 15 增至 17，落地数仍为 14；新版本在 283.1977 秒启动的三条 FINAL 都未在 300 秒前落地。高负载 FINAL 启动由 17 降为 16，300 秒前落地由 15 降为 12；新版本在 236.0927、263.8130、283.8130 秒启动的四条 FINAL 均未在端点前落地，223.5 秒之后没有 touchdown。这里观察到的是动作与终点之间的时间关系，不能由整版配对确定单一退化原因。中负载双方记录的 finish→next start 总等待均为 0。
+
+### 4.3 三个主要阶段的总 wall 与每次观测均值
+
+下表各单元写为“总秒 / 均秒”，n 为该版 callback 的观测次数。阶段采用已有的 exclusive timing，扣除嵌套子阶段；不能再加 dispatch 当作另一份工作。
+
+| 负载与版本 | n | candidate generation / single vehicle | trajectory validation | prefix validation |
+| --- | --- | --- | --- | --- |
+| 中 v2 | 21 | 54.673637 / 2.603507 | 68.417484 / 3.257975 | 28.796149 / 1.371245 |
+| 中 v3 | 16 | 58.697443 / 3.668590 | 56.254093 / 3.515881 | 40.998600 / 2.562412 |
+| 高 v2 | 16 | 32.520041 / 2.032503 | 76.153970 / 4.759623 | 36.481043 / 2.280065 |
+| 高 v3 | 17 | 51.944915 / 3.055583 | 72.426088 / 4.260358 | 37.543995 / 2.208470 |
+
+候选阶段在两种负载下均更贵。中负载 trajectory 总量虽下降，单次均值与 prefix 均值仍上升；高负载的 trajectory 与 prefix 单次均值均没有变慢。因此不能将整体退化全部归于 CPU 或缓存无效。中负载接续重建未保存缓存是一项实际比较限制，也不能解释全部差异。CP、公共服务和其余阶段保留于完整报告，不在这里重复展开。
+
+### 4.4 保存结果检查与研究判断
+
+两根保存结果的自动检查均为 PASS，`full_a20_covered=true`，continuous separation 为 CERTIFIED，C2 为 PASS、PVA 为 CHECKED、resource、proposal nonexecution 和 independent replay 均为 PASS。中负载的检查针对 continuation 完整保存结果，高负载针对原臂。[中负载检查](D:/7_codespace/training_outputs/terminal/rs_selective_repair_v3_20261029/continuations/s3r23_serialization_fix/evaluation/s3r23/RULE_LOCAL_K8/audit_result.json)、[高负载检查](D:/7_codespace/training_outputs/terminal/rs_selective_repair_v3_20261029/arms/s3r24/evaluation/s3r24/RULE_LOCAL_K8/audit_result.json)、[后处理完成记录](D:/7_codespace/training_outputs/terminal/rs_selective_repair_v3_20261029/postprocess_finished.json)
+
+两臂 replay issues 均为空，任务与 callback 记录数一致；actual submitted、committed 事件与对应 maneuver started 的匹配数，中负载均为 31、高负载均为 33。六对新 v2/v3 snapshot 的 checkpoint SHA 与完整 timing 均为 MATCHED，但仍不是历史原始输入。人工播放状态保留 HUMAN_PENDING，自动检查通过不冒充已人工观看。
+
+四项机制的实现与定向修复成立；R8 的普通不可执行对象占位被去除，交付 guard 与复验时序修正也保持原安全约束。但 R1 的有效 target 仍不完整，P2 邻近快照仍没有 P2 首前缀，R4/R12 的 partial MOVE 目标权衡没有因强制动作而被掩盖。两根的实际结果不支持整体优化收益，不能据此宣布优化成功、进入 B 或继续调权。当前结论限定在本轮整版开发配对。
