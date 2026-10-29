@@ -114,7 +114,8 @@ test("all airborne alerts draw readable tags without selection or ordinary label
   instance._drawEnergyAlerts([...uavs, { ...flying, uid: 99, phase: "ENERGY_FAILURE", emergency_landing: true }]);
   const labels = instance.calls.filter((call) => call.kind === "text");
   assert.equal(labels.length, 14);
-  assert.match(labels[13].args[0], /^A13 · EMERGENCY 30%$/);
+  assert.match(labels[13].args[0], /^UID 13 · EMERGENCY 30%$/);
+  assert.match(labels[0].args[0], /^UID 0 · LOW SOC 30%$/);
   assert.equal(labels.filter((call) => call.args[0].includes("LOW SOC")).length, 13);
   for (const call of instance.calls.filter((entry) => entry.kind === "rect")) {
     const [x, y, w, h] = call.args;
@@ -143,17 +144,32 @@ test("render schedules safety overlay after every aircraft even with 14 UAVs and
   assert.equal(order.at(-1), "alerts");
 });
 
-test("compact alert IDs retain their distinguishing suffix", () => {
+test("alert UIDs remain complete and never fall back to aircraft IDs", () => {
   const instance = scene();
   instance._drawEnergyAlerts([
-    { ...flying, aircraft_id: "initial_middle_03", low_soc: true },
-    { ...flying, uid: 2, aircraft_id: "initial_middle_04", low_soc: true },
+    { ...flying, uid: "12345678901234567890", aircraft_id: "initial_middle_03", low_soc: true },
+    { ...flying, uid: null, aircraft_id: "initial_middle_04", low_soc: true },
   ]);
   const labels = instance.calls.filter((call) => call.kind === "text").map((call) => call.args[0]);
   assert.equal(labels.length, 2);
   assert.notEqual(labels[0], labels[1]);
-  assert.match(labels[0], /^init…ddle_03 · LOW SOC 30%$/);
-  assert.match(labels[1], /^init…ddle_04 · LOW SOC 30%$/);
+  assert.equal(labels[0], "UID 12345678901234567890 · LOW SOC 30%");
+  assert.equal(labels[1], "UID — · LOW SOC 30%");
+});
+
+test("ordinary, selected, hovered, reference and failed labels use explicit UIDs", () => {
+  const instance = scene(); instance.layers.labels = true;
+  const uav = { ...flying, uid: 0, aircraft_id: "original-99" };
+  instance.frame = { uavs: [uav] }; instance.referenceFrame = { uavs: [uav] };
+  instance._drawUav(uav, false, true);
+  instance.selectedUid = 0; instance._drawUav(uav, false, false);
+  instance.selectedUid = null; instance.hoverUid = 0; instance._drawUav(uav, false, false);
+  instance._drawReferenceUav(uav);
+  instance._drawUav({ ...uav, status: "ENERGY_FAILURE" }, false, false);
+  instance._drawTerminalEvents({ terminal_events: [{ ...uav, outcome: "failed" }] });
+  instance._drawUav({ ...uav, uid: null }, false, true);
+  const labels = instance.calls.filter((call) => call.kind === "text").map((call) => call.args[0]);
+  assert.deepEqual(labels, ["UID 0", "UID 0", "UID 0", "R UID 0", "UID 0 · ENERGY_FAILURE", "UID 0 · failed", "UID —"]);
 });
 
 test("low SOC and emergency bodies and safety outlines have visibly bolder strokes", () => {

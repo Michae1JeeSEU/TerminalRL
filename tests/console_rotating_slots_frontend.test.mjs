@@ -15,7 +15,7 @@ function consoleHarness(overrides = {}) {
     .replace(/^import Scene from .*;\r?\n/, "")
     .replace(/\binitialize\(\);\s*$/, "");
   const sceneSource = readFileSync(new URL("../terminal_marl/visualization/web/scene.js", import.meta.url), "utf8").replace("export default class Scene", "class Scene");
-  vm.runInContext(`${sceneSource}\n${source}\nglobalThis.harness = {state, sameAircraft, discreteReplay, interpolateFrame, displayFrame, renderFlights, renderKpis, updateHistory, appendServerPayload, metricsForFrame, referenceAtTime, validateReplayPayload, formatSoc, requestJson};`, context);
+  vm.runInContext(`${sceneSource}\n${source}\nglobalThis.harness = {state, sameAircraft, discreteReplay, interpolateFrame, displayFrame, renderFlights, renderEvents, renderDetails, renderResources, renderKpis, updateHistory, appendServerPayload, metricsForFrame, referenceAtTime, validateReplayPayload, formatSoc, requestJson};`, context);
   return context.harness;
 }
 
@@ -56,15 +56,15 @@ test("paused flight rows remain connected until frame, selection or table contro
   assert.notEqual(body.children[0], initialRow);
   assert.equal(body.children[0].attributes["aria-selected"], "true");
   assert.equal(elements.get("phaseFilter").children[1], phaseOption);
-  elements.get("flightSearch").value = "A-2"; h.renderFlights(first);
+  elements.get("flightSearch").value = "UID 2"; h.renderFlights(first);
   assert.equal(body.children.length, 1);
-  assert.equal(body.children[0].children[0].textContent, "A-2");
+  assert.equal(body.children[0].children[0].textContent, "UID 2");
   elements.get("flightSearch").value = "";
   elements.get("phaseFilter").value = "HOLD"; h.renderFlights(first);
   assert.equal(body.children.length, 1);
-  assert.equal(body.children[0].children[0].textContent, "A-1");
+  assert.equal(body.children[0].children[0].textContent, "UID 1");
   elements.get("phaseFilter").value = ""; elements.get("flightSort").value = "soc"; h.renderFlights(first);
-  assert.equal(body.children[0].children[0].textContent, "A-2");
+  assert.equal(body.children[0].children[0].textContent, "UID 2");
 
   const replacement = frame(0, { uavs: [{ ...first.uavs[0], speed: 22 }] });
   h.state.frames = [replacement]; // Different replay, same frame index and timestamp.
@@ -80,6 +80,58 @@ test("paused flight rows remain connected until frame, selection or table contro
   h.state.playheadTime = .75;
   assert.notEqual(h.displayFrame(), interpolated);
   assert.notEqual(h.displayFrame().uavs[0].position[0], interpolated.uavs[0].position[0]);
+});
+
+function uidUiHarness() {
+  const elements = new Map();
+  const ctx = new Proxy({}, { get: () => () => {} });
+  const node = () => ({
+    children: [], value: "", textContent: "", classList: { add() {}, toggle() {} },
+    append(...items) { this.children.push(...items); }, replaceChildren(...items) { this.children = items; },
+    setAttribute() {}, addEventListener() {}, getBoundingClientRect: () => ({ width: 200, height: 60 }), getContext: () => ctx,
+    querySelector() { if (!this.body) this.body = node(); return this.body; },
+  });
+  const document = { createElement: node, getElementById(id) { if (!elements.has(id)) elements.set(id, node()); return elements.get(id); } };
+  const h = consoleHarness({ document, Option: function(text, value) { this.textContent = text; this.value = value; } });
+  return { h, get: document.getElementById };
+}
+
+test("flight, event and details labels use UID including zero, missing and absent records", () => {
+  const { h, get } = uidUiHarness();
+  const uav = { uid: 0, aircraft_id: "original-aircraft-99", phase: "HOLD", soc: .5 };
+  const event = { ...uav, outcome: "failed", time: 2 };
+  const f = frame(2, { uavs: [{ uid: 12, aircraft_id: "AAA" }, uav, { aircraft_id: "missing-uid" }], terminal_events: [event, { aircraft_id: "also-missing-uid" }] });
+  h.state.frames = [f]; h.state.selectedUid = 0;
+  h.state.reference = { frames: [frame(2, { uavs: [{ ...uav, uid: 81 }] })] };
+  h.renderFlights(f);
+  const flightBody = get("flightTable").querySelector("tbody");
+  assert.deepEqual(flightBody.children.map((row) => row.children[0].textContent), ["UID —", "UID 0", "UID 12"]);
+  get("flightSearch").value = "original-aircraft"; h.renderFlights(f); assert.equal(flightBody.children.length, 0);
+  get("flightSearch").value = "UID 0"; h.renderFlights(f); assert.equal(flightBody.children[0].children[0].textContent, "UID 0");
+  h.renderEvents(f);
+  assert.deepEqual(get("eventsTable").querySelector("tbody").children.map((row) => row.children[1].textContent), ["UID —", "UID 0"]);
+  h.renderDetails(f); assert.equal(get("selectedTitle").textContent, "UID 0");
+  assert.match(get("selectedState").textContent, /参考 UID 81 已匹配/);
+  h.state.selectedEvent = event; h.renderDetails(frame(3)); assert.equal(get("selectedTitle").textContent, "UID 0");
+  h.state.selectedEvent = null; h.renderDetails(frame(3)); assert.equal(get("selectedTitle").textContent, "UID 0 · 当前帧无数据");
+  h.state.selectedUid = null; h.state.selectedEvent = { aircraft_id: "missing" };
+  h.renderDetails(frame(3)); assert.equal(get("selectedTitle").textContent, "UID —");
+});
+
+test("resource owners display recorded UIDs while selected reservation filtering keeps raw IDs", () => {
+  const { h, get } = uidUiHarness();
+  const reservation = (owner_id, extra = {}) => ({ owner_id, commitment: "COMMITTED", interval_start: 1, interval_end: 2, ...extra });
+  const f = frame(1, { uavs: [{ uid: 0, aircraft_id: "original-zero" }], terminal_events: [{ uid: 9, aircraft_id: "departed" }], rotating_slots: {
+    pads: [{ id: 1, occupant_id: "original-zero", occupied_by: 0, reservations: [reservation("authoritative", { owner_uid: 4 }), reservation("departed"), reservation("unknown-123")] }],
+    slots: [{ id: 7, reservations: [reservation("future", { future_interval: true, owner_uid: 8 }), reservation("original-zero"), reservation("UID 0"), reservation("other")] }],
+  } });
+  h.state.selectedUid = 0; h.renderResources(f);
+  const lines = get("resourceContent").children.map((row) => row.textContent);
+  assert.match(lines[0], /实际服务 UID 0/);
+  assert.match(lines[1], /UID 4/); assert.match(lines[2], /UID 9/); assert.match(lines[3], /UID —/);
+  const slots = lines.filter((line) => line.startsWith("SLOT"));
+  assert.equal(slots.length, 2); assert.match(slots[0], /UID 0/); assert.match(slots[1], /UID 8/);
+  assert.ok(lines.every((line) => !/original-zero|authoritative|departed|unknown-123/.test(line)));
 });
 
 test("cross-run identity uses original aircraft strings before compatibility IDs", () => {

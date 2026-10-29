@@ -82,6 +82,7 @@ function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
 
 function safeArray(value) { return Array.isArray(value) ? value : []; }
 
+// Resource ownership uses the recorded ID, independently of its UID label.
 function aircraftIdentity(uav) { return uav?.aircraft_id != null ? String(uav.aircraft_id) : `U${uav?.uid ?? "—"}`; }
 
 function sameAircraft(first, second) {
@@ -906,8 +907,8 @@ function renderFlights(frame) {
   }
   const body = $("flightTable").querySelector("tbody");
   body.replaceChildren();
-  const uavs = safeArray(frame?.uavs).filter((uav) => (!phase || String(uav.phase ?? "") === phase) && (!search || `${aircraftIdentity(uav)} ${uav.uid}`.toLowerCase().includes(search)));
-  uavs.sort((a, b) => sort === "soc" ? (finiteNumber(a.soc, 0) - finiteNumber(b.soc, 0)) : aircraftIdentity(a).localeCompare(aircraftIdentity(b), undefined, { numeric: true }));
+  const uavs = safeArray(frame?.uavs).filter((uav) => (!phase || String(uav.phase ?? "") === phase) && (!search || Scene.uidLabel(uav).toLowerCase().includes(search)));
+  uavs.sort((a, b) => sort === "soc" ? (finiteNumber(a.soc, 0) - finiteNumber(b.soc, 0)) : Scene.uidLabel(a).localeCompare(Scene.uidLabel(b), undefined, { numeric: true }));
   for (const uav of uavs) {
     const row = document.createElement("tr");
     row.tabIndex = 0;
@@ -920,7 +921,7 @@ function renderFlights(frame) {
     });
     const conflict = safeArray(frame?.recent_conflict_uids).map(Number).includes(Number(uav.uid));
     const cells = [
-      aircraftIdentity(uav), String(uav.phase ?? "—"), String(uav.ring_role ?? "—"), formatSoc(uav.soc), `${formatNumber(uav.speed, 1)} m/s`, uav.assigned_lz == null ? "—" : `LZ ${uav.assigned_lz}`, uav.status ?? uav.original_status ?? (conflict ? "冲突关注" : uav.committed ? "已承诺" : "等待"),
+      Scene.uidLabel(uav), String(uav.phase ?? "—"), String(uav.ring_role ?? "—"), formatSoc(uav.soc), `${formatNumber(uav.speed, 1)} m/s`, uav.assigned_lz == null ? "—" : `LZ ${uav.assigned_lz}`, uav.status ?? uav.original_status ?? (conflict ? "冲突关注" : uav.committed ? "已承诺" : "等待"),
     ];
     cells.forEach((value, index) => {
       const cell = document.createElement("td"); cell.textContent = value;
@@ -950,7 +951,7 @@ function renderEvents(frame) {
   for (const event of events.slice().reverse()) {
     const row = document.createElement("tr");
     row.addEventListener("click", () => selectEvent(event));
-    const values = [formatTime(event.time), event.aircraft_id ?? (event.uid == null ? "—" : `U${event.uid}`), String(event.outcome ?? "—"), String(event.reason ?? "—"), String(event.phase ?? "—"), formatSoc(event.soc)];
+    const values = [formatTime(event.time), Scene.uidLabel(event), String(event.outcome ?? "—"), String(event.reason ?? "—"), String(event.phase ?? "—"), formatSoc(event.soc)];
     values.forEach((value) => { const cell = document.createElement("td"); cell.textContent = value; row.append(cell); });
     body.append(row);
   }
@@ -989,6 +990,9 @@ function renderResources(frame) {
   $("resourceEvidence").textContent = "仅显示记录中的资源与时间证据";
   if (!recorded) { const empty = document.createElement("div"); empty.className = "table-empty"; empty.textContent = "当前记录无 rotating_slots 资源诊断"; content.append(empty); return; }
   const line = (text, kind = "") => { const row = document.createElement("div"); row.className = `resource-row ${kind}`; row.textContent = text; content.append(row); };
+  const uidByAircraftId = new Map([...safeArray(frame.uavs), ...safeArray(frame.terminal_events)]
+    .filter((uav) => uav.aircraft_id != null && uav.uid != null).map((uav) => [String(uav.aircraft_id), uav.uid]));
+  const ownerLabel = (ownerId, uid) => Scene.uidLabel({ uid: uid ?? uidByAircraftId.get(String(ownerId)) });
   const evidence = recorded.separation_evidence;
   if (evidence) $("resourceEvidence").textContent = `全回合间隔证据（非当前时刻） · ${evidence.label ?? "记录值"} · [${formatNumber(evidence.lower_bound_m, 3)}, ${formatNumber(evidence.upper_bound_m, 3)}] m · ${evidence.status ?? "未记录状态"} · witness ${formatTime(evidence.witness_time)}`;
   $("resourceEvidence").title = $("resourceEvidence").textContent;
@@ -998,17 +1002,17 @@ function renderResources(frame) {
   if (recorded.admission_model) line(`准入模型：${recorded.admission_model}`, "resource-note");
   for (const pad of safeArray(recorded.pads).slice(0, 32)) {
     const occupied = pad.occupant_id != null;
-    line(`PAD ${pad.id} · ${occupied ? `实际服务 ${pad.occupant_id} · 服务结束 ${formatTime(pad.service_end)} · 剩余 ${formatTime(pad.service_remaining)}` : `无当前服务 · ${pad.state ?? "状态未记录"}`}`, "resource-pad");
+    line(`PAD ${pad.id} · ${occupied ? `实际服务 ${ownerLabel(pad.occupant_id, pad.occupied_by)} · 服务结束 ${formatTime(pad.service_end)} · 剩余 ${formatTime(pad.service_remaining)}` : `无当前服务 · ${pad.state ?? "状态未记录"}`}`, "resource-pad");
     for (const row of safeArray(pad.reservations).slice(0, 20)) {
       const soft = row.commitment === "SOFT_UNSTARTED_REMOVABLE";
-      line(`${soft ? "SOFT 可移除" : row.commitment ?? "记录区间"} · ${row.owner_id ?? row.aircraft_id ?? "—"} · ${row.future_interval ? "未来区间" : "记录区间"} [${formatTime(row.interval_start ?? row.start)}, ${formatTime(row.interval_end ?? row.end)}) · 飞行开始 ${formatTime(row.maneuver_start)} · 下降 ${formatTime(row.descent_start)} · 接地 ${formatTime(row.touchdown_time)} · 区间结束 ${formatTime(row.interval_end ?? row.end)}`, soft ? "resource-soft" : "");
+      line(`${soft ? "SOFT 可移除" : row.commitment ?? "记录区间"} · ${ownerLabel(row.owner_id ?? row.aircraft_id, row.owner_uid)} · ${row.future_interval ? "未来区间" : "记录区间"} [${formatTime(row.interval_start ?? row.start)}, ${formatTime(row.interval_end ?? row.end)}) · 飞行开始 ${formatTime(row.maneuver_start)} · 下降 ${formatTime(row.descent_start)} · 接地 ${formatTime(row.touchdown_time)} · 区间结束 ${formatTime(row.interval_end ?? row.end)}`, soft ? "resource-soft" : "");
     }
     if (safeArray(pad.reservations).length > 20) line(`另有 ${pad.reservations.length - 20} 条 pad 日历记录，界面仅展示前 20 条`, "resource-note");
   }
   const selected = findSelected(frame);
   const future = safeArray(recorded.slots).flatMap((slot) => safeArray(slot.reservations).filter((row) => row.future_interval || (selected && String(row.owner_id ?? row.aircraft_id) === aircraftIdentity(selected))).map((row) => ({ slot: slot.id, ...row })));
   future.sort((a, b) => Number(String(b.owner_id) === aircraftIdentity(selected)) - Number(String(a.owner_id) === aircraftIdentity(selected)));
-  for (const row of future.slice(0, 12)) line(`SLOT ${row.slot} · ${row.commitment ?? "记录区间"} · ${row.owner_id ?? row.aircraft_id ?? "—"} · [${formatTime(row.interval_start ?? row.start)}, ${formatTime(row.interval_end ?? row.end)}) · 飞行开始 ${formatTime(row.maneuver_start)}`, row.commitment === "SOFT_UNSTARTED_REMOVABLE" ? "resource-soft" : "");
+  for (const row of future.slice(0, 12)) line(`SLOT ${row.slot} · ${row.commitment ?? "记录区间"} · ${ownerLabel(row.owner_id ?? row.aircraft_id, row.owner_uid)} · [${formatTime(row.interval_start ?? row.start)}, ${formatTime(row.interval_end ?? row.end)}) · 飞行开始 ${formatTime(row.maneuver_start)}`, row.commitment === "SOFT_UNSTARTED_REMOVABLE" ? "resource-soft" : "");
   if (future.length > 12) line(`另有 ${future.length - 12} 条槽位日历记录，选中飞机优先`, "resource-note");
   const timing = recorded.latest_dispatch_timing;
   if (timing) {
@@ -1061,11 +1065,11 @@ function drawHistoryChart(uid, index) {
 function renderDetails(frame) {
   const uav = findSelected(frame);
   const selectedExists = Boolean(uav);
-  $("selectedTitle").textContent = uav ? aircraftIdentity(uav) : state.selectedEvent?.aircraft_id != null ? String(state.selectedEvent.aircraft_id) : state.selectedUid == null ? "未选择 UAV" : `U${state.selectedUid} · 当前帧无数据`;
+  $("selectedTitle").textContent = uav ? Scene.uidLabel(uav) : state.selectedEvent ? Scene.uidLabel(state.selectedEvent) : state.selectedUid == null ? "未选择 UAV" : `${Scene.uidLabel({ uid: state.selectedUid })} · 当前帧无数据`;
   $("selectionPulse").classList.toggle("active", selectedExists);
   const refUav = uav && state.reference ? safeArray(referenceAtTime(frame?.time)?.uavs).find((candidate) => sameAircraft(candidate, uav)) : null;
   const eventText = state.selectedEvent ? ` · 事件 ${state.selectedEvent.outcome ?? "—"} / ${state.selectedEvent.reason ?? "—"} @ ${formatTime(state.selectedEvent.time)}` : "";
-  const baseState = uav ? `${uav.status ?? uav.original_status ?? (uav.committed ? "已承诺轨迹" : "等待 / 可决策")}${refUav ? ` · 参考 ${aircraftIdentity(refUav)} 已匹配` : state.reference ? ` · 参考 ${aircraftIdentity(uav)} 无匹配` : ""}${eventText}` : state.selectedUid == null ? state.selectedEvent ? `终态事件 ${state.selectedEvent.outcome ?? "—"} / ${state.selectedEvent.reason ?? "—"} @ ${formatTime(state.selectedEvent.time)}${finitePoint(state.selectedEvent.position) ? " · 已定位事件位置" : ""}` : "点击场景中的 UAV 或航班表行查看详情。" : `${state.followLost ? "已离开当前帧，跟随已退出；" : ""}选中 UAV 不在当前帧。${eventText}`;
+  const baseState = uav ? `${uav.status ?? uav.original_status ?? (uav.committed ? "已承诺轨迹" : "等待 / 可决策")}${refUav ? ` · 参考 ${Scene.uidLabel(refUav)} 已匹配` : state.reference ? ` · 参考 ${Scene.uidLabel(uav)} 无匹配` : ""}${eventText}` : state.selectedUid == null ? state.selectedEvent ? `终态事件 ${state.selectedEvent.outcome ?? "—"} / ${state.selectedEvent.reason ?? "—"} @ ${formatTime(state.selectedEvent.time)}${finitePoint(state.selectedEvent.position) ? " · 已定位事件位置" : ""}` : "点击场景中的 UAV 或航班表行查看详情。" : `${state.followLost ? "已离开当前帧，跟随已退出；" : ""}选中 UAV 不在当前帧。${eventText}`;
   $("selectedState").textContent = baseState;
   $("selectedState").classList.toggle("missing", !selectedExists && state.selectedUid != null);
   $("followSelectedButton").disabled = !selectedExists || state.offline;
