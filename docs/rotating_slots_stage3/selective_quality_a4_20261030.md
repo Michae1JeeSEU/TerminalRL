@@ -2,7 +2,7 @@
 
 本轮同 common 的两个开发配对中，K8在正常落地、末态pending和能量上优于FULL_H，但medium holding反增138.559 aircraft-s。四臂补链机制均未补成完整链，high K8仍有15个空前缀任务；改善没有消除候选供给与有效推进不足。**本轮阶段A的授权工作已完成，保持阶段A，不进入阶段B。**
 
-更新日期：2026-10-30。四个正式臂均 `COMPLETE`，保存回放审计均 `PASS`，服务器child-wall已结算。证据限于两个冻结根各一次开发配对，不主张泛化，也不直接与旧冷启动结果比较。关键帧已作 `AI_SAVED_FRAME_REVIEW`；连续人工回放仍为 `HUMAN_PENDING`。数值实现 `b80ca3aee7d7ba6495640f4a3b02f72b026fabbb` 与可视化 `61f9ae0ef3b5794ce2275632aff9e934c67e804b` 均已提交并推送；本报告与汇总helpers将纳入本次交付提交，最终hash由主对话交付说明记录。
+更新日期：2026-10-30。四个正式臂均 `COMPLETE`，保存回放审计均 `PASS`，服务器child-wall已结算。证据限于两个冻结根各一次开发配对，不主张泛化，也不直接与旧冷启动结果比较。关键帧已作 `AI_SAVED_FRAME_REVIEW`；连续人工回放仍为 `HUMAN_PENDING`。数值实现 `b80ca3aee7d7ba6495640f4a3b02f72b026fabbb` 与可视化 `61f9ae0ef3b5794ce2275632aff9e934c67e804b` 均已提交并推送；本报告与汇总helpers已在 `a60343587abc0cc0dbaba8350fb1bd7888ddf021` 提交并推送，落地来源补充段的最终hash由主对话交付说明记录。
 
 本轮四项交付入口如下：
 
@@ -215,6 +215,8 @@ R1 的 cp8/cp24 candidate hash 均为 `b4ca04344d06d6ff2ad55a307fa7083d56cf8533d
 | 全 normal planning work (s，含末个 pending 已发生工作) | 195.687 | 180.065 | 254.268 | 250.300 |
 
 主对话审核的限定解释：在本次同 common、新版本内，K8 在 medium/high 分别多完成3/6次正常落地，末态 airborne pending 分别少3/6架，窗口能量分别较低。medium 的 holding **增加138.559 aircraft-s**，不能写成全部质量指标改善；high holding 较低。两个根各一次开发配对不能直接与旧冷启动结果比较，也不能泛化为 K8 总是更优。
+
+落地身份进一步限定了改善来源：high FULL_H后续仅 `initial_inner_00` 落地，high K8后续为 `initial_inner_00/01/03/04/05/07/09`；加上继承的3架，high K8全部10次正常落地均来自**初始内环**，初始middle/outer与新增请求在本窗口均无落地。因此high优势主要体现为完成更多初始内环队列，尚未证明持续向内补给链改善，不能用10>4掩盖这一缺口。medium FULL_H后续为 `initial_inner_00/03/06`、`initial_middle_04/07`，medium K8后续为 `initial_inner_00/03/06`、`initial_middle_00/02/03/04`、`initial_outer_00`，已观察到来自初始中/外环的跨环后落地。这里按UID的初始身份和来源分组，不推测其当前所在环；依据为四份 `result.increment.treatment_final_touchdown_ids`。
 
 | 根 / 方法 / 环 | holding (aircraft-s) | holding 能量 (MJ) | 按 source ring 记账的执行总能量 (MJ) |
 |---|---:|---:|---:|
