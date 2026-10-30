@@ -185,6 +185,17 @@ def test_empty_reason_requires_bounded_certified_alternative():
     assert _service_empty_reason(result,catalog,context,budget)=='CERTIFICATION_TIMEOUT'
 
 
+def test_observed_conflict_with_exhausted_certification_allocation_is_timeout():
+    _,catalog,context=continuation_problem()
+    context.observed_definite_conflicts=[('bounded','conflict')]
+    budget=PlanningBudget()
+    result=PlanningResult((),(),None,'LIMITED',(0,0,0,0,0,0),certified=True,
+        details={'solver_stop_reason':'SOLVER_ALLOCATION_EXHAUSTED','batched_conflicts':1})
+    assert _service_empty_reason(result,catalog,context,budget)=='CERTIFICATION_TIMEOUT'
+    proven=replace(result,details={'solver_stop_reason':None,'batched_conflicts':1})
+    assert _service_empty_reason(proven,catalog,context,budget)=='TRUE_CONFLICT'
+
+
 def test_service_cp_combines_failure_and_landing_before_one_validation():
     pytest.importorskip('ortools')
     _,snapshot,_,context,budget,catalog=real_final_catalog()
@@ -347,3 +358,131 @@ def test_service_hint_tries_inner_final_before_many_keep_only_variables(monkeypa
     assert all({c.aircraft_id for c in columns}==set(ids) for columns in calls)
     assert all(any(c.plans==(plan,) for c in columns) for columns in calls)
     assert context.check_commit_prefix(result.selected).accepted
+
+
+def test_seed_round_robin_rejected_inner_does_not_starve_real_middle_partial(monkeypatch):
+    from terminal_marl.core.rotating_slots import stage2_planning as sp
+    from terminal_marl.core.rotating_slots.world import RotatingSlotWorld,STAGE2_POLICY_ID
+    from terminal_marl.core.rotating_slots.selective_replanning import build_global_frame,PlanningScope
+    from terminal_marl.core.rotating_slots.trajectory import generate_transfer
+    from tests.test_stage2_quality_budget import Clock
+    world=RotatingSlotWorld(experiment_policy_id=STAGE2_POLICY_ID)
+    world.auto_emergency=False
+    world.seed_hold('inner','inner',5,.9);world.seed_hold('middle','middle',0,.9)
+    snapshot=world.build_planning_snapshot()
+    provider=CandidateProvider(planning_profile='downstream_service_v8',evaluation_profile=SERVICE_EVALUATION_PROFILE)
+    frame=build_global_frame(snapshot,provider,EvaluationContext(snapshot));ids=('inner','middle')
+    scope=PlanningScope(snapshot.version,snapshot.time,ids,ids,(),actual_k=2,objective_frame_id=frame.identity)
+    plan=generate_transfer('middle','middle',0,0,0.,durations=(40.,),config=snapshot.config).plan
+    assert plan is not None
+    clock=Clock();monkeypatch.setattr(sp.time,'perf_counter',clock)
+    budget=PlanningBudget(wall_start=0.,soft_seconds=30.,candidate_seconds=30.,candidate_active_seconds=0.,
+        search_wall_deadline=15.,planning_wall_deadline=19.)
+    context=EvaluationContext(snapshot,budget=budget,scope=scope,global_frame=frame)
+    events=[]
+    def progress(snapshot,a,node,budget,context):
+        if a.id=='inner':
+            for _ in range(8):
+                events.append('inner');clock.now+=.6
+                yield ('ATTEMPT',None,None)
+        else:
+            events.append('middle');yield ('SCREEN',None,None)
+            events.append('middle');yield ('COLUMN',(plan,),'NONE')
+    monkeypatch.setattr(provider,'_progress_steps',progress)
+    generator=provider.iter_progressive_columns(snapshot,budget,context,scope=scope,early_publish=True)
+    catalog=next(generator);generator.close()
+    assert events[:4]==['inner','middle','inner','middle']
+    assert any(c.plans and c.plans[0]==plan for c in catalog.columns['middle'])
+    assert set(catalog.columns)==set(ids)
+
+
+@pytest.mark.parametrize('already_enrolled',[False,True],ids=['new_reservation','existing_pending_reservation'])
+def test_empty_initial_reservation_accepts_late_real_partial_and_completes_before_more_growth(monkeypatch,already_enrolled):
+    from terminal_marl.core.rotating_slots import stage2_planning as sp
+    from terminal_marl.core.rotating_slots.world import RotatingSlotWorld,STAGE2_POLICY_ID
+    from terminal_marl.core.rotating_slots.selective_replanning import build_global_frame,PlanningScope
+    from terminal_marl.core.rotating_slots.trajectory import generate_transfer
+    from tests.test_stage2_quality_budget import Clock
+    world=RotatingSlotWorld(experiment_policy_id=STAGE2_POLICY_ID)
+    world.auto_emergency=False;world.seed_hold('middle','middle',0,.9)
+    snapshot=world.build_planning_snapshot()
+    provider=CandidateProvider(planning_profile='downstream_service_v8',evaluation_profile=SERVICE_EVALUATION_PROFILE)
+    frame=build_global_frame(snapshot,provider,EvaluationContext(snapshot))
+    scope=PlanningScope(snapshot.version,snapshot.time,('middle',),('middle',),(),actual_k=1,objective_frame_id=frame.identity)
+    context=EvaluationContext(snapshot,scope=scope,global_frame=frame)
+    plan=generate_transfer('middle','middle',0,0,0.,durations=(40.,),config=snapshot.config).plan
+    assert plan is not None
+    partial=provider._column(snapshot,snapshot.aircraft['middle'],(plan,),'MOVE',context)
+    ref=provider.references.get(snapshot,snapshot.aircraft['middle'],node=partial.node,
+        budget=PlanningBudget.for_profile('quality_v5'))
+    assert ref.status=='KNOWN' and ref.plans[-1].pad_id is not None
+    clock=Clock();monkeypatch.setattr(sp.time,'perf_counter',clock)
+    budget=PlanningBudget(wall_start=0.,soft_seconds=30.,candidate_seconds=30.,candidate_active_seconds=0.,
+        search_wall_deadline=15.,planning_wall_deadline=19.)
+    context.budget=budget
+    monkeypatch.setattr(provider,'_progress_steps',lambda *args:iter(()))
+    monkeypatch.setattr(provider,'_delayed_steps',lambda *args:iter(()))
+    def reference(snapshot,a,node,budget):
+        if node.ring=='inner':
+            clock.now+=.2;yield None
+            clock.now+=.2;return ref
+        yield None
+        return sp.NormalReference('UNKNOWN')
+    monkeypatch.setattr(provider.references,'build_steps',reference)
+    def paths(*args):
+        yield ('SCREEN',None,None)
+        yield ('COLUMN',(plan,),'NONE')
+        pytest.fail('ordinary work resumed before publishing reserved completion')
+    monkeypatch.setattr(provider,'_paths',paths)
+    generator=provider.iter_progressive_columns(snapshot,budget,context,scope=scope,early_publish=True)
+    first=next(generator)
+    state=budget._suffix_completion_state
+    assert state['records']==[] and state['priority_used_seconds']==0.
+    reserved=state['priority_reserved_seconds']
+    assert reserved==1.5 and budget.solver_validation_headroom()==4.5
+    assert EnergySlackScheduler().plan(snapshot,first,context,budget).certified
+    if already_enrolled:
+        assert context.check_single(partial).accepted
+        provider.reserve_suffix_completion(snapshot,replace(first,columns={'middle':(*first.columns['middle'],partial)}),budget)
+        assert len(state['records'])==1 and state['records'][0]['suffix_status']=='RESERVED'
+    later=next(generator);generator.close()
+    assert later.generation_coverage['phase']=='SERVICE_LATE_PRIORITY_COMPLETION'
+    assert state is budget._suffix_completion_state and state['priority_reserved_seconds']==reserved
+    assert len(state['records'])==1 and state['records'][0]['complete_candidate_in_catalog']
+    assert state['priority_used_seconds']==pytest.approx(.4)
+    assert budget.service_completion_reserve()==pytest.approx(1.1)
+    assert any(c.plans and c.plans[0]==plan and c.plans[-1].pad_id is not None for c in later.columns['middle'])
+    for _ in range(3): provider.reserve_suffix_completion(snapshot,later,budget)
+    assert state['priority_reserved_seconds']==reserved and state['priority_used_seconds']==pytest.approx(.4)
+    result=EnergySlackScheduler().plan(snapshot,later,context,budget)
+    assert result.certified and result.prefix==(plan,)
+    assert world._scheduler_port.commit_validated_prefix(result.evaluation,snapshot_version=snapshot.version).accepted
+    clock.now=14.
+    assert not budget.available()  # Ordinary generation preserves unused 1.1s.
+    with budget.stage_limit(.5,'SERVICE_COMPLETION_SLICE'):
+        assert budget.available()
+
+
+def test_service_reservation_refills_at_most_two_distinct_aircraft_without_reset():
+    from terminal_marl.core.rotating_slots.stage2_planning import CandidateCatalog,PredictionColumn,PlanningNode
+    provider=CandidateProvider(planning_profile='downstream_service_v8',evaluation_profile=SERVICE_EVALUATION_PROFILE)
+    snapshot=NS(version='immutable',time=0.,soft={})
+    budget=PlanningBudget(soft_seconds=30.)
+    empty=CandidateCatalog({}, {}, {}, ())
+    provider.reserve_suffix_completion(snapshot,empty,budget)
+    state=budget._suffix_completion_state;original=state['priority_reserved_seconds']
+    for aid in ('a','b','c'):
+        plan=NS(trajectory_hash='reservation-token-'+aid,start_time=0.,pad_id=None)
+        column=PredictionColumn(aid,'MOVE',(plan,),(),(0,0,0,0,0,0),PlanningNode('inner',0,40.,.9,0.,1))
+        provider.reserve_suffix_completion(snapshot,CandidateCatalog({aid:(column,)},{},{},()),budget)
+        assert state['priority_reserved_seconds']==original
+    assert [row['aircraft_id'] for row in state['records']]==['a','b']
+    state['priority_used_seconds']=.5
+    provider.reserve_suffix_completion(snapshot,empty,budget)
+    assert state['priority_used_seconds']==.5 and state['priority_reserved_seconds']==original
+    state['records'][0]['suffix_status']='KNOWN'
+    assert budget.service_completion_reserve()==pytest.approx(original-.5)  # Other row is pending.
+    state['records'][1]['suffix_status']='NOT_ADMISSIBLE'
+    assert budget.service_completion_reserve()==0. and budget.solver_validation_headroom()==0.
+    assert state['priority_reserve_released']
+    assert state['priority_used_seconds']==.5 and state['priority_reserved_seconds']==original

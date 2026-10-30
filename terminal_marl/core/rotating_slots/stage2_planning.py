@@ -159,8 +159,17 @@ class PlanningBudget:
     def solver_validation_headroom(self):
         # One new solution must still pass uncached selected single/pair and
         # whole-prefix checks. This is an estimate, not a safety certificate.
-        return (sum(self.heavy_estimate(kind) for kind in ("prefix","single","geometry"))
-                if self.search_wall_deadline is not None else 0.)
+        return ((sum(self.heavy_estimate(kind) for kind in ("prefix","single","geometry"))
+                if self.search_wall_deadline is not None else 0.)+self.service_completion_reserve())
+
+    def service_completion_reserve(self):
+        state=getattr(self,'_suffix_completion_state',None)
+        if state is None or not state.get('refillable_priority',False): return 0.
+        rows=state['records']
+        if len(rows)>=2 and not any(row['suffix_status'] in ('RESERVED','RUNNING') for row in rows):
+            state['priority_reserve_released']=True
+            return 0.
+        return max(0.,state['priority_reserved_seconds']-state['priority_used_seconds'])
 
     def certificate_event(self,source,columns,prefix,*,event="CERTIFIED_PREFIX",comparison=None,objective=None):
         if self.search_wall_deadline is None: return
@@ -222,6 +231,13 @@ class PlanningBudget:
     def available(self, aircraft_id=None):
         if not self.search_deadline_ok(): return False
         if not self.ready_deadline_ok(): return False
+        reserve=self.service_completion_reserve()
+        if reserve and not any(reason=='SERVICE_COMPLETION_SLICE' for _,reason in self._stage_limits):
+            deadline=self.wall_start+self.soft_seconds
+            if self.search_wall_deadline is not None: deadline=min(deadline,self.search_wall_deadline)
+            if self.planning_wall_deadline is not None: deadline=min(deadline,self.planning_wall_deadline)
+            if deadline-time.perf_counter()<=reserve:
+                self.truncations.add('SERVICE_COMPLETION_RESERVE');return False
         for deadline,reason in self._stage_limits:
             if time.perf_counter()>=deadline:
                 self.truncations.add(reason); return False
@@ -428,6 +444,8 @@ def _service_empty_reason(result,catalog,context,budget):
     if not result.certified or any(word in raw for word in ('UNKNOWN','TIME','DEADLINE','NO_SOLVER_TIME')):
         return "CERTIFICATION_TIMEOUT"
     if getattr(budget,'_service_certified_move_alternative',False): return "REASONABLE_WAIT"
+    if any(word in raw for word in ('ALLOCATION_EXHAUSTED','REFINEMENT_LIMIT','BUDGET')):
+        return 'CERTIFICATION_TIMEOUT'
     if (getattr(context,'observed_definite_conflicts',()) or result.details.get('batched_conflicts',0)
             or result.details.get('single_cuts',0) or result.details.get('pair_cuts',0)):
         return "TRUE_CONFLICT"
@@ -1180,12 +1198,32 @@ class CandidateProvider:
                 raise ValueError("candidate evaluation frame profile mismatch")
 
     def reserve_suffix_completion(self,snapshot,catalog,budget):
-        """Freeze at most two existing partials after the first real solve."""
+        """Reserve up to two partials; service slots may refill after first CP.
+
+        Service time is reserved before the first CP call even for an empty
+        catalog. Later eligible partials use unused slots and the same allowance.
+        Stitched evaluation freezes its original post-solve reservation.
+        """
         if self.evaluation_profile not in (STITCHED_EVALUATION_PROFILE,SERVICE_EVALUATION_PROFILE): return
-        if getattr(budget,"_suffix_completion_state",None) is not None: return
+        service_profile=self.evaluation_profile==SERVICE_EVALUATION_PROFILE
+        state=getattr(budget,"_suffix_completion_state",None)
+        if state is not None and (not service_profile or state['snapshot_id']!=snapshot.version): return
+        if service_profile and state is None:
+            # Reserve once, including when the first catalog contains no
+            # partials. Unused slots/time remain available to later growth.
+            state=dict(snapshot_id=snapshot.version,records=[],retained={},
+                priority_reserved_seconds=min(1.5,max(0.,.15*budget.remaining_seconds())),
+                priority_used_seconds=0.,priority_before_first_cp=False,priority_slice_completed=True,
+                refillable_priority=True)
+            budget._suffix_completion_state=state
+        booked=set() if state is None else {row['aircraft_id'] for row in state['records']}
+        if service_profile and len(booked)>=2:
+            state['retained']=dict(catalog.columns)
+            return
         from .selective_replanning.diagnostics import candidate_hash
         candidates=[]
         for aid,rows in catalog.columns.items():
+            if aid in booked: continue
             partials=[c for c in rows if c.kind=="MOVE" and c.plans and c.plans[-1].pad_id is None
                 and c.node is not None and aid not in snapshot.soft and _executable_start(snapshot,c.plans[0].start_time)
                 and not any(full.plans[:len(c.plans)]==c.plans and full.plans[-1].pad_id is not None
@@ -1194,6 +1232,13 @@ class CandidateProvider:
                 best=min(partials,key=lambda c:(c.downstream.get("estimated_touchdown",math.inf),candidate_hash(c)))
                 candidates.append(best)
         candidates.sort(key=lambda c:(c.downstream.get("estimated_touchdown",math.inf),c.aircraft_id,candidate_hash(c)))
+        if service_profile:
+            state['records'].extend(dict(aircraft_id=c.aircraft_id,prefix_hashes=[p.trajectory_hash for p in c.plans],
+                suffix_status='RESERVED',complete_candidate_in_catalog=False,wall_s=0.,priority_slice_attempted=False,
+                skip_reason='AWAITING_RESERVED_COMPLETION_SLICE',_partial=c,_cursor=None)
+                for c in candidates[:max(0,2-len(booked))])
+            state['retained']=dict(catalog.columns)
+            return
         budget._suffix_completion_state=dict(snapshot_id=snapshot.version,
             records=[dict(aircraft_id=c.aircraft_id,prefix_hashes=[p.trajectory_hash for p in c.plans],
                 suffix_status="RESERVED",complete_candidate_in_catalog=False,wall_s=0.,
@@ -1204,6 +1249,7 @@ class CandidateProvider:
     def suffix_completion_report(budget):
         state=getattr(budget,"_suffix_completion_state",None)
         if state is None: return None
+        if state.get('refillable_priority',False): budget.service_completion_reserve()
         rows=[{k:v for k,v in row.items() if not k.startswith("_")} for row in state["records"]]
         for row in rows:
             row["pending"]=row["suffix_status"] in ("RESERVED","RUNNING")
@@ -1211,6 +1257,9 @@ class CandidateProvider:
         return dict(policy_id="bounded_suffix_completion_v1",max_aircraft=2,attempts=rows,
             priority_reserved_seconds=state.get('priority_reserved_seconds'),
             priority_used_seconds=state.get('priority_used_seconds'),
+            priority_remaining_seconds=(None if 'priority_reserved_seconds' not in state else
+                max(0.,state['priority_reserved_seconds']-state.get('priority_used_seconds',0.))),
+            priority_reserve_released=state.get('priority_reserve_released',False),
             priority_before_first_cp=state.get('priority_before_first_cp',False))
 
     def _suffix_completion_steps(self,snapshot,a,budget,row):
@@ -1947,45 +1996,70 @@ class CandidateProvider:
             if completion is not None:
                 catalog=replace(catalog,generation_coverage=dict(catalog.generation_coverage or {},suffix_completion=completion))
             return catalog
+        def service_completion(*,before_first_cp=False):
+            """Fill unused slots and spend only the original priority reserve."""
+            state=getattr(budget,'_suffix_completion_state',None)
+            previous_count=0 if state is None else len(state['records'])
+            completed_before=set() if state is None else {row['aircraft_id'] for row in state['records']
+                if row['complete_candidate_in_catalog']}
+            raw=CandidateCatalog({aid:tuple(rows) for aid,rows in columns.items()},{},{},())
+            self.reserve_suffix_completion(snapshot,raw,budget)
+            state=getattr(budget,'_suffix_completion_state',None)
+            if state is None or state['snapshot_id']!=snapshot.version: return False
+            state['priority_before_first_cp']|=before_first_cp
+            allowance=max(0.,state['priority_reserved_seconds']-state['priority_used_seconds'])
+            pending=[row for row in state['records'] if row['suffix_status'] in ('RESERVED','RUNNING')]
+            by_id={a.id:a for a in order}
+            if allowance>0 and pending:
+                started=time.perf_counter()
+                with budget.stage_limit(allowance,'SERVICE_COMPLETION_SLICE'):
+                    for row in pending:
+                        a=by_id.get(row['aircraft_id'])
+                        if a is None: continue
+                        if not budget.available(a.id): break
+                        row['priority_slice_attempted']=True;row['skip_reason']=None
+                        for item in self._suffix_completion_steps(snapshot,a,budget,row):
+                            if item[0]=='COLUMN':
+                                validation_started=time.perf_counter()
+                                retained=add(a,item[1],item[2],preserve=True)
+                                row['complete_candidate_in_catalog']=retained or any(c.plans==item[1] for c in columns[a.id])
+                                row['single_validation_wall_s']=time.perf_counter()-validation_started
+                                row['wall_s']+=row['single_validation_wall_s']
+                                break
+                state['priority_used_seconds']+=time.perf_counter()-started
+                state['retained']={aid:tuple(rows) for aid,rows in columns.items()}
+            return (len(state['records'])>previous_count or
+                any(row['complete_candidate_in_catalog'] and row['aircraft_id'] not in completed_before for row in state['records']))
         try:
             if service_profile:
                 # Bound the first construction slice, leaving selected/prefix
                 # certification time on the same clock. FULL_H retains all
                 # variables, while only a few useful primitives are tried first.
-                priority=[a for a in order if nodes[a.id].ring=='inner'][:2]
-                priority += sorted((a for a in order if nodes[a.id].ring!='inner'),
+                inners=[a for a in order if nodes[a.id].ring=='inner'][:2]
+                supplies=sorted((a for a in order if nodes[a.id].ring!='inner'),
                     key=lambda a:(self._describe_column(snapshot,columns[a.id][0],context).ready,slacks[a.id],a.id))[:2]
+                priority=[group[index] for index in range(max(len(inners),len(supplies)))
+                    for group in (inners,supplies) if index<len(group)]
                 seed_slice=min(1.5,max(0.,.15*budget.remaining_seconds()))
+                pending=[(a,next(gen for kind,gen in stages[a.id] if kind=='progress')) for a in priority]
                 with budget.stage_limit(seed_slice,"SERVICE_INITIAL_SLICE"):
-                    for a in priority:
-                        progress=next(gen for kind,gen in stages[a.id] if kind=='progress')
-                        while budget.available(a.id):
+                    while pending and budget.available():
+                        for a,progress in tuple(pending):
+                            if not budget.available(): break
+                            if not budget.available(a.id):
+                                pending.remove((a,progress));continue
+                            initial_visited.add(a.id)
                             try: item=next(progress)
-                            except StopIteration: break
-                            if item[0]=='COLUMN' and add(a,item[1],item[2],preserve=True): break
-                        initial_visited.add(a.id)
-                catalog=catalog_with_coverage('SERVICE_PRIORITY_SEED')
-                self.reserve_suffix_completion(snapshot,catalog,budget)
+                            except StopIteration:
+                                pending.remove((a,progress));stages[a.id].remove(('progress',progress))
+                                continue
+                            if item[0]=='COLUMN' and add(a,item[1],item[2],preserve=True):
+                                pending.remove((a,progress));stages[a.id].remove(('progress',progress))
                 # Pay the explicitly reserved completion allowance before any
                 # hint/CP call can consume it. The allowance is a slice of the
                 # existing deadline, never an additional time budget.
-                state=getattr(budget,'_suffix_completion_state',None)
-                if state is not None:
-                    state['priority_slice_completed']=True
-                    state['priority_before_first_cp']=True
-                    reserve=min(1.5,max(0.,.15*budget.remaining_seconds()))
-                    state['priority_reserved_seconds']=reserve
-                    started=time.perf_counter(); by_id={a.id:a for a in order}
-                    with budget.stage_limit(reserve,'SERVICE_COMPLETION_SLICE'):
-                        for row in state['records']:
-                            a=by_id[row['aircraft_id']]
-                            row['priority_slice_attempted']=True;row['skip_reason']=None
-                            for item in self._suffix_completion_steps(snapshot,a,budget,row):
-                                if item[0]=='COLUMN':
-                                    row['complete_candidate_in_catalog']=add(a,item[1],item[2],preserve=True)
-                                    break
-                    state['priority_used_seconds']=time.perf_counter()-started
-                    catalog=catalog_with_coverage('SERVICE_PRIORITY_SEED')
+                service_completion(before_first_cp=True)
+                catalog=catalog_with_coverage('SERVICE_PRIORITY_SEED')
                 publish(catalog.downstream,catalog.columns)
                 yield catalog
                 publish(catalog.downstream,catalog.columns)
@@ -2015,7 +2089,7 @@ class CandidateProvider:
             completion_rows={} if state is None or state["snapshot_id"]!=snapshot.version else {row["aircraft_id"]:row for row in state["records"]}
             for a in order:
                 row=completion_rows.get(a.id)
-                if row is not None and row["suffix_status"] in ("RESERVED","RUNNING"):
+                if not service_profile and row is not None and row["suffix_status"] in ("RESERVED","RUNNING"):
                     stages[a.id].insert(0,("suffix_completion",self._suffix_completion_steps(snapshot,a,budget,row)))
             def add_completion(a,item):
                 if item[0]!="COLUMN": return
@@ -2025,7 +2099,7 @@ class CandidateProvider:
                 row["complete_candidate_in_catalog"]=retained or any(c.plans==item[1] for c in columns[a.id])
                 row["single_validation_wall_s"]=time.perf_counter()-validation_started
                 row["wall_s"]+=row["single_validation_wall_s"]
-            if completion_rows and not state.get("priority_slice_completed",False):
+            if not service_profile and completion_rows and not state.get("priority_slice_completed",False):
                 # One global micro-round, in the frozen reservation order,
                 # before ordinary aircraft can consume the remaining budget.
                 # Keep the existing cursor for later family round-robin work.
@@ -2049,11 +2123,6 @@ class CandidateProvider:
                                 stages[a.id].remove(family); break
                             else: add_completion(a,item)
                             if not service_profile or item[0]=='COLUMN': break
-            if service_profile and completion_rows:
-                catalog=catalog_with_coverage('SERVICE_PRIORITY_COMPLETION')
-                publish(catalog.downstream,catalog.columns)
-                yield catalog
-                publish(catalog.downstream,catalog.columns)
             if service_profile and not getattr(budget,'_service_certified_incumbent',False):
                 return
             for round_index,target in enumerate((2,4,8)):
@@ -2102,11 +2171,21 @@ class CandidateProvider:
                                     if seed is not None: add(a,*seed)
                                     if self.planning_profile==PLANNING_PROFILE_DOWNSTREAM:
                                         stages[a.id].insert(0,("delayed_reference",self._delayed_reference_seed(snapshot,a,nodes[a.id],ref,budget)))
+                                if service_profile and service_completion():
+                                    catalog=catalog_with_coverage('SERVICE_LATE_PRIORITY_COMPLETION')
+                                    publish(catalog.downstream,catalog.columns)
+                                    yield catalog
+                                    publish(catalog.downstream,catalog.columns)
                                 continue
                             if kind=="delayed_reference": add(a,*item)
                             elif kind!="reference" and item[0]=="COLUMN":
                                 if kind=="suffix_completion": add_completion(a,item)
                                 else: add(a,item[1],item[2])
+                            if service_profile and kind!='reference' and (kind=='delayed_reference' or item[0]=='COLUMN') and service_completion():
+                                catalog=catalog_with_coverage('SERVICE_LATE_PRIORITY_COMPLETION')
+                                publish(catalog.downstream,catalog.columns)
+                                yield catalog
+                                publish(catalog.downstream,catalog.columns)
                     if not advanced or not budget.available(): break
                 catalog=catalog_with_coverage("GROWTH_"+str(round_index))
                 publish(catalog.downstream,catalog.columns)

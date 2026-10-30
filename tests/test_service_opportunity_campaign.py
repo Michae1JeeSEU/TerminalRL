@@ -125,7 +125,10 @@ def test_cli_and_literal_thread_settings(monkeypatch):
     with pytest.raises(ValueError,match="literal"): runner.launch_threads()
 
 
-def test_smoke_is_twenty_seconds_separate_output(monkeypatch,tmp_path):
+@pytest.mark.parametrize("output_name,stage,seconds",[
+    (runner.OUTPUT_NAME,"smoke",20),(runner.SUPPLY_R2_OUTPUT_NAME,"smoke",25),
+    (runner.OUTPUT_NAME,"arm",300),(runner.SUPPLY_R2_OUTPUT_NAME,"arm",300)])
+def test_smoke_is_twenty_seconds_separate_output(monkeypatch,tmp_path,output_name,stage,seconds):
     for key in runner.base.THREADS: monkeypatch.setenv(key,"1")
     source=dict(commit="test",source_hash="hash",files={p: "x" for p in (
         "scripts/stage3/run_service_opportunity_comparison.py","scripts/stage3/report_service_opportunity_comparison.py",
@@ -139,18 +142,51 @@ def test_smoke_is_twenty_seconds_separate_output(monkeypatch,tmp_path):
     monkeypatch.setattr(runner.old,"set_cpu",lambda args,d:None)
     @contextmanager
     def ledger(*args,**kwargs):
-        yield dict(jobs={"service_smoke_s3r23_FULL_H":dict(status="running",parent_pid=runner.os.getppid())})
+        assert kwargs["policy"]["campaign"]==output_name
+        yield dict(jobs={"service_"+stage+"_s3r23_FULL_H":dict(status="running",parent_pid=runner.os.getppid())})
     monkeypatch.setattr(runner.old,"ledger_transaction",ledger)
     captured={}
     def arm(output,root,method,checkpoint,binding,**kwargs):
         captured.update(output=output,binding=binding,**kwargs)
         return dict(status="COMPLETE",target_relative_s=kwargs["episode_seconds"])
     monkeypatch.setattr(runner.comparison,"run_arm",arm)
-    result=runner.main(["--stage","smoke","--output",str(tmp_path/"new"),"--root","s3r23","--method","FULL_H",
-        "--cpu","16","--source-freeze",str(freeze),"--_child-job-id","service_smoke_s3r23_FULL_H"])
-    assert result["target_relative_s"]==20
-    assert captured["output"]==tmp_path/"new/smoke_only"
-    assert captured["binding"]["run_role"]=="SMOKE_NOT_FORMAL"
+    output=tmp_path/output_name
+    result=runner.main(["--stage",stage,"--output",str(output),"--root","s3r23","--method","FULL_H",
+        "--cpu","16","--source-freeze",str(freeze),"--_child-job-id","service_"+stage+"_s3r23_FULL_H"])
+    assert result["target_relative_s"]==seconds
+    assert captured["output"]==(output/"smoke_only" if stage=="smoke" else output)
+    assert captured["binding"]["run_role"]==("SMOKE_NOT_FORMAL" if stage=="smoke" else "FORMAL_SINGLE_ARM")
+    assert captured["binding"]["campaign"]==output_name
+
+
+def test_only_two_authorized_output_names_and_fixed_parent(monkeypatch,tmp_path):
+    monkeypatch.setattr(Path,"home",classmethod(lambda cls:tmp_path))
+    parent=tmp_path/"training_outputs/terminal"
+    for name in runner.OUTPUT_NAMES:
+        assert runner.validated_output(parent/name)==(parent/name).resolve()
+    with pytest.raises(ValueError): runner.validated_output(parent/"unapproved_campaign")
+    with pytest.raises(ValueError): runner.validated_output(tmp_path/runner.SUPPLY_R2_OUTPUT_NAME)
+
+
+def test_campaign_policies_and_ledgers_are_independent(monkeypatch,tmp_path):
+    monkeypatch.setattr(Path,"home",classmethod(lambda cls:tmp_path))
+    parent=tmp_path/"training_outputs/terminal"
+    first=parent/runner.OUTPUT_NAME; second=parent/runner.SUPPLY_R2_OUTPUT_NAME
+    original=dict(runner.POLICY)
+    assert runner.policy_for_output(first)==original
+    assert runner.policy_for_output(second)["previous_ledger_readonly"]==runner.OUTPUT_NAME+"/repair_budget_ledger.json"
+    assert runner.policy_for_output(second)["run_role"]=="AUTHORIZED_SUPPLY_RESERVATION_REPAIR_FOLLOWUP"
+    with runner.old.ledger_transaction(first,policy=runner.policy_for_output(first)) as ledger:
+        ledger["jobs"]["previous_attempt"]=dict(status="completed",child_wall_s=17.)
+        ledger["settled_child_wall_s"]=17.
+    old_bytes=(first/"repair_budget_ledger.json").read_bytes()
+    with runner.old.ledger_transaction(second,policy=runner.policy_for_output(second)) as ledger:
+        assert ledger["campaign"]==runner.SUPPLY_R2_OUTPUT_NAME
+        assert ledger["jobs"]=={} and ledger["settled_child_wall_s"]==0.
+        assert ledger["cap_child_wall_s"]==7200.
+        assert ledger["historical_campaign_budget_reset"] is False
+    assert (first/"repair_budget_ledger.json").read_bytes()==old_bytes
+    assert runner.POLICY==original
 
 
 def test_output_json_csv_grammar_and_missing_metrics(tmp_path,monkeypatch):

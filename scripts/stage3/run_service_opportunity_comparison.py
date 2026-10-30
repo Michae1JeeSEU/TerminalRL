@@ -2,7 +2,8 @@
 
 Common physical checkpoints are copied byte-for-byte from the prior campaign.
 All children, including smoke and audits, share the new 7200 child-second cap.
-Smoke alone covers 20 simulation seconds (absolute t=20 through t=40).
+First-iteration smoke covers 20 simulation seconds (absolute t=20 through t=40);
+the explicitly authorized supply-r2 smoke covers 25 seconds (t=20 through t=45).
 """
 from __future__ import annotations
 
@@ -20,6 +21,8 @@ from scripts.stage3 import run_selective_common_comparison_a4 as comparison
 
 DRIVER = Path(__file__).resolve()
 OUTPUT_NAME = "rs_service_opportunity_20261030"
+SUPPLY_R2_OUTPUT_NAME = "rs_service_opportunity_supply_r2_20261030"
+OUTPUT_NAMES = (OUTPUT_NAME, SUPPLY_R2_OUTPUT_NAME)
 PROFILE = "service_opportunity_v1"
 ORIGIN_NAME = "rs_selective_quality_a4_20261030"
 COMMON_HASHES = {
@@ -39,10 +42,19 @@ CAPS = dict(prepare=120., arm=1200., audit=300., smoke=120.)
 
 def validated_output(path):
     output = Path(path).resolve()
-    base.require(output.name == OUTPUT_NAME and
+    base.require(output.name in OUTPUT_NAMES and
         output.parent == (Path.home()/"training_outputs/terminal").resolve(),
         "follow-up outputs must use the authorized fresh server directory")
     return output
+
+
+def policy_for_output(output):
+    """Independent follow-up accounting; retain every historical ledger."""
+    policy = dict(POLICY, campaign=validated_output(output).name)
+    if policy["campaign"] == SUPPLY_R2_OUTPUT_NAME:
+        policy.update(previous_ledger_readonly=OUTPUT_NAME+"/repair_budget_ledger.json",
+                      run_role="AUTHORIZED_SUPPLY_RESERVATION_REPAIR_FOLLOWUP")
+    return policy
 
 
 def launch_threads():
@@ -106,15 +118,16 @@ def main(argv=None):
     args = parser().parse_args(values)
     threads = launch_threads()
     args.output = validated_output(args.output)
+    policy = policy_for_output(args.output)
     base.require(args.cpu == CPUS[args.root,args.method], "fixed physical CPU16-19 arm mapping required")
     job_id = "service_"+args.stage+"_"+args.root+("" if args.stage=="prepare" else "_"+args.method)
     if not args._child_job_id:
         command = [sys.executable, str(DRIVER), *values, "--_child-job-id", job_id]
-        receipt = old.run_bounded_job(args.output, job_id, command, cap_s=CAPS[args.stage], policy=POLICY)
+        receipt = old.run_bounded_job(args.output, job_id, command, cap_s=CAPS[args.stage], policy=policy)
         base.print_result(dict(job_id=job_id, **receipt))
         return receipt
     base.require(args._child_job_id == job_id, "child identity differs")
-    with old.ledger_transaction(args.output, write=False, policy=POLICY) as ledger:
+    with old.ledger_transaction(args.output, write=False, policy=policy) as ledger:
         row = ledger["jobs"].get(job_id, {})
         base.require(row.get("status")=="running" and row.get("parent_pid")==os.getppid(),
                      "active parent watchdog required")
@@ -124,7 +137,7 @@ def main(argv=None):
                 "scripts/stage3/report_service_opportunity_comparison.py",
                 "tests/test_service_opportunity_campaign.py")
     base.require(all(name in source["files"] for name in required), "reviewed follow-up sources/tests required")
-    with old.ledger_transaction(args.output, policy=POLICY) as ledger:
+    with old.ledger_transaction(args.output, policy=policy) as ledger:
         bound = ledger.setdefault("service_source_hash", source["source_hash"])
         profile = ledger.setdefault("service_evaluation_profile", PROFILE)
         base.require(bound==source["source_hash"] and profile==PROFILE, "source/profile changed after first attempt")
@@ -143,10 +156,11 @@ def main(argv=None):
         checkpoint = args.output/"common_initial"/args.root/"common.checkpoint.json"
         base.require(base.file_hash(checkpoint)==COMMON_HASHES[args.root], "common checkpoint changed")
         run_output = args.output/"smoke_only" if args.stage=="smoke" else args.output
+        smoke_seconds = 25 if args.output.name==SUPPLY_R2_OUTPUT_NAME else 20
         result = comparison.run_arm(run_output,args.root,args.method,checkpoint,
             dict(source_commit=source["commit"],source_hash=source["source_hash"],cpu=args.cpu,
-                 campaign=OUTPUT_NAME,run_role="SMOKE_NOT_FORMAL" if args.stage=="smoke" else "FORMAL_SINGLE_ARM"),
-            evaluation_profile=PROFILE,d=d,episode_seconds=20 if args.stage=="smoke" else 300)
+                 campaign=args.output.name,run_role="SMOKE_NOT_FORMAL" if args.stage=="smoke" else "FORMAL_SINGLE_ARM"),
+            evaluation_profile=PROFILE,d=d,episode_seconds=smoke_seconds if args.stage=="smoke" else 300)
     base.print_result(result)
     return result
 
