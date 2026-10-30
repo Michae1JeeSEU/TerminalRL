@@ -1,6 +1,6 @@
 # Service-opportunity follow-up：实现与固定比较协议
 
-本轮显式启用 `service_opportunity_v1`，保留默认 `legacy_window_tail_v8` 和已有 `stitched_continuation_v1`。目标是在相同物理起点和截止条件下，比较 FULL_H / RULE_LOCAL_K8 的可达服务机会利用；不加入 transfer bonus、inner bonus、强制 MOVE 或任意容差。旧结果、checkpoint、账本及报告保持只读。iteration 1 四臂和审计已完成，但尚未通过“供给问题已解决”的验收；下文分别记录已核验结果和仍 PENDING 的 r2。
+本轮显式启用 `service_opportunity_v1`，保留默认 `legacy_window_tail_v8` 和已有 `stitched_continuation_v1`。目标是在相同物理起点和截止条件下，比较 FULL_H / RULE_LOCAL_K8 的可达服务机会利用；不加入 transfer bonus、inner bonus、强制 MOVE 或任意容差。旧结果、checkpoint、账本及报告保持只读。iteration 1 和 r2 的四臂及审计均已完成；r2 恢复了 high K8 的 M→I 供给，但 K8 正常落地数未达到增加的预期，不能声称整体质量改善或长空闲已全部消除。
 
 实现入口为 [completion/queue/scoring](../../terminal_marl/core/rotating_slots/stage2_service.py)、[profile routing](../../terminal_marl/core/rotating_slots/stage2_downstream.py)、[preselection frame](../../terminal_marl/core/rotating_slots/selective_replanning/frame.py)、[candidate/CP/certificate](../../terminal_marl/core/rotating_slots/stage2_planning.py) 和 [local planning](../../terminal_marl/core/rotating_slots/selective_replanning/local_problem.py)。
 
@@ -141,10 +141,58 @@ M→I 指标区分实际 maneuver start 和实际完成后形成的有效供给�
 
 主对话随后在 09:47:31 使用已授权的 escalated SSH 验证服务器可达；上述四臂产物在此前已完成。本轮没有因网络问题重跑实验。
 
-## r2：供给候选与补链保留修正，PENDING
+## r2：供给候选与补链保留修正及最终结果
 
 主对话代码/数据复核定位到剩余实现缺陷：初始 inner seed 的逐架 `while` 可在出现 COLUMN 前耗完 1.5 s slice，使 middle 尚未得到尝试；`reserve_suffix_completion` 在已有 state 时立即返回，第一次冻结的空 records 不会被后续已保留 partial 填充。high K8 的前 13 次 callback（source time 20…241 s）均记录 suffix attempts `[]`，同时 middle_00/01 各已有 2 个 partial MOVE、0 个 full chain。
 
-当前由实现 worker 修正为 round-robin seed 和可补充的 completion reservation，仍使用同一 deadline，不额外赠送预算。**r2 实现复核、测试、source freeze、smoke、正式四臂、审计及结果均 PENDING**；不将 iteration 1 结果当作 r2 证据。
+已完成 round-robin seed 和可补充 completion reservation 的实现与复核，仍使用同一 deadline，不额外赠送预算。r2 实现提交为 **`9408c189bf248af04324b353938faee8a0838281`**，已推送；[r2 source freeze](../../artifacts/rs_service_opportunity_supply_r2_20261030/source_freeze.json) 的 source hash 为 **`19cf240c104ad081203ee360b37d369bbe3c91405dc1af2fdac43d82856eb406`**。服务器 `integrated_r2` 为 **134 passed，0 skipped，30.37 s**，UTC **2026-10-30T10:09:23Z → 10:09:54Z**，PID **403670**，exit **0**；对应日志和退出记录位于 r2 输出根。原 iteration 1 证据保持原绑定。
 
 r2 使用新输出根 `/home/user/training_outputs/terminal/rs_service_opportunity_supply_r2_20261030`，原 r1 源码绑定、结果、审计和账本保留。r2 smoke 改为 **25 simulation seconds，绝对 20→45 s**，覆盖 t40 的物理 handoff；正式仍为四臂、300 s、lead 20 s 和既有物理协议，另存新 source freeze。r2 有独立 **7200 child-seconds** cap，记录 r1 ledger 为 historical，不重置旧账本。该安排针对上述实现缺陷，不是网络重试或参数扫描。
+
+已读取 r2 high smoke 的 result、source-20 callback、task 和 replay start events：两臂均 **COMPLETE，time 45 s / relative 25 s，exit 0**；t40 task 均 COMMITTED / ACCEPTED。FULL_H 实际启动 `initial_middle_06`、`initial_middle_10` 的两条 M→I TRANSFER 及 `initial_inner_00` 的 FINAL，共 submitted=3；K8 实际启动 `initial_inner_00`、`initial_inner_09` 两条 FINAL，共 submitted=2。
+
+| r2 high smoke，source 20 s | 首非空认证 elapsed | callback return elapsed | completion 预留 / 使用 | reserve released / attempts |
+|---|---:|---:|---:|---|
+| FULL_H | 6.5549688 s | 14.2956916 s | 1.5 / 0.4781209 s | true / 非空 |
+| RULE_LOCAL_K8 | 3.5872795 s | 14.1029603 s | 1.5 / 1.1573913 s | true / 非空 |
+
+K8 对 `initial_middle_00/01` 的 suffix rows 均为 KNOWN，但 `complete_candidate_in_catalog=false`；同 source-20 callback 中两者各记录一次 HARD_SEPARATION rejection。**生成了 suffix 不等于完整链通过检查并进入 catalog。** 该 smoke 证明原空 reservation 机制已有实际补链尝试及 t40 交付；供给和落地效果采用下述完整 300 s 结果判断。
+
+六类机制验证和 **134 项服务器测试通过**，四个 r2 正式臂均 **COMPLETE，absolute 320 s / relative 300 s，exit 0**。四次审计均 PASS：continuous separation CERTIFIED、PVA CHECKED、resource/C2/independent/proposal-nonexecution PASS、full A20 coverage true；四臂 zero emergency / zero failure，人工回放仍 HUMAN_PENDING。结果绑定已推送的 `9408c18`，后续没有修改代码或重跑正式臂；lead 20 s、既定预算和物理检查不变。
+
+[r2 完整数值 summary](../../artifacts/rs_service_opportunity_supply_r2_20261030/results/summary.json)、[r2 完整 comparison CSV](../../artifacts/rs_service_opportunity_supply_r2_20261030/results/comparison.csv) 与上文 r1 文件保留为本地派生原始结果；[compact_metrics.csv](../../artifacts/rs_service_opportunity_supply_r2_20261030/results/compact_metrics.csv) 单列 old/r1/r2 共 12 行，记录实际 t20→320 **增量**能量，不能替换成全历史累计能量。两个 common SHA 跨版本一致，八臂输入、物理覆盖、replay hashes 和事件完整性检查均通过，r2 缺失六项 tuple 的 callback 数为零。
+
+下表仍为 **旧 A4 → r2**，N/I/T 定义与 r1 表相同。
+
+| 根 / 方法 | N/I/T | M→I 实际启动/完成 | physical idle pad-s | 最长全 pad idle s | upstream 存在时最长 inner stock empty s | 增量能量 kWh |
+|---|---|---|---:|---:|---:|---:|
+| s3r23 / FULL_H | 10/5/5 → 12/5/7 | 14/14 → 7/7 | 933.662 → 787.991 | 20.428 → 10.000 | 0 → 40.000 | 174.280 → 157.916 |
+| s3r23 / RULE_LOCAL_K8 | 13/5/8 → 12/5/7 | 8/7 → 7/7 | 706.928 → 755.643 | 10.000 → 10.000 | 119.782 → 40.000 | 154.981 → 158.226 |
+| s3r24 / FULL_H | 4/3/1 → 10/3/7 | 0/0 → 6/6 | 1441.000 → 955.280 | 56.425 → 10.000 | 0 → 0 | 251.652 → 241.933 |
+| s3r24 / RULE_LOCAL_K8 | 10/3/7 → 9/3/6 | 0/0 → 6/6 | 1033.928 → 1081.661 | 22.275 → 33.626 | 104.572 → 0 | 225.355 → 238.540 |
+
+| 根 / 方法 | 首认证 n/callbacks | 首认证 median / p95 s | committed nonempty / 全部 finished | join 分子/分母 | late ready / traffic |
+|---|---|---|---|---|---|
+| s3r23 / FULL_H | 13/13 → 13/15 | 12.246/14.836 → 5.146/6.756 | 9/12 → 8/14 | 9/12 → 8/12 | 1/2 → 3/1 |
+| s3r23 / RULE_LOCAL_K8 | 15/15 → 14/14 | 5.992/10.603 → 3.538/5.543 | 10/14 → 10/13 | 10/14 → 10/12 | 1/3 → 0/2 |
+| s3r24 / FULL_H | 5/17 → 14/16 | 15.705/18.591 → 5.549/7.237 | 1/16 → 10/15 | 1/5 → 10/13 | 7/0 → 1/2 |
+| s3r24 / RULE_LOCAL_K8 | 18/22 → 15/15 | 7.079/10.096 → 3.552/4.373 | 4/21 → 8/14 | 4/5 → 8/13 | 2/0 → 3/2 |
+
+主对话最终解释：**FULL_H treatment normal touchdown 在 medium 为 5→7、high 为 1→7；K8 high 完成 M→I 从 0→6、inner-stock-empty 从 104.572→0，供给得到恢复。但 K8 treatment normal touchdown 在 medium 为 8→7、high 为 7→6，能量均增加，high 最长全 pad idle 从 22.275→33.626 s。** 因而用户希望更多落地的预期没有在 K8 上实现，不能声称整体质量改善或所有长空闲已消除。固定预算下的候选覆盖和最优性仍有限；两个根各一个配对不支持统计推广。
+
+r2 witnessed-avoidable idle 仍全为 **NULL**：旧证据缺 certificate export；r2 计入的 witness 有效期均在 FINAL occupancy 前被 state change 截断（四臂分别 12/12/18/20 次）。这不等于 avoidable idle 为零，也不能把 physical idle 全部判为已证明可避免。r2 的 source/projection/effective certificate bindings 均完整，协议为 `planning_effective_state_v1`；完整 binding 不保证未来交通变化后旧证书仍有效。
+
+## 剩余交付边界与回放
+
+high K8 实际全部 pad 空闲区间为 **45…55 s** 和 **248.5…282.12616790362597 s**。在 source **154.1202567 / 176.543863 s**，首个 FINAL certificate 分别于 **3.49425 / 3.203705 wall s** 获得，callback 返回 certified=true；但 normal work **14.0861938 / 14.0655782 s** 加 online service **8.3397905 / 7.2479895 s**，两次在准备前以 READY_DEADLINE_MISSED 拒绝。source **197.855213 s** 首认证 **3.410012 s**，ready time **212.802869 s**，随后因 TRAFFIC_CHANGED_AFTER_DEADLINE 拒绝。source **217.126167 s** 的后续任务在 **237.126167 s** COMMITTED，其 FINAL descent 到 **282.126167 s** 才开始，touchdown 为 **295.626167 s**。
+
+主对话据这些记录确认，剩余瓶颈包括在线 priority work 和截止后的交通变化；不能归结为缺 inner stock 或仅归结为能量权重。代码扣除当前已排队 service 并保留 4 s，但未来 online work 仍可能超过余量；这里的失败明确记录为 REJECTED，真实检查未绕过。没有对不可见未来交通的完整端到端保证，也没有证据证明整段 33.626 s 空闲均可避免，尤其不能将 source certificate 当作 traffic change 后的反事实证明。
+
+r2 四臂回放位于 `D:\7_codespace\training_outputs\terminal\rs_service_opportunity_supply_r2_20261030\arms\<s3r23|s3r24>\<FULL_H|RULE_LOCAL_K8>\evaluation\<root>\<method>\replay`。已核对现有 `ReplayController(path)`、`RotatingSlotsReplayViewer(controller).run()` API；以下可打开 high K8，本次未启动 GUI，不宣称人工回放已完成：
+
+```powershell
+Set-Location D:\7_codespace\terminal
+& D:\7_codespace\terminal\venv\Scripts\python.exe -X utf8 -B -c "from terminal_marl.visualization.rotating_slots_replay import ReplayController, RotatingSlotsReplayViewer; RotatingSlotsReplayViewer(ReplayController(r'D:\7_codespace\training_outputs\terminal\rs_service_opportunity_supply_r2_20261030\arms\s3r24\RULE_LOCAL_K8\evaluation\s3r24\RULE_LOCAL_K8\replay')).run()"
+```
+
+`8e75473` 与 `9408c18` 两次实现提交均已推送；最终文档及紧凑数据的提交由主对话复核后完成。完整 source-freeze 清单和大 summary/CSV 保留在上述 artifacts 本地证据路径，不改写前一轮产物。
