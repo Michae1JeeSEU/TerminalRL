@@ -150,6 +150,8 @@ class LocalPlanner:
                 budget.solver_call_seconds=min(2.,max(0.,budget.solver_seconds-budget.solver_wall_used)) if index==0 else max(0.,budget.solver_seconds-budget.solver_wall_used)
                 with budget.measure("selection"):
                     result=self.scheduler.plan(snapshot,catalog,context,budget,incumbent=mapped)
+                reserve=getattr(self.provider,"reserve_suffix_completion",None)
+                if reserve is not None: reserve(snapshot,catalog,budget)
                 solve_wall=time.perf_counter()-started
                 if result.certified and first_certified is None:
                     first_certified=dict(call=index,wall_elapsed_s=budget.elapsed,objective=list(result.objective),
@@ -238,4 +240,6 @@ class LocalPlanner:
             first_nonempty_certified=budget.first_nonempty_certified,
             best_objective=list(result.objective),actual_fallback=bool(result.details.get("fallback",False)) or not result.certified,wall_elapsed_s=budget.elapsed,
             search_remaining_s=budget.remaining_seconds(),solver_remaining_s=max(0.,budget.solver_seconds-budget.solver_wall_used))
+        report=getattr(self.provider,"suffix_completion_report",lambda budget:None)(budget)
+        if report is not None: self.telemetry["suffix_completion"]=report
         return result

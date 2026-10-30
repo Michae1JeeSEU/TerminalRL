@@ -26,6 +26,8 @@ from .safety import validate_separation
 from .trajectory import (generate_transfer, generate_final, make_stable_plan, make_ground_plan,
                          screen_normal_templates)
 from .selective_replanning.policy import PROGRESSIVE_VARIANTS, REFERENCE_VARIANT, resolve_search_policy
+from .stage2_downstream import (LEGACY_EVALUATION_PROFILE, STITCHED_EVALUATION_PROFILE,
+    validate_evaluation_profile)
 
 HORIZON = 240.0
 OFFSETS = (0., 5., 10., 15., 20., 30.)
@@ -38,13 +40,17 @@ PLANNING_PROFILE_DOWNSTREAM = "downstream_service_v8"
 PLANNING_PROFILES = (PLANNING_PROFILE_LEGACY, PLANNING_PROFILE_DOWNSTREAM)
 
 
-def candidate_policy_id(profile):
+def candidate_policy_id(profile, evaluation_profile=LEGACY_EVALUATION_PROFILE):
     if profile not in PLANNING_PROFILES: raise ValueError("unknown Stage2 planning profile: "+str(profile))
+    validate_evaluation_profile(evaluation_profile)
+    if evaluation_profile==STITCHED_EVALUATION_PROFILE: return "bounded_suffix_completion_v1"
     return CANDIDATE_POLICY_ID if profile == PLANNING_PROFILE_LEGACY else "shared_downstream_columns_v8_bounded_delay"
 
 
-def objective_schema_id(profile):
+def objective_schema_id(profile, evaluation_profile=LEGACY_EVALUATION_PROFILE):
     if profile not in PLANNING_PROFILES: raise ValueError("unknown Stage2 planning profile: "+str(profile))
+    validate_evaluation_profile(evaluation_profile)
+    if evaluation_profile==STITCHED_EVALUATION_PROFILE: return "stitched_continuation_v1_F_L_risk_E_tau"
     return "reliability_throughput_progress_tail_v2" if profile == PLANNING_PROFILE_LEGACY else "downstream_service_v8_f_L_risk_Ehat_tau"
 QUALITY_BUDGET_SETTINGS = MappingProxyType(dict(soft_seconds=30.,watchdog_seconds=60.,candidate_seconds=12.,
     hint_seconds=3.,solver_seconds=8.,solver_reserve_seconds=8.))
@@ -1101,9 +1107,13 @@ class EvaluationContext:
 
 
 class CandidateProvider:
-    def __init__(self, reference_provider=None, planning_profile=PLANNING_PROFILE_LEGACY, advisor_runtime=None):
+    def __init__(self, reference_provider=None, planning_profile=PLANNING_PROFILE_LEGACY, advisor_runtime=None,
+                 evaluation_profile=LEGACY_EVALUATION_PROFILE):
         candidate_policy_id(planning_profile)
         self.planning_profile=planning_profile
+        self.evaluation_profile=validate_evaluation_profile(evaluation_profile)
+        if evaluation_profile!=LEGACY_EVALUATION_PROFILE and planning_profile!=PLANNING_PROFILE_DOWNSTREAM:
+            raise ValueError("stitched evaluation requires downstream_service_v8")
         self.references = reference_provider or ReferenceProvider()
         self.previous = {}
         self.aligned_starts=[]
@@ -1111,6 +1121,76 @@ class CandidateProvider:
         self.validation_cache={}
         self.advisor_runtime=advisor_runtime if advisor_runtime is not None and advisor_runtime.enabled else None
         self.references.advisor_runtime=self.advisor_runtime
+
+    def _describe_column(self,snapshot,column,context):
+        from .stage2_downstream import describe_column
+        if self.evaluation_profile==LEGACY_EVALUATION_PROFILE:
+            return describe_column(snapshot,column,self.references,context)
+        return describe_column(snapshot,column,self.references,context,evaluation_profile=self.evaluation_profile)
+
+    def _check_frame_profile(self,context):
+        if context.global_frame is not None:
+            from .selective_replanning.frame import frame_evaluation_profile
+            if frame_evaluation_profile(context.global_frame.policy)!=self.evaluation_profile:
+                raise ValueError("candidate evaluation frame profile mismatch")
+
+    def reserve_suffix_completion(self,snapshot,catalog,budget):
+        """Freeze at most two existing partials after the first real solve."""
+        if self.evaluation_profile!=STITCHED_EVALUATION_PROFILE: return
+        if getattr(budget,"_suffix_completion_state",None) is not None: return
+        from .selective_replanning.diagnostics import candidate_hash
+        candidates=[]
+        for aid,rows in catalog.columns.items():
+            partials=[c for c in rows if c.kind=="MOVE" and c.plans and c.plans[-1].pad_id is None
+                and c.node is not None and aid not in snapshot.soft and _executable_start(snapshot,c.plans[0].start_time)
+                and not any(full.plans[:len(c.plans)]==c.plans and full.plans[-1].pad_id is not None
+                    for full in rows if full.plans)]
+            if partials:
+                best=min(partials,key=lambda c:(c.downstream.get("estimated_touchdown",math.inf),candidate_hash(c)))
+                candidates.append(best)
+        candidates.sort(key=lambda c:(c.downstream.get("estimated_touchdown",math.inf),c.aircraft_id,candidate_hash(c)))
+        budget._suffix_completion_state=dict(snapshot_id=snapshot.version,
+            records=[dict(aircraft_id=c.aircraft_id,prefix_hashes=[p.trajectory_hash for p in c.plans],
+                suffix_status="RESERVED",complete_candidate_in_catalog=False,wall_s=0.,
+                _partial=c,_cursor=None) for c in candidates[:2]],retained=dict(catalog.columns))
+
+    @staticmethod
+    def suffix_completion_report(budget):
+        state=getattr(budget,"_suffix_completion_state",None)
+        if state is None: return None
+        rows=[{k:v for k,v in row.items() if not k.startswith("_")} for row in state["records"]]
+        for row in rows:
+            row["pending"]=row["suffix_status"] in ("RESERVED","RUNNING")
+            if row["pending"]: row["budget_exit"]=budget.generation_stop_reason() or "BOUNDED_GENERATOR_SLICE_NOT_FINISHED"
+        return dict(policy_id="bounded_suffix_completion_v1",max_aircraft=2,attempts=rows)
+
+    def _suffix_completion_steps(self,snapshot,a,budget,row):
+        """Advance one shared reference attempt at a time; preserve epochs."""
+        if row["suffix_status"] not in ("RESERVED","RUNNING"): return
+        partial=row["_partial"]
+        if row["_cursor"] is None: row["_cursor"]=self.references.build_steps(snapshot,a,partial.node,budget)
+        row["suffix_status"]="RUNNING"
+        while budget.available(a.id):
+            started=time.perf_counter()
+            try: next(row["_cursor"])
+            except StopIteration as stop:
+                row["wall_s"]+=time.perf_counter()-started
+                ref=stop.value
+                row["suffix_status"]=getattr(ref,"status","UNKNOWN")
+                if ref is None or ref.status!="KNOWN" or not ref.plans or ref.plans[-1].pad_id is None: return
+                combined=(*partial.plans,*ref.plans)
+                replay_started=time.perf_counter()
+                checked=self._reference_seed(snapshot,a,_node(snapshot,a),replace(ref,plans=combined),budget)
+                row["wall_s"]+=time.perf_counter()-replay_started
+                row["completion_validation"]="EXISTING_REFERENCE_SEED_REPLAY"
+                if checked is None or checked[0]!=combined or checked[0][-1].pad_id is None:
+                    row["suffix_status"]="NOT_ADMISSIBLE"; return
+                yield ("COLUMN",combined,checked[1])
+                return
+            row["wall_s"]+=time.perf_counter()-started
+            yield ("ATTEMPT",None,None)
+        row["suffix_status"]="BUDGET_EXIT"
+        row["budget_exit"]=budget.generation_stop_reason() or "PER_AIRCRAFT_BUDGET"
 
     def _pop_ready(self, heap, snapshot, a, budget, stage, extract, is_ready=None):
         """Select from at most 64 existing ready items before generation.
@@ -1218,9 +1298,10 @@ class CandidateProvider:
         if rows is None: return None
         c=PredictionColumn(a.id,kind,tuple(plans),rows,(f,-l,u,tau,qh[0]),current,reference,emergency,energy,peak)
         if self.planning_profile==PLANNING_PROFILE_DOWNSTREAM:
-            from .stage2_downstream import describe_column
-            d=describe_column(snapshot,c,self.references,context)
-            c=replace(c,downstream=d.diagnostics,objective=(f,-l,d.unknown+max(0,d.base_energy-d.reserve_energy)*.1/3600.,d.base_energy*.1,(d.touchdown-round(snapshot.time*10))/10.))
+            d=self._describe_column(snapshot,c,context)
+            estimated_f=(max(d.failure,int(d.base_energy>=d.diagnostics["available_energy_threshold"]))
+                if self.evaluation_profile==STITCHED_EVALUATION_PROFILE else f)
+            c=replace(c,downstream=d.diagnostics,objective=(estimated_f,-l,d.unknown+max(0,d.base_energy-d.reserve_energy)*.1/3600.,d.base_energy*.1,(d.touchdown-round(snapshot.time*10))/10.))
         return c
 
     _remaining_lower = staticmethod(remaining_normal_time_lower)
@@ -1703,6 +1784,7 @@ class CandidateProvider:
             budget._selective_progressive_v2=True
             budget._strict_resource_context=context
         scope=scope or getattr(context,"scope",None)
+        self._check_frame_profile(context)
         if scope is not None:
             scope.validate(snapshot)
             if context.scope != scope: raise ValueError("candidate/context scope mismatch")
@@ -1724,7 +1806,7 @@ class CandidateProvider:
         def publish(downstream=None, retained=None):
             hook=getattr(runtime,"update_retained_context",None)
             if hook is not None: hook(snapshot,columns if retained is None else retained,refs,context,downstream=downstream)
-        def add(a,plans,emergency="NONE"):
+        def add(a,plans,emergency="NONE",preserve=False):
             if not plans: return False
             ref=(self.references._reference(snapshot,nodes[a.id],plans,"catalog_minimum")
                 if plans[-1].pad_id is not None else refs[a.id])
@@ -1734,8 +1816,11 @@ class CandidateProvider:
             validation=context.check_single(c)
             hook=getattr(runtime,"record_column_validation",None)
             if hook is not None: hook(c,validation,time.perf_counter()-w,time.process_time()-cpu,context.cache_stats["single_hits"]>hits)
-            retained=validation.accepted and retain_validated(columns[a.id],c,snapshot.time,target,budget.screening,
-                effective_time=getattr(getattr(snapshot,'planning_timing',None),'effective_time',None))
+            if preserve and validation.accepted:
+                columns[a.id].append(c); retained=True
+            else:
+                retained=validation.accepted and retain_validated(columns[a.id],c,snapshot.time,target,budget.screening,
+                    effective_time=getattr(getattr(snapshot,'planning_timing',None),'effective_time',None))
             if runtime is not None: runtime.record_column(c,validation,retained)
             if retained:
                 if plans[-1].pad_id is not None and (refs[a.id].status!="KNOWN" or ref.energy_j<refs[a.id].energy_j): refs[a.id]=ref
@@ -1743,6 +1828,10 @@ class CandidateProvider:
             return retained
         publish()
         for a in order:
+            completion_state=getattr(budget,"_suffix_completion_state",None)
+            if completion_state is not None and completion_state["snapshot_id"]==snapshot.version:
+                for old in completion_state["retained"].get(a.id,()):
+                    if old.plans: add(a,old.plans,old.emergency_prediction,preserve=True)
             previous=self._previous_chain(snapshot,a,nodes[a.id],budget)
             if previous: add(a,previous)
             retained=getattr(budget,"_selective_retained_columns",{}).get(a.id) if early_publish else None
@@ -1784,6 +1873,9 @@ class CandidateProvider:
                         adjustment_access=row["adjustment_access"],claim="BOUNDED_DESCRIPTOR_QUERIES_NOT_FEASIBILITY")
                         for aid,row in target_states.items()}
                     catalog=replace(catalog,generation_coverage=dict(catalog.generation_coverage,target_attempt_coverage=report))
+            completion=self.suffix_completion_report(budget)
+            if completion is not None:
+                catalog=replace(catalog,generation_coverage=dict(catalog.generation_coverage or {},suffix_completion=completion))
             return catalog
         try:
             for a in order:
@@ -1801,11 +1893,19 @@ class CandidateProvider:
                 initial_visited.add(a.id)
             hook=getattr(runtime,"complete_initial_coverage",None)
             if hook is not None: hook()
-            if early_publish:
+            completed_first_solve=getattr(budget,"_suffix_completion_state",None) is not None
+            if (early_publish or self.evaluation_profile==STITCHED_EVALUATION_PROFILE) and not (
+                    self.evaluation_profile==STITCHED_EVALUATION_PROFILE and completed_first_solve):
                 catalog=catalog_with_coverage("INITIAL_PROGRESS")
                 publish(catalog.downstream,catalog.columns)
                 yield catalog
                 publish(catalog.downstream,catalog.columns)
+            state=getattr(budget,"_suffix_completion_state",None)
+            completion_rows={} if state is None or state["snapshot_id"]!=snapshot.version else {row["aircraft_id"]:row for row in state["records"]}
+            for a in order:
+                row=completion_rows.get(a.id)
+                if row is not None and row["suffix_status"] in ("RESERVED","RUNNING"):
+                    stages[a.id].insert(0,("suffix_completion",self._suffix_completion_steps(snapshot,a,budget,row)))
             for round_index,target in enumerate((2,4,8)):
                 quota=max(1,math.ceil(budget.max_per_aircraft*(.25,.5,1.)[round_index]))
                 visited=set()
@@ -1817,7 +1917,8 @@ class CandidateProvider:
                     round_order=sorted(order,key=lambda a:(not bool(gaps.get(a.id)),order.index(a))) if gaps else order
                     for a in round_order:
                         if not budget.available(a.id) or budget.attempts[a.id]>=quota: continue
-                        if (not target_states and a.id in visited and sum(c.kind=="MOVE" for c in columns[a.id])>=target): continue
+                        pending_completion=a.id in completion_rows and completion_rows[a.id]["suffix_status"] in ("RESERVED","RUNNING")
+                        if (not target_states and not pending_completion and a.id in visited and sum(c.kind=="MOVE" for c in columns[a.id])>=target): continue
                         visited.add(a.id)
                         families=tuple(stages[a.id])
                         if target_states:
@@ -1838,7 +1939,7 @@ class CandidateProvider:
                             priority=("progress" if "NO_ELIGIBLE_IMMEDIATE_MOVE_OBSERVED" in missing else
                                 "reference" if "NO_COMPLETE_CHAIN_OBSERVED" in missing else
                                 "delayed" if "NO_DELAYED_MOVE_OBSERVED" in missing else "alternative")
-                            families=tuple(sorted(families,key=lambda row:row[0]!=priority))
+                            families=tuple(sorted(families,key=lambda row:(row[0]!="suffix_completion",row[0]!=priority)))
                         for kind,gen in families:
                             if not budget.available(a.id) or budget.attempts[a.id]>=quota: break
                             advanced=True
@@ -1853,7 +1954,14 @@ class CandidateProvider:
                                         stages[a.id].insert(0,("delayed_reference",self._delayed_reference_seed(snapshot,a,nodes[a.id],ref,budget)))
                                 continue
                             if kind=="delayed_reference": add(a,*item)
-                            elif kind!="reference" and item[0]=="COLUMN": add(a,item[1],item[2])
+                            elif kind!="reference" and item[0]=="COLUMN":
+                                validation_started=time.perf_counter()
+                                retained=add(a,item[1],item[2])
+                                if kind=="suffix_completion":
+                                    completion_rows[a.id]["complete_candidate_in_catalog"]=retained or any(
+                                        c.plans==item[1] for c in columns[a.id])
+                                    completion_rows[a.id]["single_validation_wall_s"]=time.perf_counter()-validation_started
+                                    completion_rows[a.id]["wall_s"]+=completion_rows[a.id]["single_validation_wall_s"]
                     if not advanced or not budget.available(): break
                 catalog=catalog_with_coverage("GROWTH_"+str(round_index))
                 publish(catalog.downstream,catalog.columns)
@@ -1875,7 +1983,8 @@ class CandidateProvider:
         downstream=None
         if self.planning_profile==PLANNING_PROFILE_DOWNSTREAM:
             from .stage2_downstream import JointDownstream,describe_column,ticks
-            demands={c.signature:describe_column(snapshot,c,self.references,context) for rows in values.values() for c in rows}
+            self._check_frame_profile(context)
+            demands={c.signature:self._describe_column(snapshot,c,context) for rows in values.values() for c in rows}
             if context.global_frame is not None:
                 # FOLLOW is precisely the preselection committed continuation.
                 # Newly searched references cannot improve a fixed background
@@ -1895,14 +2004,15 @@ class CandidateProvider:
                 if a.id in values or _node(snapshot,a) is None: continue
                 c=self._column(snapshot,a,(),"WAIT",context)
                 if c is None: continue
-                d=describe_column(snapshot,c,self.references,context)
+                d=self._describe_column(snapshot,c,context)
                 fixed.append(replace(d,unknown=1,diagnostics=dict(d.diagnostics,reference_status="UNKNOWN",reference_unknown_flag=True,
                     uncertainty_risk_penalty_wh=1.,reference_estimate_kind="noncandidate_known_aircraft_proxy")))
                 others.append((energy_slack(snapshot,a,NormalReference("UNKNOWN")),a.id))
             scores={aid:score for score,aid in others}; scores.update(slacks)
             order=sorted(order+[aid for _,aid in others],key=lambda aid:scores[aid])
             calendars=tuple((r.resource,ticks(r.start),ticks(r.end),r.aircraft_id) for r in snapshot.pads if math.isfinite(r.end))
-            downstream=JointDownstream(demands,calendars,order,now=ticks(snapshot.time),pad_count=snapshot.config.pads.count,fixed_demands=fixed)
+            downstream=JointDownstream(demands,calendars,order,now=ticks(snapshot.time),pad_count=snapshot.config.pads.count,fixed_demands=fixed,
+                evaluation_profile=self.evaluation_profile)
             baseline={aid:rows[0] for aid,rows in values.items()}
             values={aid:tuple(replace(c,objective=downstream.key(tuple(dict(baseline,**{aid:c}).values())),
                 downstream=demands[c.signature].diagnostics) for c in rows) for aid,rows in values.items()}
@@ -2066,7 +2176,7 @@ class CandidateProvider:
         downstream=None
         if self.planning_profile==PLANNING_PROFILE_DOWNSTREAM:
             from .stage2_downstream import JointDownstream,describe_column,ticks
-            demands={c.signature:describe_column(snapshot,c,self.references,context) for values in columns.values() for c in values}
+            demands={c.signature:self._describe_column(snapshot,c,context) for values in columns.values() for c in values}
             fixed=[]; all_order=list(a.id for a in sorted(ordered,key=lambda a:slacks[a.id]))
             # Declared but unreserved rescue traffic remains visible demand.
             # No future manifest or unreleased request is consulted.
@@ -2076,13 +2186,14 @@ class CandidateProvider:
                 n=_node(snapshot,a)
                 c=self._column(snapshot,a,(),"WAIT",context)
                 if c is None: continue
-                d=describe_column(snapshot,c,self.references,context)
+                d=self._describe_column(snapshot,c,context)
                 d=replace(d,unknown=1,diagnostics=dict(d.diagnostics,reference_status="UNKNOWN",reference_unknown_flag=True,
                     uncertainty_risk_penalty_wh=1.,reference_estimate_kind="noncandidate_known_aircraft_proxy"))
                 fixed.append(d); others.append((energy_slack(snapshot,a,NormalReference("UNKNOWN")),a.id))
             all_order=sorted(all_order+[aid for _,aid in others],key=lambda aid:slacks.get(aid,next((s for s,i in others if i==aid),())))
             calendars=tuple((r.resource,ticks(r.start),ticks(r.end),r.aircraft_id) for r in snapshot.pads if math.isfinite(r.end))
-            downstream=JointDownstream(demands,calendars,all_order,now=ticks(snapshot.time),pad_count=snapshot.config.pads.count,fixed_demands=fixed)
+            downstream=JointDownstream(demands,calendars,all_order,now=ticks(snapshot.time),pad_count=snapshot.config.pads.count,fixed_demands=fixed,
+                evaluation_profile=self.evaluation_profile)
             baseline={aid:values[0] for aid,values in columns.items()}
             for aid,values in columns.items():
                 columns[aid]=[replace(c,objective=downstream.key(tuple(dict(baseline,**{aid:c}).values())),downstream=demands[c.signature].diagnostics) for c in values]
@@ -2410,8 +2521,12 @@ class NormalSchedulerCallback:
     """Callable SchedulerPort adapter; runner owns admission/emergency timing."""
     def __init__(self,method="energy_slack",candidate_provider=None,budget_profile=QUALITY_BUDGET_PROFILE,planning_profile=PLANNING_PROFILE_LEGACY,
                  advisor_runtime=None,budget_scale=1.,online_policy=None,prefix_reuse=None,selective_method=None,global_frame=None,
-                 selective_rule_variant="baseline",opportunity_seed_offset=0,diagnostics=None,search_policy=None):
+                 selective_rule_variant="baseline",opportunity_seed_offset=0,diagnostics=None,search_policy=None,
+                 evaluation_profile=LEGACY_EVALUATION_PROFILE):
         self.diagnostics=diagnostics
+        self.evaluation_profile=validate_evaluation_profile(evaluation_profile)
+        if evaluation_profile!=LEGACY_EVALUATION_PROFILE and planning_profile!=PLANNING_PROFILE_DOWNSTREAM:
+            raise ValueError("stitched evaluation requires downstream_service_v8")
         if selective_method not in (None,"FULL_H","RULE_LOCAL_K8"): raise ValueError("unknown Stage A selective method")
         self.search_policy=resolve_search_policy(selective_rule_variant,search_policy)
         if opportunity_seed_offset not in (0,1,2): raise ValueError("diagnostic opportunity offset must be 0..2")
@@ -2433,7 +2548,8 @@ class NormalSchedulerCallback:
         if self.scheduler is None: raise ValueError("unknown Stage2 baseline")
         candidate_policy_id(planning_profile)
         self.planning_profile=planning_profile
-        self.provider=candidate_provider or CandidateProvider(planning_profile=planning_profile,advisor_runtime=advisor_runtime)
+        self.provider=candidate_provider or CandidateProvider(planning_profile=planning_profile,advisor_runtime=advisor_runtime,
+            evaluation_profile=self.evaluation_profile)
         if candidate_provider is not None and advisor_runtime is not None and self.provider.advisor_runtime is not advisor_runtime:
             raise ValueError("candidate provider advisor runtime mismatch")
         if budget_scale<=0 or not math.isfinite(budget_scale): raise ValueError("invalid candidate budget scale")
@@ -2442,6 +2558,7 @@ class NormalSchedulerCallback:
         self.online_policy=online_policy
         self.prefix_reuse=bool(online_policy) if prefix_reuse is None else bool(prefix_reuse)
         if self.provider.planning_profile!=planning_profile: raise ValueError("candidate provider planning profile mismatch")
+        if getattr(self.provider,"evaluation_profile",LEGACY_EVALUATION_PROFILE)!=self.evaluation_profile: raise ValueError("candidate provider evaluation profile mismatch")
         PlanningBudget.for_profile(budget_profile)  # fail closed on unknown names
         self.budget_profile=budget_profile
         self.records=[]
@@ -2474,6 +2591,7 @@ class NormalSchedulerCallback:
             if self.selective_rule_variant==REFERENCE_VARIANT:
                 state["selective_replanning"]["search_policy"]=self.search_policy.to_dict()
         if self.planning_profile!=PLANNING_PROFILE_LEGACY: state["planning_profile"]=self.planning_profile
+        if self.evaluation_profile!=LEGACY_EVALUATION_PROFILE: state["evaluation_profile"]=self.evaluation_profile
         if self.online_policy is not None: state["online_policy"]=self.online_policy
         if self.prefix_reuse or self.online_policy: state["prefix_reuse"]=self.prefix_reuse
         if self.provider.advisor_runtime is not None or self.budget_scale!=1.:
@@ -2492,6 +2610,8 @@ class NormalSchedulerCallback:
 
     def load_state_dict(self,state):
         from .trajectory import TrajectoryPlan
+        if state.get("evaluation_profile",LEGACY_EVALUATION_PROFILE)!=self.evaluation_profile:
+            raise ValueError("scheduler evaluation profile mismatch")
         selective=state.get("selective_replanning")
         if (selective or {}).get("method")!=self.selective_method: raise ValueError("selective method binding mismatch")
         if (selective or {}).get("rule_variant","baseline")!=self.selective_rule_variant: raise ValueError("selective rule variant binding mismatch")
@@ -2602,6 +2722,8 @@ class NormalSchedulerCallback:
                                     round_execution={}) if self.selective_rule_variant==REFERENCE_VARIANT else {}))))
                         return result
                 if frame.snapshot_id!=snapshot.version or frame.effective_time!=snapshot.time: raise ValueError("injected frame snapshot mismatch")
+                from .selective_replanning.frame import frame_evaluation_profile
+                if frame_evaluation_profile(frame.policy)!=self.evaluation_profile: raise ValueError("injected frame evaluation profile mismatch")
                 with budget.measure("selective_selection"):
                     relations=build_relations(snapshot,tuple(a.id for a in _decision_aircraft(snapshot)),self.selective_blockers,frame=frame,variant=self.selective_rule_variant)
                     scope,selection=RuleSelector(variant=self.selective_rule_variant,search_policy=self.search_policy).select(snapshot,frame,self.selective_history,relations,
@@ -2647,6 +2769,8 @@ class NormalSchedulerCallback:
                             options=({'incumbent':best} if comparable_scope and best is not None and self.scheduler.method=='rh_cp_sat' else {})
                             proposal=self.scheduler.plan(snapshot,catalog,context,budget,**options)
                     finally: budget.solver_call_seconds=None
+                    reserve=getattr(self.provider,"reserve_suffix_completion",None)
+                    if reserve is not None: reserve(snapshot,catalog,budget)
                     solver_history.extend(dict(r,uniform_refinement_restart=restart,catalog_round=catalog_round) for r in proposal.solver_records)
                     if proposal.certified:
                         budget.certificate_event("catalog_selection",proposal.selected,proposal.prefix,
@@ -2819,7 +2943,8 @@ class NormalSchedulerCallback:
                 rejection_reasons={key[7:]:value for key,value in rejected.items() if key.startswith("reason:")},
                 validation_status="EXAMINED" if any(r is not None for r in checked) or rejected else "UNKNOWN_NOT_EXAMINED")
         record={"time":snapshot.time,"method":self.scheduler.method,"status":result.status,
-                "candidate_policy_id":candidate_policy_id(self.planning_profile),"budget_profile":self.budget_profile,"planning_budget":budget.settings(),
+                "evaluation_profile":self.evaluation_profile,"objective_id":objective_schema_id(self.planning_profile,self.evaluation_profile),
+                "candidate_policy_id":candidate_policy_id(self.planning_profile,self.evaluation_profile),"budget_profile":self.budget_profile,"planning_budget":budget.settings(),
                 "deadline_reference_seconds":5.,"hint_wall_s":budget.hint_wall_used,"solver_wall_s":budget.solver_wall_used,
                 "hint_objective":result.details.get("hint_objective"),"final_objective":result.objective,
                 "hint_certified":result.details.get("hint_certified"),
@@ -2868,6 +2993,12 @@ class NormalSchedulerCallback:
                 "stale":bool(commit is not None and commit.status=="STALE"),"watchdog":"WATCHDOG" in budget.truncations,
                 "noop":not result.prefix,"selected_key":result.objective,
                 "keep":sum(c.kind=="KEEP" for c in result.selected),"wait":sum(c.kind=="WAIT" for c in result.selected)}
+        completion=getattr(self.provider,"suffix_completion_report",lambda budget:None)(budget)
+        if completion is not None: record["suffix_completion"]=completion
+        elif self.evaluation_profile==STITCHED_EVALUATION_PROFILE and self.online_policy is None:
+            record["suffix_completion"]=dict(policy_id="bounded_suffix_completion_v1",
+                status="NOT_ENABLED_NON_PROGRESSIVE",enabled=False,attempts=[])
+            record["candidate_policy_id"]=candidate_policy_id(self.planning_profile)
         if selective_telemetry is not None:
             record["selective_replanning"]=selective_telemetry
             source=getattr(port,"_source",snapshot)
@@ -2915,7 +3046,8 @@ class NormalSchedulerCallback:
                         comparison_signature=None if comparison is None else comparison.signature,comparison_integer_key=comparison_key,
                         comparison_status="NOT_JOINT_VALIDATED" if comparison is not None else "NO_COMPARISON",actual_action=action,
                         observed_rejections=dict(context.rejections_by_aircraft.get(selected.aircraft_id,{})))
-                record.update(planning_profile=self.planning_profile,objective_id=objective_schema_id(self.planning_profile),
+                record.update(planning_profile=self.planning_profile,evaluation_profile=self.evaluation_profile,
+                    objective_id=objective_schema_id(self.planning_profile,self.evaluation_profile),
                     downstream=downstream_rows,downstream_integer_key=selected_key,
                     virtual_pad_assignment=dict(catalog.downstream.assignment),virtual_queue_order=catalog.downstream.order)
             record.update(wall_s=budget.elapsed,cpu_s=time.process_time()-budget.cpu_start,

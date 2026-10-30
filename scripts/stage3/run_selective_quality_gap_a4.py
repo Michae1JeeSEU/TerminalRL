@@ -118,6 +118,9 @@ def pack_problem(problem, callback_state=None):
         downstream=dict(demands=d.demands, fixed_calendars=tuple((p, lo, hi, aid) for p, lo, hi, aid in d.fixed_identity),
                         order=d.order, now=d.now, pad_count=len(d.calendars), fixed_demands=tuple(d.fixed_demands.values()),
                         assignment=d.assignment, frame_id=d.frame_id), callback_state=callback_state)
+    from terminal_marl.core.rotating_slots.stage2_downstream import LEGACY_EVALUATION_PROFILE
+    if d.evaluation_profile!=LEGACY_EVALUATION_PROFILE:
+        state["downstream"]["evaluation_profile"]=d.evaluation_profile
     encoded = codec().encode(state)
     return dict(schema="a4_fixed_problem_v1", payload=encoded, sha256=base.digest(encoded), catalog_hash=catalog_hash(c))
 
@@ -131,6 +134,9 @@ def unpack_problem(path):
     c = CandidateCatalog(**s["catalog"], downstream=JointDownstream(**s["downstream"]))
     base.require(catalog_hash(c) == row["catalog_hash"], "fixed candidate identities changed")
     frame, snapshot, scope = s["frame"], s["snapshot"], c.scope
+    from terminal_marl.core.rotating_slots.selective_replanning.frame import frame_evaluation_profile
+    base.require(frame_evaluation_profile(frame.policy)==c.downstream.evaluation_profile,
+        "archive evaluation profile binding mismatch")
     saved_id = s["downstream"]["frame_id"]
     base.require(scope is not None and bool(saved_id) and scope.objective_frame_id == saved_id,
         "saved scope/downstream frame binding mismatch")

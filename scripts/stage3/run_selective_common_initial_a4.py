@@ -33,12 +33,13 @@ def _dependencies(d):
 
 
 def common_callback(d, method, *, evaluation_profile=None):
-    # A nonempty evaluation profile needs the explicit A4 objective API. Never
-    # silently substitute a score or change the initializer's objective.
-    base.require(evaluation_profile is None, "A4 evaluation profile API not bound")
+    from terminal_marl.core.rotating_slots.stage2_downstream import EVALUATION_PROFILES
+    base.require(evaluation_profile is None or evaluation_profile in EVALUATION_PROFILES,
+        "A4 evaluation profile API not bound: unknown evaluation profile")
+    options={} if evaluation_profile is None else dict(evaluation_profile=evaluation_profile)
     return d.NormalSchedulerCallback("rh_cp_sat", planning_profile="downstream_service_v8",
         online_policy="progressive_v1", selective_method=method,
-        selective_rule_variant=RULE, opportunity_seed_offset=0, search_policy=dict(SWITCHES))
+        selective_rule_variant=RULE, opportunity_seed_offset=0, search_policy=dict(SWITCHES),**options)
 
 
 def clean_boundary(world, wrapper):
