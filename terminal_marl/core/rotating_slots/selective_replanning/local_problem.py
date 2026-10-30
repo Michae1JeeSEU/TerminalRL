@@ -96,8 +96,20 @@ class LocalPlanner:
     @staticmethod
     def _mapped_incumbent(old,catalog,context,budget):
         """Re-evaluate a previous choice in this catalog and complete frame."""
-        from ..stage2_planning import _selection_key
-        if old is None or not old.certified or not budget.evaluation_available(): return None
+        from ..stage2_planning import _selection_key, RollingHorizonCPSATScheduler
+        from ..stage2_downstream import SERVICE_EVALUATION_PROFILE
+        if old is None or not old.certified: return None
+        service_profile=getattr(catalog.downstream,'evaluation_profile',None)==SERVICE_EVALUATION_PROFILE
+        known=None
+        if service_profile:
+            state,_=RollingHorizonCPSATScheduler._continuation(context.snapshot,catalog,context)
+            known=state.get('incumbent')
+        # Exact same context and full column contents preserve the original
+        # certificate, prefix, and score even when generation used its slice.
+        if known is not None:
+            reused=RollingHorizonCPSATScheduler._certified_seed(old,catalog,context,budget,known=known)
+            if reused is not None: return reused
+        if not budget.evaluation_available(): return None
         by_id={c.aircraft_id:c for c in old.selected}; selected=[]
         for aid,rows in catalog.columns.items():
             previous=by_id.get(aid)
@@ -115,6 +127,8 @@ class LocalPlanner:
 
     def _plan_v2(self,snapshot,scope,frame,budget):
         from ..stage2_planning import EvaluationContext
+        from ..stage2_downstream import SERVICE_EVALUATION_PROFILE
+        service_profile=getattr(self.provider,'evaluation_profile',None)==SERVICE_EVALUATION_PROFILE
         scope.validate(snapshot)
         calls=[]; catalog_rows=[]; completed=set(); blockers=[]; joints=[]; pair_counts={}
         first=None; best=None; incumbent=None; expansions=0; catalogs=None; context=None
@@ -122,7 +136,9 @@ class LocalPlanner:
         budget._selective_progressive_v2=True
         budget._selective_target_coverage_order=self.search_policy.target_coverage_order
         try:
-            for index in range(2):
+            for index in range(4 if service_profile else 2):
+                if service_profile and incumbent is not None and budget.remaining_seconds()<=budget.solver_validation_headroom():
+                    break
                 before_materialized={aid:budget.screening.get("materialized:"+aid,0) for aid in snapshot.aircraft}
                 if catalogs is None:
                     budget.allowed_replan_ids=set(scope.replan_ids)
@@ -147,7 +163,9 @@ class LocalPlanner:
                 # If mapping is UNKNOWN/missing, the prior certified tuple is
                 # retained rather than comparing incompatible old objectives.
                 started=time.perf_counter(); solver_before=budget.solver_wall_used
-                budget.solver_call_seconds=min(2.,max(0.,budget.solver_seconds-budget.solver_wall_used)) if index==0 else max(0.,budget.solver_seconds-budget.solver_wall_used)
+                budget.solver_call_seconds=(min(max(0.,budget.remaining_seconds()-budget.solver_validation_headroom()),
+                    max(0.,budget.solver_seconds-budget.solver_wall_used)) if service_profile else
+                    min(2.,max(0.,budget.solver_seconds-budget.solver_wall_used)) if index==0 else max(0.,budget.solver_seconds-budget.solver_wall_used))
                 with budget.measure("selection"):
                     result=self.scheduler.plan(snapshot,catalog,context,budget,incumbent=mapped)
                 reserve=getattr(self.provider,"reserve_suffix_completion",None)
@@ -192,7 +210,7 @@ class LocalPlanner:
                     candidate_generation_by_aircraft={aid:budget.screening.get("materialized:"+aid,0)-before_materialized[aid] for aid in snapshot.aircraft}))
                 if context.diagnostics is not None:
                     calls[-1]["candidate_diagnostics"]=context.diagnostics.export(catalog,result.selected)
-                if index or not budget.search_available(): break
+                if (index and not service_profile) or not budget.search_available(): break
                 eligible=set(scope.eligible_ids); opened=set(scope.replan_ids)
                 targets=sorted({row["target"] for row in context.background_blockers if row["target"] in eligible-opened
                     and row["snapshot_id"]==snapshot.version and row["reason"]=="RESOURCE_CONFLICT" and row["resource"]})
@@ -205,7 +223,8 @@ class LocalPlanner:
                         if any(row["releasable"] for row in evidence): executable_targets.append(aid)
                         else: skipped_expansions.append(dict(aircraft_id=aid,reason="BLOCKER_CANNOT_RELEASE_AT_EFFECTIVE",access=evidence))
                     targets=executable_targets
-                add=targets[:max(0,scope.max_k-len(opened))] if scope.status=="LOCAL" else []
+                add=(targets[:max(0,scope.max_k-len(opened))] if scope.status=="LOCAL" and
+                     (not service_profile or expansions<1) else [])
                 if add:
                     catalogs.close(); catalogs=None; opened.update(add); expansions+=1; scope_round+=1
                     scope=replace(scope,replan_ids=tuple(sorted(opened)),fixed_background_ids=tuple(sorted(set(snapshot.aircraft)-opened)),

@@ -26,7 +26,7 @@ from .safety import validate_separation
 from .trajectory import (generate_transfer, generate_final, make_stable_plan, make_ground_plan,
                          screen_normal_templates)
 from .selective_replanning.policy import PROGRESSIVE_VARIANTS, REFERENCE_VARIANT, resolve_search_policy
-from .stage2_downstream import (LEGACY_EVALUATION_PROFILE, STITCHED_EVALUATION_PROFILE,
+from .stage2_downstream import (LEGACY_EVALUATION_PROFILE, STITCHED_EVALUATION_PROFILE, SERVICE_EVALUATION_PROFILE,
     validate_evaluation_profile)
 
 HORIZON = 240.0
@@ -43,6 +43,7 @@ PLANNING_PROFILES = (PLANNING_PROFILE_LEGACY, PLANNING_PROFILE_DOWNSTREAM)
 def candidate_policy_id(profile, evaluation_profile=LEGACY_EVALUATION_PROFILE):
     if profile not in PLANNING_PROFILES: raise ValueError("unknown Stage2 planning profile: "+str(profile))
     validate_evaluation_profile(evaluation_profile)
+    if evaluation_profile==SERVICE_EVALUATION_PROFILE: return "service_priority_certified_growth_v1"
     if evaluation_profile==STITCHED_EVALUATION_PROFILE: return "bounded_suffix_completion_v1"
     return CANDIDATE_POLICY_ID if profile == PLANNING_PROFILE_LEGACY else "shared_downstream_columns_v8_bounded_delay"
 
@@ -50,6 +51,7 @@ def candidate_policy_id(profile, evaluation_profile=LEGACY_EVALUATION_PROFILE):
 def objective_schema_id(profile, evaluation_profile=LEGACY_EVALUATION_PROFILE):
     if profile not in PLANNING_PROFILES: raise ValueError("unknown Stage2 planning profile: "+str(profile))
     validate_evaluation_profile(evaluation_profile)
+    if evaluation_profile==SERVICE_EVALUATION_PROFILE: return "service_opportunity_v1_F_L_R_G_E_tau"
     if evaluation_profile==STITCHED_EVALUATION_PROFILE: return "stitched_continuation_v1_F_L_risk_E_tau"
     return "reliability_throughput_progress_tail_v2" if profile == PLANNING_PROFILE_LEGACY else "downstream_service_v8_f_L_risk_Ehat_tau"
 QUALITY_BUDGET_SETTINGS = MappingProxyType(dict(soft_seconds=30.,watchdog_seconds=60.,candidate_seconds=12.,
@@ -416,6 +418,49 @@ def _selection_key(catalog, columns):
 def _selection_solver_key(catalog, columns):
     return (catalog.downstream.evaluate(columns)[0] if catalog.downstream is not None else
             tuple(sum(solver_coefficients(c)[k] for c in columns) for k in range(5)))
+
+
+def _service_empty_reason(result,catalog,context,budget):
+    """Bounded evidence classification; never claims global infeasibility."""
+    if result.prefix: return None
+    if not budget.ready_deadline_ok(): return "DELIVERY_TIMEOUT"
+    raw=str(result.details.get('solver_stop_reason') or '')
+    if not result.certified or any(word in raw for word in ('UNKNOWN','TIME','DEADLINE','NO_SOLVER_TIME')):
+        return "CERTIFICATION_TIMEOUT"
+    if getattr(budget,'_service_certified_move_alternative',False): return "REASONABLE_WAIT"
+    if (getattr(context,'observed_definite_conflicts',()) or result.details.get('batched_conflicts',0)
+            or result.details.get('single_cuts',0) or result.details.get('pair_cuts',0)):
+        return "TRUE_CONFLICT"
+    return "CANDIDATE_INSUFFICIENT"
+
+
+def _record_service_certificate(snapshot,selected,prefix,evaluation,context,budget):
+    """Keep bounded evidence for real joint-certified executable FINALs."""
+    if evaluation is None or not evaluation.accepted or getattr(evaluation,'refinement_required',False): return
+    finals=tuple(p for p in prefix if p.pad_id is not None)
+    if not finals: return
+    rows=getattr(budget,'service_opportunity_certificates',None)
+    if rows is None: rows=[]; budget.service_opportunity_certificates=rows
+    hashes=tuple(p.trajectory_hash for p in finals)
+    if any(tuple(row['final_hashes'])==hashes for row in rows): return
+    ready=(None if budget.planning_wall_deadline is None else max(0.,budget.planning_wall_deadline-time.perf_counter()))
+    rows.append(dict(snapshot_id=snapshot.version,effective_time=snapshot.time,
+        effective_snapshot_id=snapshot.version,
+        source_snapshot_id=getattr(budget,'source_snapshot_id',snapshot.version),
+        source_snapshot_time=getattr(budget,'source_snapshot_time',snapshot.time),
+        projection_protocol=getattr(snapshot,'effective_state_version',None),
+        snapshot_time=getattr(getattr(snapshot,'planning_timing',None),'snapshot_time',snapshot.time),
+        ready_time=getattr(getattr(snapshot,'planning_timing',None),'ready_deadline',None),
+        context_identity=getattr(context,'snapshot_key',None),scope_identity=getattr(getattr(context,'scope',None),'identity',None),
+        frame_identity=getattr(getattr(context,'global_frame',None),'identity',None),
+        certificate_status=getattr(evaluation,'status',None),joint_prefix_certified=True,
+        wall_elapsed_s=budget.elapsed,remaining_ready_margin_s=ready,final_hashes=list(hashes),
+        prefix_hashes=[p.trajectory_hash for p in prefix],
+        finals=[dict(aircraft_id=p.aircraft_id,pad_id=p.pad_id,flight_start=p.start_time,
+            descent_start=p.end_time-13.5,end=p.end_time,
+            service_end=p.end_time+service_duration(snapshot.config,snapshot.aircraft[p.aircraft_id].service_class),
+            trajectory_hash=p.trajectory_hash,plan=p.to_dict() if hasattr(p,'to_dict') else None) for p in finals]))
+    if len(rows)>32: rows.pop(0)
 
 
 def solver_coefficients(column):
@@ -1136,7 +1181,7 @@ class CandidateProvider:
 
     def reserve_suffix_completion(self,snapshot,catalog,budget):
         """Freeze at most two existing partials after the first real solve."""
-        if self.evaluation_profile!=STITCHED_EVALUATION_PROFILE: return
+        if self.evaluation_profile not in (STITCHED_EVALUATION_PROFILE,SERVICE_EVALUATION_PROFILE): return
         if getattr(budget,"_suffix_completion_state",None) is not None: return
         from .selective_replanning.diagnostics import candidate_hash
         candidates=[]
@@ -1163,7 +1208,10 @@ class CandidateProvider:
         for row in rows:
             row["pending"]=row["suffix_status"] in ("RESERVED","RUNNING")
             if row["pending"]: row["budget_exit"]=budget.generation_stop_reason() or "BOUNDED_GENERATOR_SLICE_NOT_FINISHED"
-        return dict(policy_id="bounded_suffix_completion_v1",max_aircraft=2,attempts=rows)
+        return dict(policy_id="bounded_suffix_completion_v1",max_aircraft=2,attempts=rows,
+            priority_reserved_seconds=state.get('priority_reserved_seconds'),
+            priority_used_seconds=state.get('priority_used_seconds'),
+            priority_before_first_cp=state.get('priority_before_first_cp',False))
 
     def _suffix_completion_steps(self,snapshot,a,budget,row):
         """Advance one shared reference attempt at a time; preserve epochs."""
@@ -1190,8 +1238,9 @@ class CandidateProvider:
                 return
             row["wall_s"]+=time.perf_counter()-started
             yield ("ATTEMPT",None,None)
-        row["suffix_status"]="BUDGET_EXIT"
-        row["budget_exit"]=budget.generation_stop_reason() or "PER_AIRCRAFT_BUDGET"
+        reason=budget.generation_stop_reason() or "PER_AIRCRAFT_BUDGET"
+        row["suffix_status"]=("RUNNING" if self.evaluation_profile==SERVICE_EVALUATION_PROFILE and reason=='SERVICE_COMPLETION_SLICE' else "BUDGET_EXIT")
+        row["budget_exit"]=reason
 
     def _pop_ready(self, heap, snapshot, a, budget, stage, extract, is_ready=None):
         """Select from at most 64 existing ready items before generation.
@@ -1301,8 +1350,10 @@ class CandidateProvider:
         if self.planning_profile==PLANNING_PROFILE_DOWNSTREAM:
             d=self._describe_column(snapshot,c,context)
             estimated_f=(max(d.failure,int(d.base_energy>=d.diagnostics["available_energy_threshold"]))
-                if self.evaluation_profile==STITCHED_EVALUATION_PROFILE else f)
+                if self.evaluation_profile in (STITCHED_EVALUATION_PROFILE,SERVICE_EVALUATION_PROFILE) else f)
             c=replace(c,downstream=d.diagnostics,objective=(estimated_f,-l,d.unknown+max(0,d.base_energy-d.reserve_energy)*.1/3600.,d.base_energy*.1,(d.touchdown-round(snapshot.time*10))/10.))
+            if self.evaluation_profile==SERVICE_EVALUATION_PROFILE:
+                c=replace(c,objective=(estimated_f,-l,max(0,d.base_energy-d.reserve_energy)*.1/3600.,0.,d.base_energy*.1,(d.touchdown-round(snapshot.time*10))/10.))
         return c
 
     _remaining_lower = staticmethod(remaining_normal_time_lower)
@@ -1465,6 +1516,17 @@ class CandidateProvider:
     def _search_offsets(self,snapshot,a,node):
         if self.planning_profile==PLANNING_PROFILE_LEGACY: return OFFSETS
         if node.ring=="inner": return OFFSETS
+        if self.evaluation_profile==SERVICE_EVALUATION_PROFILE:
+            from .stage2_service import service_nominal_completion
+            # Service starts at approach readiness (touchdown minus descent).
+            # These starts are ordering hints; every primitive is regenerated
+            # and certified under the unchanged physical model.
+            _,duration,_=service_nominal_completion(snapshot.config,node.ring)
+            suffix_to_service=max(0.,duration-13.5)
+            windows={snapshot.time}
+            windows.update(r.end for r in snapshot.pads if math.isfinite(r.end) and r.end>node.time)
+            starts=sorted({max(node.time,w-suffix_to_service) for w in windows})
+            return tuple(dict.fromkeys((0.,*(x-node.time for x in starts if node.time<x<=snapshot.time+900.))))[:3]
         next_ring={"outer":"middle","middle":"inner"}[node.ring]
         starts={r.end for r in snapshot.slots if isinstance(r.resource,tuple) and r.resource[0]==next_ring and math.isfinite(r.end)}
         # Back-project observed pad release through the cached normal travel
@@ -1801,6 +1863,9 @@ class CandidateProvider:
         groups={ring:[a for a in ordered if nodes[a.id].ring==ring] for ring in ("outer","middle","inner")}
         order=[group[index] for index in range(max(map(len,groups.values()),default=0))
             for group in groups.values() if index<len(group)]
+        service_profile=self.evaluation_profile==SERVICE_EVALUATION_PROFILE
+        if service_profile:
+            order=sorted(order,key=lambda a:(nodes[a.id].ring!='inner',slacks[a.id],a.id))
         columns={a.id:[self._column(snapshot,a,(),kind,context,refs[a.id]) for kind in ("KEEP","WAIT")] for a in aircraft}
         if runtime is not None: runtime.begin_snapshot(snapshot,budget,[a.id for a in aircraft])
         target=2
@@ -1818,6 +1883,10 @@ class CandidateProvider:
             hook=getattr(runtime,"record_column_validation",None)
             if hook is not None: hook(c,validation,time.perf_counter()-w,time.process_time()-cpu,context.cache_stats["single_hits"]>hits)
             if preserve and validation.accepted:
+                columns[a.id].append(c); retained=True
+            elif service_profile and validation.accepted:
+                # Append-only catalogs preserve already certified choices and
+                # their proof facts; new growth cannot prune the incumbent.
                 columns[a.id].append(c); retained=True
             else:
                 retained=validation.accepted and retain_validated(columns[a.id],c,snapshot.time,target,budget.screening,
@@ -1879,7 +1948,48 @@ class CandidateProvider:
                 catalog=replace(catalog,generation_coverage=dict(catalog.generation_coverage or {},suffix_completion=completion))
             return catalog
         try:
-            for a in order:
+            if service_profile:
+                # Bound the first construction slice, leaving selected/prefix
+                # certification time on the same clock. FULL_H retains all
+                # variables, while only a few useful primitives are tried first.
+                priority=[a for a in order if nodes[a.id].ring=='inner'][:2]
+                priority += sorted((a for a in order if nodes[a.id].ring!='inner'),
+                    key=lambda a:(self._describe_column(snapshot,columns[a.id][0],context).ready,slacks[a.id],a.id))[:2]
+                seed_slice=min(1.5,max(0.,.15*budget.remaining_seconds()))
+                with budget.stage_limit(seed_slice,"SERVICE_INITIAL_SLICE"):
+                    for a in priority:
+                        progress=next(gen for kind,gen in stages[a.id] if kind=='progress')
+                        while budget.available(a.id):
+                            try: item=next(progress)
+                            except StopIteration: break
+                            if item[0]=='COLUMN' and add(a,item[1],item[2],preserve=True): break
+                        initial_visited.add(a.id)
+                catalog=catalog_with_coverage('SERVICE_PRIORITY_SEED')
+                self.reserve_suffix_completion(snapshot,catalog,budget)
+                # Pay the explicitly reserved completion allowance before any
+                # hint/CP call can consume it. The allowance is a slice of the
+                # existing deadline, never an additional time budget.
+                state=getattr(budget,'_suffix_completion_state',None)
+                if state is not None:
+                    state['priority_slice_completed']=True
+                    state['priority_before_first_cp']=True
+                    reserve=min(1.5,max(0.,.15*budget.remaining_seconds()))
+                    state['priority_reserved_seconds']=reserve
+                    started=time.perf_counter(); by_id={a.id:a for a in order}
+                    with budget.stage_limit(reserve,'SERVICE_COMPLETION_SLICE'):
+                        for row in state['records']:
+                            a=by_id[row['aircraft_id']]
+                            row['priority_slice_attempted']=True;row['skip_reason']=None
+                            for item in self._suffix_completion_steps(snapshot,a,budget,row):
+                                if item[0]=='COLUMN':
+                                    row['complete_candidate_in_catalog']=add(a,item[1],item[2],preserve=True)
+                                    break
+                    state['priority_used_seconds']=time.perf_counter()-started
+                    catalog=catalog_with_coverage('SERVICE_PRIORITY_SEED')
+                publish(catalog.downstream,catalog.columns)
+                yield catalog
+                publish(catalog.downstream,catalog.columns)
+            for a in (() if service_profile else order):
                 if not budget.available(): break
                 if early_publish and not budget.available(a.id): continue
                 initial_kind,progress=stages[a.id][0]
@@ -1895,7 +2005,7 @@ class CandidateProvider:
             hook=getattr(runtime,"complete_initial_coverage",None)
             if hook is not None: hook()
             completed_first_solve=getattr(budget,"_suffix_completion_state",None) is not None
-            if (early_publish or self.evaluation_profile==STITCHED_EVALUATION_PROFILE) and not (
+            if not service_profile and (early_publish or self.evaluation_profile==STITCHED_EVALUATION_PROFILE) and not (
                     self.evaluation_profile==STITCHED_EVALUATION_PROFILE and completed_first_solve):
                 catalog=catalog_with_coverage("INITIAL_PROGRESS")
                 publish(catalog.downstream,catalog.columns)
@@ -1931,10 +2041,21 @@ class CandidateProvider:
                     if not budget.available(a.id):
                         row["skip_reason"]=budget.generation_stop_reason() or "PER_AIRCRAFT_BUDGET"; continue
                     row["priority_slice_attempted"]=True; row["skip_reason"]=None
-                    try: item=next(family[1])
-                    except StopIteration:
-                        stages[a.id].remove(family)
-                    else: add_completion(a,item)
+                    slice_seconds=min(1.5,max(0.,.2*budget.remaining_seconds())) if service_profile else None
+                    with (budget.stage_limit(slice_seconds,"SERVICE_COMPLETION_SLICE") if service_profile else nullcontext()):
+                        while budget.available(a.id):
+                            try: item=next(family[1])
+                            except StopIteration:
+                                stages[a.id].remove(family); break
+                            else: add_completion(a,item)
+                            if not service_profile or item[0]=='COLUMN': break
+            if service_profile and completion_rows:
+                catalog=catalog_with_coverage('SERVICE_PRIORITY_COMPLETION')
+                publish(catalog.downstream,catalog.columns)
+                yield catalog
+                publish(catalog.downstream,catalog.columns)
+            if service_profile and not getattr(budget,'_service_certified_incumbent',False):
+                return
             for round_index,target in enumerate((2,4,8)):
                 quota=max(1,math.ceil(budget.max_per_aircraft*(.25,.5,1.)[round_index]))
                 visited=set()
@@ -1999,7 +2120,8 @@ class CandidateProvider:
         """Materialize current estimates without restarting construction cursors."""
         slacks={a.id:energy_slack(snapshot,a,refs[a.id]) for a in ordered}
         for a in ordered:
-            columns[a.id][:2]=[self._column(snapshot,a,(),k,context,refs[a.id]) for k in ("KEEP","WAIT")]
+            if self.evaluation_profile!=SERVICE_EVALUATION_PROFILE:
+                columns[a.id][:2]=[self._column(snapshot,a,(),k,context,refs[a.id]) for k in ("KEEP","WAIT")]
             if refs[a.id].status=="KNOWN":
                 n=_node(snapshot,a)
                 self.references.cache[(snapshot.config.config_hash,n.ring,n.slot,n.time,n.version,a.id)]=refs[a.id]
@@ -2044,6 +2166,12 @@ class CandidateProvider:
             tuple(values),0,MappingProxyType({aid:ref.status for aid,ref in refs.items()}),downstream)
 
     def get_columns(self,snapshot,budget=None,context=None,*,scope=None):
+        if self.evaluation_profile==SERVICE_EVALUATION_PROFILE:
+            budget=budget or PlanningBudget.for_profile(QUALITY_BUDGET_PROFILE)
+            context=context or EvaluationContext(snapshot,budget=budget,validation_cache=self.validation_cache)
+            latest=None
+            for latest in self.iter_progressive_columns(snapshot,budget,context,scope=scope,early_publish=True): pass
+            return latest
         budget=budget or PlanningBudget(); context=context or EvaluationContext(snapshot,budget=budget,scope=scope)
         scope=scope or getattr(context,"scope",None)
         if scope is not None:
@@ -2236,7 +2364,19 @@ class EnergySlackScheduler:
         budget.bind_catalog(candidates)
         budget.certificate_source="energy_slack_hint"
         chosen={i:cols[0] for i,cols in candidates.columns.items()}
-        for i in sorted(chosen,key=lambda i:candidates.slacks[i]):
+        service_profile=getattr(candidates.downstream,'evaluation_profile',None)==SERVICE_EVALUATION_PROFILE
+        if service_profile:
+            # KEEP-only variables remain in every joint check. They need no
+            # redundant replacement trial ahead of a useful service candidate.
+            active=[i for i,rows in candidates.columns.items() if any(c.kind=='MOVE' and c.plans for c in rows)]
+            ranked=[]
+            for i in active:
+                if not budget.search_available(validation_reserve_seconds): break
+                key=min(_selection_key(candidates,tuple(dict(chosen,**{i:c}).values())) for c in candidates.columns[i])
+                ranked.append((key,i))
+            order=[i for _,i in sorted(ranked)]
+        else: order=sorted(chosen,key=lambda i:candidates.slacks[i])
+        for i in order:
             if not budget.search_available(validation_reserve_seconds): break
             order_key=(lambda c:(_selection_key(candidates,tuple(dict(chosen,**{i:c}).values())),c.signature)) if candidates.downstream is not None else (lambda c:(c.objective,c.signature))
             for c in sorted(candidates.columns[i],key=order_key):
@@ -2253,6 +2393,10 @@ class EnergySlackScheduler:
             objective=_selection_key(candidates,selected)
             prefix=context.prefix(selected)
             budget.certificate_event("energy_slack_hint",selected,prefix,event="CERTIFIED_OBJECTIVE",objective=objective)
+            if getattr(candidates.downstream,'evaluation_profile',None)==SERVICE_EVALUATION_PROFILE:
+                budget._service_certified_incumbent=True
+                if any(c.plans for c in selected): budget._service_certified_move_alternative=True
+                _record_service_certificate(snapshot,selected,prefix,e,context,budget)
             return PlanningResult(selected,prefix,e,"FEASIBLE",objective,certified=True)
         # One local repair: rejected predictive release cannot authorize execution.
         with budget.measure("fallback"):
@@ -2276,17 +2420,34 @@ class RollingHorizonCPSATScheduler:
             evaluator_binding,
             tuple((aid,tuple(rows)) for aid,rows in candidates.columns.items()),candidates.slacks,downstream_inputs)
         identity=hashlib.sha256(repr(inputs).encode()).hexdigest()
+        # Catalog growth does not invalidate proofs about unchanged columns.
+        # Bind both safety and scoring inputs, and retain facts only when every
+        # old column (including its demand/objective/resources) is identical.
+        stable_downstream=({k:v for k,v in downstream_inputs.items() if k!='demands'}
+                           if isinstance(downstream_inputs,dict) else downstream_inputs)
+        service_profile=getattr(downstream,'evaluation_profile',None)==SERVICE_EVALUATION_PROFILE
+        base=hashlib.sha256(repr((inputs[:6],tuple(candidates.columns),
+            None if service_profile else candidates.slacks,stable_downstream)).encode()).hexdigest()
+        demands=getattr(downstream,'demands',{})
+        contents={c.signature:repr((c,demands.get(c.signature))) for rows in candidates.columns.values() for c in rows}
         previous=getattr(context,'_cp_continuation',None)
-        reused=previous is not None and previous['identity']==identity
+        exact=previous is not None and previous['identity']==identity
+        appended=(service_profile and previous is not None and previous.get('base')==base and
+                  all(contents.get(k)==v for k,v in previous.get('contents',{}).items()))
+        reused=exact or appended
         invalidations=getattr(context,'_cp_continuation_invalidations',0)+int(previous is not None and not reused)
         context._cp_continuation_invalidations=invalidations
         if not reused:
             if previous is not None and previous['evaluator_binding']!=evaluator_binding and hasattr(context,'_prefix_results'):
                 context._prefix_results.clear()
             context._cp_continuation=dict(identity=identity,incumbent=None,exclusions=set(),
-                single_exclusions=set(),nogoods=set(),single_results={},resource_complete=False,evaluator_binding=evaluator_binding)
+                single_exclusions=set(),nogoods=set(),single_results={},resource_complete=False,evaluator_binding=evaluator_binding,
+                resource_pairs=set())
         state=context._cp_continuation
+        if appended and not exact: state['resource_complete']=False
+        state.update(identity=identity,base=base,contents=contents)
         report=dict(state_reused=reused,state_invalidated=previous is not None and not reused,
+            append_only_reused=bool(appended and not exact),
             state_invalidations=invalidations,incumbent_source=None,caller_incumbent_accepted=False,
             pair_cuts_reused=len(state['exclusions']) if reused else 0,
             single_cuts_reused=len(state['single_exclusions']) if reused else 0,
@@ -2304,13 +2465,17 @@ class RollingHorizonCPSATScheduler:
             if match is None: return None
             selected.append(match)
         selected=tuple(selected)
-        objective=_selection_key(candidates,selected)
         prefix=context.prefix(selected)
-        if objective!=seed.objective or repr(prefix)!=repr(seed.prefix): return None
+        if repr(prefix)!=repr(seed.prefix): return None
+        service_profile=getattr(candidates.downstream,'evaluation_profile',None)==SERVICE_EVALUATION_PROFILE
+        objective=None if service_profile else _selection_key(candidates,selected)
+        if not service_profile and objective!=seed.objective: return None
         # Only a certificate produced in this exact continuation can skip the
         # validators. Caller flags and trajectory membership do not certify it.
         if known is not None and seed.evaluation is known.evaluation and seed.objective==known.objective and repr(seed.selected)==repr(known.selected):
-            return replace(seed,selected=selected,objective=objective)
+            return replace(seed,selected=selected)
+        if objective is None: objective=_selection_key(candidates,selected)
+        if objective!=seed.objective: return None
         if not budget.evaluation_available(): return None
         result,_=context.check_batch(selected)
         evaluation=context.check_commit_prefix(selected) if result.accepted and budget.evaluation_available() else None
@@ -2343,9 +2508,14 @@ class RollingHorizonCPSATScheduler:
                 hint=incumbent
             else:
                 hint_started=time.perf_counter()
+                hint_allowance=(None if budget.hint_seconds is None else max(0.,budget.hint_seconds-budget.hint_wall_used))
+                if getattr(candidates.downstream,'evaluation_profile',None)==SERVICE_EVALUATION_PROFILE:
+                    hint_allowance=min(3.,budget.remaining_seconds()-budget.solver_validation_headroom(),
+                        math.inf if hint_allowance is None else hint_allowance)
+                    hint_allowance=max(0.,hint_allowance)
                 try:
                     with budget.measure("hint_construction"), budget.stage_limit(
-                        None if budget.hint_seconds is None else max(0.,budget.hint_seconds-budget.hint_wall_used),
+                        hint_allowance,
                         "HINT_BUDGET",budget.solver_reserve_seconds):
                         hint=EnergySlackScheduler().plan(snapshot,candidates,context,budget,
                             validation_reserve_seconds=budget.hint_validation_reserve_seconds)
@@ -2364,6 +2534,7 @@ class RollingHorizonCPSATScheduler:
             return min(budget.solver_seconds-budget.solver_wall_used,
                 math.inf if call_limit is None else max(0.,call_limit-solve_used))
         batched_conflicts=0
+        service_profile=getattr(candidates.downstream,'evaluation_profile',None)==SERVICE_EVALUATION_PROFILE
         ids=tuple(candidates.columns)
         move_aircraft=sum(any(c.kind=="MOVE" and c.plans for c in columns) for columns in candidates.columns.values())
         skip_reason="EMPTY_CATALOG" if not ids else "NO_MOVE_OPTIONS" if not move_aircraft else None
@@ -2379,7 +2550,10 @@ class RollingHorizonCPSATScheduler:
                         if not budget.preparation_available(): resource_complete=False; break
                         for d in candidates.columns[j]:
                             if not budget.preparation_available(): resource_complete=False; break
+                            pair=tuple(sorted((c.signature,d.signature)))
+                            if service_profile and pair in state['resource_pairs']: continue
                             if context.resource_conflict(c,d): exclusions.add(tuple(sorted((c.signature,d.signature))))
+                            if service_profile: state['resource_pairs'].add(pair)
                         if not resource_complete: break
                     if not resource_complete: break
                 state['resource_complete']=resource_complete
@@ -2421,7 +2595,15 @@ class RollingHorizonCPSATScheduler:
                     shared_expressions=(candidates.downstream.cp_expressions(model,variables,lookup) if candidates.downstream is not None else None)
                     model_scale=dict(decision_variables=len(variables),auxiliary_variables=len(model.Proto().variables)-len(variables),constraints=len(model.Proto().constraints))
                 invalid=False; carry=0.
-                for phase,share in enumerate(PHASE_SHARES):
+                service_profile=getattr(candidates.downstream,'evaluation_profile',None)==SERVICE_EVALUATION_PROFILE
+                # -L lies in [-N,0]. N+1 therefore makes one failure dominate
+                # every possible landing gain exactly, without arbitrary scale.
+                demand_count=len(getattr(candidates.downstream,'order',ids))
+                phase_schedule=(((0,1.1),(2,.3),(3,.3),(4,.2),(5,.1)) if service_profile
+                                else tuple(enumerate(PHASE_SHARES)))
+                share_sum=sum(share for _,share in phase_schedule)
+                last_phase=5 if service_profile else 4
+                for phase,share in phase_schedule:
                     if not budget.search_available():
                         all_optimal=False
                         stop_reason=budget.evaluation_stop_reason() if not budget.evaluation_available() else "SOFT_BUDGET"
@@ -2430,11 +2612,13 @@ class RollingHorizonCPSATScheduler:
                         all_optimal=False; stop_reason="SOLVER_ALLOCATION_EXHAUSTED"; break
                     validation_headroom=budget.solver_validation_headroom()
                     deadline_remaining=max(0.,budget.remaining_seconds()-validation_headroom)
-                    limit=min(share*budget.solver_seconds/sum(PHASE_SHARES)+carry,solver_remaining(),deadline_remaining)
+                    limit=min(share*budget.solver_seconds/share_sum+carry,solver_remaining(),deadline_remaining)
                     if limit<=0:
                         all_optimal=False; stop_reason="NO_SOLVER_TIME"; break
                     expression=(shared_expressions[phase] if shared_expressions is not None else
                                 sum(solver_coefficients(c)[phase]*variables[key] for key,c in lookup.items()))
+                    if service_profile and phase==0:
+                        expression=(demand_count+1)*shared_expressions[0]+shared_expressions[1]
                     model.Minimize(expression)
                     solver=cp_model.CpSolver(); solver.parameters.num_search_workers=1; solver.parameters.random_seed=71
                     with budget.measure("cp_solve"):
@@ -2455,6 +2639,9 @@ class RollingHorizonCPSATScheduler:
                          "search_validation_headroom_s":validation_headroom,
                          "bound":solver.BestObjectiveBound(),"branches":solver.NumBranches(),
                          "conflicts":solver.NumConflicts(),"objective":None}
+                    if service_profile:
+                        rec['objective_components']=('F','-L') if phase==0 else (('R','G_service','E','tau')[phase-2],)
+                        if phase==0: rec['dominance_coefficient']=demand_count+1
                     records.append(rec)
                     if status not in (cp_model.OPTIMAL,cp_model.FEASIBLE):
                         all_optimal=False; stop_reason="SOLVER_"+solver.StatusName(status); break
@@ -2465,16 +2652,20 @@ class RollingHorizonCPSATScheduler:
                     if candidates.downstream is not None:
                         rec["canonical_selected_integer_key"]=_selection_solver_key(candidates,selected)
                         rec["model_integer_key"]=tuple(solver.Value(expr) for expr in shared_expressions)
+                    same_certified=(incumbent is not None and repr(selected)==repr(incumbent.selected))
                     with budget.measure("selected_validation"):
                         budget.certificate_source="cp_proposal"
-                        if not budget.evaluation_available():
+                        if service_profile and same_certified:
+                            r,conflicts=ValidationResult(True,"SAFE","UNCHANGED_CERTIFIED_SELECTION"),()
+                        elif not budget.evaluation_available():
                             r,conflicts=ValidationResult(False,"UNKNOWN",budget.evaluation_stop_reason()),()
                         elif hasattr(context,"check_batch_conflicts"):
                             r,conflicts=context.check_batch_conflicts(selected)
                         else:
                             r,conflict=context.check_batch(selected)
                             conflicts=(conflict,) if conflict and r.status!="UNKNOWN" else ()
-                        evaluation=context.check_commit_prefix(selected) if r.accepted and budget.evaluation_available() else None
+                        evaluation=(incumbent.evaluation if service_profile and same_certified else
+                                    context.check_commit_prefix(selected) if r.accepted and budget.evaluation_available() else None)
                     rec["batch_conflict_count"]=len(conflicts)
                     batched_conflicts+=len(conflicts)
                     rec["validation_status"]=r.status; rec["validation_reason"]=r.reason
@@ -2501,13 +2692,19 @@ class RollingHorizonCPSATScheduler:
                         invalid=True; all_optimal=False; break
                     key=_selection_key(candidates,selected)
                     proposal=PlanningResult(selected,context.prefix(selected),evaluation,"FEASIBLE",key,certified=True)
+                    if service_profile and any(c.plans for c in selected): budget._service_certified_move_alternative=True
+                    if service_profile: _record_service_certificate(snapshot,selected,proposal.prefix,evaluation,context,budget)
                     budget.certificate_event("cp_proposal",selected,proposal.prefix,event="CERTIFIED_OBJECTIVE",objective=key)
-                    if phase==4:
+                    if phase==last_phase:
                         final_solver_key=(tuple(solver.Value(expr) for expr in shared_expressions) if shared_expressions is not None else _selection_solver_key(candidates,selected))
                     if incumbent is None or proposal.objective<incumbent.objective: incumbent=proposal
                     if status!=cp_model.OPTIMAL: all_optimal=False
                     # Only a freshly certified feasible value fixes the next layer.
-                    model.Add(expression==(_selection_solver_key(candidates,selected)[phase] if shared_expressions is not None else int(round(solver.ObjectiveValue()))))
+                    if service_profile and phase==0:
+                        attained=_selection_solver_key(candidates,selected)
+                        model.Add(shared_expressions[0]==attained[0]); model.Add(shared_expressions[1]==attained[1])
+                    else:
+                        model.Add(expression==(_selection_solver_key(candidates,selected)[phase] if shared_expressions is not None else int(round(solver.ObjectiveValue()))))
                 if not invalid: break
             else:
                 stop_reason="REFINEMENT_LIMIT"; all_optimal=False
@@ -2520,8 +2717,10 @@ class RollingHorizonCPSATScheduler:
             incumbent=PlanningResult(keep,(),evaluation,"NO_VERIFIED_INCUMBENT",_selection_key(candidates,keep),certified=bool(evaluation and evaluation.accepted))
         incumbent_solver_key=_selection_solver_key(candidates,incumbent.selected)
         if incumbent.certified: state['incumbent']=incumbent
+        service_profile=getattr(candidates.downstream,'evaluation_profile',None)==SERVICE_EVALUATION_PROFILE
+        if service_profile and incumbent.certified: budget._service_certified_incumbent=True
         complete=(all_optimal and resource_complete and model_complete and len(records)>=5
-            and records[-1]["phase"]==4 and records[-1]["status"]=="OPTIMAL" and incumbent_solver_key==final_solver_key)
+            and records[-1]["phase"]==(5 if service_profile else 4) and records[-1]["status"]=="OPTIMAL" and incumbent_solver_key==final_solver_key)
         return PlanningResult(incumbent.selected,incumbent.prefix,incumbent.evaluation,
                               "CATALOG_LEX_OPTIMAL" if complete else "LEX_LIMITED",incumbent.objective,
                               tuple(records),max((r["round"] for r in records),default=0),incumbent.certified,
@@ -2704,7 +2903,12 @@ class NormalSchedulerCallback:
         if effective_scale!=1.:
             from .stage3_learning.runtime import scale_candidate_budget
             scale_candidate_budget(budget,effective_scale)
-        if self.online_policy: budget.candidate_active_seconds=0.
+        service_profile=self.evaluation_profile==SERVICE_EVALUATION_PROFILE
+        if self.online_policy or service_profile: budget.candidate_active_seconds=0.
+        if service_profile:
+            budget.hint_seconds=min(3.,budget.hint_seconds if budget.hint_seconds is not None else 3.)
+            budget.solver_reserve_seconds=0.
+            budget.candidate_seconds=max(budget.candidate_seconds,budget.soft_seconds)
         solver_history=[]
         catalog_round_records=[]
         cp_continuation_records=[]
@@ -2714,6 +2918,10 @@ class NormalSchedulerCallback:
         for restart in range(2):
             with budget.measure("snapshot_and_uniform_refinement"):
                 snapshot=build_planning_snapshot(port)
+            if service_profile:
+                source_snapshot=getattr(port,'_source',snapshot)
+                budget.source_snapshot_id=source_snapshot.version
+                budget.source_snapshot_time=source_snapshot.time
             context=EvaluationContext(snapshot,budget=budget,validation_cache=self.provider.validation_cache,
                 reuse_prefix_results=self.prefix_reuse)
             budget._certificate_context=context.snapshot_key
@@ -2768,18 +2976,24 @@ class NormalSchedulerCallback:
                 for call in local.telemetry["calls"]: solver_history.extend(call["solver_records"])
                 generation_stop_reason=budget.generation_stop_reason() or "SCOPED_CATALOG_COMPLETE"
                 improvement_stop_reason=result.details.get("solver_stop_reason") or "LOCAL_SOLVE_LIMIT"
-            elif self.online_policy:
+            elif self.online_policy or service_profile:
                 from .stage3_learning.catalog_control import coverage_report, expansion_reasons
                 catalogs=self.provider.iter_progressive_columns(snapshot,budget,context)
-                best=None
-                for catalog_round in range(3):
+                best=None; best_catalog=None
+                for catalog_round in range(4 if service_profile else 3):
                     if budget.search_wall_deadline is not None and best is not None and not budget.search_available():
                         generation_stop_reason=improvement_stop_reason=budget.evaluation_stop_reason()
                         break
                     with budget.measure("candidate_generation_and_single_vehicle"),budget.candidate_work():
                         try: catalog=next(catalogs)
                         except StopIteration: break
-                    if best is not None:
+                    service_comparable=True
+                    if service_profile and best is not None:
+                        from .selective_replanning.local_problem import LocalPlanner
+                        mapped=LocalPlanner._mapped_incumbent(best,catalog,context,budget)
+                        service_comparable=mapped is not None
+                        if mapped is not None: best=mapped;best_catalog=catalog
+                    if best is not None and not service_profile:
                         current={c.signature:c for rows in catalog.columns.values() for c in rows}
                         remapped=tuple(current[c.signature] for c in best.selected)
                         best=replace(best,selected=remapped,objective=_selection_key(catalog,remapped))
@@ -2787,10 +3001,11 @@ class NormalSchedulerCallback:
                         budget.certificate_event("catalog_canonical_rescore",best.selected,best.prefix,event="CATALOG_RESCORE",objective=best.objective)
                     budget.bind_catalog(catalog)
                     before=budget.solver_wall_used
-                    budget.solver_call_seconds=2. if catalog_round<2 else None
+                    budget.solver_call_seconds=(min(max(0.,budget.remaining_seconds()-budget.solver_validation_headroom()),
+                        max(0.,budget.solver_seconds-budget.solver_wall_used)) if service_profile else 2. if catalog_round<2 else None)
                     try:
                         with budget.measure("selection"):
-                            options=({'incumbent':best} if comparable_scope and best is not None and self.scheduler.method=='rh_cp_sat' else {})
+                            options=({'incumbent':best} if (comparable_scope or service_profile) and best is not None and self.scheduler.method=='rh_cp_sat' else {})
                             proposal=self.scheduler.plan(snapshot,catalog,context,budget,**options)
                     finally: budget.solver_call_seconds=None
                     reserve=getattr(self.provider,"reserve_suffix_completion",None)
@@ -2800,11 +3015,12 @@ class NormalSchedulerCallback:
                         budget.certificate_event("catalog_selection",proposal.selected,proposal.prefix,
                             event="CERTIFIED_OBJECTIVE",objective=proposal.objective)
                     if 'continuation' in proposal.details: cp_continuation_records.append(dict(proposal.details['continuation']))
-                    if proposal.certified and (best is None or proposal.objective<best.objective or
-                            (proposal.objective==best.objective and proposal.prefix and not best.prefix)):
+                    if proposal.certified and (best is None or (service_comparable and proposal.objective<best.objective) or
+                            (not service_profile and proposal.objective==best.objective and proposal.prefix and not best.prefix)):
                         budget.certificate_event("catalog_selection",proposal.selected,proposal.prefix,event="CATALOG_BEST_UPDATE",
                             comparison=best.objective if best is not None else None,objective=proposal.objective)
                         best=proposal
+                        best_catalog=catalog
                     result=best or proposal
                     refining=getattr(proposal.evaluation,"refinement_required",False)
                     if refining and (not comparable_scope or best is None): result=proposal
@@ -2845,6 +3061,7 @@ class NormalSchedulerCallback:
                                 budget.certificate_event("existing_catalog_improvement",final.selected,final.prefix,event="CATALOG_BEST_UPDATE",
                                     comparison=best.objective if best is not None else None,objective=final.objective)
                                 best=final
+                                best_catalog=catalog
                             result=best or final
                             catalog_round_records.append(dict(round=catalog_round,columns=sum(map(len,catalog.columns.values())),
                                 moving_columns={aid:sum(c.kind=="MOVE" for c in values) for aid,values in catalog.columns.items()},
@@ -2858,6 +3075,8 @@ class NormalSchedulerCallback:
                                 "SOFT_BUDGET" if budget.elapsed>=budget.soft_seconds else "NO_FINAL_EXISTING_CATALOG_CALL")
                         break
                 catalogs.close()
+                if service_profile and best is not None and best_catalog is not None:
+                    result=best; catalog=best_catalog
                 generation_stop_reason=generation_stop_reason or "CATALOG_ROUNDS_OR_GENERATORS_COMPLETE"
                 improvement_stop_reason=improvement_stop_reason or result.details.get("solver_stop_reason") or "CATALOG_ROUNDS_COMPLETE"
             else:
@@ -3018,6 +3237,11 @@ class NormalSchedulerCallback:
                 "noop":not result.prefix,"selected_key":result.objective,
                 "keep":sum(c.kind=="KEEP" for c in result.selected),"wait":sum(c.kind=="WAIT" for c in result.selected)}
         completion=getattr(self.provider,"suffix_completion_report",lambda budget:None)(budget)
+        if service_profile:
+            record['empty_reason']=_service_empty_reason(result,catalog,context,budget)
+            record['empty_reason_scope']='observed_bounded_catalog'
+            record['service_opportunity_certificates']=list(getattr(budget,'service_opportunity_certificates',()))
+            record['objective_terms']=dict(zip(('F','-L','R','G_service','E','tau'),result.objective))
         if completion is not None: record["suffix_completion"]=completion
         elif self.evaluation_profile==STITCHED_EVALUATION_PROFILE and self.online_policy is None:
             record["suffix_completion"]=dict(policy_id="bounded_suffix_completion_v1",
@@ -3058,7 +3282,8 @@ class NormalSchedulerCallback:
                             scored.append((catalog.downstream.evaluate(trial)[0],c.signature,c))
                         if explanation_stopped: break
                         comparison_key,_,comparison=min(scored,key=lambda row:row[:2])
-                        layer=next((name for name,a,b in zip(("F","L","risk","Ehat","tau"),selected_key,comparison_key) if a!=b),"TIE")
+                        labels=(('F','-L','R','G_service','E','tau') if service_profile else ("F","L","risk","Ehat","tau"))
+                        layer=next((name for name,a,b in zip(labels,selected_key,comparison_key) if a!=b),"TIE")
                         reason=("JOINT_VALIDATION_OR_GLOBAL_ALLOCATION" if comparison_key<selected_key else
                                 "TIE_SIGNATURE_OR_ALLOCATION" if comparison_key==selected_key else layer)
                     else:

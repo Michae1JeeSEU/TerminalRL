@@ -50,11 +50,12 @@ class GlobalEvaluationFrame:
                 **{row[0]:"NOT_ADMITTED_NO_FLIGHT_STATE" for row in self.upstream_requests}}
 
     def downstream(self, demands, replan_ids):
-        from ..stage2_downstream import JointDownstream, ticks
+        from ..stage2_downstream import JointDownstream, ticks, SERVICE_EVALUATION_PROFILE
         fixed=tuple(d for d in self.baselines if d.aircraft_id not in replan_ids)
+        extra=({"baseline_demands":self.baselines} if frame_evaluation_profile(self.policy)==SERVICE_EVALUATION_PROFILE else {})
         return JointDownstream(demands,self.calendars,self.order,now=ticks(self.effective_time),pad_count=self.pad_count,
             fixed_demands=fixed,assignment=dict(self.assignment),frame_id=self.identity,
-            evaluation_profile=frame_evaluation_profile(self.policy))
+            evaluation_profile=frame_evaluation_profile(self.policy),**extra)
 
 
 def build_global_frame(snapshot, provider, context):

@@ -19,7 +19,8 @@ DESCENT_SECONDS = 13.5
 QUEUE_ASSUMPTION = "fixed_virtual_pad_and_slack_release_id_order_earliest_calendar_gap"
 LEGACY_EVALUATION_PROFILE = "legacy_window_tail_v8"
 STITCHED_EVALUATION_PROFILE = "stitched_continuation_v1"
-EVALUATION_PROFILES = (LEGACY_EVALUATION_PROFILE, STITCHED_EVALUATION_PROFILE)
+SERVICE_EVALUATION_PROFILE = "service_opportunity_v1"
+EVALUATION_PROFILES = (LEGACY_EVALUATION_PROFILE, STITCHED_EVALUATION_PROFILE, SERVICE_EVALUATION_PROFILE)
 
 
 def validate_evaluation_profile(profile):
@@ -60,6 +61,9 @@ class Demand:
 def describe_column(snapshot, column, references, context, *, evaluation_profile=LEGACY_EVALUATION_PROFILE):
     """Use existing quadrature and cached motion reference, never simulate."""
     validate_evaluation_profile(evaluation_profile)
+    if evaluation_profile == SERVICE_EVALUATION_PROFILE:
+        from .stage2_service import describe_service_column
+        return describe_service_column(snapshot,column,references,context)
     if evaluation_profile == STITCHED_EVALUATION_PROFILE:
         return _describe_stitched(snapshot,column,references,context)
     from .stage2_planning import HORIZON, _node, remaining_normal_time_lower
@@ -249,6 +253,12 @@ def _describe_stitched(snapshot,column,references,context):
 
 class JointDownstream:
     """Shared service calendars and explicit optional CP queue intervals."""
+    def __new__(cls, *args, evaluation_profile=LEGACY_EVALUATION_PROFILE, **kwargs):
+        if cls is JointDownstream and evaluation_profile == SERVICE_EVALUATION_PROFILE:
+            from .stage2_service import ServiceOpportunityDownstream
+            return ServiceOpportunityDownstream(*args,evaluation_profile=evaluation_profile,**kwargs)
+        return super().__new__(cls)
+
     def __init__(self, demands, fixed_calendars, order, *, now=0, pad_count=6, fixed_demands=(), assignment=None, frame_id=None,
                  evaluation_profile=LEGACY_EVALUATION_PROFILE):
         self.evaluation_profile=validate_evaluation_profile(evaluation_profile)
