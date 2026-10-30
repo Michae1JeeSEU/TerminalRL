@@ -7,7 +7,6 @@ and keeps method-only computation records separate for incremental accounting.
 from __future__ import annotations
 
 import argparse
-from copy import deepcopy
 from pathlib import Path
 import os
 import sys
@@ -17,6 +16,7 @@ PROJECT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(PROJECT))
 from scripts.stage3 import run_selective_reoptimization_a as base
 from scripts.stage3 import run_selective_common_initial_a4 as common
+from terminal_marl.core.rotating_slots.replay import _plain
 
 DRIVER=Path(__file__).resolve()
 ARM_CAP_S=1200.
@@ -43,9 +43,9 @@ def write_new(path,value):
 
 def merged_records(metadata,callback,wrapper):
     """Offset copied task references; neither the live scheduler nor physics change."""
-    callbacks=deepcopy(metadata["initializer_callback_records"])
-    tasks=deepcopy(metadata["initializer_tasks"])
-    services=deepcopy(metadata["initializer_services"])
+    callbacks=_plain(metadata["initializer_callback_records"])
+    tasks=_plain(metadata["initializer_tasks"])
+    services=_plain(metadata["initializer_services"])
     offsets=dict(callbacks=len(callbacks),tasks=len(tasks),services=len(services))
     mapping=dict(offsets=offsets,task_rows=[],callback_rows=[],service_rows=[],
         physical_events="UNCHANGED",method_records="UNCHANGED",external_predecessors=[])
@@ -55,7 +55,7 @@ def merged_records(metadata,callback,wrapper):
         for index,row in enumerate(initial):
             row.update(a4_record_role="INITIALIZER_PROVENANCE",audit_record_index=index)
         for index,original in enumerate(method_rows):
-            row=deepcopy(original)
+            row=_plain(original)
             row.update(a4_record_role="METHOD",audit_record_index=offset+index,method_record_index=index)
             if kind=="task":
                 previous=row.get("previous_record_index")
@@ -72,10 +72,11 @@ def merged_records(metadata,callback,wrapper):
                 row["sequence"]=offset+index
             initial.append(row)
             mapping[kind+"_rows"].append(dict(method_record_index=index,audit_record_index=offset+index))
-    pending=deepcopy(wrapper.pending)
-    if pending is not None:
-        pending=dict(stage=pending["stage"],due=pending["due"],
-            method_record_index=pending["record_index"],audit_record_index=offsets["tasks"]+pending["record_index"])
+    pending=None
+    if wrapper.pending is not None:
+        pending=dict(stage=wrapper.pending["stage"],due=wrapper.pending["due"],
+            method_record_index=wrapper.pending["record_index"],
+            audit_record_index=offsets["tasks"]+wrapper.pending["record_index"])
     mapping["pending_task"]=pending
     return callbacks,tasks,services,mapping
 
@@ -93,7 +94,7 @@ def calculation_event_mapping(world,metadata,task_offset):
                          external["initializer_record_index"] if external else None)
             rows.append(dict(event_index=index,event_type=event["type"],time=event["time"],
                 method_record_index=original,audit_record_index=audit_index,
-                external_predecessor=deepcopy(external)))
+                external_predecessor=_plain(external)))
     return rows
 
 
@@ -187,7 +188,7 @@ def run_arm(output,root,method,checkpoint,binding,*,evaluation_profile,d=None,ep
                        unresolved_low_soc_threshold=.25)
         return dict(root_id=root,method=method,t0=t0,time=world.time,relative_time_s=world.time-t0,
             quality=quality,increment=common.increment_observation(world,metadata["common_summary"]),
-            inherited_finals=deepcopy(metadata["common_summary"]["inherited_finals"]),
+            inherited_finals=_plain(metadata["common_summary"]["inherited_finals"]),
             normal_lifecycle=base.lifecycle_summary(wrapper.records,callback.records,wrapper.online_services,d.latency),
             selection_summary=base.module(PROJECT/"scripts/stage3/report_selective_reoptimization_a.py",
                                           "_common_comparison_selection").selection_summary(callback.records),

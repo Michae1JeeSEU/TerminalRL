@@ -6,7 +6,7 @@ import json
 import os
 from pathlib import Path
 import sys
-from types import SimpleNamespace
+from types import SimpleNamespace, MappingProxyType
 
 import pytest
 
@@ -187,6 +187,72 @@ def test_exported_indices_are_offset_without_mutating_method_records():
     assert [row.get("previous_record_index") for row in joined]==[None,0,1]
     assert services[-1]["sequence"]==1 and mapping["pending_task"]["audit_record_index"]==2
     assert (metadata,wrapper.records,wrapper.online_services,callback.records)==original
+
+
+def test_record_export_normalizes_real_config_sections_without_copying_pending_packet():
+    from terminal_marl.core.rotating_slots.config import Section, load_config
+    from terminal_marl.core.rotating_slots.replay import _plain, _json
+    class UncopyablePacket:
+        def __deepcopy__(self,memo): raise AssertionError("pending packet must not be copied")
+        def to_dict(self): raise AssertionError("pending packet must not be exported")
+    config=load_config()
+    section=Section(dict(diagnostic=dict(timing=[20.,5.],energy=3.)))
+    history=MappingProxyType(dict(age=7.,seen=("a","b")))
+    plan=generate_final("a","inner",0,0,20.,config=config).plan
+    record=dict(section=section,immutable=MappingProxyType(dict(config=config,history=history)),
+                trajectory=plan.to_dict())
+    metadata=dict(initializer_callback_records=[record],initializer_tasks=[dict(record)],
+                  initializer_services=[dict(record,sequence=0)])
+    callback=SimpleNamespace(records=[record],history=history)
+    wrapper=SimpleNamespace(records=[dict(record,previous_record_index=0)],
+        online_services=[dict(record,sequence=0)],
+        pending=dict(stage="RESULT",due=45.,record_index=0,packet=UncopyablePacket()))
+    originals=_json((metadata,callback.records,wrapper.records,wrapper.online_services))
+    trajectory_bytes=_json(plan.to_dict())
+    with pytest.raises(RecursionError): deepcopy(record)
+    exported=runner.merged_records(metadata,callback,wrapper)
+    callbacks,tasks,services,mapping=exported
+    expected=json.loads(_json(record))
+    for rows in (callbacks,tasks,services):
+        for row in rows:
+            assert row["section"]==expected["section"] and row["immutable"]==expected["immutable"]
+            assert row["trajectory"]==expected["trajectory"]
+    assert mapping["pending_task"]==dict(stage="RESULT",due=45.,method_record_index=0,audit_record_index=1)
+    assert tasks[1]["previous_record_index"]==1 and services[1]["sequence"]==1
+    assert campaign.canonical(exported)==_json(exported)
+    assert _json((metadata,callback.records,wrapper.records,wrapper.online_services))==originals
+    assert callback.history is history and callback.records[0] is record
+    assert record["section"] is section and record["immutable"]["config"] is config
+    assert _json(plan.to_dict())==trajectory_bytes
+    callbacks[0]["section"]["diagnostic"]["energy"]=99.
+    assert section.diagnostic.energy==3.
+    assert isinstance(_plain(exported),list)
+
+
+def test_live_frozen_follow_downstream_window_wait_exports_through_existing_plain_view():
+    from terminal_marl.core.rotating_slots.config import Section
+    from terminal_marl.core.rotating_slots.replay import _json
+    from terminal_marl.core.rotating_slots.stage2_planning import CandidateProvider, EvaluationContext
+    from terminal_marl.core.rotating_slots.selective_replanning import build_global_frame
+    world=RotatingSlotWorld(); world.seed_hold("a","middle",0,.9)
+    snapshot=world.build_planning_snapshot(); before=_json(world.to_dict())
+    provider=CandidateProvider(planning_profile="downstream_service_v8",evaluation_profile="stitched_continuation_v1")
+    context=EvaluationContext(snapshot)
+    frame=build_global_frame(snapshot,provider,context)
+    follow=provider._column(snapshot,snapshot.aircraft["a"],(),"WAIT",context)
+    joint=frame.downstream({follow.signature:frame.baseline_by_id["a"]},{"a"})
+    _,rows=joint.evaluate((follow,))
+    assert isinstance(rows["a"]["window_wait_seconds_by_ring"],Section)
+    live=dict(downstream=rows)
+    with pytest.raises(RecursionError): deepcopy(live)
+    callback=SimpleNamespace(records=[live])
+    wrapper=SimpleNamespace(records=[],online_services=[],pending=None)
+    metadata=dict(initializer_callback_records=[],initializer_tasks=[],initializer_services=[])
+    exported=runner.merged_records(metadata,callback,wrapper)
+    assert exported[0][0]["downstream"]==json.loads(_json(rows))
+    assert campaign.canonical(exported)==_json(exported)
+    assert callback.records[0] is live and isinstance(live["downstream"]["a"]["window_wait_seconds_by_ring"],Section)
+    assert _json(world.to_dict())==before
 
 
 @pytest.mark.parametrize("value",[None,"", "   ", False])
