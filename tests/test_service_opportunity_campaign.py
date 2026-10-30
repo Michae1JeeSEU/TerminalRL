@@ -127,7 +127,9 @@ def test_cli_and_literal_thread_settings(monkeypatch):
 
 @pytest.mark.parametrize("output_name,stage,seconds",[
     (runner.OUTPUT_NAME,"smoke",20),(runner.SUPPLY_R2_OUTPUT_NAME,"smoke",25),
-    (runner.OUTPUT_NAME,"arm",300),(runner.SUPPLY_R2_OUTPUT_NAME,"arm",300)])
+    (runner.LOCAL_RECOVERY_OUTPUT_NAME,"smoke",25),
+    (runner.OUTPUT_NAME,"arm",300),(runner.SUPPLY_R2_OUTPUT_NAME,"arm",300),
+    (runner.LOCAL_RECOVERY_OUTPUT_NAME,"arm",300)])
 def test_smoke_is_twenty_seconds_separate_output(monkeypatch,tmp_path,output_name,stage,seconds):
     for key in runner.base.THREADS: monkeypatch.setenv(key,"1")
     source=dict(commit="test",source_hash="hash",files={p: "x" for p in (
@@ -159,7 +161,7 @@ def test_smoke_is_twenty_seconds_separate_output(monkeypatch,tmp_path,output_nam
     assert captured["binding"]["campaign"]==output_name
 
 
-def test_only_two_authorized_output_names_and_fixed_parent(monkeypatch,tmp_path):
+def test_only_authorized_output_names_and_fixed_parent(monkeypatch,tmp_path):
     monkeypatch.setattr(Path,"home",classmethod(lambda cls:tmp_path))
     parent=tmp_path/"training_outputs/terminal"
     for name in runner.OUTPUT_NAMES:
@@ -176,6 +178,11 @@ def test_campaign_policies_and_ledgers_are_independent(monkeypatch,tmp_path):
     assert runner.policy_for_output(first)==original
     assert runner.policy_for_output(second)["previous_ledger_readonly"]==runner.OUTPUT_NAME+"/repair_budget_ledger.json"
     assert runner.policy_for_output(second)["run_role"]=="AUTHORIZED_SUPPLY_RESERVATION_REPAIR_FOLLOWUP"
+    third=parent/runner.LOCAL_RECOVERY_OUTPUT_NAME
+    third_policy=runner.policy_for_output(third)
+    assert third_policy["previous_ledger_readonly"]==runner.SUPPLY_R2_OUTPUT_NAME+"/repair_budget_ledger.json"
+    assert third_policy["run_role"]=="AUTHORIZED_LOCAL_RECOVERY_FOLLOWUP"
+    assert third_policy["cap_child_wall_s"]==7200.
     with runner.old.ledger_transaction(first,policy=runner.policy_for_output(first)) as ledger:
         ledger["jobs"]["previous_attempt"]=dict(status="completed",child_wall_s=17.)
         ledger["settled_child_wall_s"]=17.
@@ -191,12 +198,124 @@ def test_campaign_policies_and_ledgers_are_independent(monkeypatch,tmp_path):
 
 def test_output_json_csv_grammar_and_missing_metrics(tmp_path,monkeypatch):
     monkeypatch.setattr(report,"PROJECT",tmp_path)
-    metric=report.extract_metrics(tmp_path/"absent","s3r23","FULL_H",dict(increment=dict(
-        cumulative_delta=dict(L_normal=3),inherited_final_touchdown_ids=["inherited"],treatment_final_touchdown_ids=["a","b"])))
+    metric=report.extract_metrics(tmp_path/"absent","s3r23","FULL_H",dict(energy_kwh=99.,increment=dict(
+        cumulative_delta=dict(L_normal=3,energy_kwh=2.5),inherited_final_touchdown_ids=["inherited"],treatment_final_touchdown_ids=["a","b"])))
     assert metric["normal_touchdown_delta"]==3 and metric["inherited_final_touchdown_count"]==1
+    assert metric["increment_energy_kwh"]==2.5 and metric["energy_j"] is None
     assert metric["treatment_final_touchdown_count"]==2 and metric["physical_idle"] is None
     value=dict(schema="service_opportunity_comparison_v1",campaigns=dict(new=dict(input_root=str(tmp_path/"inputs"),metrics=[metric])))
     output=report.write_outputs(tmp_path/"artifacts/report",value)
     assert json.loads((output/"summary.json").read_text())["campaigns"]["new"]["metrics"][0]["physical_idle"] is None
     assert "null" in (output/"comparison.csv").read_text()
     with pytest.raises(FileExistsError): report.write_outputs(output,value)
+
+
+def lifecycle_row(hash_,**changes):
+    return dict(dict(candidate_hash=hash_,aircraft_id="a",action_hashes=[hash_],critical=True,
+        source_ring="middle",single_accepted=True,retained_in_catalog=True,catalog_identities=["cat1"],
+        actual_solve_events=[],joint_checked_events=[],certified_events=[],predicted_service_window=70.),**changes)
+
+
+def test_critical_actual_cp_denominator_and_repeated_catalog_deduplication():
+    solved=lifecycle_row("move",actual_solve_events=[dict(catalog_identity="cat1",model_index=2)],
+        joint_checked_events=[dict(elapsed_s=2.)],certified_events=[dict(elapsed_s=3.)])
+    repeat=dict(solved,catalog_identities=["cat1","cat2"])
+    rejected=lifecycle_row("unsafe",single_accepted=False,retained_in_catalog=False,catalog_identities=[],
+        single_rejection_reason="SEPARATION_CONFLICT")
+    pending=lifecycle_row("unsubmitted")
+    starts=[dict(aircraft_id="a",trajectory_hash="move",start=40.,end=65.)]
+    callbacks=[dict(service_candidate_lifecycle=[solved,rejected,pending],solver_stop_reason="BUDGET_EXHAUSTED",
+        service_search_events=[dict(event="JOINT_CHECKED",certificate_reused=False,batch_status="CONFLICT",
+            conflicts=[[dict(candidate_hash="move"),dict(candidate_hash="other")]])]),
+        dict(service_candidate_lifecycle=[repeat])]
+    got=report.candidate_lifecycle_metrics(callbacks,dict(starts=starts,completed=starts))
+    assert got["critical_generated_count"]==3
+    assert got["critical_single_accepted_count"]==2
+    assert got["critical_catalog_eligible_count"]==2
+    assert got["critical_actual_cp_participated_count"]==1
+    assert got["critical_actual_cp_participation_rate"]==.5
+    assert got["critical_generated_actual_cp_participation_rate"]==pytest.approx(1/3)
+    assert got["critical_unsolved_count"]==2
+    assert got["unsolved_reason_counts"]["SEPARATION_CONFLICT"]==1
+    assert got["real_joint_check_count"]==1 and got["joint_conflict_count"]==1
+    assert len(got["middle_inner_actual_timing"])==1
+    assert got["middle_inner_actual_timing"][0]["completion_minus_predicted_window_s"]==[-5.]
+    assert report.candidate_lifecycle_metrics([{}],dict(starts=[],completed=[])) is None
+    assert report.candidate_lifecycle_metrics([dict(service_candidate_lifecycle=[])],dict(starts=[],completed=[]))["critical_generated_count"]==0
+
+
+def test_local_recovery_real_checks_deliveries_withdrawals_and_timeout_categories():
+    delta=dict(affected_action_hashes=["bad"],retained_action_hashes=["safe"],
+        withdrawn_action_reasons={"bad":"RELEASE_SUPPORT_WITHDRAWN"},recursive_release_edges=[["support","bad"]],
+        pairs_checked=2,reused_pairs=4,envelope_proofs=1,conflicts=[dict(action_hash="bad",reason="CONFLICT")])
+    tasks=[dict(traffic_policy="action_local_recovery_v1",status="COMMITTED",submitted=1,
+        recovery_delivery="standby",revalidations=[dict(local_recovery=delta,status="CERTIFIED")]),
+        dict(traffic_policy="action_local_recovery_v1",status="COMMITTED",submitted=2,recovery_delivery="repaired"),
+        dict(traffic_policy="action_local_recovery_v1",status="REJECTED",submitted=0,finished_time=45.,
+            reason="REVALIDATION_WORK_DEADLINE",revalidations=[dict(local_recovery=delta)],repair=dict(timed_out=True))]
+    got=report.local_recovery_metrics(tasks)
+    assert got["affected_action_occurrences"]==2 and got["retained_action_occurrences"]==2
+    assert got["recursive_release_edge_occurrences"]==2
+    assert got["real_joint_pair_checks"]==4 and got["reused_pair_certificates"]==8
+    assert got["real_joint_conflict_count"]==2
+    assert got["local_change_whole_batch_rejection_count"]==1
+    assert got["local_change_no_certified_standby_cancellation_count"]==0
+    assert got["certified_revalidation_join_count"]==1
+    assert got["delivered_task_counts"]==dict(original=0,standby=1,repaired=1)
+    assert got["delivered_plan_counts"]["repaired"]==2
+    assert got["timeout_reason_counts"]=={"REVALIDATION_WORK_DEADLINE":1}
+    assert got["repair_timed_out_count"]==1
+    tasks[-1]["reason"]="NO_CERTIFIED_STANDBY"
+    assert report.local_recovery_metrics(tasks)["local_change_no_certified_standby_cancellation_count"]==1
+    assert report.local_recovery_metrics([dict(status="COMMITTED",submitted=2)]) is None
+
+
+def test_late_guard_only_rejection_counts_task_once_and_reads_recovery_conflicts():
+    observed=dict(affected_action_hashes=["withdrawn"],retained_action_hashes=["safe"],
+        pairs_checked=0,conflicts=[],observed_time=46.,reason="TRAFFIC_REVALIDATION_REQUIRED")
+    conflict=dict(action_hash="withdrawn",other_aircraft_id="traffic",interval=[46.,60.],
+        status="CONFLICT",reason="SEPARATION_CONFLICT")
+    attempt=dict(hashes=["safe","withdrawn"],accepted=False,status="CONFLICT",reason="SEPARATION_CONFLICT")
+    repair=dict(repair_attempts=[attempt],timed_out=False)
+    task=dict(traffic_policy="action_local_recovery_v1",status="REJECTED",submitted=0,finished_time=46.,
+        ready_deadline=45.,reason="TRAFFIC_CHANGED_AFTER_DEADLINE",revalidations=[],
+        guard_local_recovery=[observed,observed],repair=repair,
+        local_recovery_events=[dict(conflicts=[conflict]),dict(conflicts=[conflict]),repair])
+    got=report.local_recovery_metrics([task])
+    assert got["local_change_whole_batch_rejection_count"]==1
+    assert got["local_change_no_certified_standby_cancellation_count"]==0
+    assert got["real_joint_pair_checks"]==0
+    assert got["real_joint_conflict_count"]==1 and got["real_joint_conflicts"]==[conflict]
+    assert got["failed_repair_attempt_count"]==1
+    assert got["failed_repair_attempt_status_counts"]=={"CONFLICT":1}
+    assert got["failed_repair_attempt_reason_counts"]=={"SEPARATION_CONFLICT":1}
+
+
+def test_real_report_fixture_reads_replay_and_keeps_missing_old_instrumentation_null(tmp_path):
+    directory=tmp_path/"arms/s3r23/FULL_H/evaluation/s3r23/FULL_H"
+    replay=directory/"replay"; replay.mkdir(parents=True)
+    events=[dict(type="maneuver_started",time=30.,aircraft_id="a",details=dict(trajectory_hash="move")),
+        dict(type="transfer_completed",time=60.,aircraft_id="a"),
+        dict(type="touchdown",time=80.,aircraft_id="a",details=dict(emergency=False))]
+    for name,rows in (("events",events),("states",frames())):
+        (replay/(name+".jsonl")).write_text("".join(json.dumps(r)+"\n" for r in rows),encoding="utf8")
+    save(replay/"trajectories.json",dict(move=dict(trajectory_hash="move",aircraft_id="a",
+        source_ring="middle",target_ring="inner",end_time=60.,pad_id=None)))
+    (replay/"config.yaml").write_text("pads:\n  count: 1\n  service_classes:\n    fast:\n      duration_s: 20\n",encoding="utf8")
+    save(directory/"method_scheduler_records.json",[dict(service_candidate_lifecycle=[lifecycle_row("move")])])
+    save(directory/"method_normal_tasks.json",[dict(traffic_policy="action_local_recovery_v1",status="COMMITTED",submitted=1)])
+    save(replay/"replay.json",dict(files={p.name:report.sha256(p.read_bytes()).hexdigest() for p in replay.iterdir()}))
+    ordinary=dict(checks=dict(replay=True),energy_kwh=999.,increment=dict(cumulative_delta=dict(L_normal=1,energy_j=4.,energy_kwh=.25,L_emergency=0,
+        failed_before_landing=0),inherited_final_touchdown_ids=[],treatment_final_touchdown_ids=["a"]))
+    got=report.extract_metrics(tmp_path,"s3r23","FULL_H",ordinary)
+    assert got["event_log_complete"] is True
+    assert got["middle_inner_supply"]["completed_effective_supply_count"]==1
+    assert got["candidate_lifecycle"]["middle_inner_actual_timing"][0]["actual_completion"]==60.
+    assert got["local_recovery"]["delivered_task_counts"]["original"]==1
+    assert got["treatment_normal_touchdown_count"]==1 and got["physical_idle"]["pad_seconds_idle"]==300.
+    assert got["increment_energy_kwh"]==.25 and got["energy_j"]==4.
+    save(directory/"method_scheduler_records.json",[dict()]); save(directory/"method_normal_tasks.json",[dict()])
+    before={p:p.read_bytes() for p in directory.rglob("*") if p.is_file()}
+    old=report.extract_metrics(tmp_path,"s3r23","FULL_H",ordinary)
+    assert old["candidate_lifecycle"] is None and old["local_recovery"] is None
+    assert {p:p.read_bytes() for p in before}==before

@@ -10,6 +10,7 @@ from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass, field, replace
 from collections import Counter
 from itertools import combinations
+from functools import lru_cache
 from types import MappingProxyType
 import math
 import time
@@ -150,11 +151,60 @@ class PlanningBudget:
                 row["overrun_count"]+=int(time.perf_counter()>self.search_wall_deadline)
 
     def bind_catalog(self,catalog):
-        if self.search_wall_deadline is None: return
         if self._catalog is catalog: return
+        if isinstance(catalog,CandidateCatalog) and catalog.context_identity is None and self._certificate_context is not None:
+            object.__setattr__(catalog,'context_identity',self._certificate_context)
+            object.__setattr__(catalog,'_catalog_identity_cache',None)
         self._catalog=catalog
         self._catalog_counter+=1
         self._catalog_scope="callback_catalog_"+str(self._catalog_counter)
+
+    def service_search_event(self,event,columns=(),*,catalog=None,**details):
+        """Observed candidate lifecycle, independent of optional diagnostics."""
+        if not hasattr(self,'service_search_events'): self.service_search_events=[]
+        columns=tuple(columns)
+        row=dict(event=event,wall_elapsed_s=self.elapsed,
+            catalog_identity=_catalog_identity(catalog) if catalog is not None else None,
+            candidates=[dict(aircraft_id=c.aircraft_id,candidate_hash=_candidate_hash(c),
+                action_hashes=[p.trajectory_hash for p in c.plans]) for c in columns],**details)
+        self.service_search_events.append(row)
+        if event=='CATALOG_GENERATED': self._service_latest_catalog_identity=row['catalog_identity']
+        if not hasattr(self,'service_candidate_rows'): self.service_candidate_rows={}
+        for column in columns:
+            key=_candidate_hash(column)
+            if event=='GENERATED':
+                self.service_candidate_rows.setdefault(key,dict(
+                    aircraft_id=column.aircraft_id,candidate_hash=key,
+                    action_hashes=[p.trajectory_hash for p in column.plans],
+                    retained_in_catalog=False,single_rejection_reason=None,
+                    generated_elapsed_s=row['wall_elapsed_s'],catalog_identities=[],actual_solve_catalog_identities=[],
+                    actual_solve_events=[],selected_events=[],joint_checked_events=[],certified_events=[],**details))
+            candidate=self.service_candidate_rows.get(key)
+            if candidate is None: continue
+            if event=='SINGLE_CHECKED':
+                candidate.update(single_checked_elapsed_s=row['wall_elapsed_s'],single_status=details.get('status'),
+                    single_accepted=details.get('accepted'),
+                    single_rejection_reason=details.get('reason') if not details.get('accepted') else None)
+            if event=='CATALOG_GENERATED' and row['catalog_identity'] not in candidate['catalog_identities']:
+                candidate['catalog_identities'].append(row['catalog_identity'])
+            if event=='SOLVER_SUBMITTED' and row['catalog_identity'] not in candidate['actual_solve_catalog_identities']:
+                candidate['actual_solve_catalog_identities'].append(row['catalog_identity'])
+                candidate.setdefault('submitted_elapsed_s',row['wall_elapsed_s'])
+            if event=='SOLVER_SUBMITTED':
+                candidate['actual_solve_events'].append(dict(elapsed_s=row['wall_elapsed_s'],
+                    catalog_identity=row['catalog_identity'],phase=details.get('phase'),
+                    refinement_round=details.get('refinement_round'),model_index=details.get('model_indices',{}).get(key)))
+            field={'SELECTED':'selected_events','JOINT_CHECKED':'joint_checked_events','CERTIFIED':'certified_events'}.get(event)
+            if field is not None:
+                candidate[field].append(dict(elapsed_s=row['wall_elapsed_s'],catalog_identity=row['catalog_identity'],
+                    phase=details.get('phase'),refinement_round=details.get('refinement_round')))
+        return row
+
+    def service_generation_allowance(self,maximum):
+        """A new batch must leave actual CP time and joint-validation margin."""
+        solver_remaining=max(0.,self.solver_seconds-self.solver_wall_used)
+        if solver_remaining<=0: return 0.
+        return max(0.,min(maximum,self.remaining_seconds()-self.solver_validation_headroom()-min(.5,solver_remaining)))
 
     def solver_validation_headroom(self):
         # One new solution must still pass uncached selected single/pair and
@@ -231,6 +281,10 @@ class PlanningBudget:
     def available(self, aircraft_id=None):
         if not self.search_deadline_ok(): return False
         if not self.ready_deadline_ok(): return False
+        generation_deadline=getattr(self,'_service_generation_deadline',None)
+        if (generation_deadline is not None and time.perf_counter()>=generation_deadline
+                and not any(reason=='SERVICE_COMPLETION_SLICE' for _,reason in self._stage_limits)):
+            self.truncations.add('SERVICE_GENERATION_SLICE');return False
         reserve=self.service_completion_reserve()
         if reserve and not any(reason=='SERVICE_COMPLETION_SLICE' for _,reason in self._stage_limits):
             deadline=self.wall_start+self.soft_seconds
@@ -255,6 +309,7 @@ class PlanningBudget:
         """Candidate exhaustion does not consume the existing-catalog solver."""
         if not self.search_deadline_ok(): return "SEARCH_HANDOFF_DEADLINE"
         if not self.ready_deadline_ok(): return "READY_DEADLINE"
+        if time.perf_counter()>=getattr(self,'_service_generation_deadline',math.inf): return 'SERVICE_GENERATION_SLICE'
         for deadline,reason in self._stage_limits:
             if time.perf_counter()>=deadline: return reason
         if self.elapsed>=self.soft_seconds: return "SOFT_BUDGET"
@@ -398,6 +453,13 @@ class CandidateCatalog:
     scope: object = None
     fixed_background: object = None
     generation_coverage: object = None
+    context_identity: str | None = None
+
+    @property
+    def catalog_identity(self):
+        # An ephemeral cache is deliberately absent from dataclass fields and
+        # serialized problem archives. dataclasses.replace starts uncached.
+        return getattr(self,'_catalog_identity_cache',None)
 
 
 @dataclass(frozen=True)
@@ -436,6 +498,32 @@ def _selection_solver_key(catalog, columns):
             tuple(sum(solver_coefficients(c)[k] for c in columns) for k in range(5)))
 
 
+@lru_cache(maxsize=8192)
+def _signature_hash(signature):
+    return hashlib.sha256(repr(signature).encode()).hexdigest()
+
+
+def _candidate_hash(column):
+    return _signature_hash(column.signature)
+
+
+def _catalog_identity(catalog):
+    # Bind the exact solved rows and scoring frame, not a growing generator.
+    existing=getattr(catalog,'catalog_identity',None)
+    if existing is not None: return existing
+    downstream=getattr(catalog,'downstream',None)
+    inputs=(getattr(catalog,'context_identity',None),getattr(getattr(catalog,'scope',None),'identity',None),
+        getattr(downstream,'frame_id',None),getattr(downstream,'evaluation_profile',None),
+        tuple((aid,tuple(repr(c) for c in rows)) for aid,rows in sorted(catalog.columns.items())),
+        repr(getattr(downstream,'demands',None)))
+    identity=hashlib.sha256(repr(inputs).encode()).hexdigest()
+    if isinstance(catalog,CandidateCatalog) and isinstance(catalog.columns,MappingProxyType):
+        # Published real catalogs own immutable row tuples/mappings; tests or
+        # callers with mutable ad-hoc catalogs receive a fresh identity.
+        object.__setattr__(catalog,'_catalog_identity_cache',identity)
+    return identity
+
+
 def _service_empty_reason(result,catalog,context,budget):
     """Bounded evidence classification; never claims global infeasibility."""
     if result.prefix: return None
@@ -443,7 +531,12 @@ def _service_empty_reason(result,catalog,context,budget):
     raw=str(result.details.get('solver_stop_reason') or '')
     if not result.certified or any(word in raw for word in ('UNKNOWN','TIME','DEADLINE','NO_SOLVER_TIME')):
         return "CERTIFICATION_TIMEOUT"
-    if getattr(budget,'_service_certified_move_alternative',False): return "REASONABLE_WAIT"
+    latest=getattr(budget,'_service_latest_catalog_identity',None)
+    if latest is not None and latest!=_catalog_identity(catalog): return 'CERTIFICATION_TIMEOUT'
+    evidence=getattr(budget,'_service_wait_evidence',None)
+    if (evidence is not None and evidence['catalog_identity']==_catalog_identity(catalog)
+            and evidence['objective']==result.objective and evidence['context_identity']==getattr(context,'snapshot_key',None)
+            and evidence['current_comparison']): return "REASONABLE_WAIT"
     if any(word in raw for word in ('ALLOCATION_EXHAUSTED','REFINEMENT_LIMIT','BUDGET')):
         return 'CERTIFICATION_TIMEOUT'
     if (getattr(context,'observed_definite_conflicts',()) or result.details.get('batched_conflicts',0)
@@ -1125,6 +1218,10 @@ class EvaluationContext:
                         resource=next((x.resource for x in a.resources for y in b.resources
                             if x.resource==y.resource and x.start<y.end and y.start<x.end),None)
                         observation=dict(aircraft_ids=sorted((a.aircraft_id,b.aircraft_id)),reason=r.reason or r.status,
+                            candidate_hashes=[_candidate_hash(c) for c in (a,b)],
+                            action_hashes=[[p.trajectory_hash for p in c.plans] for c in (a,b)],
+                            catalog_identity=_catalog_identity(self.budget._catalog) if self.budget and self.budget._catalog is not None else None,
+                            wall_elapsed_s=self.budget.elapsed if self.budget else None,
                             snapshot_id=self.snapshot.version,context_scope=getattr(self.scope,"identity",None),
                             local_round=getattr(self,"local_round",None),refinement_round=getattr(self.budget,"refinement_rounds_used",None),
                             source="SELECTED_SELECTED_BATCH")
@@ -1225,7 +1322,8 @@ class CandidateProvider:
         for aid,rows in catalog.columns.items():
             if aid in booked: continue
             partials=[c for c in rows if c.kind=="MOVE" and c.plans and c.plans[-1].pad_id is None
-                and c.node is not None and aid not in snapshot.soft and _executable_start(snapshot,c.plans[0].start_time)
+                and c.node is not None and aid not in snapshot.soft
+                and (service_profile or _executable_start(snapshot,c.plans[0].start_time))
                 and not any(full.plans[:len(c.plans)]==c.plans and full.plans[-1].pad_id is not None
                     for full in rows if full.plans)]
             if partials:
@@ -1564,7 +1662,6 @@ class CandidateProvider:
 
     def _search_offsets(self,snapshot,a,node):
         if self.planning_profile==PLANNING_PROFILE_LEGACY: return OFFSETS
-        if node.ring=="inner": return OFFSETS
         if self.evaluation_profile==SERVICE_EVALUATION_PROFILE:
             from .stage2_service import service_nominal_completion
             # Service starts at approach readiness (touchdown minus descent).
@@ -1574,8 +1671,15 @@ class CandidateProvider:
             suffix_to_service=max(0.,duration-13.5)
             windows={snapshot.time}
             windows.update(r.end for r in snapshot.pads if math.isfinite(r.end) and r.end>node.time)
+            timing=getattr(snapshot,'planning_timing',None)
+            lead=timing.effective_time-timing.snapshot_time if timing is not None else 20.
+            windows.update(w for w in getattr(self,'_service_windows',())
+                if w>node.time+suffix_to_service+lead+1.e-8)
             starts=sorted({max(node.time,w-suffix_to_service) for w in windows})
+            self.__dict__.setdefault('_service_start_windows',{})[a.id]=tuple(
+                (max(node.time,w-suffix_to_service),w) for w in sorted(windows))
             return tuple(dict.fromkeys((0.,*(x-node.time for x in starts if node.time<x<=snapshot.time+900.))))[:3]
+        if node.ring=="inner": return OFFSETS
         next_ring={"outer":"middle","middle":"inner"}[node.ring]
         starts={r.end for r in snapshot.slots if isinstance(r.resource,tuple) and r.resource[0]==next_ring and math.isfinite(r.end)}
         # Back-project observed pad release through the cached normal travel
@@ -1767,7 +1871,7 @@ class CandidateProvider:
 
     def _delayed_steps(self,snapshot,a,node,budget,context):
         """A bounded independent delayed primitive pass before reference work."""
-        if node.ring=="inner": return
+        if node.ring=="inner" and self.evaluation_profile!=SERVICE_EVALUATION_PROFILE: return
         heap=[]; serial=0; seen=set()
         def push(cursor):
             nonlocal serial
@@ -1853,6 +1957,16 @@ class CandidateProvider:
             self.references._register_reused_chain(snapshot,a,node,plans,budget)
         return plans
 
+    def _service_inner_rank(self,snapshot,a,node,budget,slack):
+        """Rank existing eligible inner IDs using screens, without trajectories."""
+        screen=self.references.screen(snapshot,node,node.time,budget)
+        feasible=[]
+        if screen is not None:
+            for (pad,duration),witness in screen.items():
+                if witness is None and not self._current_progress_reservation_conflict(snapshot,a,node,pad,node.time,duration):
+                    feasible.append((duration,pad))
+        return (not bool(feasible),min(feasible,default=(math.inf,math.inf)),slack,a.id)
+
     @staticmethod
     def _retain_column(columns,column,planning_profile=PLANNING_PROFILE_LEGACY):
         """Bound alternatives while retaining full chains and useful progress."""
@@ -1915,6 +2029,13 @@ class CandidateProvider:
         service_profile=self.evaluation_profile==SERVICE_EVALUATION_PROFILE
         if service_profile:
             order=sorted(order,key=lambda a:(nodes[a.id].ring!='inner',slacks[a.id],a.id))
+            self._service_windows=()
+            if context.global_frame is not None:
+                # Read the already frozen queue once; use its starts only as
+                # generation hints, never as resource/safety certificates.
+                _,window_rows=context.global_frame.downstream({},set()).evaluate(())
+                self._service_windows=tuple(sorted({r['service_start'] for r in window_rows.values()
+                    if math.isfinite(r.get('service_start',math.inf))}))
         columns={a.id:[self._column(snapshot,a,(),kind,context,refs[a.id]) for kind in ("KEEP","WAIT")] for a in aircraft}
         if runtime is not None: runtime.begin_snapshot(snapshot,budget,[a.id for a in aircraft])
         target=2
@@ -1927,8 +2048,18 @@ class CandidateProvider:
                 if plans[-1].pad_id is not None else refs[a.id])
             c=self._column(snapshot,a,plans,"MOVE",context,ref,emergency)
             if c is None or any(old.signature==c.signature for old in columns[a.id]): return False
+            if service_profile:
+                node=nodes[a.id]
+                matching=[window for start,window in getattr(self,'_service_start_windows',{}).get(a.id,())
+                    if abs(start-plans[0].start_time)<=1.e-8 and window>node.time]
+                critical=(node.ring=='inner' and plans[-1].pad_id is not None) or a.id in getattr(budget,'_service_priority_ids',())
+                budget.service_search_event('GENERATED',(c,),critical=critical,
+                    generation_family=getattr(budget,'_service_generation_phase','RETAINED'),source_ring=node.ring,
+                    target_start=plans[0].start_time,predicted_service_window=min(matching) if matching else None)
             hits=context.cache_stats["single_hits"]; w=time.perf_counter(); cpu=time.process_time()
             validation=context.check_single(c)
+            if service_profile: budget.service_search_event('SINGLE_CHECKED',(c,),status=validation.status,
+                accepted=validation.accepted,reason=validation.reason)
             hook=getattr(runtime,"record_column_validation",None)
             if hook is not None: hook(c,validation,time.perf_counter()-w,time.process_time()-cpu,context.cache_stats["single_hits"]>hits)
             if preserve and validation.accepted:
@@ -1941,6 +2072,7 @@ class CandidateProvider:
                 retained=validation.accepted and retain_validated(columns[a.id],c,snapshot.time,target,budget.screening,
                     effective_time=getattr(getattr(snapshot,'planning_timing',None),'effective_time',None))
             if runtime is not None: runtime.record_column(c,validation,retained)
+            if service_profile: budget.service_candidate_rows[_candidate_hash(c)]['retained_in_catalog']=bool(retained)
             if retained:
                 if plans[-1].pad_id is not None and (refs[a.id].status!="KNOWN" or ref.energy_j<refs[a.id].energy_j): refs[a.id]=ref
             publish()
@@ -1980,6 +2112,7 @@ class CandidateProvider:
         initial_visited=set()
         def catalog_with_coverage(phase):
             catalog=self._progressive_catalog(snapshot,budget,context,columns,refs,ordered)
+            if service_profile: catalog=replace(catalog,context_identity=context.snapshot_key)
             if early_publish:
                 catalog=replace(catalog,generation_coverage=dict(phase=phase,
                     initial_visited_ids=sorted(initial_visited),initial_unvisited_ids=sorted(set(columns)-initial_visited),
@@ -1995,6 +2128,12 @@ class CandidateProvider:
             completion=self.suffix_completion_report(budget)
             if completion is not None:
                 catalog=replace(catalog,generation_coverage=dict(catalog.generation_coverage or {},suffix_completion=completion))
+            if service_profile:
+                catalog=replace(catalog,generation_coverage=dict(catalog.generation_coverage or {},
+                    catalog_identity=_catalog_identity(catalog),
+                    candidate_hashes={aid:[_candidate_hash(c) for c in rows] for aid,rows in catalog.columns.items()}))
+                budget.service_search_event('CATALOG_GENERATED',
+                    (c for rows in catalog.columns.values() for c in rows if c.kind=='MOVE'),catalog=catalog,phase=phase)
             return catalog
         def service_completion(*,before_first_cp=False):
             """Fill unused slots and spend only the original priority reserve."""
@@ -2008,6 +2147,9 @@ class CandidateProvider:
             if state is None or state['snapshot_id']!=snapshot.version: return False
             state['priority_before_first_cp']|=before_first_cp
             allowance=max(0.,state['priority_reserved_seconds']-state['priority_used_seconds'])
+            allowance=min(allowance,max(0.,budget.remaining_seconds()-
+                (budget.solver_validation_headroom()-budget.service_completion_reserve())-
+                min(.5,max(0.,budget.solver_seconds-budget.solver_wall_used))))
             pending=[row for row in state['records'] if row['suffix_status'] in ('RESERVED','RUNNING')]
             by_id={a.id:a for a in order}
             if allowance>0 and pending:
@@ -2035,14 +2177,24 @@ class CandidateProvider:
                 # Bound the first construction slice, leaving selected/prefix
                 # certification time on the same clock. FULL_H retains all
                 # variables, while only a few useful primitives are tried first.
-                inners=[a for a in order if nodes[a.id].ring=='inner'][:2]
+                self.reserve_suffix_completion(snapshot,CandidateCatalog({aid:tuple(rows) for aid,rows in columns.items()},{},{},()),budget)
+                seed_slice=budget.service_generation_allowance(min(1.5,max(0.,.15*budget.remaining_seconds())))
+                inners=[a for a in order if nodes[a.id].ring=='inner']
+                with budget.stage_limit(seed_slice,"SERVICE_INITIAL_SLICE"):
+                    inner_ranks={a.id:self._service_inner_rank(snapshot,a,nodes[a.id],budget,slacks[a.id])
+                        for a in inners if budget.available(a.id)}
+                inners=sorted((a for a in inners if a.id in inner_ranks),key=lambda a:inner_ranks[a.id])[:2]
                 supplies=sorted((a for a in order if nodes[a.id].ring!='inner'),
                     key=lambda a:(self._describe_column(snapshot,columns[a.id][0],context).ready,slacks[a.id],a.id))[:2]
                 priority=[group[index] for index in range(max(len(inners),len(supplies)))
                     for group in (inners,supplies) if index<len(group)]
-                seed_slice=min(1.5,max(0.,.15*budget.remaining_seconds()))
-                pending=[(a,next(gen for kind,gen in stages[a.id] if kind=='progress')) for a in priority]
-                with budget.stage_limit(seed_slice,"SERVICE_INITIAL_SLICE"):
+                budget._service_priority_ids={a.id for a in priority}
+                budget._service_generation_phase='SERVICE_PRIORITY_SEED'
+                pending=[]
+                for a in priority:
+                    kind=('delayed' if nodes[a.id].ring!='inner' and len(self._search_offsets(snapshot,a,nodes[a.id]))>1 else 'progress')
+                    pending.append((a,next(gen for name,gen in stages[a.id] if name==kind)))
+                with budget.stage_limit(budget.service_generation_allowance(seed_slice),"SERVICE_INITIAL_SLICE"):
                     while pending and budget.available():
                         for a,progress in tuple(pending):
                             if not budget.available(): break
@@ -2051,10 +2203,10 @@ class CandidateProvider:
                             initial_visited.add(a.id)
                             try: item=next(progress)
                             except StopIteration:
-                                pending.remove((a,progress));stages[a.id].remove(('progress',progress))
+                                pending.remove((a,progress));stages[a.id][:]=[family for family in stages[a.id] if family[1] is not progress]
                                 continue
                             if item[0]=='COLUMN' and add(a,item[1],item[2],preserve=True):
-                                pending.remove((a,progress));stages[a.id].remove(('progress',progress))
+                                pending.remove((a,progress));stages[a.id][:]=[family for family in stages[a.id] if family[1] is not progress]
                 # Pay the explicitly reserved completion allowance before any
                 # hint/CP call can consume it. The allowance is a slice of the
                 # existing deadline, never an additional time budget.
@@ -2126,6 +2278,11 @@ class CandidateProvider:
             if service_profile and not getattr(budget,'_service_certified_incumbent',False):
                 return
             for round_index,target in enumerate((2,4,8)):
+                if service_profile:
+                    budget._service_generation_phase='ORDINARY_GROWTH'
+                    allowance=budget.service_generation_allowance(min(1.,.15*budget.remaining_seconds()))
+                    if allowance<=0: return
+                    budget._service_generation_deadline=time.perf_counter()+allowance
                 quota=max(1,math.ceil(budget.max_per_aircraft*(.25,.5,1.)[round_index]))
                 visited=set()
                 # Each pass advances every aircraft and every construction family
@@ -2165,34 +2322,47 @@ class CandidateProvider:
                             try: item=next(gen)
                             except StopIteration as stop:
                                 stages[a.id].remove((kind,gen))
+                                added=False
                                 if kind=="reference" and stop.value is not None and stop.value.status=="KNOWN":
                                     ref=stop.value; refs[a.id]=ref
                                     seed=self._reference_seed(snapshot,a,nodes[a.id],ref,budget)
-                                    if seed is not None: add(a,*seed)
+                                    if seed is not None: added=add(a,*seed)
                                     if self.planning_profile==PLANNING_PROFILE_DOWNSTREAM:
                                         stages[a.id].insert(0,("delayed_reference",self._delayed_reference_seed(snapshot,a,nodes[a.id],ref,budget)))
-                                if service_profile and service_completion():
-                                    catalog=catalog_with_coverage('SERVICE_LATE_PRIORITY_COMPLETION')
+                                completed=service_profile and service_completion()
+                                if service_profile and (added or completed):
+                                    budget.__dict__.pop('_service_generation_deadline',None)
+                                    catalog=catalog_with_coverage('SERVICE_LATE_PRIORITY_COMPLETION' if completed else 'SERVICE_CRITICAL_GROWTH')
                                     publish(catalog.downstream,catalog.columns)
                                     yield catalog
                                     publish(catalog.downstream,catalog.columns)
+                                    budget._service_generation_deadline=time.perf_counter()+budget.service_generation_allowance(1.)
                                 continue
-                            if kind=="delayed_reference": add(a,*item)
+                            added=False
+                            if kind=="delayed_reference": added=add(a,*item)
                             elif kind!="reference" and item[0]=="COLUMN":
                                 if kind=="suffix_completion": add_completion(a,item)
-                                else: add(a,item[1],item[2])
-                            if service_profile and kind!='reference' and (kind=='delayed_reference' or item[0]=='COLUMN') and service_completion():
-                                catalog=catalog_with_coverage('SERVICE_LATE_PRIORITY_COMPLETION')
+                                else: added=add(a,item[1],item[2])
+                            completed=(service_profile and kind!='reference' and
+                                (kind=='delayed_reference' or item[0]=='COLUMN') and service_completion())
+                            if service_profile and (added or completed):
+                                budget.__dict__.pop('_service_generation_deadline',None)
+                                catalog=catalog_with_coverage('SERVICE_LATE_PRIORITY_COMPLETION' if completed else 'SERVICE_CRITICAL_GROWTH')
                                 publish(catalog.downstream,catalog.columns)
                                 yield catalog
                                 publish(catalog.downstream,catalog.columns)
+                                budget._service_generation_deadline=time.perf_counter()+budget.service_generation_allowance(1.)
                     if not advanced or not budget.available(): break
+                budget.__dict__.pop('_service_generation_deadline',None)
                 catalog=catalog_with_coverage("GROWTH_"+str(round_index))
                 publish(catalog.downstream,catalog.columns)
                 yield catalog
                 publish(catalog.downstream,catalog.columns)
                 if not budget.available() or not any(stages.values()): break
         finally:
+            budget.__dict__.pop('_service_generation_deadline',None)
+            self.__dict__.pop('_service_windows',None)
+            self.__dict__.pop('_service_start_windows',None)
             if runtime is not None: runtime.finish_snapshot(budget)
 
     def _progressive_catalog(self,snapshot,budget,context,columns,refs,ordered):
@@ -2475,6 +2645,8 @@ class EnergySlackScheduler:
             if getattr(candidates.downstream,'evaluation_profile',None)==SERVICE_EVALUATION_PROFILE:
                 budget._service_certified_incumbent=True
                 if any(c.plans for c in selected): budget._service_certified_move_alternative=True
+                budget.service_search_event('CERTIFIED',selected,catalog=candidates,source='energy_slack_hint',
+                    objective=list(objective),prefix_hashes=[p.trajectory_hash for p in prefix])
                 _record_service_certificate(snapshot,selected,prefix,e,context,budget)
             return PlanningResult(selected,prefix,e,"FEASIBLE",objective,certified=True)
         # One local repair: rejected predictive release cannot authorize execution.
@@ -2589,7 +2761,7 @@ class RollingHorizonCPSATScheduler:
                 hint_started=time.perf_counter()
                 hint_allowance=(None if budget.hint_seconds is None else max(0.,budget.hint_seconds-budget.hint_wall_used))
                 if getattr(candidates.downstream,'evaluation_profile',None)==SERVICE_EVALUATION_PROFILE:
-                    hint_allowance=min(3.,budget.remaining_seconds()-budget.solver_validation_headroom(),
+                    hint_allowance=min(1.,budget.remaining_seconds()-budget.solver_validation_headroom()-.5,
                         math.inf if hint_allowance is None else hint_allowance)
                     hint_allowance=max(0.,hint_allowance)
                 try:
@@ -2710,9 +2882,17 @@ class RollingHorizonCPSATScheduler:
                             stop_reason=budget.evaluation_stop_reason() if not budget.evaluation_available() else "SOFT_BUDGET"
                             break
                         solver.parameters.max_time_in_seconds=limit
-                        started=time.perf_counter(); status=solver.Solve(model); used=time.perf_counter()-started
+                        started=time.perf_counter()
+                        if service_profile:
+                            budget.service_search_event('SOLVER_SUBMITTED',(c for c in lookup.values() if c.kind=='MOVE'),catalog=candidates,
+                                refinement_round=refinement,phase=phase,
+                                model_indices={_candidate_hash(lookup[key]):variables[key].Index() for key in variables if lookup[key].kind=='MOVE'},
+                                allocated_seconds=limit)
+                        status=solver.Solve(model); used=time.perf_counter()-started
                     solve_used+=used; budget.solver_wall_used+=used; carry=max(0.,limit-used)
                     rec={"round":refinement,"phase":phase,"status":solver.StatusName(status),"wall_s":used,
+                         "catalog_identity":_catalog_identity(candidates),
+                         "bound_catalog_identity":_catalog_identity(candidates),
                          "model_scale":model_scale,
                          "allocated_seconds":limit,"remaining_deadline_s":deadline_remaining,
                          "search_validation_headroom_s":validation_headroom,
@@ -2725,6 +2905,10 @@ class RollingHorizonCPSATScheduler:
                     if status not in (cp_model.OPTIMAL,cp_model.FEASIBLE):
                         all_optimal=False; stop_reason="SOLVER_"+solver.StatusName(status); break
                     selected=tuple(c for key,c in lookup.items() if solver.Value(variables[key]))
+                    if service_profile:
+                        budget.service_search_event('SELECTED',selected,catalog=candidates,refinement_round=refinement,phase=phase)
+                        rec['selected_columns']=[dict(aircraft_id=c.aircraft_id,candidate_hash=_candidate_hash(c),
+                            action_hashes=[p.trajectory_hash for p in c.plans]) for c in selected]
                     if getattr(context,"diagnostics",None) is not None:
                         rec.update(context.diagnostics.selection(candidates,selected))
                     rec["objective"]=solver.ObjectiveValue()
@@ -2750,6 +2934,13 @@ class RollingHorizonCPSATScheduler:
                     rec["validation_status"]=r.status; rec["validation_reason"]=r.reason
                     rec["prefix_status"]=getattr(evaluation,"status","NOT_CHECKED")
                     rec["prefix_reason"]=getattr(evaluation,"reason",None)
+                    if service_profile:
+                        budget.service_search_event('JOINT_CHECKED',selected,catalog=candidates,
+                            refinement_round=refinement,phase=phase,batch_status=r.status,
+                            prefix_status=getattr(evaluation,'status','NOT_CHECKED'),
+                            certificate_reused=bool(same_certified),
+                            conflicts=[[dict(aircraft_id=c.aircraft_id,candidate_hash=_candidate_hash(c),
+                                action_hashes=[p.trajectory_hash for p in c.plans]) for c in conflict] for conflict in conflicts])
                     if not r.accepted or evaluation is None or not evaluation.accepted:
                         if not r.accepted and r.status not in ("CONFLICT","REJECTED","UNSAFE","INVALID"):
                             stop_reason="VALIDATION_UNKNOWN"; all_optimal=False; break
@@ -2771,6 +2962,10 @@ class RollingHorizonCPSATScheduler:
                         invalid=True; all_optimal=False; break
                     key=_selection_key(candidates,selected)
                     proposal=PlanningResult(selected,context.prefix(selected),evaluation,"FEASIBLE",key,certified=True)
+                    if service_profile:
+                        budget.service_search_event('CERTIFIED',selected,catalog=candidates,source='cp_proposal',
+                            refinement_round=refinement,phase=phase,objective=list(key),
+                            prefix_hashes=[p.trajectory_hash for p in proposal.prefix])
                     if service_profile and any(c.plans for c in selected): budget._service_certified_move_alternative=True
                     if service_profile: _record_service_certificate(snapshot,selected,proposal.prefix,evaluation,context,budget)
                     budget.certificate_event("cp_proposal",selected,proposal.prefix,event="CERTIFIED_OBJECTIVE",objective=key)
@@ -2800,12 +2995,18 @@ class RollingHorizonCPSATScheduler:
         if service_profile and incumbent.certified: budget._service_certified_incumbent=True
         complete=(all_optimal and resource_complete and model_complete and len(records)>=5
             and records[-1]["phase"]==(5 if service_profile else 4) and records[-1]["status"]=="OPTIMAL" and incumbent_solver_key==final_solver_key)
+        if service_profile and complete and incumbent.certified and not incumbent.prefix:
+            budget._service_wait_evidence=dict(catalog_identity=_catalog_identity(candidates),
+                context_identity=getattr(context,'snapshot_key',None),objective=incumbent.objective,
+                current_comparison=any(c.plans for rows in candidates.columns.values() for c in rows))
         return PlanningResult(incumbent.selected,incumbent.prefix,incumbent.evaluation,
                               "CATALOG_LEX_OPTIMAL" if complete else "LEX_LIMITED",incumbent.objective,
                               tuple(records),max((r["round"] for r in records),default=0),incumbent.certified,
                               MappingProxyType({"solver_wall_s":solve_used,"catalog_incomplete":candidates.incomplete,
                                   "resource_conflicts_complete":resource_complete,"model_screen_complete":model_complete,
                                   "optimality_scope":"bounded_candidate_catalog_model","solver_entered":bool(records),
+                                  "catalog_identity":_catalog_identity(candidates),
+                                  "optimality_catalog_identity":_catalog_identity(candidates) if complete else None,
                                   "skip_reason":skip_reason,"solver_stop_reason":stop_reason,
                                   "stop_reason":stop_reason,"max_refinement_rounds":budget.max_refinement_rounds,
                                   "refinement_rounds_used":budget.refinement_rounds_used,
@@ -3081,7 +3282,8 @@ class NormalSchedulerCallback:
                     budget.bind_catalog(catalog)
                     before=budget.solver_wall_used
                     budget.solver_call_seconds=(min(max(0.,budget.remaining_seconds()-budget.solver_validation_headroom()),
-                        max(0.,budget.solver_seconds-budget.solver_wall_used)) if service_profile else 2. if catalog_round<2 else None)
+                        max(0.,budget.solver_seconds-budget.solver_wall_used),
+                        budget.solver_seconds if catalog_round==3 else max(.5,budget.solver_seconds/4.)) if service_profile else 2. if catalog_round<2 else None)
                     try:
                         with budget.measure("selection"):
                             options=({'incumbent':best} if (comparable_scope or service_profile) and best is not None and self.scheduler.method=='rh_cp_sat' else {})
@@ -3320,6 +3522,9 @@ class NormalSchedulerCallback:
             record['empty_reason']=_service_empty_reason(result,catalog,context,budget)
             record['empty_reason_scope']='observed_bounded_catalog'
             record['service_opportunity_certificates']=list(getattr(budget,'service_opportunity_certificates',()))
+            record['service_search_events']=list(getattr(budget,'service_search_events',()))
+            record['service_candidate_lifecycle']=list(getattr(budget,'service_candidate_rows',{}).values())
+            record['selected_catalog_identity']=_catalog_identity(catalog)
             record['objective_terms']=dict(zip(('F','-L','R','G_service','E','tau'),result.objective))
         if completion is not None: record["suffix_completion"]=completion
         elif self.evaluation_profile==STITCHED_EVALUATION_PROFILE and self.online_policy is None:

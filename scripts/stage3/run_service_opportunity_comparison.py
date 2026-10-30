@@ -3,7 +3,8 @@
 Common physical checkpoints are copied byte-for-byte from the prior campaign.
 All children, including smoke and audits, share the new 7200 child-second cap.
 First-iteration smoke covers 20 simulation seconds (absolute t=20 through t=40);
-the explicitly authorized supply-r2 smoke covers 25 seconds (t=20 through t=45).
+the explicitly authorized supply-r2 and local-recovery smoke cover 25 seconds
+(t=20 through t=45).
 """
 from __future__ import annotations
 
@@ -22,7 +23,8 @@ from scripts.stage3 import run_selective_common_comparison_a4 as comparison
 DRIVER = Path(__file__).resolve()
 OUTPUT_NAME = "rs_service_opportunity_20261030"
 SUPPLY_R2_OUTPUT_NAME = "rs_service_opportunity_supply_r2_20261030"
-OUTPUT_NAMES = (OUTPUT_NAME, SUPPLY_R2_OUTPUT_NAME)
+LOCAL_RECOVERY_OUTPUT_NAME = "rs_local_recovery_20261031"
+OUTPUT_NAMES = (OUTPUT_NAME, SUPPLY_R2_OUTPUT_NAME, LOCAL_RECOVERY_OUTPUT_NAME)
 PROFILE = "service_opportunity_v1"
 ORIGIN_NAME = "rs_selective_quality_a4_20261030"
 COMMON_HASHES = {
@@ -54,6 +56,9 @@ def policy_for_output(output):
     if policy["campaign"] == SUPPLY_R2_OUTPUT_NAME:
         policy.update(previous_ledger_readonly=OUTPUT_NAME+"/repair_budget_ledger.json",
                       run_role="AUTHORIZED_SUPPLY_RESERVATION_REPAIR_FOLLOWUP")
+    elif policy["campaign"] == LOCAL_RECOVERY_OUTPUT_NAME:
+        policy.update(previous_ledger_readonly=SUPPLY_R2_OUTPUT_NAME+"/repair_budget_ledger.json",
+                      run_role="AUTHORIZED_LOCAL_RECOVERY_FOLLOWUP")
     return policy
 
 
@@ -156,7 +161,7 @@ def main(argv=None):
         checkpoint = args.output/"common_initial"/args.root/"common.checkpoint.json"
         base.require(base.file_hash(checkpoint)==COMMON_HASHES[args.root], "common checkpoint changed")
         run_output = args.output/"smoke_only" if args.stage=="smoke" else args.output
-        smoke_seconds = 25 if args.output.name==SUPPLY_R2_OUTPUT_NAME else 20
+        smoke_seconds = 25 if args.output.name in (SUPPLY_R2_OUTPUT_NAME, LOCAL_RECOVERY_OUTPUT_NAME) else 20
         result = comparison.run_arm(run_output,args.root,args.method,checkpoint,
             dict(source_commit=source["commit"],source_hash=source["source_hash"],cpu=args.cpu,
                  campaign=args.output.name,run_role="SMOKE_NOT_FORMAL" if args.stage=="smoke" else "FORMAL_SINGLE_ARM"),

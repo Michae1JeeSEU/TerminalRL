@@ -343,9 +343,25 @@ class SchedulerPort:
     def report_normal_evidence(self, rows, snapshot_version):
         return self.__world.report_normal_evidence(rows, snapshot_version)
 
-    def prepare_latency_submission(self, plans, timing):
+    def prepare_latency_submission(self, plans, timing, *, traffic_policy="legacy"):
         from .planning_latency import prepare_submission
-        return prepare_submission(self.__world, plans, timing)
+        return prepare_submission(self.__world, plans, timing, traffic_policy=traffic_policy)
+
+    def latency_submission_plans(self, token):
+        packet = self.__world.__dict__.get("_planning_latency_packets", {}).get(token)
+        return None if packet is None else tuple(packet["plans"])
+
+    def latency_submission_recovery_log(self, token):
+        packet = self.__world.__dict__.get("_planning_latency_packets", {}).get(token)
+        return () if packet is None else tuple(packet.get("recovery_log", ()))
+
+    def repair_latency_submission(self, token, provider, *, max_work_s=None):
+        from .local_traffic_recovery import repair_submission
+        return repair_submission(self.__world, token, provider, max_work_s=max_work_s)
+
+    def complete_latency_repair(self, token, handoff_delay=0.):
+        from .local_traffic_recovery import complete_repair
+        return complete_repair(self.__world, token, handoff_delay=handoff_delay)
 
     def latency_packet_guard(self, token):
         from .planning_latency import guard_submission
@@ -368,7 +384,13 @@ class SchedulerPort:
         return publish_submission(self.__world, token)
 
     def discard_latency_submission(self, token):
-        self.__world.__dict__.get("_planning_latency_packets", {}).pop(token, None)
+        registry = self.__world.__dict__.get("_planning_latency_packets", {})
+        pending = [token]
+        while pending:
+            packet = registry.pop(pending.pop(), None)
+            if packet is None: continue
+            candidate = packet.get("revalidation") or {}
+            pending.extend(t for t in (candidate.get("replacement_token"), packet.get("repair_candidate_token")) if t)
 
     def normal_maneuver_start_events(self, after_index=0):
         """Actual revealed starts only; proposals are not progress."""
@@ -1208,7 +1230,7 @@ class RotatingSlotWorld:
             return prepared
         return self._commit_submission(tuple(plans), prepared)
 
-    def _prepare_submission(self, plans, *, cancel=()):
+    def _prepare_submission(self, plans, *, cancel=(), pair_certificates=None, pair_counts=None):
         plans = tuple(plans)
         ids = [p.aircraft_id for p in plans]
         if len(ids) != len(set(ids)):
@@ -1319,7 +1341,10 @@ class RotatingSlotWorld:
             blocking = [r.to_dict() for p in plans if p.pad_id is not None
                         for r in self.pads.conflicts(p.pad_id, p.end_time-13.5,
                             p.end_time+service_duration(self.config, self.aircraft[p.aircraft_id].service_class), p.aircraft_id)]
-            return self._reject("RESOURCE_CONFLICT", detail=str(exc), blocking_reservations=blocking)
+            return self._reject("RESOURCE_CONFLICT", detail=str(exc), blocking_reservations=blocking,
+                proposed_actions=[dict(aircraft_id=p.aircraft_id, trajectory_hash=p.trajectory_hash,
+                    source=(p.source_ring,p.source_slot), target=(p.target_ring,p.target_slot),
+                    pad_id=p.pad_id, start=p.start_time, end=p.end_time) for p in plans])
         traffic = [self._traffic(a, soft) for a in self.aircraft.values()
                    if a.status in AIRBORNE or a.status == "LANDED_SERVICE"]
         start_cpu = walltime.perf_counter()
@@ -1330,10 +1355,26 @@ class RotatingSlotWorld:
                            *(p.end_time for p in soft.values())]) + 2*math.pi/.035
             end = min(horizon, x.end_time, y.end_time)
             if end > self.time:
+                if pair_certificates is not None:
+                    # A certificate binds both full continuations and the
+                    # checked interval, independently of a global version.
+                    from .planning_latency import _traffic_signature
+                    key = tuple(sorted((x.aircraft_id, y.aircraft_id)))
+                    first, second = (x, y) if x.aircraft_id < y.aircraft_id else (y, x)
+                    old = pair_certificates.get(key)
+                    signatures = (_traffic_signature(first), _traffic_signature(second))
+                    if (old is not None and old[:2] == signatures
+                            and old[2] <= self.time and end <= old[3]):
+                        if pair_counts is not None: pair_counts["reused_pairs"] += 1
+                        continue
+                if pair_counts is not None: pair_counts["pairs_checked"] += 1
                 result = validate_separation(x, y, self.time, end, config=self.config)
                 if not result.accepted:
                     self.cpu["validation"] += walltime.perf_counter() - start_cpu
-                    return self._reject(result.reason, pair=[x.aircraft_id, y.aircraft_id], validation=result.details)
+                    return self._reject(result.reason, pair=[x.aircraft_id, y.aircraft_id], validation=result.details,
+                        checked_interval=(self.time,end),
+                        first_trajectory_hashes=(x.base.trajectory_hash,*(p.trajectory_hash for p in x.plans)),
+                        second_trajectory_hashes=(y.base.trajectory_hash,*(p.trajectory_hash for p in y.plans)))
         self.cpu["validation"] += walltime.perf_counter() - start_cpu
         # Bind a future release only after forecasting its known emergency
         # disposition. Unprotected soft plans remain editable and preemptible.

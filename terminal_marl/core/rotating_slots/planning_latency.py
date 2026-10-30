@@ -23,6 +23,7 @@ EFFECTIVE_STATE_VERSION = "planning_effective_state_v1"
 EMERGENCY_TIMING_MODE = "existing_priority_response_cpu_charged"
 DEPENDENCY_PROTOCOL_VERSION = "affected_traffic_revalidation_v1"
 SEARCH_HANDOFF_VERSION = "search_handoff_reserve_v1"
+LOCAL_TRAFFIC_POLICY = "action_local_recovery_v1"
 EPS = 1.e-8
 
 
@@ -258,17 +259,20 @@ def _direct_dependencies(source, plans, starts, resources, pad_resources, graph_
     return tuple(sorted(ids)),tuple(sorted(hashes))
 
 
+def _traffic_signature(traffic):
+    return (traffic.base.trajectory_hash, tuple(p.trajectory_hash for p in traffic.plans),
+            traffic.start_time, traffic.end_time)
+
+
 def _pair_geometry(context, soft, proposed_ids):
     traffic=[context._traffic(a,soft) for a in context.aircraft.values()
              if a.status in AIRBORNE or a.status=="LANDED_SERVICE"]
     horizon=max([context.time,*(p.end_time for p in context.active.values()),
                  *(p.end_time for p in soft.values())])+2*math.pi/.035
     rows={}
-    def signature(x):
-        return (x.base.trajectory_hash,tuple(p.trajectory_hash for p in x.plans),x.start_time,x.end_time)
     for x,y in combinations(sorted(traffic,key=lambda x:x.aircraft_id),2):
         if x.aircraft_id not in proposed_ids and y.aircraft_id not in proposed_ids: continue
-        rows[(x.aircraft_id,y.aircraft_id)]=(signature(x),signature(y),context.time,min(horizon,x.end_time,y.end_time),x,y)
+        rows[(x.aircraft_id,y.aircraft_id)]=(_traffic_signature(x),_traffic_signature(y),context.time,min(horizon,x.end_time,y.end_time),x,y)
     return horizon,rows
 
 
@@ -297,13 +301,15 @@ def _external_delta(world, packet, baseline=None):
             if affected else ValidationResult(True,"GUARDED"))
 
 
-def prepare_submission(world, plans, timing):
+def prepare_submission(world, plans, timing, *, traffic_policy="legacy", pair_certificates=None):
     """Issue a world-owned packet after full certification and transaction prep.
 
     The public publish API accepts only an issued token, never caller-supplied
     prepared calendars or a caller-constructed SubmissionEvaluation.
     """
     started = time.perf_counter()
+    if traffic_policy not in ("legacy", LOCAL_TRAFFIC_POLICY):
+        raise ValueError("unknown traffic policy")
     plans = tuple(plans)
     if (not isinstance(timing,PlanningTiming) or world.time > timing.ready_deadline
             or any(abs(p.start_time-timing.effective_time)>EPS for p in plans)
@@ -321,7 +327,8 @@ def prepare_submission(world, plans, timing):
         return ValidationResult(False,"REJECTED","NO_EXECUTABLE_PREFIX"), None
     if any(p.aircraft_id in projected.active or p.aircraft_id in projected.soft for p in plans):
         return ValidationResult(False,"REJECTED","EXISTING_EFFECTIVE_COMMITMENT"), None
-    prepared = context._prepare_submission(plans)
+    pair_counts = dict(pairs_checked=0, reused_pairs=0)
+    prepared = context._prepare_submission(plans, pair_certificates=pair_certificates, pair_counts=pair_counts)
     if isinstance(prepared,ValidationResult): return prepared, None
     if (context.aircraft != dict(projected.aircraft)
             or freeze(context._energy_state()["executed"]) != projected.energy_ledger["executed"]):
@@ -370,7 +377,10 @@ def prepare_submission(world, plans, timing):
         traffic_tables={aid:_commitment_table(source,a,timing.effective_time) for aid,a in source.aircraft.items()
                         if aid not in direct_ids and (a.status in AIRBORNE or a.status=="LANDED_SERVICE")},
         revalidation=None,revalidation_sequence=0,
-        ready_at=None)
+        ready_at=None, traffic_policy=traffic_policy, certification_checks=pair_counts)
+    if traffic_policy == LOCAL_TRAFFIC_POLICY:
+        from .local_traffic_recovery import initialize_packet
+        initialize_packet(registry[token])
     registry[token]["not_ready_before"] = world.time+time.perf_counter()-started
     return ValidationResult(True,"PREPARED","",dict(token=token)), token
 
@@ -405,7 +415,9 @@ def _direct_guard(world, packet):
                 return ValidationResult(False,"REJECTED","ENERGY_BOUND_CHANGED",dict(aircraft_id=aid))
     if (_reservations(world.slots.reservations,packet["resources"],target)!=packet["resource_key"]
             or _reservations(world.pads.reservations,packet["pad_resources"],target)!=packet["pad_key"]):
-        return ValidationResult(False,"REJECTED","RESOURCE_DEPENDENCY_CHANGED")
+        return ValidationResult(False,"REJECTED","RESOURCE_DEPENDENCY_CHANGED",dict(
+            slot_before=packet["resource_key"],slot_after=_reservations(world.slots.reservations,packet["resources"],target),
+            pad_before=packet["pad_key"],pad_after=_reservations(world.pads.reservations,packet["pad_resources"],target)))
     graph_table=packet["dependency_table"]
     _,expected_graph,completed=graph_table[bisect_right(tuple(r[0] for r in graph_table),world.time)-1]
     direct_hashes=set(packet["direct_hashes"])
@@ -428,6 +440,9 @@ def _direct_guard(world, packet):
 def guard_submission(world, token):
     packet=world.__dict__.get("_planning_latency_packets",{}).get(token)
     if packet is None: return ValidationResult(False,"REJECTED","UNISSUED_LATENCY_PACKET")
+    if packet.get("traffic_policy") == LOCAL_TRAFFIC_POLICY:
+        from .local_traffic_recovery import guard_submission as local_guard
+        return local_guard(world, packet)
     direct=_direct_guard(world,packet)
     return _external_delta(world,packet) if direct.accepted else direct
 
@@ -440,6 +455,9 @@ def revalidate_submission(world, token, *, max_work_s=None):
     work_deadline=math.inf if max_work_s is None else started+max_work_s
     packet=world.__dict__.get("_planning_latency_packets",{}).get(token)
     if packet is None: return ValidationResult(False,"REJECTED","UNISSUED_LATENCY_PACKET")
+    if packet.get("traffic_policy") == LOCAL_TRAFFIC_POLICY:
+        from .local_traffic_recovery import revalidate_submission as local_revalidate
+        return local_revalidate(world, token, max_work_s=max_work_s)
     packet["ready_at"]=None
     packet["revalidation"]=None
     direct=_direct_guard(world,packet)
@@ -504,6 +522,9 @@ def revalidate_submission(world, token, *, max_work_s=None):
 def complete_revalidation(world, token, attempt, *, promote=False):
     packet=world.__dict__.get("_planning_latency_packets",{}).get(token)
     if packet is None: return ValidationResult(False,"REJECTED","UNISSUED_LATENCY_PACKET")
+    if packet.get("traffic_policy") == LOCAL_TRAFFIC_POLICY:
+        from .local_traffic_recovery import complete_revalidation as local_complete
+        return local_complete(world, token, attempt, promote=promote)
     candidate=packet.get("revalidation")
     if candidate is None or candidate["attempt"]!=attempt:
         return ValidationResult(False,"REJECTED","UNISSUED_REVALIDATION")
@@ -642,7 +663,8 @@ class _FuturePort:
 class LatencyAwareScheduler:
     """One normal task with coalesced triggers and executor-owned delivery events."""
     def __init__(self, callback, *, lead_seconds=30., preparation_margin=1.,
-                 search_handoff_reserve_seconds=0., clock=time.perf_counter, restart_policy="legacy"):
+                 search_handoff_reserve_seconds=0., clock=time.perf_counter, restart_policy="legacy",
+                 traffic_policy="auto"):
         PlanningTiming.from_lead(0.,lead_seconds,preparation_margin)
         if not math.isfinite(search_handoff_reserve_seconds) or search_handoff_reserve_seconds<0:
             raise ValueError("invalid search handoff reserve")
@@ -653,6 +675,12 @@ class LatencyAwareScheduler:
         self._last_normal_start_time = None
         self._last_restart_time = None
         self.callback = callback
+        if traffic_policy == "auto":
+            traffic_policy = (LOCAL_TRAFFIC_POLICY if getattr(callback, "evaluation_profile", None)
+                              == "service_opportunity_v1" else "legacy")
+        if traffic_policy not in ("legacy", LOCAL_TRAFFIC_POLICY):
+            raise ValueError("unknown traffic policy")
+        self.traffic_policy = traffic_policy
         self.lead_seconds, self.preparation_margin = lead_seconds, preparation_margin
         self.search_handoff_reserve_seconds = search_handoff_reserve_seconds
         self.clock = clock
@@ -685,8 +713,16 @@ class LatencyAwareScheduler:
                     self._handoff_service += wall_s
                 else:
                     self.pending["due"] += wall_s
-            elif self.pending["stage"]=="PREPARED":
+            elif self.pending["stage"] in ("PREPARED", "REPAIR_START"):
                 self._service_until=max(now,self._service_until)+wall_s
+            elif self.pending["stage"] == "REPAIRING":
+                self._service_until=max(now,self._service_until)+wall_s
+                delivery = self.pending["repair_delivery_due"]
+                if delivery <= now+EPS: self._handoff_service += wall_s
+                else:
+                    delivery += wall_s
+                    self.pending["repair_delivery_due"] = delivery
+                    self.pending["due"] = min(delivery,self.pending["timing"].effective_time)
         else:
             old_time, value = self._idle_service
             self._idle_service = (now,wall_s+(value if old_time==now else 0.))
@@ -733,6 +769,7 @@ class LatencyAwareScheduler:
         self._service_until = port.time
         self._idle_service = (None,0.)
         record = dict(interface=EFFECTIVE_STATE_VERSION,emergency_timing_mode=EMERGENCY_TIMING_MODE,
+            traffic_policy=self.traffic_policy,
             dependency_protocol=DEPENDENCY_PROTOCOL_VERSION,revalidation_work_s=0.,revalidation_work_cpu_s=0.,
             revalidation_count=0,revalidations=[],dependency_guard_work_s=0.,dependency_guard_work_cpu_s=0.,
             **asdict(timing),normal_work_s=duration,normal_work_cpu_s=time.process_time()-started_cpu,
@@ -744,7 +781,7 @@ class LatencyAwareScheduler:
             record["search_handoff"] = (future.search_handoff if future is not None else None)
         self.records.append(record)
         self.pending = dict(timing=timing,stage="RESULT",due=port.time+duration+service,
-            proposal=proposal,evidence=evidence,reason=reason,token=None,online_service_s=service,
+            proposal=proposal,evidence=evidence,original_evidence=list(evidence),reason=reason,token=None,online_service_s=service,
             record_index=len(self.records)-1)
         port.planning_latency_event("normal_task_started",**record)
 
@@ -793,8 +830,11 @@ class LatencyAwareScheduler:
 
     def _finish(self, port, status, reason="", result=None):
         p = self.pending
-        if p["token"]: port.discard_latency_submission(p["token"])
         record = self.records[p["record_index"]]
+        if self.traffic_policy == LOCAL_TRAFFIC_POLICY and p["token"]:
+            events = list(port.latency_submission_recovery_log(p["token"]))
+            if events: record["local_recovery_events"] = events
+        if p["token"]: port.discard_latency_submission(p["token"])
         record.update(status=status,reason=reason,finished_time=port.time,
             online_service_s=p["online_service_s"],commit_status=getattr(result,"status","REJECTED"),
             submitted=(len(p["proposal"]) if result is not None and result.accepted else 0),
@@ -819,6 +859,17 @@ class LatencyAwareScheduler:
         started=port.time+queued
         return dict(dispatch_time=port.time,queued_service_s=queued,planned_started_time=started,
             available_work_s=max(0.,self.pending["timing"].ready_deadline-port.time-queued))
+
+    def _sync_local_proposal(self, port):
+        """Acknowledgements and evidence follow the world-issued active token."""
+        plans = port.latency_submission_plans(self.pending["token"])
+        if plans is None: raise ValueError("issued local latency packet missing")
+        self.pending["proposal"] = plans
+        ids = {plan.aircraft_id for plan in plans}
+        self.pending["evidence"] = [row for row in self.pending.get("original_evidence",self.pending["evidence"])
+                                    if row.get("aircraft_id") in ids]
+        self.records[self.pending["record_index"]]["retained_trajectory_hashes"] = [
+            plan.trajectory_hash for plan in plans]
 
     def _begin_revalidation(self, port, *, extra_delay=0.):
         p=self.pending; record=self.records[p["record_index"]]
@@ -849,17 +900,23 @@ class LatencyAwareScheduler:
         record["revalidation_work_cpu_s"]+=cpu; record["revalidations"].append(row)
         record.update(status="REVALIDATING",commit_status="DEFERRED")
         p.update(stage="REVALIDATING",due=row["due"],revalidation_attempt=evaluation.details.get("attempt"),
-            revalidation_accepted=evaluation.accepted,revalidation_reason=evaluation.reason)
+            revalidation_accepted=evaluation.accepted,revalidation_reason=evaluation.reason,
+            repair_requested=bool(evaluation.details.get("affected_action_hashes")))
+        if self.traffic_policy == LOCAL_TRAFFIC_POLICY:
+            row["local_recovery"] = dict(evaluation.details)
         port.planning_latency_event("normal_revalidation_started",**row)
 
     def inspect_dependencies(self, port):
-        if self.pending is None or self.pending["stage"]!="PREPARED": return
+        if self.pending is None or self.pending["stage"] not in ("PREPARED", "REPAIR_START", "REPAIRING"): return
         record=self.records[self.pending["record_index"]]
         started,started_cpu=self.clock(),time.process_time()
         result=port.latency_packet_guard(self.pending["token"])
         duration=self.clock()-started; cpu=time.process_time()-started_cpu
         record["dependency_guard_work_s"]+=duration; record["dependency_guard_work_cpu_s"]+=cpu
         self.online_service(port.time,duration,cpu,"dependency_guard")
+        if self.traffic_policy == LOCAL_TRAFFIC_POLICY and result.details.get("affected_aircraft_ids"):
+            record.setdefault("guard_local_recovery", []).append(dict(result.details,
+                observed_time=port.time, accepted=result.accepted, reason=result.reason, wall_s=duration))
         if result.reason=="TRAFFIC_REVALIDATION_REQUIRED": self._begin_revalidation(port)
         elif not result.accepted: self._finish(port,"REJECTED",result.reason)
 
@@ -885,7 +942,8 @@ class LatencyAwareScheduler:
                 self._finish(port,"NO_EXECUTABLE_PREFIX" if p["reason"]=="NO_EXECUTABLE_PREFIX" else "REJECTED",p["reason"])
                 return
             started, started_cpu = self.clock(), time.process_time()
-            evaluation, token = port.prepare_latency_submission(p["proposal"],timing)
+            evaluation, token = (port.prepare_latency_submission(p["proposal"],timing,traffic_policy=self.traffic_policy)
+                if self.traffic_policy != "legacy" else port.prepare_latency_submission(p["proposal"],timing))
             duration = self.clock()-started
             if duration < 0 or not math.isfinite(duration): raise ValueError("invalid preparation duration")
             preparation_start = port.time+self._handoff_service
@@ -908,6 +966,10 @@ class LatencyAwareScheduler:
             record["ready_guard_work_s"] = guard_work
             record["prepare_work_s"] += guard_work
             record["prepare_work_cpu_s"] += time.process_time()-started_cpu
+            if (self.traffic_policy == LOCAL_TRAFFIC_POLICY and guarded is not None
+                    and guarded.details.get("affected_aircraft_ids")):
+                record.setdefault("guard_local_recovery", []).append(dict(guarded.details,
+                    observed_time=port.time,accepted=guarded.accepted,reason=guarded.reason,wall_s=guard_work))
             if guarded is not None and guarded.reason=="TRAFFIC_REVALIDATION_REQUIRED":
                 self._begin_revalidation(port,extra_delay=guard_work)
                 return
@@ -952,6 +1014,12 @@ class LatencyAwareScheduler:
                 self._handoff_service = 0.
                 p.update(stage="PREPARED",due=timing.effective_time)
                 record.update(status="PREPARED",commit_status="DEFERRED",ready_time=guard.details["ready_at"])
+                if self.traffic_policy == LOCAL_TRAFFIC_POLICY:
+                    self._sync_local_proposal(port)
+                    if p.pop("repair_requested", False):
+                        record["standby_ready_time"] = guard.details["ready_at"]
+                        record["standby_trajectory_hashes"] = [plan.trajectory_hash for plan in p["proposal"]]
+                        p.update(stage="REPAIR_START",due=guard.details["ready_at"])
                 self.online_service(port.time,registration,registration_cpu,"ready_registration")
                 self._service_until=max(self._service_until,guard.details["ready_at"])
                 port.planning_latency_event("normal_packet_prepared",**record)
@@ -978,8 +1046,50 @@ class LatencyAwareScheduler:
                     "SUPERSEDED" if result.reason=="TRAFFIC_REVALIDATION_REQUIRED" else "REJECTED",
                 reason=None if result.accepted else result.reason)
             self._handoff_service=0.
+        elif p["stage"] == "REPAIR_START":
+            budget = self._revalidation_budget(port)
+            if budget["available_work_s"] <= 0:
+                p.update(stage="PREPARED", due=timing.effective_time)
+                record["recovery_delivery"] = "standby"
+                return
+            started, cpu_started = self.clock(), time.process_time()
+            result = port.repair_latency_submission(p["token"],getattr(self.callback,"provider",None),
+                max_work_s=budget["available_work_s"])
+            duration = max(self.clock()-started,result.details.get("minimum_work_s",0.))
+            cpu = time.process_time()-cpu_started
+            if duration < 0 or not math.isfinite(duration): raise ValueError("invalid repair duration")
+            self.online_service(port.time,duration,cpu,"local_traffic_repair")
+            due = port.time+budget["queued_service_s"]+duration
+            self._service_until = max(self._service_until,due)
+            self._handoff_service = 0.
+            record.update(repair_work_s=duration,repair_work_cpu_s=cpu,repair=dict(result.details),
+                repair_due=due,recovery_delivery=result.details.get("delivery","standby"))
+            p.update(stage="REPAIRING",due=min(due,timing.effective_time),
+                repair_delivery_due=due,
+                repair_late=due>timing.ready_deadline,repair_result_accepted=result.accepted,
+                repair_result_reason=result.reason)
+        elif p["stage"] == "REPAIRING":
+            started, cpu_started = time.perf_counter(), time.process_time()
+            # Late repair delivery keeps the previously registered standby.
+            # complete_repair rejects its candidate receipt without extending
+            # the deadline or changing that original standby receipt.
+            result = port.complete_latency_repair(p["token"],self._handoff_service)
+            duration, cpu = time.perf_counter()-started,time.process_time()-cpu_started
+            self._handoff_service = 0.
+            if not result.accepted:
+                if result.reason == "TRAFFIC_REVALIDATION_REQUIRED":
+                    self._begin_revalidation(port,extra_delay=duration)
+                else: self._finish(port,"REJECTED",result.reason)
+                return
+            self._sync_local_proposal(port)
+            record.update(recovery_delivery="repaired" if result.status=="REPAIRED" else "standby",
+                ready_time=result.details["ready_at"])
+            p.update(stage="PREPARED",due=timing.effective_time)
+            self.online_service(port.time,duration,cpu,"local_repair_promotion")
         elif p["stage"] == "PREPARED":
             bookkeeping, bookkeeping_cpu = time.perf_counter(), time.process_time()
+            if self.traffic_policy == LOCAL_TRAFFIC_POLICY:
+                record["local_recovery_events"] = list(port.latency_submission_recovery_log(p["token"]))
             result = port.publish_latency_submission(p["token"])
             publication_wall, publication_cpu = time.perf_counter()-bookkeeping,time.process_time()-bookkeeping_cpu
             record.update(publication_bookkeeping_wall_s=publication_wall,
@@ -1008,7 +1118,7 @@ class LatencyAwareScheduler:
             callback=self.callback.state_dict(),pending=self.pending,dirty=self.dirty,
             records=self.records,online_services=self.online_services,
             idle_service=self._idle_service,handoff_service=self._handoff_service,
-            service_until=self._service_until,restart_policy=self.restart_policy,
+            service_until=self._service_until,restart_policy=self.restart_policy,traffic_policy=self.traffic_policy,
             restart_requested=self._restart_requested,last_normal_start_time=self._last_normal_start_time,
             last_restart_time=self._last_restart_time)
 
@@ -1021,6 +1131,8 @@ class LatencyAwareScheduler:
                 or state["preparation_margin"]!=self.preparation_margin
                 or state.get("restart_policy","legacy")!=self.restart_policy):
             raise ValueError("planning latency interface binding mismatch")
+        if state.get("traffic_policy","legacy") != self.traffic_policy:
+            raise ValueError("planning latency traffic policy binding mismatch")
         self.callback.load_state_dict(state["callback"])
         self.pending,self.dirty = state["pending"],state["dirty"]
         self.records,self.online_services = state["records"],state["online_services"]

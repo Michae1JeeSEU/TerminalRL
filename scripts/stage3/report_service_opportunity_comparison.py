@@ -237,6 +237,141 @@ def witnessed_idle(callbacks,events,idle,demand,lo=20.,hi=320.,*,event_log_compl
         assumption="same_projected_committed_and_hold_evolution; not_global_proof_of_all_feasible_paths")
 
 
+def candidate_lifecycle_metrics(callbacks, supplies):
+    """Distinct physical candidates; catalog refreshes never enlarge denominators.
+
+    A solve event is evidence of actual CP submission, rather than eligibility
+    or inclusion in a generated catalog. Missing legacy exports stay unknown.
+    """
+    observed=[cb for cb in callbacks if "service_candidate_lifecycle" in cb]
+    if not observed: return None
+    candidates={}; malformed=0
+    for cb in observed:
+        for row in cb["service_candidate_lifecycle"]:
+            key=row.get("candidate_hash")
+            if not key: malformed+=1; continue
+            item=candidates.setdefault(key,dict(row,callback_stop_reasons=[],_rows=[]))
+            item["_rows"].append(row)
+            item["callback_stop_reasons"].extend(cb[k] for k in ("empty_reason","stop_reason","solver_stop_reason") if cb.get(k))
+    def has(item,field): return any(row.get(field) for row in item["_rows"])
+    critical={key:item for key,item in candidates.items() if any(r.get("critical") is True for r in item["_rows"])}
+    eligible={key:item for key,item in critical.items() if has(item,"catalog_identities") or has(item,"retained_in_catalog")}
+    solved={key:item for key,item in critical.items() if has(item,"actual_solve_events")}
+    single={key:item for key,item in critical.items() if any(r.get("single_accepted") is True for r in item["_rows"])}
+    unsolved=Counter(); uncertified=Counter(); timing=[]
+    for key,item in critical.items():
+        if key not in solved:
+            reasons={r["single_rejection_reason"] for r in item["_rows"] if r.get("single_rejection_reason")}
+            reasons.update(item["callback_stop_reasons"])
+            unsolved.update(reasons)
+        if not has(item,"certified_events"):
+            uncertified.update(set(item["callback_stop_reasons"]))
+    for key,item in candidates.items():
+        if not any(r.get("source_ring")=="middle" for r in item["_rows"]): continue
+        hashes={h for r in item["_rows"] for h in r.get("action_hashes",())}
+        forecasts=sorted({r["predicted_service_window"] for r in item["_rows"] if finite(r.get("predicted_service_window"))})
+        for start in supplies["starts"]:
+            if start["trajectory_hash"] not in hashes: continue
+            timing.append(dict(candidate_hash=key,aircraft_id=start["aircraft_id"],trajectory_hash=start["trajectory_hash"],
+                actual_start=start["start"],actual_completion=(start["end"] if start in supplies["completed"] else None),
+                predicted_service_windows=forecasts or None,
+                start_minus_predicted_window_s=[start["start"]-t for t in forecasts] or None,
+                completion_minus_predicted_window_s=([start["end"]-t for t in forecasts] if start in supplies["completed"] else None)))
+    joint=[dict(callback_index=i,**event) for i,cb in enumerate(callbacks)
+        for event in cb.get("service_search_events",()) if event.get("event")=="JOINT_CHECKED"]
+    return dict(distinct_generated_candidate_count=len(candidates),critical_generated_count=len(critical),
+        critical_single_accepted_count=len(single),critical_catalog_eligible_count=len(eligible),
+        critical_actual_cp_participated_count=len(solved),
+        critical_catalog_eligible_actual_cp_participated_count=len(set(solved)&set(eligible)),
+        critical_actual_cp_participation_rate=(len(set(solved)&set(eligible))/len(eligible) if eligible else None),
+        critical_generated_actual_cp_participation_rate=(len(solved)/len(critical) if critical else None),
+        participation_denominator="distinct critical candidates admitted to at least one catalog",
+        unsolved_reason_counts=dict(unsolved),uncertified_reason_counts=dict(uncertified),
+        reason_semantics="exported single rejection and callback stop reasons associated with candidate; no per-candidate causal attribution",
+        critical_unsolved_count=len(set(critical)-set(solved)),
+        critical_uncertified_count=sum(not has(item,"certified_events") for item in critical.values()),
+        critical_joint_checked_count=sum(has(item,"joint_checked_events") for item in critical.values()),
+        critical_certified_count=sum(has(item,"certified_events") for item in critical.values()),
+        real_joint_check_count=sum(e.get("certificate_reused") is False for e in joint),
+        reused_joint_certificate_count=sum(e.get("certificate_reused") is True for e in joint),
+        joint_conflict_count=sum(len(e.get("conflicts",())) for e in joint),joint_check_rows=joint,
+        malformed_candidate_rows=malformed,callbacks_with_lifecycle=len(observed),callbacks_without_lifecycle=len(callbacks)-len(observed),
+        middle_inner_actual_timing=timing,
+        timing_semantics="actual replay maneuver start/completion relative to candidate forecast service time; forecast is not an actual service or certification")
+
+
+def local_recovery_metrics(tasks):
+    """Read wrapper task evidence, keeping absent R2 instrumentation null."""
+    if tasks is None: return None
+    local=[t for t in tasks if t.get("traffic_policy")=="action_local_recovery_v1"]
+    if not local: return None
+    deltas=[]
+    for index,task in enumerate(local):
+        rows=[r["local_recovery"] for r in task.get("revalidations",()) if "local_recovery" in r]
+        rows.extend(task.get("guard_local_recovery",()))
+        deltas.extend(dict(task_index=index,**row) for row in rows)
+    delivered=Counter(); delivered_plans=Counter(); reasons=Counter(); withdrawals=Counter()
+    whole_batch=0; no_standby=0; joins=Counter(); conflicts=[]; repair_failures=[]; recovery_events=[]
+    for task in local:
+        reason=task.get("reason")
+        if reason: reasons[reason]+=1
+        committed=task.get("status")=="COMMITTED" and task.get("submitted",0)>0
+        if committed:
+            delivery=task.get("recovery_delivery","original")
+            delivered[delivery]+=1; delivered_plans[delivery]+=task["submitted"]
+        task_deltas=[r["local_recovery"] for r in task.get("revalidations",()) if "local_recovery" in r]
+        task_deltas.extend(task.get("guard_local_recovery",()))
+        changed=any(r.get("affected_action_hashes") for r in task_deltas)
+        if changed and "finished_time" in task and not committed and task.get("submitted")==0:
+            whole_batch+=1
+            no_standby+=int(reason=="NO_CERTIFIED_STANDBY")
+        joins.update(r["status"] for r in task.get("revalidations",()) if r.get("status"))
+        # Recovery logs can repeat a revalidation receipt. Preserve the normal
+        # per-check observations, then add only unseen explicit conflict rows
+        # from the supplemental copies and failed repair attempts.
+        seen=set()
+        for row in task_deltas:
+            for conflict in row.get("conflicts",()):
+                conflicts.append(conflict); seen.add(json.dumps(conflict,sort_keys=True))
+        extra=list(task.get("local_recovery_events",()))
+        recovery_events.extend(extra)
+        if isinstance(task.get("repair"),dict): extra.append(task["repair"])
+        seen_repairs=set()
+        for row in extra:
+            for attempt in row.get("repair_attempts",()):
+                identity=json.dumps(attempt,sort_keys=True)
+                if attempt.get("accepted") is False and identity not in seen_repairs:
+                    repair_failures.append(attempt); seen_repairs.add(identity)
+            for source in (row,*row.get("repair_attempts",())):
+                for conflict in source.get("conflicts",()):
+                    identity=json.dumps(conflict,sort_keys=True)
+                    if identity not in seen: conflicts.append(conflict); seen.add(identity)
+    for row in deltas: withdrawals.update(row.get("withdrawn_action_reasons",{}).values())
+    repair=[t["repair"] for t in local if isinstance(t.get("repair"),dict)]
+    return dict(local_policy_task_count=len(local),local_delta_check_count=len(deltas),
+        affected_action_occurrences=sum(len(r.get("affected_action_hashes",())) for r in deltas),
+        retained_action_occurrences=sum(len(r.get("retained_action_hashes",())) for r in deltas),
+        withdrawn_action_reason_counts=dict(withdrawals),
+        recursive_release_edge_occurrences=sum(len(r.get("recursive_release_edges",())) for r in deltas),
+        real_joint_pair_checks=sum(r.get("pairs_checked",0) for r in deltas),
+        reused_pair_certificates=sum(r.get("reused_pairs",0) for r in deltas),
+        envelope_proofs=sum(r.get("envelope_proofs",0) for r in deltas),
+        real_joint_conflict_count=len(conflicts),real_joint_conflicts=conflicts,
+        failed_repair_attempt_count=len(repair_failures),failed_repair_attempts=repair_failures,
+        failed_repair_attempt_status_counts=dict(Counter(r.get("status") for r in repair_failures if r.get("status"))),
+        failed_repair_attempt_reason_counts=dict(Counter(r.get("reason") for r in repair_failures if r.get("reason"))),
+        local_change_whole_batch_rejection_count=whole_batch,
+        local_change_no_certified_standby_cancellation_count=no_standby,
+        delivered_task_counts={k:delivered[k] for k in ("original","standby","repaired")},
+        delivered_plan_counts={k:delivered_plans[k] for k in ("original","standby","repaired")},
+        task_finish_reason_counts=dict(reasons),repair_timed_out_count=sum(r.get("timed_out") is True for r in repair),
+        certification_join_status_counts=dict(joins),certified_revalidation_join_count=joins["CERTIFIED"],
+        timeout_reason_counts={k:v for k,v in reasons.items() if "TIMEOUT" in k or "DEADLINE" in k or "EXPIRED" in k},
+        certification_join_reason_counts={k:v for k,v in reasons.items() if "CERT" in k or "REVALIDATION" in k or "JOIN" in k},
+        local_delta_rows=deltas,repair_rows=repair,recovery_event_rows=recovery_events,
+        semantics="action/pair/edge totals are occurrences per local delta check; extra conflict/repair log copies deduplicated within task; failed repair status alone does not establish a pair-conflict trace; delivery counts require COMMITTED and submitted>0; whole-batch rejection observes an earlier affected-action delta, with NO_CERTIFIED_STANDBY separately counted")
+
+
 def extract_metrics(input_root,root,method,ordinary):
     directory=Path(input_root)/"arms"/root/method/"evaluation"/root/method
     paths={name:directory/relative for name,relative in dict(events="replay/events.jsonl",frames="replay/states.jsonl",
@@ -249,11 +384,13 @@ def extract_metrics(input_root,root,method,ordinary):
         normal_touchdown_delta=delta.get("L_normal"),inherited_final_touchdown_count=len(inherited) if inherited is not None else None,
         treatment_final_touchdown_count=len(treatments) if treatments is not None else None,
         treatment_normal_touchdown_count=None,
-        energy_j=delta.get("energy_j"),emergencies=delta.get("L_emergency"),failures=delta.get("failed_before_landing"),
+        energy_j=delta.get("energy_j"),increment_energy_kwh=delta.get("energy_kwh"),
+        emergencies=delta.get("L_emergency"),failures=delta.get("failed_before_landing"),
         holding_time_by_ring=ordinary.get("holding_time_by_ring"),holding_energy_by_ring=ordinary.get("holding_energy_by_ring"))
     if missing: return dict(result,physical_idle=None,middle_inner_supply=None,witnessed_idle=None,
         supply_gap=None,inner_stock_empty=None,replay_input_hash_checks=None,event_log_complete=None,
-        first_certificate_times=None,forecast_service_terms=None,empty_reason_counts=None)
+        first_certificate_times=None,forecast_service_terms=None,empty_reason_counts=None,
+        candidate_lifecycle=None,local_recovery=None)
     import yaml
     config=yaml.safe_load(paths["config"].read_text(encoding="utf8"))
     services={k:v["duration_s"] for k,v in config["pads"]["service_classes"].items()}
@@ -266,11 +403,14 @@ def extract_metrics(input_root,root,method,ordinary):
     event_log_complete=all(replay_checks.values()) and all((ordinary.get("checks") or {}).values()) and bool(ordinary.get("checks"))
     physical=physical_idle(events,trajectories,frames,config["pads"]["count"],services)
     supplies=middle_inner(events,trajectories,20.,320.)
+    task_path=directory/"method_normal_tasks.json"
     demand=demand_intervals(frames,20.,320.)
     normal=[e["aircraft_id"] for e in events if e.get("type")=="touchdown" and 20.<e.get("time",-1)<=320.
             and (e.get("details") or {}).get("emergency") is False]
     result["treatment_normal_touchdown_count"]=len([aid for aid in normal if aid not in set(inherited or ())]) if inherited is not None else None
     result.update(physical_idle=physical,middle_inner_supply=supplies,
+        candidate_lifecycle=candidate_lifecycle_metrics(callbacks,supplies),
+        local_recovery=local_recovery_metrics(load(task_path) if task_path.is_file() else None),
         replay_input_hash_checks=replay_checks,event_log_complete=event_log_complete,
         supply_gap=supply_gap(supplies["completed"],demand),
         inner_stock_empty=inner_stock_empty(frames),

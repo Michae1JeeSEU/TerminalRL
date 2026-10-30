@@ -180,7 +180,13 @@ def test_empty_reason_requires_bounded_certified_alternative():
     result=PlanningResult((),(),None,'LIMITED',(0,0,0,0,0,0),certified=True)
     assert _service_empty_reason(result,catalog,context,budget)=='CANDIDATE_INSUFFICIENT'
     budget._service_certified_move_alternative=True
+    assert _service_empty_reason(result,catalog,context,budget)=='CANDIDATE_INSUFFICIENT'
+    from terminal_marl.core.rotating_slots.stage2_planning import _catalog_identity
+    budget._service_wait_evidence=dict(catalog_identity=_catalog_identity(catalog),context_identity=context.snapshot_key,
+        objective=result.objective,current_comparison=True)
     assert _service_empty_reason(result,catalog,context,budget)=='REASONABLE_WAIT'
+    different=NS(columns={'a':(*catalog.columns['a'],Column('a','WAIT'))},downstream=catalog.downstream)
+    assert _service_empty_reason(result,different,context,budget)=='CANDIDATE_INSUFFICIENT'
     result=replace(result,details={'solver_stop_reason':'PREFIX_VALIDATION_UNKNOWN'})
     assert _service_empty_reason(result,catalog,context,budget)=='CERTIFICATION_TIMEOUT'
 
@@ -206,6 +212,14 @@ def test_service_cp_combines_failure_and_landing_before_one_validation():
     assert result.solver_records[0]['objective_components']==('F','-L')
     assert all(len(row['model_integer_key'])==6 for row in result.solver_records)
     assert result.details['optimality_scope']=='bounded_candidate_catalog_model'
+    from terminal_marl.core.rotating_slots.stage2_planning import _catalog_identity,_candidate_hash
+    identity=_catalog_identity(catalog)
+    submissions=[e for e in budget.service_search_events if e['event']=='SOLVER_SUBMITTED']
+    assert len(submissions)==len(result.solver_records)
+    final_hash=_candidate_hash(catalog.columns['a'][-1])
+    assert all(final_hash in e['model_indices'] and e['catalog_identity']==identity for e in submissions)
+    assert all(r['bound_catalog_identity']==identity and r['selected_columns'] for r in result.solver_records)
+    assert any(e['event']=='JOINT_CHECKED' for e in budget.service_search_events)
 
 
 @pytest.mark.parametrize('method',['energy_slack','rh_cp_sat'])
@@ -486,3 +500,118 @@ def test_service_reservation_refills_at_most_two_distinct_aircraft_without_reset
     assert budget.service_completion_reserve()==0. and budget.solver_validation_headroom()==0.
     assert state['priority_reserve_released']
     assert state['priority_used_seconds']==.5 and state['priority_reserved_seconds']==original
+
+
+def test_future_busy_pad_window_backprojects_real_middle_supply(monkeypatch):
+    from terminal_marl.core.rotating_slots import stage2_planning as sp
+    from terminal_marl.core.rotating_slots.world import RotatingSlotWorld,STAGE2_POLICY_ID
+    from terminal_marl.core.rotating_slots.selective_replanning import build_global_frame,PlanningScope
+    from tests.test_stage2_quality_budget import Clock
+    world=RotatingSlotWorld(experiment_policy_id=STAGE2_POLICY_ID)
+    world.auto_emergency=False;world.seed_hold('middle','middle',0,.9)
+    for pad in range(6): world.seed_service('ground_'+str(pad),pad,140.)
+    snapshot=world.build_planning_snapshot()
+    provider=CandidateProvider(planning_profile='downstream_service_v8',evaluation_profile=SERVICE_EVALUATION_PROFILE)
+    frame=build_global_frame(snapshot,provider,EvaluationContext(snapshot))
+    scope=PlanningScope(snapshot.version,snapshot.time,('middle',),('middle',),tuple(sorted(set(snapshot.aircraft)-{'middle'})),
+        actual_k=1,objective_frame_id=frame.identity)
+    clock=Clock();monkeypatch.setattr(sp.time,'perf_counter',clock)
+    budget=PlanningBudget(wall_start=0.,soft_seconds=30.,candidate_seconds=30.,search_wall_deadline=15.,planning_wall_deadline=19.)
+    context=EvaluationContext(snapshot,budget=budget,scope=scope,global_frame=frame)
+    generator=provider.iter_progressive_columns(snapshot,budget,context,scope=scope,early_publish=True)
+    catalog=next(generator);generator.close()
+    delayed=[c for c in catalog.columns['middle'] if c.plans and c.plans[0].start_time>snapshot.time]
+    assert delayed
+    rows=list(budget.service_candidate_rows.values())
+    timed=[r for r in rows if r['predicted_service_window']==140. and r['retained_in_catalog']]
+    assert timed and all(r['target_start']>0 for r in timed)
+    assert all(not r['actual_solve_events'] for r in rows)  # Binding/generation is not Solve.
+    assert budget.service_generation_allowance(100.)<=15.-budget.solver_validation_headroom()-.5
+
+
+@pytest.mark.parametrize('actual_cp',[False,True],ids=['timing_only','actual_cp'])
+def test_late_inner06_final_publishes_before_ordinary_work_and_keeps_solver_budget(monkeypatch,actual_cp):
+    if actual_cp: pytest.importorskip('ortools')
+    from terminal_marl.core.rotating_slots import stage2_planning as sp
+    from tests.test_stage2_quality_budget import Clock
+    provider=CandidateProvider(planning_profile='downstream_service_v8',evaluation_profile=SERVICE_EVALUATION_PROFILE)
+    # Use the real physical inner-slot0 -> P5 final, named as the located case.
+    # Only generation timing is controlled; all safety checks remain real.
+    from terminal_marl.core.rotating_slots.world import RotatingSlotWorld,STAGE2_POLICY_ID
+    world=RotatingSlotWorld(experiment_policy_id=STAGE2_POLICY_ID)
+    world.auto_emergency=False;world.seed_hold('initial_inner_06','inner',0,.9)
+    snapshot=world.build_planning_snapshot()
+    from terminal_marl.core.rotating_slots.selective_replanning import build_global_frame,PlanningScope
+    from terminal_marl.core.rotating_slots.trajectory import generate_final
+    plan=generate_final('initial_inner_06','inner',0,5,0.,source_version=0,config=snapshot.config).plan
+    assert plan is not None
+    frame=build_global_frame(snapshot,provider,EvaluationContext(snapshot))
+    scope=PlanningScope(snapshot.version,snapshot.time,('initial_inner_06',),('initial_inner_06',),(),actual_k=1,objective_frame_id=frame.identity)
+    clock=Clock();monkeypatch.setattr(sp.time,'perf_counter',clock)
+    budget=PlanningBudget(wall_start=0.,soft_seconds=30.,candidate_seconds=30.,candidate_active_seconds=0.,
+        solver_seconds=8.,search_wall_deadline=15.,planning_wall_deadline=19.)
+    monkeypatch.setattr(provider,'_progress_steps',lambda *a:iter(()))
+    monkeypatch.setattr(provider,'_delayed_steps',lambda *a:iter(()))
+    monkeypatch.setattr(provider.references,'build_steps',lambda *a:iter(()))
+    def paths(*args):
+        clock.now+=.3;yield ('COLUMN',(plan,),'NONE')
+        pytest.fail('ordinary enumeration resumed before solving newly published FINAL')
+    monkeypatch.setattr(provider,'_paths',paths)
+    seen=[]
+    class BoundedScheduler:
+        def plan(self,snapshot,catalog,context,budget,*,incumbent=None):
+            seen.append((any(c.plans for c in catalog.columns['initial_inner_06']),budget.solver_call_seconds))
+            assert budget.solver_call_seconds>0
+            if actual_cp:
+                result=RollingHorizonCPSATScheduler().plan(snapshot,catalog,context,budget,incumbent=incumbent)
+            else:
+                result=EnergySlackScheduler().plan(snapshot,catalog,context,budget)
+                budget.solver_wall_used+=budget.solver_call_seconds
+            clock.now+=budget.solver_call_seconds
+            if result.prefix: clock.now=12.1  # Leave delivery margin, no new batch headroom.
+            return result
+    local=LocalPlanner(provider,BoundedScheduler(),progressive_v2=True)
+    result=local.plan(snapshot,scope,frame,budget)
+    assert seen==[(False,2.),(True,2.)]
+    assert result.certified and result.prefix==(plan,)
+    row=next(r for r in budget.service_candidate_rows.values() if r['action_hashes']==[plan.trajectory_hash])
+    assert row['critical'] and row['retained_in_catalog'] and row['generated_elapsed_s']<3.
+    if actual_cp:
+        first_identity=local.telemetry['calls'][0]['catalog_identity']
+        second_identity=local.telemetry['calls'][1]['catalog_identity']
+        assert first_identity!=second_identity
+        assert row['actual_solve_events']
+        assert all(e['catalog_identity']==second_identity and isinstance(e['model_index'],int)
+            for e in row['actual_solve_events'])
+        assert row['selected_events'] and row['joint_checked_events']
+        submitted=[e for e in budget.service_search_events if e['event']=='SOLVER_SUBMITTED'
+            and e['catalog_identity']==second_identity]
+        assert submitted and all(e['allocated_seconds']>0 for e in submitted)
+    else:
+        assert not row['actual_solve_events']  # The timing-only scheduler does not claim actual CP participation.
+    assert row['certified_events'] and budget.ready_deadline_ok()
+
+
+def test_later_unsolved_catalog_cannot_inherit_prior_optimal_wait_reason():
+    from terminal_marl.core.rotating_slots.stage2_planning import _catalog_identity
+    _,catalog,context=continuation_problem();budget=PlanningBudget()
+    result=PlanningResult((),(),None,'CATALOG_LEX_OPTIMAL',(0,0,0,0,0,0),certified=True)
+    budget._service_wait_evidence=dict(catalog_identity=_catalog_identity(catalog),context_identity=context.snapshot_key,
+        objective=result.objective,current_comparison=True)
+    grown=NS(columns={'a':(*catalog.columns['a'],Column('a','MOVE'))},downstream=catalog.downstream)
+    budget.service_search_event('CATALOG_GENERATED',(),catalog=grown)
+    assert _service_empty_reason(result,catalog,context,budget)=='CERTIFICATION_TIMEOUT'
+
+
+def test_published_catalog_identity_is_cached_but_replacement_resets_it():
+    from dataclasses import fields
+    from types import MappingProxyType
+    from terminal_marl.core.rotating_slots.stage2_planning import CandidateCatalog,_catalog_identity
+    keep=Column('a','KEEP')
+    catalog=CandidateCatalog(MappingProxyType({'a':(keep,)}),{},{},(),context_identity='context')
+    identity=_catalog_identity(catalog)
+    assert catalog.catalog_identity==identity and _catalog_identity(catalog)==identity
+    assert 'catalog_identity' not in {f.name for f in fields(catalog)}
+    assert '_catalog_identity_cache' not in {f.name for f in fields(catalog)}
+    grown=replace(catalog,columns=MappingProxyType({'a':(keep,Column('a','MOVE'))}))
+    assert grown.catalog_identity is None and _catalog_identity(grown)!=identity

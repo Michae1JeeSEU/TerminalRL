@@ -164,7 +164,8 @@ class LocalPlanner:
                 # retained rather than comparing incompatible old objectives.
                 started=time.perf_counter(); solver_before=budget.solver_wall_used
                 budget.solver_call_seconds=(min(max(0.,budget.remaining_seconds()-budget.solver_validation_headroom()),
-                    max(0.,budget.solver_seconds-budget.solver_wall_used)) if service_profile else
+                    max(0.,budget.solver_seconds-budget.solver_wall_used),
+                    budget.solver_seconds if index==3 else max(.5,budget.solver_seconds/4.)) if service_profile else
                     min(2.,max(0.,budget.solver_seconds-budget.solver_wall_used)) if index==0 else max(0.,budget.solver_seconds-budget.solver_wall_used))
                 with budget.measure("selection"):
                     result=self.scheduler.plan(snapshot,catalog,context,budget,incumbent=mapped)
@@ -195,6 +196,9 @@ class LocalPlanner:
                     coverage=coverage,generation_coverage=catalog.generation_coverage,
                     candidate_count=sum(map(len,catalog.columns.values())),wall_elapsed_s=budget.elapsed,
                     search_remaining_s=budget.remaining_seconds(),candidate_active_s=budget.candidate_elapsed)
+                if service_profile:
+                    from ..stage2_planning import _catalog_identity
+                    catalog_row['catalog_identity']=_catalog_identity(catalog)
                 catalog_rows.append(catalog_row)
                 calls.append(dict(scope=scope.to_dict(),scope_identity=scope.identity,certified=result.certified,status=result.status,
                     objective=list(result.objective),best_objective=None if incumbent is None else list(incumbent.objective),
@@ -204,6 +208,7 @@ class LocalPlanner:
                     pair_conflict_evidence=list(context.pair_conflict_evidence),
                     pair_conflict_evidence_dropped=context.pair_conflict_evidence_dropped,
                     solver_records=list(result.solver_records),candidate_count=sum(map(len,catalog.columns.values())),
+                    catalog_identity=catalog_row.get('catalog_identity'),
                     generation_wall_s=generation_wall,solve_wall_s=solve_wall,wall_elapsed_s=budget.elapsed,
                     search_remaining_s=budget.remaining_seconds(),solver_remaining_s=max(0.,budget.solver_seconds-budget.solver_wall_used),
                     solver_call_allocation_s=budget.solver_call_seconds,solver_wall_used_this_call_s=budget.solver_wall_used-solver_before,
