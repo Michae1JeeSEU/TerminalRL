@@ -1084,6 +1084,8 @@ function renderDetails(frame) {
   const uav = findSelected(frame);
   const selectedExists = Boolean(uav);
   $("selectedTitle").textContent = uav ? Scene.uidLabel(uav) : state.selectedEvent ? Scene.uidLabel(state.selectedEvent) : state.selectedUid == null ? "未选择 UAV" : `${Scene.uidLabel({ uid: state.selectedUid })} · 当前帧无数据`;
+  const aircraftId = uav ? uav.aircraft_id : state.selectedEvent?.aircraft_id;
+  $("selectedAircraftId").textContent = `aircraft_id: ${aircraftId == null || aircraftId === "" ? "—" : aircraftId}`;
   $("selectionPulse").classList.toggle("active", selectedExists);
   const refUav = uav && state.reference ? safeArray(referenceAtTime(frame?.time)?.uavs).find((candidate) => sameAircraft(candidate, uav)) : null;
   const eventText = state.selectedEvent ? ` · 事件 ${state.selectedEvent.outcome ?? "—"} / ${state.selectedEvent.reason ?? "—"} @ ${formatTime(state.selectedEvent.time)}` : "";
