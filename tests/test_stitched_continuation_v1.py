@@ -309,7 +309,84 @@ def test_completion_keeps_absolute_prefix_and_two_object_cap_after_scope_rebuild
     assert budget.candidate_seconds==6. and budget.solver_seconds==8. and budget.max_per_aircraft==32
     report=p.suffix_completion_report(budget)
     assert all(row["complete_candidate_in_catalog"] == (outcome=="KNOWN") for row in report["attempts"])
+    assert state["priority_slice_completed"]
+    assert all(row["priority_slice_attempted"] and row["skip_reason"] is None for row in report["attempts"])
+    # Rebuilding the scope cannot grant another global priority micro-round.
+    for row in state["records"]:
+        row["suffix_status"]="RUNNING"
+    def no_second_priority(*args):
+        raise AssertionError("priority micro-round repeated across scope rebuild")
+        yield
+    monkeypatch.setattr(p,"_suffix_completion_steps",no_second_priority)
+    ordinary_growth=[]
+    def exhaust_on_ordinary_growth(snapshot,a,node,budget,context):
+        yield ("ATTEMPT",None,None)
+        ordinary_growth.append(a.id)
+        budget.candidate_active_seconds=budget.candidate_seconds
+        yield ("ATTEMPT",None,None)
+    monkeypatch.setattr(p,"_progress_steps",exhaust_on_ordinary_growth)
+    monkeypatch.setattr("terminal_marl.core.rotating_slots.stage2_planning.energy_slack",
+        lambda snapshot,a,ref:(a.id!="c",a.id))
+    rebuilt=p.iter_progressive_columns(s,budget,context(scope2),scope=scope2,early_publish=True)
+    next(rebuilt); rebuilt.close()
+    assert ordinary_growth==["c"] and state["priority_slice_completed"] and calls==["a","b"]
     json.dumps(report)
+
+
+@pytest.mark.parametrize("remaining",(.35,.05))
+def test_global_completion_slice_precedes_ordinary_growth_with_small_remaining_budget(monkeypatch,remaining):
+    import terminal_marl.core.rotating_slots.stage2_planning as planning
+    _,s=world_snapshot("outer",n=3,timing=False); p=provider(); events=[]; initial=[]; publications=[]
+    budget=PlanningBudget(max_per_aircraft=32,max_attempts=1024,candidate_seconds=6.,solver_seconds=8.,
+        hint_seconds=3.,soft_seconds=30.,candidate_active_seconds=0.)
+    monkeypatch.setattr(planning,"energy_slack",lambda snapshot,a,ref:ord(a.id))
+    originals={aid:Primitive("prefix_"+aid,aid,source_slot=a.slot,target_slot=a.slot) for aid,a in s.aircraft.items()}
+    def column(snapshot,a,plans,kind,context,ref=None,*args,**kwargs):
+        n=_node(snapshot,a) if not plans else PlanningNode("inner",a.slot,40.,.8,0.,1)
+        return PredictionColumn(a.id,kind,tuple(plans),(),(0,)*5,n,NormalReference("UNKNOWN"),
+            downstream={"estimated_touchdown":100.+ord(a.id)})
+    monkeypatch.setattr(p,"_column",column); monkeypatch.setattr(p,"_previous_chain",lambda *args:None)
+    def catalog(snapshot,budget,context,columns,refs,ordered):
+        publications.append(tuple(columns))
+        return CandidateCatalog({aid:tuple(rows) for aid,rows in columns.items()},{},dict(budget.attempts),())
+    monkeypatch.setattr(p,"_progressive_catalog",catalog)
+    def progress(snapshot,a,node,budget,context):
+        initial.append(a.id)
+        yield ("ATTEMPT",None,None) if a.id=="a" else ("COLUMN",(originals[a.id],),"NONE")
+        events.append("ordinary_"+a.id); budget.candidate_active_seconds+=.2
+        yield ("ATTEMPT",None,None)
+    def empty(*args):
+        if False: yield
+    def reference(snapshot,a,node,budget):
+        if node.ring!="inner": return NormalReference("UNKNOWN")
+        events.append("suffix_"+a.id); budget.candidate_active_seconds+=.1; budget.attempts[a.id]+=1
+        yield None
+        # More suffix work exists, but the global micro-round must not consume it.
+        events.append("suffix_second_"+a.id)
+        yield None
+        return NormalReference("UNKNOWN")
+    monkeypatch.setattr(p,"_progress_steps",progress); monkeypatch.setattr(p,"_paths",empty)
+    monkeypatch.setattr(p,"_delayed_steps",empty); monkeypatch.setattr(p.references,"build_steps",reference)
+    context=EvaluationContext(s,budget=budget)
+    monkeypatch.setattr(context,"check_single",lambda c:ValidationResult(True,"SAFE"))
+    generator=p.iter_progressive_columns(s,budget,context,early_publish=True)
+    first=next(generator)
+    assert initial==["a","b","c"] and not events and len(publications)==1
+    p.reserve_suffix_completion(s,first,budget)
+    assert [row["aircraft_id"] for row in budget._suffix_completion_state["records"]]==["b","c"]
+    settings=budget.settings(); budget.candidate_active_seconds=6.-remaining
+    grown=next(generator); generator.close()
+    assert initial==["a","b","c"] and len(publications)==2
+    assert events==(["suffix_b","suffix_c","ordinary_a"] if remaining==.35 else ["suffix_b"])
+    assert not any("second" in event for event in events)
+    assert budget.settings()==settings and budget.solver_wall_used==budget.hint_wall_used==0.
+    assert all({c.signature for c in first.columns[aid]} <= {c.signature for c in grown.columns[aid]} for aid in first.columns)
+    rows=p.suffix_completion_report(budget)["attempts"]
+    assert rows[0]["priority_slice_attempted"] and rows[0]["skip_reason"] is None
+    assert rows[1]["priority_slice_attempted"] == (remaining==.35)
+    if remaining==.05:
+        assert rows[1]["pending"] and rows[1]["skip_reason"]==rows[1]["budget_exit"]=="CANDIDATE_WORK_CUTOFF"
+    json.dumps(p.suffix_completion_report(budget))
 
 
 def test_new_profile_full_plan_still_uses_unchanged_final_atomic_authorization(monkeypatch):

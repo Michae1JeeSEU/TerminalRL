@@ -1152,6 +1152,7 @@ class CandidateProvider:
         budget._suffix_completion_state=dict(snapshot_id=snapshot.version,
             records=[dict(aircraft_id=c.aircraft_id,prefix_hashes=[p.trajectory_hash for p in c.plans],
                 suffix_status="RESERVED",complete_candidate_in_catalog=False,wall_s=0.,
+                priority_slice_attempted=False,skip_reason="AWAITING_FIRST_CP_GROWTH",
                 _partial=c,_cursor=None) for c in candidates[:2]],retained=dict(catalog.columns))
 
     @staticmethod
@@ -1906,6 +1907,34 @@ class CandidateProvider:
                 row=completion_rows.get(a.id)
                 if row is not None and row["suffix_status"] in ("RESERVED","RUNNING"):
                     stages[a.id].insert(0,("suffix_completion",self._suffix_completion_steps(snapshot,a,budget,row)))
+            def add_completion(a,item):
+                if item[0]!="COLUMN": return
+                validation_started=time.perf_counter()
+                retained=add(a,item[1],item[2])
+                row=completion_rows[a.id]
+                row["complete_candidate_in_catalog"]=retained or any(c.plans==item[1] for c in columns[a.id])
+                row["single_validation_wall_s"]=time.perf_counter()-validation_started
+                row["wall_s"]+=row["single_validation_wall_s"]
+            if completion_rows and not state.get("priority_slice_completed",False):
+                # One global micro-round, in the frozen reservation order,
+                # before ordinary aircraft can consume the remaining budget.
+                # Keep the existing cursor for later family round-robin work.
+                state["priority_slice_completed"]=True
+                aircraft_by_id={a.id:a for a in order}
+                for row in state["records"]:
+                    a=aircraft_by_id.get(row["aircraft_id"])
+                    if a is None:
+                        row["skip_reason"]="OUTSIDE_CURRENT_SCOPE"; continue
+                    family=next((family for family in stages[a.id] if family[0]=="suffix_completion"),None)
+                    if family is None:
+                        row["skip_reason"]="SUFFIX_ALREADY_TERMINAL"; continue
+                    if not budget.available(a.id):
+                        row["skip_reason"]=budget.generation_stop_reason() or "PER_AIRCRAFT_BUDGET"; continue
+                    row["priority_slice_attempted"]=True; row["skip_reason"]=None
+                    try: item=next(family[1])
+                    except StopIteration:
+                        stages[a.id].remove(family)
+                    else: add_completion(a,item)
             for round_index,target in enumerate((2,4,8)):
                 quota=max(1,math.ceil(budget.max_per_aircraft*(.25,.5,1.)[round_index]))
                 visited=set()
@@ -1955,13 +1984,8 @@ class CandidateProvider:
                                 continue
                             if kind=="delayed_reference": add(a,*item)
                             elif kind!="reference" and item[0]=="COLUMN":
-                                validation_started=time.perf_counter()
-                                retained=add(a,item[1],item[2])
-                                if kind=="suffix_completion":
-                                    completion_rows[a.id]["complete_candidate_in_catalog"]=retained or any(
-                                        c.plans==item[1] for c in columns[a.id])
-                                    completion_rows[a.id]["single_validation_wall_s"]=time.perf_counter()-validation_started
-                                    completion_rows[a.id]["wall_s"]+=completion_rows[a.id]["single_validation_wall_s"]
+                                if kind=="suffix_completion": add_completion(a,item)
+                                else: add(a,item[1],item[2])
                     if not advanced or not budget.available(): break
                 catalog=catalog_with_coverage("GROWTH_"+str(round_index))
                 publish(catalog.downstream,catalog.columns)
