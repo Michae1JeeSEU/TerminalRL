@@ -1,0 +1,1079 @@
+{
+  "rows": [
+    {
+      "audit_status": {
+        "c2_status": "PASS",
+        "continuous_separation": "CERTIFIED",
+        "full_a20_covered": true,
+        "human_review": "HUMAN_PENDING",
+        "independent_status": "PASS",
+        "proposal_nonexecution": "PASS",
+        "pva_status": "CHECKED",
+        "resource_status": "PASS",
+        "status": "PASS",
+        "wall_s": 8.219445990165696
+      },
+      "campaign": "old",
+      "critical_actual_cp_participated_count": null,
+      "critical_actual_cp_participation_rate": null,
+      "critical_catalog_eligible_count": null,
+      "critical_generated_count": null,
+      "critical_single_accepted_count": null,
+      "emergencies": 0,
+      "export_lineage": null,
+      "failures": 0,
+      "first_nonempty_cert_count": 13,
+      "first_nonempty_cert_elapsed_median_s": 5.145619857124984,
+      "first_nonempty_cert_elapsed_p95_s": 6.756325962021947,
+      "first_nonempty_cert_elapsed_values_s": [
+        4.370362855028361,
+        4.058051845058799,
+        4.505163297988474,
+        4.0274880938231945,
+        4.37294493499212,
+        5.3592312599066645,
+        6.115444413851947,
+        4.799806993920356,
+        5.145619857124984,
+        6.756325962021947,
+        5.732671258971095,
+        6.062008830951527,
+        5.633352919947356
+      ],
+      "holding_energy_by_ring": {
+        "inner": 67790629.67787413,
+        "middle": 87229227.53946176,
+        "outer": 289211384.36953574
+      },
+      "holding_time_by_ring": {
+        "inner": 730.7140633872395,
+        "middle": 1165.9655332763537,
+        "outer": 4248.235047361313
+      },
+      "increment_energy_kwh": 157.9161730130685,
+      "inherited_normal": 5,
+      "inner_stock_empty_longest_s": 40.0,
+      "local_change_no_certified_standby_cancellation_count": null,
+      "local_change_whole_batch_rejection_count": null,
+      "local_envelope_proofs": null,
+      "local_original_plan_count": null,
+      "local_original_task_count": null,
+      "local_real_joint_conflict_count": null,
+      "local_repair_timed_out_count": null,
+      "local_repaired_plan_count": null,
+      "local_repaired_task_count": null,
+      "local_reused_pair_certificates": null,
+      "local_standby_plan_count": null,
+      "local_standby_task_count": null,
+      "local_timeout_reason_counts": null,
+      "longest_all_pad_idle_s": 10.0,
+      "method": "FULL_H",
+      "middle_inner_actual_timing": {
+        "completed": [
+          {
+            "aircraft_id": "initial_middle_02",
+            "end": 80.0,
+            "start": 40.0
+          },
+          {
+            "aircraft_id": "initial_middle_00",
+            "end": 100.0,
+            "start": 60.0
+          },
+          {
+            "aircraft_id": "initial_middle_04",
+            "end": 120.0,
+            "start": 80.0
+          },
+          {
+            "aircraft_id": "initial_middle_03",
+            "end": 231.4913833190521,
+            "start": 191.4913833190521
+          },
+          {
+            "aircraft_id": "initial_middle_06",
+            "end": 231.4913833190521,
+            "start": 191.4913833190521
+          },
+          {
+            "aircraft_id": "initial_middle_01",
+            "end": 251.4913833190521,
+            "start": 211.4913833190521
+          },
+          {
+            "aircraft_id": "initial_middle_07",
+            "end": 271.4913833190521,
+            "start": 231.4913833190521
+          }
+        ],
+        "starts": [
+          {
+            "aircraft_id": "initial_middle_02",
+            "end": 80.0,
+            "start": 40.0
+          },
+          {
+            "aircraft_id": "initial_middle_00",
+            "end": 100.0,
+            "start": 60.0
+          },
+          {
+            "aircraft_id": "initial_middle_04",
+            "end": 120.0,
+            "start": 80.0
+          },
+          {
+            "aircraft_id": "initial_middle_03",
+            "end": 231.4913833190521,
+            "start": 191.4913833190521
+          },
+          {
+            "aircraft_id": "initial_middle_06",
+            "end": 231.4913833190521,
+            "start": 191.4913833190521
+          },
+          {
+            "aircraft_id": "initial_middle_01",
+            "end": 251.4913833190521,
+            "start": 211.4913833190521
+          },
+          {
+            "aircraft_id": "initial_middle_07",
+            "end": 271.4913833190521,
+            "start": 231.4913833190521
+          }
+        ]
+      },
+      "middle_inner_completed_count": 7,
+      "middle_inner_starts_count": 7,
+      "normal_planning_committed_nonempty": 8,
+      "normal_planning_committed_nonempty_over_all_finished": 0.5714285714285714,
+      "normal_planning_finished_nonempty": 12,
+      "normal_planning_finished_task_count": 14,
+      "normal_planning_join_rate": 0.6666666666666666,
+      "normal_planning_join_rate_denominator": "finished nonempty proposed groups; pending and no-prefix excluded",
+      "pad_idle_seconds_by_pad": {
+        "0": 109.5,
+        "1": 93.0,
+        "2": 83.0,
+        "3": 93.0,
+        "4": 231.5,
+        "5": 177.9913833190521
+      },
+      "pad_seconds_idle": 787.9913833190521,
+      "root": "s3r23",
+      "schema_version": "rs_local_recovery_compact_metrics_v2",
+      "source_lineage": {
+        "common_checkpoint_sha256": "0f67e40052c6d80ba35efebaf1e47fb113a1aca7046332d20b0c44f8cc29efc7",
+        "evaluation_profile": "service_opportunity_v1",
+        "input_root": "/home/user/training_outputs/terminal/rs_service_opportunity_supply_r2_20261030",
+        "source_commit": null,
+        "source_hash": null
+      },
+      "status": "COMPLETE",
+      "treatment_normal": 7
+    },
+    {
+      "audit_status": {
+        "c2_status": "PASS",
+        "continuous_separation": "CERTIFIED",
+        "full_a20_covered": true,
+        "human_review": "HUMAN_PENDING",
+        "independent_status": "PASS",
+        "proposal_nonexecution": "PASS",
+        "pva_status": "CHECKED",
+        "resource_status": "PASS",
+        "status": "PASS",
+        "wall_s": 8.346186979906633
+      },
+      "campaign": "old",
+      "critical_actual_cp_participated_count": null,
+      "critical_actual_cp_participation_rate": null,
+      "critical_catalog_eligible_count": null,
+      "critical_generated_count": null,
+      "critical_single_accepted_count": null,
+      "emergencies": 0,
+      "export_lineage": null,
+      "failures": 0,
+      "first_nonempty_cert_count": 14,
+      "first_nonempty_cert_elapsed_median_s": 3.538100164500065,
+      "first_nonempty_cert_elapsed_p95_s": 5.543483114102855,
+      "first_nonempty_cert_elapsed_values_s": [
+        3.454079506918788,
+        3.6221208220813423,
+        3.802212652983144,
+        2.810950494138524,
+        3.3285295681562275,
+        5.543483114102855,
+        5.003852879162878,
+        3.0808260010089725,
+        3.0463184600230306,
+        3.0789368669502437,
+        3.6611823430284858,
+        4.812759135151282,
+        4.163354543037713,
+        3.2340563400648534
+      ],
+      "holding_energy_by_ring": {
+        "inner": 62006336.293352336,
+        "middle": 88601671.03769892,
+        "outer": 286110564.1415569
+      },
+      "holding_time_by_ring": {
+        "inner": 668.3652617473449,
+        "middle": 1184.310552032714,
+        "outer": 4202.6870022982
+      },
+      "increment_energy_kwh": 158.22581223130737,
+      "inherited_normal": 5,
+      "inner_stock_empty_longest_s": 40.0,
+      "local_change_no_certified_standby_cancellation_count": null,
+      "local_change_whole_batch_rejection_count": null,
+      "local_envelope_proofs": null,
+      "local_original_plan_count": null,
+      "local_original_task_count": null,
+      "local_real_joint_conflict_count": null,
+      "local_repair_timed_out_count": null,
+      "local_repaired_plan_count": null,
+      "local_repaired_task_count": null,
+      "local_reused_pair_certificates": null,
+      "local_standby_plan_count": null,
+      "local_standby_task_count": null,
+      "local_timeout_reason_counts": null,
+      "longest_all_pad_idle_s": 10.0,
+      "method": "RULE_LOCAL_K8",
+      "middle_inner_actual_timing": {
+        "completed": [
+          {
+            "aircraft_id": "initial_middle_02",
+            "end": 80.0,
+            "start": 40.0
+          },
+          {
+            "aircraft_id": "initial_middle_00",
+            "end": 100.0,
+            "start": 60.0
+          },
+          {
+            "aircraft_id": "initial_middle_04",
+            "end": 120.0,
+            "start": 80.0
+          },
+          {
+            "aircraft_id": "initial_middle_01",
+            "end": 194.69062674234823,
+            "start": 154.69062674234823
+          },
+          {
+            "aircraft_id": "initial_middle_03",
+            "end": 254.69062674234823,
+            "start": 214.69062674234823
+          },
+          {
+            "aircraft_id": "initial_middle_06",
+            "end": 274.69062674234823,
+            "start": 234.69062674234823
+          },
+          {
+            "aircraft_id": "initial_middle_07",
+            "end": 274.69062674234823,
+            "start": 234.69062674234823
+          }
+        ],
+        "starts": [
+          {
+            "aircraft_id": "initial_middle_02",
+            "end": 80.0,
+            "start": 40.0
+          },
+          {
+            "aircraft_id": "initial_middle_00",
+            "end": 100.0,
+            "start": 60.0
+          },
+          {
+            "aircraft_id": "initial_middle_04",
+            "end": 120.0,
+            "start": 80.0
+          },
+          {
+            "aircraft_id": "initial_middle_01",
+            "end": 194.69062674234823,
+            "start": 154.69062674234823
+          },
+          {
+            "aircraft_id": "initial_middle_03",
+            "end": 254.69062674234823,
+            "start": 214.69062674234823
+          },
+          {
+            "aircraft_id": "initial_middle_06",
+            "end": 274.69062674234823,
+            "start": 234.69062674234823
+          },
+          {
+            "aircraft_id": "initial_middle_07",
+            "end": 274.69062674234823,
+            "start": 234.69062674234823
+          }
+        ]
+      },
+      "middle_inner_completed_count": 7,
+      "middle_inner_starts_count": 7,
+      "normal_planning_committed_nonempty": 10,
+      "normal_planning_committed_nonempty_over_all_finished": 0.7692307692307693,
+      "normal_planning_finished_nonempty": 12,
+      "normal_planning_finished_task_count": 13,
+      "normal_planning_join_rate": 0.8333333333333334,
+      "normal_planning_join_rate_denominator": "finished nonempty proposed groups; pending and no-prefix excluded",
+      "pad_idle_seconds_by_pad": {
+        "0": 109.5,
+        "1": 93.0,
+        "2": 83.0,
+        "3": 93.0,
+        "4": 220.95195493682752,
+        "5": 156.19062674234823
+      },
+      "pad_seconds_idle": 755.6425816791757,
+      "root": "s3r23",
+      "schema_version": "rs_local_recovery_compact_metrics_v2",
+      "source_lineage": {
+        "common_checkpoint_sha256": "0f67e40052c6d80ba35efebaf1e47fb113a1aca7046332d20b0c44f8cc29efc7",
+        "evaluation_profile": "service_opportunity_v1",
+        "input_root": "/home/user/training_outputs/terminal/rs_service_opportunity_supply_r2_20261030",
+        "source_commit": null,
+        "source_hash": null
+      },
+      "status": "COMPLETE",
+      "treatment_normal": 7
+    },
+    {
+      "audit_status": null,
+      "campaign": "old",
+      "critical_actual_cp_participated_count": null,
+      "critical_actual_cp_participation_rate": null,
+      "critical_catalog_eligible_count": null,
+      "critical_generated_count": null,
+      "critical_single_accepted_count": null,
+      "emergencies": 0,
+      "export_lineage": null,
+      "failures": 0,
+      "first_nonempty_cert_count": 14,
+      "first_nonempty_cert_elapsed_median_s": 5.548652077559382,
+      "first_nonempty_cert_elapsed_p95_s": 7.2374864080920815,
+      "first_nonempty_cert_elapsed_values_s": [
+        6.853982462082058,
+        5.48356667207554,
+        5.202608707128093,
+        5.649202088825405,
+        5.774317182134837,
+        5.393030840903521,
+        5.928173358086497,
+        5.613737483043224,
+        4.180393615970388,
+        4.675431224051863,
+        4.548976943129674,
+        7.2374864080920815,
+        6.234719617990777,
+        2.779558676062152
+      ],
+      "holding_energy_by_ring": {
+        "inner": 170037115.40468395,
+        "middle": 187307476.5197703,
+        "outer": 409140708.67691696
+      },
+      "holding_time_by_ring": {
+        "inner": 1832.8272227946472,
+        "middle": 2503.6798778040957,
+        "outer": 6009.880633472962
+      },
+      "increment_energy_kwh": 241.9334741847155,
+      "inherited_normal": 3,
+      "inner_stock_empty_longest_s": 0.0,
+      "local_change_no_certified_standby_cancellation_count": null,
+      "local_change_whole_batch_rejection_count": null,
+      "local_envelope_proofs": null,
+      "local_original_plan_count": null,
+      "local_original_task_count": null,
+      "local_real_joint_conflict_count": null,
+      "local_repair_timed_out_count": null,
+      "local_repaired_plan_count": null,
+      "local_repaired_task_count": null,
+      "local_reused_pair_certificates": null,
+      "local_standby_plan_count": null,
+      "local_standby_task_count": null,
+      "local_timeout_reason_counts": null,
+      "longest_all_pad_idle_s": 10.0,
+      "method": "FULL_H",
+      "middle_inner_actual_timing": {
+        "completed": [
+          {
+            "aircraft_id": "initial_middle_06",
+            "end": 80.0,
+            "start": 40.0
+          },
+          {
+            "aircraft_id": "initial_middle_10",
+            "end": 80.0,
+            "start": 40.0
+          },
+          {
+            "aircraft_id": "initial_middle_02",
+            "end": 114.29756126925349,
+            "start": 74.29756126925349
+          },
+          {
+            "aircraft_id": "initial_middle_00",
+            "end": 186.10261852263858,
+            "start": 146.10261852263858
+          },
+          {
+            "aircraft_id": "initial_middle_07",
+            "end": 291.63984900609825,
+            "start": 251.63984900609825
+          },
+          {
+            "aircraft_id": "initial_middle_08",
+            "end": 311.63984900609825,
+            "start": 271.63984900609825
+          }
+        ],
+        "starts": [
+          {
+            "aircraft_id": "initial_middle_06",
+            "end": 80.0,
+            "start": 40.0
+          },
+          {
+            "aircraft_id": "initial_middle_10",
+            "end": 80.0,
+            "start": 40.0
+          },
+          {
+            "aircraft_id": "initial_middle_02",
+            "end": 114.29756126925349,
+            "start": 74.29756126925349
+          },
+          {
+            "aircraft_id": "initial_middle_00",
+            "end": 186.10261852263858,
+            "start": 146.10261852263858
+          },
+          {
+            "aircraft_id": "initial_middle_07",
+            "end": 291.63984900609825,
+            "start": 251.63984900609825
+          },
+          {
+            "aircraft_id": "initial_middle_08",
+            "end": 311.63984900609825,
+            "start": 271.63984900609825
+          }
+        ]
+      },
+      "middle_inner_completed_count": 6,
+      "middle_inner_starts_count": 6,
+      "normal_planning_committed_nonempty": 10,
+      "normal_planning_committed_nonempty_over_all_finished": 0.6666666666666666,
+      "normal_planning_finished_nonempty": 13,
+      "normal_planning_finished_task_count": 15,
+      "normal_planning_join_rate": 0.7692307692307693,
+      "normal_planning_join_rate_denominator": "finished nonempty proposed groups; pending and no-prefix excluded",
+      "pad_idle_seconds_by_pad": {
+        "0": 226.5,
+        "1": 251.63984900609825,
+        "2": 163.13984900609825,
+        "3": 93.0,
+        "4": 98.0,
+        "5": 123.0
+      },
+      "pad_seconds_idle": 955.2796980121965,
+      "root": "s3r24",
+      "schema_version": "rs_local_recovery_compact_metrics_v2",
+      "source_lineage": {
+        "common_checkpoint_sha256": "255f3ce5a3c45b01d3fb59ce5069ce39dec73b420735759ecdd6ce510f5eda77",
+        "evaluation_profile": "service_opportunity_v1",
+        "input_root": "/home/user/training_outputs/terminal/rs_service_opportunity_supply_r2_20261030",
+        "source_commit": null,
+        "source_hash": null
+      },
+      "status": "COMPLETE",
+      "treatment_normal": 7
+    },
+    {
+      "audit_status": null,
+      "campaign": "old",
+      "critical_actual_cp_participated_count": null,
+      "critical_actual_cp_participation_rate": null,
+      "critical_catalog_eligible_count": null,
+      "critical_generated_count": null,
+      "critical_single_accepted_count": null,
+      "emergencies": 0,
+      "export_lineage": null,
+      "failures": 0,
+      "first_nonempty_cert_count": 15,
+      "first_nonempty_cert_elapsed_median_s": 3.5519721219316125,
+      "first_nonempty_cert_elapsed_p95_s": 4.372776666888967,
+      "first_nonempty_cert_elapsed_values_s": [
+        3.6611034569796175,
+        3.799561714986339,
+        3.0865103360265493,
+        3.587197063025087,
+        4.372776666888967,
+        3.444184642052278,
+        3.9671364040113986,
+        3.494248712901026,
+        3.2037050689104944,
+        3.4100122440140694,
+        3.5883151409216225,
+        3.759003071114421,
+        2.9603925519622862,
+        2.6156670849304646,
+        3.5519721219316125
+      ],
+      "holding_energy_by_ring": {
+        "inner": 137304230.13644546,
+        "middle": 205822216.19929308,
+        "outer": 409113655.737077
+      },
+      "holding_time_by_ring": {
+        "inner": 1480.0000000002342,
+        "middle": 2751.160555242159,
+        "outer": 6009.483251995621
+      },
+      "increment_energy_kwh": 238.5397833722856,
+      "inherited_normal": 3,
+      "inner_stock_empty_longest_s": 0.0,
+      "local_change_no_certified_standby_cancellation_count": null,
+      "local_change_whole_batch_rejection_count": null,
+      "local_envelope_proofs": null,
+      "local_original_plan_count": null,
+      "local_original_task_count": null,
+      "local_real_joint_conflict_count": null,
+      "local_repair_timed_out_count": null,
+      "local_repaired_plan_count": null,
+      "local_repaired_task_count": null,
+      "local_reused_pair_certificates": null,
+      "local_standby_plan_count": null,
+      "local_standby_task_count": null,
+      "local_timeout_reason_counts": null,
+      "longest_all_pad_idle_s": 33.62616790362597,
+      "method": "RULE_LOCAL_K8",
+      "middle_inner_actual_timing": {
+        "completed": [
+          {
+            "aircraft_id": "initial_middle_02",
+            "end": 120.0,
+            "start": 80.0
+          },
+          {
+            "aircraft_id": "initial_middle_00",
+            "end": 140.0,
+            "start": 100.0
+          },
+          {
+            "aircraft_id": "initial_middle_03",
+            "end": 180.0,
+            "start": 140.0
+          },
+          {
+            "aircraft_id": "initial_middle_04",
+            "end": 277.12616790362597,
+            "start": 237.12616790362594
+          },
+          {
+            "aircraft_id": "initial_middle_06",
+            "end": 277.12616790362597,
+            "start": 237.12616790362594
+          },
+          {
+            "aircraft_id": "initial_middle_08",
+            "end": 316.9082194351452,
+            "start": 276.9082194351452
+          }
+        ],
+        "starts": [
+          {
+            "aircraft_id": "initial_middle_02",
+            "end": 120.0,
+            "start": 80.0
+          },
+          {
+            "aircraft_id": "initial_middle_00",
+            "end": 140.0,
+            "start": 100.0
+          },
+          {
+            "aircraft_id": "initial_middle_03",
+            "end": 180.0,
+            "start": 140.0
+          },
+          {
+            "aircraft_id": "initial_middle_04",
+            "end": 277.12616790362597,
+            "start": 237.12616790362594
+          },
+          {
+            "aircraft_id": "initial_middle_06",
+            "end": 277.12616790362597,
+            "start": 237.12616790362594
+          },
+          {
+            "aircraft_id": "initial_middle_08",
+            "end": 316.9082194351452,
+            "start": 276.9082194351452
+          }
+        ]
+      },
+      "middle_inner_completed_count": 6,
+      "middle_inner_starts_count": 6,
+      "normal_planning_committed_nonempty": 8,
+      "normal_planning_committed_nonempty_over_all_finished": 0.5714285714285714,
+      "normal_planning_finished_nonempty": 13,
+      "normal_planning_finished_task_count": 14,
+      "normal_planning_join_rate": 0.6153846153846154,
+      "normal_planning_join_rate_denominator": "finished nonempty proposed groups; pending and no-prefix excluded",
+      "pad_idle_seconds_by_pad": {
+        "0": 166.5,
+        "1": 226.5,
+        "2": 213.4082194351452,
+        "3": 115.12616790362597,
+        "4": 141.5,
+        "5": 218.62616790362597
+      },
+      "pad_seconds_idle": 1081.660555242397,
+      "root": "s3r24",
+      "schema_version": "rs_local_recovery_compact_metrics_v2",
+      "source_lineage": {
+        "common_checkpoint_sha256": "255f3ce5a3c45b01d3fb59ce5069ce39dec73b420735759ecdd6ce510f5eda77",
+        "evaluation_profile": "service_opportunity_v1",
+        "input_root": "/home/user/training_outputs/terminal/rs_service_opportunity_supply_r2_20261030",
+        "source_commit": null,
+        "source_hash": null
+      },
+      "status": "COMPLETE",
+      "treatment_normal": 6
+    },
+    {
+      "audit_status": {
+        "c2_status": "PASS",
+        "continuous_separation": "CERTIFIED",
+        "full_a20_covered": true,
+        "human_review": "HUMAN_PENDING",
+        "independent_status": "PASS",
+        "proposal_nonexecution": "PASS",
+        "pva_status": "CHECKED",
+        "resource_status": "PASS",
+        "status": "PASS",
+        "wall_s": 8.219445990165696
+      },
+      "campaign": "new",
+      "critical_actual_cp_participated_count": 66,
+      "critical_actual_cp_participation_rate": 1.0,
+      "critical_catalog_eligible_count": 66,
+      "critical_generated_count": 97,
+      "critical_single_accepted_count": 66,
+      "emergencies": 0,
+      "export_lineage": null,
+      "failures": 0,
+      "first_nonempty_cert_count": 3,
+      "first_nonempty_cert_elapsed_median_s": 3.9156882790848613,
+      "first_nonempty_cert_elapsed_p95_s": 4.703941375017166,
+      "first_nonempty_cert_elapsed_values_s": [
+        3.9156882790848613,
+        4.703941375017166,
+        1.8639462129212916
+      ],
+      "holding_energy_by_ring": {
+        "inner": 16782127.039044306,
+        "middle": 179550887.32898003,
+        "outer": 289211384.36953527
+      },
+      "holding_time_by_ring": {
+        "inner": 180.89426664495565,
+        "middle": 2400.0000000000764,
+        "outer": 4248.23504736125
+      },
+      "increment_energy_kwh": 157.88750364471218,
+      "inherited_normal": 5,
+      "inner_stock_empty_longest_s": 209.5528666775208,
+      "local_change_no_certified_standby_cancellation_count": 0,
+      "local_change_whole_batch_rejection_count": 0,
+      "local_envelope_proofs": 2,
+      "local_original_plan_count": 3,
+      "local_original_task_count": 3,
+      "local_real_joint_conflict_count": 0,
+      "local_repair_timed_out_count": 0,
+      "local_repaired_plan_count": 0,
+      "local_repaired_task_count": 0,
+      "local_reused_pair_certificates": 51,
+      "local_standby_plan_count": 0,
+      "local_standby_task_count": 0,
+      "local_timeout_reason_counts": {},
+      "longest_all_pad_idle_s": 101.0528666775208,
+      "method": "FULL_H",
+      "middle_inner_actual_timing": {
+        "completed": [],
+        "starts": []
+      },
+      "middle_inner_completed_count": 0,
+      "middle_inner_starts_count": 0,
+      "normal_planning_committed_nonempty": 3,
+      "normal_planning_committed_nonempty_over_all_finished": 0.13636363636363635,
+      "normal_planning_finished_nonempty": 3,
+      "normal_planning_finished_task_count": 22,
+      "normal_planning_join_rate": 1.0,
+      "normal_planning_join_rate_denominator": "finished nonempty proposed groups; pending and no-prefix excluded",
+      "pad_idle_seconds_by_pad": {
+        "0": 153.0,
+        "1": 166.5,
+        "2": 156.5,
+        "3": 166.5,
+        "4": 158.0,
+        "5": 226.5
+      },
+      "pad_seconds_idle": 1027.0,
+      "root": "s3r23",
+      "schema_version": "rs_local_recovery_compact_metrics_v2",
+      "source_lineage": {
+        "common_checkpoint_sha256": "0f67e40052c6d80ba35efebaf1e47fb113a1aca7046332d20b0c44f8cc29efc7",
+        "evaluation_profile": "service_opportunity_v1",
+        "input_root": "/home/user/training_outputs/terminal/rs_local_recovery_serializationfix_20261031",
+        "source_commit": null,
+        "source_hash": null
+      },
+      "status": "COMPLETE",
+      "treatment_normal": 3
+    },
+    {
+      "audit_status": {
+        "c2_status": "PASS",
+        "continuous_separation": "CERTIFIED",
+        "full_a20_covered": true,
+        "human_review": "HUMAN_PENDING",
+        "independent_status": "PASS",
+        "proposal_nonexecution": "PASS",
+        "pva_status": "CHECKED",
+        "resource_status": "PASS",
+        "status": "PASS",
+        "wall_s": 8.346186979906633
+      },
+      "campaign": "new",
+      "critical_actual_cp_participated_count": 90,
+      "critical_actual_cp_participation_rate": 1.0,
+      "critical_catalog_eligible_count": 90,
+      "critical_generated_count": 117,
+      "critical_single_accepted_count": 90,
+      "emergencies": 0,
+      "export_lineage": null,
+      "failures": 0,
+      "first_nonempty_cert_count": 3,
+      "first_nonempty_cert_elapsed_median_s": 4.020537246018648,
+      "first_nonempty_cert_elapsed_p95_s": 4.268825731007382,
+      "first_nonempty_cert_elapsed_values_s": [
+        4.020537246018648,
+        4.268825731007382,
+        2.6508373899850994
+      ],
+      "holding_energy_by_ring": {
+        "inner": 17277116.287251294,
+        "middle": 179550887.32898074,
+        "outer": 289211384.36953336
+      },
+      "holding_time_by_ring": {
+        "inner": 186.22974747186214,
+        "middle": 2400.000000000081,
+        "outer": 4248.235047361268
+      },
+      "increment_energy_kwh": 157.8697982852832,
+      "inherited_normal": 5,
+      "inner_stock_empty_longest_s": 206.88512626406737,
+      "local_change_no_certified_standby_cancellation_count": 0,
+      "local_change_whole_batch_rejection_count": 0,
+      "local_envelope_proofs": 3,
+      "local_original_plan_count": 3,
+      "local_original_task_count": 3,
+      "local_real_joint_conflict_count": 0,
+      "local_repair_timed_out_count": 0,
+      "local_repaired_plan_count": 0,
+      "local_repaired_task_count": 0,
+      "local_reused_pair_certificates": 77,
+      "local_standby_plan_count": 0,
+      "local_standby_task_count": 0,
+      "local_timeout_reason_counts": {},
+      "longest_all_pad_idle_s": 98.38512626406737,
+      "method": "RULE_LOCAL_K8",
+      "middle_inner_actual_timing": {
+        "completed": [],
+        "starts": []
+      },
+      "middle_inner_completed_count": 0,
+      "middle_inner_starts_count": 0,
+      "normal_planning_committed_nonempty": 3,
+      "normal_planning_committed_nonempty_over_all_finished": 0.0967741935483871,
+      "normal_planning_finished_nonempty": 3,
+      "normal_planning_finished_task_count": 31,
+      "normal_planning_join_rate": 1.0,
+      "normal_planning_join_rate_denominator": "finished nonempty proposed groups; pending and no-prefix excluded",
+      "pad_idle_seconds_by_pad": {
+        "0": 153.0,
+        "1": 166.5,
+        "2": 156.5,
+        "3": 166.5,
+        "4": 158.0,
+        "5": 226.5
+      },
+      "pad_seconds_idle": 1027.0,
+      "root": "s3r23",
+      "schema_version": "rs_local_recovery_compact_metrics_v2",
+      "source_lineage": {
+        "common_checkpoint_sha256": "0f67e40052c6d80ba35efebaf1e47fb113a1aca7046332d20b0c44f8cc29efc7",
+        "evaluation_profile": "service_opportunity_v1",
+        "input_root": "/home/user/training_outputs/terminal/rs_local_recovery_serializationfix_20261031",
+        "source_commit": null,
+        "source_hash": null
+      },
+      "status": "COMPLETE",
+      "treatment_normal": 3
+    },
+    {
+      "audit_status": {
+        "c2_status": "PASS",
+        "continuous_separation": "CERTIFIED",
+        "full_a20_covered": true,
+        "human_review": "HUMAN_PENDING",
+        "independent_status": "PASS",
+        "proposal_nonexecution": "PASS",
+        "pva_status": "CHECKED",
+        "resource_status": "PASS",
+        "status": "PASS",
+        "wall_s": 11.440446615917608
+      },
+      "campaign": "new",
+      "critical_actual_cp_participated_count": 65,
+      "critical_actual_cp_participation_rate": 1.0,
+      "critical_catalog_eligible_count": 65,
+      "critical_generated_count": 93,
+      "critical_single_accepted_count": 65,
+      "emergencies": 0,
+      "export_lineage": {
+        "accounting": "original boundary costs unchanged; export wall separately charged to shared ledger",
+        "algorithm_resume_calls": 0,
+        "callback_calls": 0,
+        "completed_state_export_only": true,
+        "export_wall_s": 29.288432592060417,
+        "exporter_commit": "34dde00290d0166d19943b3b480e284d9e8659b2",
+        "exporter_script_sha256": "2e095f5639296803eb0d447b6ffd74546a242483509d11a3ce4b876228cfc2ec",
+        "original_source_commit": "ead8b8e7162c8e33efe27d640eeaa4f492f0c0a6",
+        "original_source_hash": "b8fdcd254723fbd40b358ef9e8673008be7ba065cae960816323c439bb0dc552",
+        "pending_task_preserved": true,
+        "schema": "local_recovery_terminal_export_v1",
+        "simulation_advance_calls": 0,
+        "source_binding": "cbc5ff16c2ea879cdeb18a1996d2d2464d7c75c6d83c6644e6d90104286452be",
+        "source_checkpoint": "/home/user/training_outputs/terminal/rs_local_recovery_serializationfix_20261031/arms/s3r24/FULL_H/evaluation/s3r24/FULL_H/checkpoint_0300.json",
+        "source_checkpoint_envelope_sha256": "a7f91b165a55ece1bf33f1718d5057cc2d29a4ef9b43bb9bcb631116c1637b0f",
+        "source_checkpoint_sha256": "9dda718fa7216fd86e7cdba01c2cbbced45b52349638ff37b86b142c9218213d",
+        "source_original_job_exit_code": -9,
+        "source_original_job_id": "service_arm_s3r24_FULL_H",
+        "source_original_job_status": "BUDGET_LIMITED",
+        "source_original_job_stop_reason": "JOB_WALL_LIMIT",
+        "source_original_job_wall_s": 1200.0386458709836
+      },
+      "failures": 0,
+      "first_nonempty_cert_count": 6,
+      "first_nonempty_cert_elapsed_median_s": 7.591462375596166,
+      "first_nonempty_cert_elapsed_p95_s": 10.084483071928844,
+      "first_nonempty_cert_elapsed_values_s": [
+        8.541876513976604,
+        5.838260461110622,
+        6.894409652100876,
+        8.288515099091455,
+        10.084483071928844,
+        3.5417929398827255
+      ],
+      "holding_energy_by_ring": {
+        "inner": 51325767.13250136,
+        "middle": 269326330.99353284,
+        "outer": 409164432.9671992
+      },
+      "holding_time_by_ring": {
+        "inner": 553.2395854126567,
+        "middle": 3599.9999999990787,
+        "outer": 6010.22912031296
+      },
+      "increment_energy_kwh": 226.63932311095786,
+      "inherited_normal": 3,
+      "inner_stock_empty_longest_s": 154.70595132512972,
+      "local_change_no_certified_standby_cancellation_count": 0,
+      "local_change_whole_batch_rejection_count": 0,
+      "local_envelope_proofs": 1,
+      "local_original_plan_count": 7,
+      "local_original_task_count": 6,
+      "local_real_joint_conflict_count": 0,
+      "local_repair_timed_out_count": 0,
+      "local_repaired_plan_count": 0,
+      "local_repaired_task_count": 0,
+      "local_reused_pair_certificates": 36,
+      "local_standby_plan_count": 0,
+      "local_standby_task_count": 0,
+      "local_timeout_reason_counts": {
+        "READY_DEADLINE_MISSED": 1
+      },
+      "longest_all_pad_idle_s": 10.0,
+      "method": "FULL_H",
+      "middle_inner_actual_timing": {
+        "completed": [],
+        "starts": []
+      },
+      "middle_inner_completed_count": 0,
+      "middle_inner_starts_count": 0,
+      "normal_planning_committed_nonempty": 6,
+      "normal_planning_committed_nonempty_over_all_finished": 0.3157894736842105,
+      "normal_planning_finished_nonempty": 6,
+      "normal_planning_finished_task_count": 19,
+      "normal_planning_join_rate": 1.0,
+      "normal_planning_join_rate_denominator": "finished nonempty proposed groups; pending and no-prefix excluded",
+      "pad_idle_seconds_by_pad": {
+        "0": 123.0,
+        "1": 153.0,
+        "2": 216.5,
+        "3": 226.5,
+        "4": 128.0,
+        "5": 136.79404867487028
+      },
+      "pad_seconds_idle": 983.7940486748703,
+      "root": "s3r24",
+      "schema_version": "rs_local_recovery_compact_metrics_v2",
+      "source_lineage": {
+        "common_checkpoint_sha256": "255f3ce5a3c45b01d3fb59ce5069ce39dec73b420735759ecdd6ce510f5eda77",
+        "evaluation_profile": "service_opportunity_v1",
+        "input_root": "/home/user/training_outputs/terminal/rs_local_recovery_serializationfix_20261031/terminal_export",
+        "source_commit": "ead8b8e7162c8e33efe27d640eeaa4f492f0c0a6",
+        "source_hash": "b8fdcd254723fbd40b358ef9e8673008be7ba065cae960816323c439bb0dc552"
+      },
+      "status": "COMPLETE",
+      "treatment_normal": 7
+    },
+    {
+      "audit_status": {
+        "c2_status": "PASS",
+        "continuous_separation": "CERTIFIED",
+        "full_a20_covered": true,
+        "human_review": "HUMAN_PENDING",
+        "independent_status": "PASS",
+        "proposal_nonexecution": "PASS",
+        "pva_status": "CHECKED",
+        "resource_status": "PASS",
+        "status": "PASS",
+        "wall_s": 11.15790282888338
+      },
+      "campaign": "new",
+      "critical_actual_cp_participated_count": 65,
+      "critical_actual_cp_participation_rate": 1.0,
+      "critical_catalog_eligible_count": 65,
+      "critical_generated_count": 98,
+      "critical_single_accepted_count": 65,
+      "emergencies": 0,
+      "export_lineage": {
+        "accounting": "original boundary costs unchanged; export wall separately charged to shared ledger",
+        "algorithm_resume_calls": 0,
+        "callback_calls": 0,
+        "completed_state_export_only": true,
+        "export_wall_s": 30.010174597147852,
+        "exporter_commit": "34dde00290d0166d19943b3b480e284d9e8659b2",
+        "exporter_script_sha256": "2e095f5639296803eb0d447b6ffd74546a242483509d11a3ce4b876228cfc2ec",
+        "original_source_commit": "ead8b8e7162c8e33efe27d640eeaa4f492f0c0a6",
+        "original_source_hash": "b8fdcd254723fbd40b358ef9e8673008be7ba065cae960816323c439bb0dc552",
+        "pending_task_preserved": true,
+        "schema": "local_recovery_terminal_export_v1",
+        "simulation_advance_calls": 0,
+        "source_binding": "cd7d049b3e0787c72253d9f308ab307ab8c207334b7066f1940746d1591e3a60",
+        "source_checkpoint": "/home/user/training_outputs/terminal/rs_local_recovery_serializationfix_20261031/arms/s3r24/RULE_LOCAL_K8/evaluation/s3r24/RULE_LOCAL_K8/checkpoint_0300.json",
+        "source_checkpoint_envelope_sha256": "8f3fee679806c4574efba1427ab1c3521edf6ecd908c2db411dbc5dd4c7f5def",
+        "source_checkpoint_sha256": "d0c0c4bda1293a6a20fea483d189e17fa5ec080319384fa6aada35414b77d140",
+        "source_original_job_exit_code": -9,
+        "source_original_job_id": "service_arm_s3r24_RULE_LOCAL_K8",
+        "source_original_job_status": "BUDGET_LIMITED",
+        "source_original_job_stop_reason": "JOB_WALL_LIMIT",
+        "source_original_job_wall_s": 1200.0028311400674
+      },
+      "failures": 0,
+      "first_nonempty_cert_count": 7,
+      "first_nonempty_cert_elapsed_median_s": 5.634572617011145,
+      "first_nonempty_cert_elapsed_p95_s": 10.312385252909735,
+      "first_nonempty_cert_elapsed_values_s": [
+        5.634572617011145,
+        6.35469482303597,
+        10.312385252909735,
+        3.603516808943823,
+        6.094326472841203,
+        5.539981775917113,
+        5.439772967016324
+      ],
+      "holding_energy_by_ring": {
+        "inner": 51572980.6449507,
+        "middle": 269326330.99353325,
+        "outer": 408903334.8673003
+      },
+      "holding_time_by_ring": {
+        "inner": 555.9042957283021,
+        "middle": 3599.999999999055,
+        "outer": 6006.393842178142
+      },
+      "increment_energy_kwh": 226.53789807638685,
+      "inherited_normal": 3,
+      "inner_stock_empty_longest_s": 128.77948612417094,
+      "local_change_no_certified_standby_cancellation_count": 0,
+      "local_change_whole_batch_rejection_count": 0,
+      "local_envelope_proofs": 1,
+      "local_original_plan_count": 7,
+      "local_original_task_count": 6,
+      "local_real_joint_conflict_count": 0,
+      "local_repair_timed_out_count": 0,
+      "local_repaired_plan_count": 0,
+      "local_repaired_task_count": 0,
+      "local_reused_pair_certificates": 39,
+      "local_standby_plan_count": 0,
+      "local_standby_task_count": 0,
+      "local_timeout_reason_counts": {
+        "READY_DEADLINE_MISSED": 1
+      },
+      "longest_all_pad_idle_s": 15.279486124170944,
+      "method": "RULE_LOCAL_K8",
+      "middle_inner_actual_timing": {
+        "completed": [],
+        "starts": []
+      },
+      "middle_inner_completed_count": 0,
+      "middle_inner_starts_count": 0,
+      "normal_planning_committed_nonempty": 6,
+      "normal_planning_committed_nonempty_over_all_finished": 0.2857142857142857,
+      "normal_planning_finished_nonempty": 7,
+      "normal_planning_finished_task_count": 21,
+      "normal_planning_join_rate": 0.8571428571428571,
+      "normal_planning_join_rate_denominator": "finished nonempty proposed groups; pending and no-prefix excluded",
+      "pad_idle_seconds_by_pad": {
+        "0": 153.0,
+        "1": 166.5,
+        "2": 143.0,
+        "3": 226.5,
+        "4": 141.5,
+        "5": 139.5
+      },
+      "pad_seconds_idle": 970.0,
+      "root": "s3r24",
+      "schema_version": "rs_local_recovery_compact_metrics_v2",
+      "source_lineage": {
+        "common_checkpoint_sha256": "255f3ce5a3c45b01d3fb59ce5069ce39dec73b420735759ecdd6ce510f5eda77",
+        "evaluation_profile": "service_opportunity_v1",
+        "input_root": "/home/user/training_outputs/terminal/rs_local_recovery_serializationfix_20261031/terminal_export",
+        "source_commit": "ead8b8e7162c8e33efe27d640eeaa4f492f0c0a6",
+        "source_hash": "b8fdcd254723fbd40b358ef9e8673008be7ba065cae960816323c439bb0dc552"
+      },
+      "status": "COMPLETE",
+      "treatment_normal": 7
+    }
+  ],
+  "schema": "rs_local_recovery_compact_metrics_v2",
+  "schema_version": "rs_local_recovery_compact_metrics_v2"
+}

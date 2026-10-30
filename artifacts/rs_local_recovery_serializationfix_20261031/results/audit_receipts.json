@@ -1,0 +1,115 @@
+{
+  "audit_receipts": [
+    {
+      "audit_result": {
+        "c2_status": "PASS",
+        "continuous_separation": "CERTIFIED",
+        "full_a20_covered": true,
+        "human_review": "HUMAN_PENDING",
+        "independent_status": "PASS",
+        "proposal_nonexecution": "PASS",
+        "pva_status": "CHECKED",
+        "resource_status": "PASS",
+        "status": "PASS",
+        "wall_s": 8.219445990165696
+      },
+      "issue_counts": {
+        "documented_hard_failure_runs": 0,
+        "independent_issue_count": 0,
+        "missing_maneuver_predecessors": 0,
+        "proposal_status": "PASS",
+        "pva_start_time_mismatch_count": 0,
+        "resource_issues": 0
+      },
+      "method": "FULL_H",
+      "path": "/home/user/training_outputs/terminal/rs_local_recovery_serializationfix_20261031/arms/s3r23/FULL_H/evaluation/s3r23/FULL_H/audit_result.json",
+      "root": "s3r23"
+    },
+    {
+      "audit_result": {
+        "c2_status": "PASS",
+        "continuous_separation": "CERTIFIED",
+        "full_a20_covered": true,
+        "human_review": "HUMAN_PENDING",
+        "independent_status": "PASS",
+        "proposal_nonexecution": "PASS",
+        "pva_status": "CHECKED",
+        "resource_status": "PASS",
+        "status": "PASS",
+        "wall_s": 8.346186979906633
+      },
+      "issue_counts": {
+        "documented_hard_failure_runs": 0,
+        "independent_issue_count": 0,
+        "missing_maneuver_predecessors": 0,
+        "proposal_status": "PASS",
+        "pva_start_time_mismatch_count": 0,
+        "resource_issues": 0
+      },
+      "method": "RULE_LOCAL_K8",
+      "path": "/home/user/training_outputs/terminal/rs_local_recovery_serializationfix_20261031/arms/s3r23/RULE_LOCAL_K8/evaluation/s3r23/RULE_LOCAL_K8/audit_result.json",
+      "root": "s3r23"
+    },
+    {
+      "audit_result": {
+        "c2_status": "PASS",
+        "continuous_separation": "CERTIFIED",
+        "full_a20_covered": true,
+        "human_review": "HUMAN_PENDING",
+        "independent_status": "PASS",
+        "proposal_nonexecution": "PASS",
+        "pva_status": "CHECKED",
+        "resource_status": "PASS",
+        "status": "PASS",
+        "wall_s": 11.440446615917608
+      },
+      "issue_counts": {
+        "documented_hard_failure_runs": 0,
+        "independent_issue_count": 0,
+        "missing_maneuver_predecessors": 0,
+        "proposal_status": "PASS",
+        "pva_start_time_mismatch_count": 0,
+        "resource_issues": 0
+      },
+      "method": "FULL_H",
+      "path": "/home/user/training_outputs/terminal/rs_local_recovery_serializationfix_20261031/terminal_export/arms/s3r24/FULL_H/evaluation/s3r24/FULL_H/audit_result.json",
+      "root": "s3r24"
+    },
+    {
+      "audit_result": {
+        "c2_status": "PASS",
+        "continuous_separation": "CERTIFIED",
+        "full_a20_covered": true,
+        "human_review": "HUMAN_PENDING",
+        "independent_status": "PASS",
+        "proposal_nonexecution": "PASS",
+        "pva_status": "CHECKED",
+        "resource_status": "PASS",
+        "status": "PASS",
+        "wall_s": 11.15790282888338
+      },
+      "issue_counts": {
+        "documented_hard_failure_runs": 0,
+        "independent_issue_count": 0,
+        "missing_maneuver_predecessors": 0,
+        "proposal_status": "PASS",
+        "pva_start_time_mismatch_count": 0,
+        "resource_issues": 0
+      },
+      "method": "RULE_LOCAL_K8",
+      "path": "/home/user/training_outputs/terminal/rs_local_recovery_serializationfix_20261031/terminal_export/arms/s3r24/RULE_LOCAL_K8/evaluation/s3r24/RULE_LOCAL_K8/audit_result.json",
+      "root": "s3r24"
+    }
+  ],
+  "ledger_summary": {
+    "campaign": "rs_local_recovery_serializationfix_20261031",
+    "cap_child_wall_s": 6224.59431769955,
+    "historical_charged_child_wall_s": 975.4056823004503,
+    "observed_active_child_wall_s": 4944.495376239996,
+    "remaining_child_wall_s": 1280.0989414595533,
+    "settled_child_wall_s": 4944.495376239996,
+    "shared_original_cap_child_wall_s": 7200.0,
+    "updated_epoch": 1793388836.1901338
+  },
+  "schema": "rs_local_recovery_audit_receipts_v1"
+}

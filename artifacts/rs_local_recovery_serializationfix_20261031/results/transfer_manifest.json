@@ -1,0 +1,35 @@
+[
+  {
+    "name": "compact_metrics.json",
+    "remote_path": "/home/user/training_outputs/terminal/rs_local_recovery_serializationfix_20261031/final_report/compact_metrics.json",
+    "local_path": "D:\\7_codespace\\terminal\\artifacts\\rs_local_recovery_serializationfix_20261031\\results\\compact_metrics.json",
+    "bytes": 38691,
+    "remote_sha256": "b95c566767d76644f7be026c47bb941246645cda459d67dc35bead2946c1e30c",
+    "local_sha256": "b95c566767d76644f7be026c47bb941246645cda459d67dc35bead2946c1e30c",
+    "sha_match": true,
+    "cat_exit_code": 0,
+    "sha_exit_code": 0
+  },
+  {
+    "name": "compact_metrics.csv",
+    "remote_path": "/home/user/training_outputs/terminal/rs_local_recovery_serializationfix_20261031/final_report/compact_metrics.csv",
+    "local_path": "D:\\7_codespace\\terminal\\artifacts\\rs_local_recovery_serializationfix_20261031\\results\\compact_metrics.csv",
+    "bytes": 19325,
+    "remote_sha256": "31a67d2a026b5e7a691177819644b68158f903feaff3cdc27cade19e7145e8a6",
+    "local_sha256": "31a67d2a026b5e7a691177819644b68158f903feaff3cdc27cade19e7145e8a6",
+    "sha_match": true,
+    "cat_exit_code": 0,
+    "sha_exit_code": 0
+  },
+  {
+    "name": "audit_receipts.json",
+    "remote_path": "/home/user/training_outputs/terminal/rs_local_recovery_serializationfix_20261031/final_report/audit_receipts.json",
+    "local_path": "D:\\7_codespace\\terminal\\artifacts\\rs_local_recovery_serializationfix_20261031\\results\\audit_receipts.json",
+    "bytes": 4093,
+    "remote_sha256": "31f826e68c4e2965b01a5f21b3566185ee27657966c607528716edaa0127f827",
+    "local_sha256": "31f826e68c4e2965b01a5f21b3566185ee27657966c607528716edaa0127f827",
+    "sha_match": true,
+    "cat_exit_code": 0,
+    "sha_exit_code": 0
+  }
+]
