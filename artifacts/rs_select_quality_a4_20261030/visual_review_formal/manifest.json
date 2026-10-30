@@ -1,0 +1,953 @@
+{
+  "artifact": "rs_select_quality_a4_20261030_visual_review_formal",
+  "human_visual_acceptance_status": "HUMAN_PENDING",
+  "renderer": {
+    "module": "terminal_marl.visualization.rotating_slots_replay",
+    "controller": "ReplayController",
+    "viewer": "RotatingSlotsReplayViewer",
+    "off_screen": true,
+    "python": "D:\\7_codespace\\terminal\\venv\\Scripts\\python.exe",
+    "pyvista_off_screen_env": "true",
+    "source_path": "D:\\7_codespace\\terminal\\terminal_marl\\visualization\\rotating_slots_controller.py",
+    "source_sha256_before": "e55016927875ab21f5e4d309880bfdf03573a5e661a69f23d1c73331fb284188",
+    "source_sha256_after": "e55016927875ab21f5e4d309880bfdf03573a5e661a69f23d1c73331fb284188"
+  },
+  "input_root": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review",
+  "arms": [
+    {
+      "scenario": "s3r23",
+      "method": "FULL_H"
+    },
+    {
+      "scenario": "s3r23",
+      "method": "RULE_LOCAL_K8"
+    },
+    {
+      "scenario": "s3r24",
+      "method": "FULL_H"
+    },
+    {
+      "scenario": "s3r24",
+      "method": "RULE_LOCAL_K8"
+    }
+  ],
+  "requested_times_s": [
+    20.0,
+    170.0,
+    260.0,
+    320.0
+  ],
+  "requested_views": [
+    "top_down",
+    "side",
+    "3d"
+  ],
+  "results": [
+    {
+      "scenario": "s3r23",
+      "method": "FULL_H",
+      "replay_root": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\FULL_H\\evaluation\\s3r23\\FULL_H\\replay",
+      "time_bounds_s": [
+        0.0,
+        320.0
+      ],
+      "sample_dt_s": 0.2,
+      "input": {
+        "replay_root": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\FULL_H\\evaluation\\s3r23\\FULL_H\\replay",
+        "replay_json_sha256": "68822626c8be2260f65f7a261ab4dbde1c4907444af53edb6d8f84c588124e77",
+        "input_sha256": "ed9b4afa02e959418a01527be628b424cd40f8c1ac73ddce0eb73096762f5df9",
+        "files": [
+          {
+            "relative_path": "replay.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\FULL_H\\evaluation\\s3r23\\FULL_H\\replay\\replay.json",
+            "bytes": 10569,
+            "sha256": "68822626c8be2260f65f7a261ab4dbde1c4907444af53edb6d8f84c588124e77"
+          },
+          {
+            "relative_path": "assertions.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\FULL_H\\evaluation\\s3r23\\FULL_H\\replay\\assertions.json",
+            "bytes": 2,
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          {
+            "relative_path": "config.yaml",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\FULL_H\\evaluation\\s3r23\\FULL_H\\replay\\config.yaml",
+            "bytes": 14318,
+            "sha256": "a0671841f89ee625cc1ca647ee885801698c837aecc84078f6cd6f4870233fec"
+          },
+          {
+            "relative_path": "decisions.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\FULL_H\\evaluation\\s3r23\\FULL_H\\replay\\decisions.jsonl",
+            "bytes": 4932803,
+            "sha256": "02e1c9888c2a9b2a5b4978e40a6b84e3fe643f49fe711632040566a2d40e8e21"
+          },
+          {
+            "relative_path": "dispatch_timings.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\FULL_H\\evaluation\\s3r23\\FULL_H\\replay\\dispatch_timings.jsonl",
+            "bytes": 66410,
+            "sha256": "559292f2ea70f79a5ee549934499ca02fa35e361668c6c4d06a987e8fbe318fa"
+          },
+          {
+            "relative_path": "events.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\FULL_H\\evaluation\\s3r23\\FULL_H\\replay\\events.jsonl",
+            "bytes": 645899,
+            "sha256": "b6d5600100c4d5a907aafde855a2d0930024cce6c379dc7ff7ded2383a4424f7"
+          },
+          {
+            "relative_path": "failure_archive.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\FULL_H\\evaluation\\s3r23\\FULL_H\\replay\\failure_archive.json",
+            "bytes": 2,
+            "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+          },
+          {
+            "relative_path": "manifest.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\FULL_H\\evaluation\\s3r23\\FULL_H\\replay\\manifest.json",
+            "bytes": 24603,
+            "sha256": "f5560d54108a4e9434900a02698cf3b26d43055ffe3a62b6bb62353e2d20b485"
+          },
+          {
+            "relative_path": "metrics.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\FULL_H\\evaluation\\s3r23\\FULL_H\\replay\\metrics.json",
+            "bytes": 2443,
+            "sha256": "1882a0bdad57661fcdfa28c967ea125897453baf13c1c4858821960a94cbd531"
+          },
+          {
+            "relative_path": "rejections.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\FULL_H\\evaluation\\s3r23\\FULL_H\\replay\\rejections.jsonl",
+            "bytes": 251260,
+            "sha256": "cc3c62aae8ae07428361fc4364dead6a49bae0c59092dc46cb5a5bcca4854a48"
+          },
+          {
+            "relative_path": "stage2_provenance.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\FULL_H\\evaluation\\s3r23\\FULL_H\\replay\\stage2_provenance.json",
+            "bytes": 458614,
+            "sha256": "f8c109a31afcd8a51840f1fcbfa63e11236e6196e2a6706aeaa403e00ce7cb4f"
+          },
+          {
+            "relative_path": "stage3_trace.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\FULL_H\\evaluation\\s3r23\\FULL_H\\replay\\stage3_trace.jsonl",
+            "bytes": 60952,
+            "sha256": "07117aa8889397f9bcff872adc32fe84375baad31d0a4cfac84b6359e335d452"
+          },
+          {
+            "relative_path": "states.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\FULL_H\\evaluation\\s3r23\\FULL_H\\replay\\states.jsonl",
+            "bytes": 27191164,
+            "sha256": "4d399ddfc0f60b5c37eec868f0025109f39f5a5e1bd9dd0c9e40989fba675717"
+          },
+          {
+            "relative_path": "tentative_predictions.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\FULL_H\\evaluation\\s3r23\\FULL_H\\replay\\tentative_predictions.json",
+            "bytes": 4685,
+            "sha256": "3e96958af3bdf43f48a3c3bf4e3bc22a2258493db8414dcfa4f6b76a601d882e"
+          },
+          {
+            "relative_path": "trajectories.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\FULL_H\\evaluation\\s3r23\\FULL_H\\replay\\trajectories.json",
+            "bytes": 96782,
+            "sha256": "3a18e440cee3b03ca98f5adbeb1837e79ba840684957de1079b8f6ef1439ad6c"
+          },
+          {
+            "relative_path": "visual_acceptance.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\FULL_H\\evaluation\\s3r23\\FULL_H\\replay\\visual_acceptance.json",
+            "bytes": 151,
+            "sha256": "55e9b06a21f8908831e8dccae940cc3efd52f056dd7d37c8ebb805d5535fb125"
+          }
+        ],
+        "replay_index_human_acceptance_observed": "HUMAN_PENDING",
+        "human_acceptance_observed": "HUMAN_PENDING",
+        "visualization_integration_status_observed": "NOT_OBSERVED"
+      },
+      "frames": [
+        {
+          "requested_time_s": 20.0,
+          "actual_time_s": 20.0,
+          "images": [
+            {
+              "view": "top_down",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\FULL_H\\t20\\top_down.png",
+              "relative_path": "s3r23/FULL_H/t20/top_down.png",
+              "bytes": 211799,
+              "sha256": "e3c5f9914da1710024d78b4c1f7403f6ac6e588044a9f7a07f0a9c6e67ecabab"
+            },
+            {
+              "view": "side",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\FULL_H\\t20\\side.png",
+              "relative_path": "s3r23/FULL_H/t20/side.png",
+              "bytes": 147503,
+              "sha256": "1c5fa0a446f0ac68ef368a5ae9dc311a29abace7e484cddf9c86309380260769"
+            },
+            {
+              "view": "3d",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\FULL_H\\t20\\3d.png",
+              "relative_path": "s3r23/FULL_H/t20/3d.png",
+              "bytes": 202481,
+              "sha256": "584837ede6782677f9d2d8b042f7a5e63c84c654eea9b9dbc33e7f9b054e2557"
+            }
+          ]
+        },
+        {
+          "requested_time_s": 170.0,
+          "actual_time_s": 170.0,
+          "images": [
+            {
+              "view": "top_down",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\FULL_H\\t170\\top_down.png",
+              "relative_path": "s3r23/FULL_H/t170/top_down.png",
+              "bytes": 210393,
+              "sha256": "7f0b774bcb679ebcd04a00ef54368a6e4da838127c2eea05ab922c58352a9f56"
+            },
+            {
+              "view": "side",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\FULL_H\\t170\\side.png",
+              "relative_path": "s3r23/FULL_H/t170/side.png",
+              "bytes": 139246,
+              "sha256": "ed6364c1e0dd57da85c8f6b3e5d828bc73881624381f56040f4a75227113af40"
+            },
+            {
+              "view": "3d",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\FULL_H\\t170\\3d.png",
+              "relative_path": "s3r23/FULL_H/t170/3d.png",
+              "bytes": 199553,
+              "sha256": "fde73010a7e5bd941da52950e76d6d2627b54711cf75532abe8b37aeabfcb5ef"
+            }
+          ]
+        },
+        {
+          "requested_time_s": 260.0,
+          "actual_time_s": 260.0,
+          "images": [
+            {
+              "view": "top_down",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\FULL_H\\t260\\top_down.png",
+              "relative_path": "s3r23/FULL_H/t260/top_down.png",
+              "bytes": 203462,
+              "sha256": "ae76d8ce21f0cb570a1c5ae7440251bbbc4a6bac83139bd527ade575ac6ed457"
+            },
+            {
+              "view": "side",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\FULL_H\\t260\\side.png",
+              "relative_path": "s3r23/FULL_H/t260/side.png",
+              "bytes": 134295,
+              "sha256": "248a65088a61ebb2b480349d1d77ae2441f15b192def254020d6cc320109e470"
+            },
+            {
+              "view": "3d",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\FULL_H\\t260\\3d.png",
+              "relative_path": "s3r23/FULL_H/t260/3d.png",
+              "bytes": 190962,
+              "sha256": "aafce8c750d9d66f9489b471e4c9d5376aa54035231d505ea529857c3b12efcc"
+            }
+          ]
+        },
+        {
+          "requested_time_s": 320.0,
+          "actual_time_s": 320.0,
+          "images": [
+            {
+              "view": "top_down",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\FULL_H\\t320\\top_down.png",
+              "relative_path": "s3r23/FULL_H/t320/top_down.png",
+              "bytes": 203752,
+              "sha256": "0b536b8cf5eabf2e1d3613385f46ca8a3fd9cc95a58332f9f9d41b706577f7ea"
+            },
+            {
+              "view": "side",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\FULL_H\\t320\\side.png",
+              "relative_path": "s3r23/FULL_H/t320/side.png",
+              "bytes": 135559,
+              "sha256": "0f8bc0c9d38870b5858f6119408b20c554749c69decb88bf3344ce6123be6448"
+            },
+            {
+              "view": "3d",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\FULL_H\\t320\\3d.png",
+              "relative_path": "s3r23/FULL_H/t320/3d.png",
+              "bytes": 191603,
+              "sha256": "ed8e07616f38f18f4f0d38bcd46ad8a6389daf4fc458c2edf56d3a7f2153857d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": "s3r23",
+      "method": "RULE_LOCAL_K8",
+      "replay_root": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\RULE_LOCAL_K8\\evaluation\\s3r23\\RULE_LOCAL_K8\\replay",
+      "time_bounds_s": [
+        0.0,
+        320.0
+      ],
+      "sample_dt_s": 0.2,
+      "input": {
+        "replay_root": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\RULE_LOCAL_K8\\evaluation\\s3r23\\RULE_LOCAL_K8\\replay",
+        "replay_json_sha256": "760cb464306103b9e017126e0a98fcc75f30db0bb8aa1de8c37159949ec453ba",
+        "input_sha256": "827926979f00535d1a4cbf6c6a0875b72f6e00abf201b5e12b94608ed8d1f3e2",
+        "files": [
+          {
+            "relative_path": "replay.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\RULE_LOCAL_K8\\evaluation\\s3r23\\RULE_LOCAL_K8\\replay\\replay.json",
+            "bytes": 8224,
+            "sha256": "760cb464306103b9e017126e0a98fcc75f30db0bb8aa1de8c37159949ec453ba"
+          },
+          {
+            "relative_path": "assertions.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\RULE_LOCAL_K8\\evaluation\\s3r23\\RULE_LOCAL_K8\\replay\\assertions.json",
+            "bytes": 2,
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          {
+            "relative_path": "config.yaml",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\RULE_LOCAL_K8\\evaluation\\s3r23\\RULE_LOCAL_K8\\replay\\config.yaml",
+            "bytes": 14318,
+            "sha256": "a0671841f89ee625cc1ca647ee885801698c837aecc84078f6cd6f4870233fec"
+          },
+          {
+            "relative_path": "decisions.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\RULE_LOCAL_K8\\evaluation\\s3r23\\RULE_LOCAL_K8\\replay\\decisions.jsonl",
+            "bytes": 5637085,
+            "sha256": "b74ab15b43e135cf1326010c388f6977aa3bb8d19c652a58591f2d391ce8bc3a"
+          },
+          {
+            "relative_path": "dispatch_timings.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\RULE_LOCAL_K8\\evaluation\\s3r23\\RULE_LOCAL_K8\\replay\\dispatch_timings.jsonl",
+            "bytes": 65641,
+            "sha256": "d5cd5e87e50444a06fd4cc634cf4a3d9e720fb0d21b0b3246df90c6c47fcf2ef"
+          },
+          {
+            "relative_path": "events.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\RULE_LOCAL_K8\\evaluation\\s3r23\\RULE_LOCAL_K8\\replay\\events.jsonl",
+            "bytes": 538663,
+            "sha256": "14e4ec2ffb7bf6e7cdd3401167357b95f678271dcfe87b07d68c41a0d7fa5662"
+          },
+          {
+            "relative_path": "failure_archive.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\RULE_LOCAL_K8\\evaluation\\s3r23\\RULE_LOCAL_K8\\replay\\failure_archive.json",
+            "bytes": 2,
+            "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+          },
+          {
+            "relative_path": "manifest.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\RULE_LOCAL_K8\\evaluation\\s3r23\\RULE_LOCAL_K8\\replay\\manifest.json",
+            "bytes": 24603,
+            "sha256": "f5560d54108a4e9434900a02698cf3b26d43055ffe3a62b6bb62353e2d20b485"
+          },
+          {
+            "relative_path": "metrics.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\RULE_LOCAL_K8\\evaluation\\s3r23\\RULE_LOCAL_K8\\replay\\metrics.json",
+            "bytes": 2458,
+            "sha256": "deb3f068da9345c636e898d676ef9f45dc26a3ebac04e79e4102cf416d12e704"
+          },
+          {
+            "relative_path": "rejections.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\RULE_LOCAL_K8\\evaluation\\s3r23\\RULE_LOCAL_K8\\replay\\rejections.jsonl",
+            "bytes": 300990,
+            "sha256": "4f3e2e93c902752dbb6100728cd350a4e1b15d2cb65631649f8b2e9e6045fa31"
+          },
+          {
+            "relative_path": "stage2_provenance.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\RULE_LOCAL_K8\\evaluation\\s3r23\\RULE_LOCAL_K8\\replay\\stage2_provenance.json",
+            "bytes": 459859,
+            "sha256": "2d7e00987dc8f7c4165c121aab2853ead98a356c118bca2080c271bf8e276acc"
+          },
+          {
+            "relative_path": "stage3_trace.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\RULE_LOCAL_K8\\evaluation\\s3r23\\RULE_LOCAL_K8\\replay\\stage3_trace.jsonl",
+            "bytes": 63952,
+            "sha256": "8bb0ec80ee3b110ee9a16cae3b43aaf69800837e654fcc4a85bd87de2d4fe758"
+          },
+          {
+            "relative_path": "states.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\RULE_LOCAL_K8\\evaluation\\s3r23\\RULE_LOCAL_K8\\replay\\states.jsonl",
+            "bytes": 26820094,
+            "sha256": "9088ca3d259d353fe19b50e9d2184ba9f609086a090d224a0b9cac82a67a8a41"
+          },
+          {
+            "relative_path": "tentative_predictions.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\RULE_LOCAL_K8\\evaluation\\s3r23\\RULE_LOCAL_K8\\replay\\tentative_predictions.json",
+            "bytes": 3449,
+            "sha256": "36f10c53093eef93c1d78b3e476464f27f51997b9cb2e2637783d82b6ca818a0"
+          },
+          {
+            "relative_path": "trajectories.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\RULE_LOCAL_K8\\evaluation\\s3r23\\RULE_LOCAL_K8\\replay\\trajectories.json",
+            "bytes": 72842,
+            "sha256": "7e25c4120dd9e820b45ed058c997c1284c295705f5efd476a343087bca61d20a"
+          },
+          {
+            "relative_path": "visual_acceptance.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r23\\RULE_LOCAL_K8\\evaluation\\s3r23\\RULE_LOCAL_K8\\replay\\visual_acceptance.json",
+            "bytes": 151,
+            "sha256": "55e9b06a21f8908831e8dccae940cc3efd52f056dd7d37c8ebb805d5535fb125"
+          }
+        ],
+        "replay_index_human_acceptance_observed": "HUMAN_PENDING",
+        "human_acceptance_observed": "HUMAN_PENDING",
+        "visualization_integration_status_observed": "NOT_OBSERVED"
+      },
+      "frames": [
+        {
+          "requested_time_s": 20.0,
+          "actual_time_s": 20.0,
+          "images": [
+            {
+              "view": "top_down",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\RULE_LOCAL_K8\\t20\\top_down.png",
+              "relative_path": "s3r23/RULE_LOCAL_K8/t20/top_down.png",
+              "bytes": 212641,
+              "sha256": "6c32ff251f48770f27a57911a2587f0f63564f3ac8eb69e128a1d93b5fae23df"
+            },
+            {
+              "view": "side",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\RULE_LOCAL_K8\\t20\\side.png",
+              "relative_path": "s3r23/RULE_LOCAL_K8/t20/side.png",
+              "bytes": 147809,
+              "sha256": "89ec502a2efe514d0246cf356b75141dcb06927f00492e635e676a892df8c4e5"
+            },
+            {
+              "view": "3d",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\RULE_LOCAL_K8\\t20\\3d.png",
+              "relative_path": "s3r23/RULE_LOCAL_K8/t20/3d.png",
+              "bytes": 203111,
+              "sha256": "31a39910b4ea8c351c32320ac8fdcb754f3e09258cbc3c2abf8872046bd9a16a"
+            }
+          ]
+        },
+        {
+          "requested_time_s": 170.0,
+          "actual_time_s": 170.0,
+          "images": [
+            {
+              "view": "top_down",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\RULE_LOCAL_K8\\t170\\top_down.png",
+              "relative_path": "s3r23/RULE_LOCAL_K8/t170/top_down.png",
+              "bytes": 217811,
+              "sha256": "82635e21af48f8eefb693e00b62b7433b51f6fd8aa77030127358a92dd7dc9f5"
+            },
+            {
+              "view": "side",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\RULE_LOCAL_K8\\t170\\side.png",
+              "relative_path": "s3r23/RULE_LOCAL_K8/t170/side.png",
+              "bytes": 149218,
+              "sha256": "cb7860b8e2ddf9353acf744dbb3877cb0137118caa00cbec398398e937c62352"
+            },
+            {
+              "view": "3d",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\RULE_LOCAL_K8\\t170\\3d.png",
+              "relative_path": "s3r23/RULE_LOCAL_K8/t170/3d.png",
+              "bytes": 205977,
+              "sha256": "2049c998d6857352f3966846ca50605d87e3495b59d39eca453c7b84e047c193"
+            }
+          ]
+        },
+        {
+          "requested_time_s": 260.0,
+          "actual_time_s": 260.0,
+          "images": [
+            {
+              "view": "top_down",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\RULE_LOCAL_K8\\t260\\top_down.png",
+              "relative_path": "s3r23/RULE_LOCAL_K8/t260/top_down.png",
+              "bytes": 216125,
+              "sha256": "e103117db11d5a7a9f4fad49113ded69f7f55ce8c1526d19268439ba2c467d32"
+            },
+            {
+              "view": "side",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\RULE_LOCAL_K8\\t260\\side.png",
+              "relative_path": "s3r23/RULE_LOCAL_K8/t260/side.png",
+              "bytes": 145867,
+              "sha256": "8b60d614ca9fb6cbe2dd4201bb7aa0f68481ef22c5bca173057ee362d04c09db"
+            },
+            {
+              "view": "3d",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\RULE_LOCAL_K8\\t260\\3d.png",
+              "relative_path": "s3r23/RULE_LOCAL_K8/t260/3d.png",
+              "bytes": 203719,
+              "sha256": "a4985b44500946a929314208291734d7ee3d76b3f75924eedf558101b6655acb"
+            }
+          ]
+        },
+        {
+          "requested_time_s": 320.0,
+          "actual_time_s": 320.0,
+          "images": [
+            {
+              "view": "top_down",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\RULE_LOCAL_K8\\t320\\top_down.png",
+              "relative_path": "s3r23/RULE_LOCAL_K8/t320/top_down.png",
+              "bytes": 197412,
+              "sha256": "1a75591ec4a2fb51b3bc1ed3ee711a5a119c5837e0d8b8e64b9e81ca3b2665e1"
+            },
+            {
+              "view": "side",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\RULE_LOCAL_K8\\t320\\side.png",
+              "relative_path": "s3r23/RULE_LOCAL_K8/t320/side.png",
+              "bytes": 131683,
+              "sha256": "26b95fcf5ed9c58c56610c3775b923a6ff6ec33f75bc282e19e780425d8dae9b"
+            },
+            {
+              "view": "3d",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r23\\RULE_LOCAL_K8\\t320\\3d.png",
+              "relative_path": "s3r23/RULE_LOCAL_K8/t320/3d.png",
+              "bytes": 182942,
+              "sha256": "9babf16b34aa031a08f80c8c756434aca3a3f348bb4d6ba8249313e1375d6027"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": "s3r24",
+      "method": "FULL_H",
+      "replay_root": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\FULL_H\\evaluation\\s3r24\\FULL_H\\replay",
+      "time_bounds_s": [
+        0.0,
+        320.0
+      ],
+      "sample_dt_s": 0.2,
+      "input": {
+        "replay_root": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\FULL_H\\evaluation\\s3r24\\FULL_H\\replay",
+        "replay_json_sha256": "eb36f1c6089cd2c9f57d253481b7648a5dd82f7db1eaaef8762c5ce1f5bc20a1",
+        "input_sha256": "cdd699ec59ab21c24e968315c4be9ae4c804e793ab44a97e016ff09c57adc986",
+        "files": [
+          {
+            "relative_path": "replay.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\FULL_H\\evaluation\\s3r24\\FULL_H\\replay\\replay.json",
+            "bytes": 6817,
+            "sha256": "eb36f1c6089cd2c9f57d253481b7648a5dd82f7db1eaaef8762c5ce1f5bc20a1"
+          },
+          {
+            "relative_path": "assertions.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\FULL_H\\evaluation\\s3r24\\FULL_H\\replay\\assertions.json",
+            "bytes": 2,
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          {
+            "relative_path": "config.yaml",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\FULL_H\\evaluation\\s3r24\\FULL_H\\replay\\config.yaml",
+            "bytes": 14318,
+            "sha256": "a0671841f89ee625cc1ca647ee885801698c837aecc84078f6cd6f4870233fec"
+          },
+          {
+            "relative_path": "decisions.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\FULL_H\\evaluation\\s3r24\\FULL_H\\replay\\decisions.jsonl",
+            "bytes": 12276821,
+            "sha256": "f5e4572423a0bd5ab81201cdfd956e316ce02d459be38e047b89db5fd732c910"
+          },
+          {
+            "relative_path": "dispatch_timings.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\FULL_H\\evaluation\\s3r24\\FULL_H\\replay\\dispatch_timings.jsonl",
+            "bytes": 41774,
+            "sha256": "9de9ef83d27f8af5e57458621aadcaf5f2673d2a89dc620f8e281b26c1b3a921"
+          },
+          {
+            "relative_path": "events.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\FULL_H\\evaluation\\s3r24\\FULL_H\\replay\\events.jsonl",
+            "bytes": 417228,
+            "sha256": "266085da900d448a23fec209acd92b5d53eee5aaea5d251c4f7ee388b7f88bca"
+          },
+          {
+            "relative_path": "failure_archive.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\FULL_H\\evaluation\\s3r24\\FULL_H\\replay\\failure_archive.json",
+            "bytes": 2,
+            "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+          },
+          {
+            "relative_path": "manifest.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\FULL_H\\evaluation\\s3r24\\FULL_H\\replay\\manifest.json",
+            "bytes": 29150,
+            "sha256": "8c234fddab5bf8378636cb03ba015e38cf516d96f248d61f4c3be21a8388ea14"
+          },
+          {
+            "relative_path": "metrics.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\FULL_H\\evaluation\\s3r24\\FULL_H\\replay\\metrics.json",
+            "bytes": 2477,
+            "sha256": "39a40e38b44bef197a9f1c371e8d6cbf990da54f8cccd12f2544e3cf011f42db"
+          },
+          {
+            "relative_path": "rejections.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\FULL_H\\evaluation\\s3r24\\FULL_H\\replay\\rejections.jsonl",
+            "bytes": 275587,
+            "sha256": "9f7cf0e3a160ed79d7d372c241f6f64398f6205e874810f94203a35e613ab9cf"
+          },
+          {
+            "relative_path": "stage2_provenance.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\FULL_H\\evaluation\\s3r24\\FULL_H\\replay\\stage2_provenance.json",
+            "bytes": 587884,
+            "sha256": "a230d9633fe1b44f52731bd34385f5dc9e0d8055d02398370705239f9e7d2117"
+          },
+          {
+            "relative_path": "stage3_trace.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\FULL_H\\evaluation\\s3r24\\FULL_H\\replay\\stage3_trace.jsonl",
+            "bytes": 52584,
+            "sha256": "cf8a9d052ba9a84bc2425c2e0423d99274f420adc8121f360aee1030dc24348d"
+          },
+          {
+            "relative_path": "states.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\FULL_H\\evaluation\\s3r24\\FULL_H\\replay\\states.jsonl",
+            "bytes": 29586997,
+            "sha256": "6f00bf31b47d44d121f0562883d756b10749c5f9514d31dc4a41ce394c4f8d13"
+          },
+          {
+            "relative_path": "tentative_predictions.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\FULL_H\\evaluation\\s3r24\\FULL_H\\replay\\tentative_predictions.json",
+            "bytes": 61,
+            "sha256": "f5b5c8806fb65343851958ee8ed5d4f8400ec4f42f5c03d50b89bdaef944f517"
+          },
+          {
+            "relative_path": "trajectories.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\FULL_H\\evaluation\\s3r24\\FULL_H\\replay\\trajectories.json",
+            "bytes": 51275,
+            "sha256": "71eeab1645c4a73eb981b06bc679e903eea944d5bab9260f79697deef58307d3"
+          },
+          {
+            "relative_path": "visual_acceptance.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\FULL_H\\evaluation\\s3r24\\FULL_H\\replay\\visual_acceptance.json",
+            "bytes": 151,
+            "sha256": "55e9b06a21f8908831e8dccae940cc3efd52f056dd7d37c8ebb805d5535fb125"
+          }
+        ],
+        "replay_index_human_acceptance_observed": "HUMAN_PENDING",
+        "human_acceptance_observed": "HUMAN_PENDING",
+        "visualization_integration_status_observed": "NOT_OBSERVED"
+      },
+      "frames": [
+        {
+          "requested_time_s": 20.0,
+          "actual_time_s": 20.0,
+          "images": [
+            {
+              "view": "top_down",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\FULL_H\\t20\\top_down.png",
+              "relative_path": "s3r24/FULL_H/t20/top_down.png",
+              "bytes": 225645,
+              "sha256": "260d8f94cfec26b2ffc603c01f37bc2a9e953b6c8e989ab3b5adf91dbaff880d"
+            },
+            {
+              "view": "side",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\FULL_H\\t20\\side.png",
+              "relative_path": "s3r24/FULL_H/t20/side.png",
+              "bytes": 150515,
+              "sha256": "8e960cbb265cbbaf47e902e881ac71dca2c8212476cc18d458fe98fe94f04770"
+            },
+            {
+              "view": "3d",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\FULL_H\\t20\\3d.png",
+              "relative_path": "s3r24/FULL_H/t20/3d.png",
+              "bytes": 217509,
+              "sha256": "0e379528287a1736950f5f77f8847a15fd219eac0a132dab037d212dbfbbf9c1"
+            }
+          ]
+        },
+        {
+          "requested_time_s": 170.0,
+          "actual_time_s": 170.0,
+          "images": [
+            {
+              "view": "top_down",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\FULL_H\\t170\\top_down.png",
+              "relative_path": "s3r24/FULL_H/t170/top_down.png",
+              "bytes": 205878,
+              "sha256": "25f1441012497897424a2b51634ae5177392bb66a7f86f0f0260d865488f8eb6"
+            },
+            {
+              "view": "side",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\FULL_H\\t170\\side.png",
+              "relative_path": "s3r24/FULL_H/t170/side.png",
+              "bytes": 134510,
+              "sha256": "3deddc71e47f48a4c1cd747050dc7754a315d1742668c4b4a2c075525e4d37e0"
+            },
+            {
+              "view": "3d",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\FULL_H\\t170\\3d.png",
+              "relative_path": "s3r24/FULL_H/t170/3d.png",
+              "bytes": 196323,
+              "sha256": "441164449077e1a74e605c59c02d8c1cb1122765fc4643b7602c0e4b8c76133c"
+            }
+          ]
+        },
+        {
+          "requested_time_s": 260.0,
+          "actual_time_s": 260.0,
+          "images": [
+            {
+              "view": "top_down",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\FULL_H\\t260\\top_down.png",
+              "relative_path": "s3r24/FULL_H/t260/top_down.png",
+              "bytes": 214242,
+              "sha256": "4f8e9922754bd592a1c3f4975c101bb907a709315f42b2502f5d4e505a060d4b"
+            },
+            {
+              "view": "side",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\FULL_H\\t260\\side.png",
+              "relative_path": "s3r24/FULL_H/t260/side.png",
+              "bytes": 138289,
+              "sha256": "a8dfbdc4882d20894438e66d7ce622b1ef7352acb8372947501579d0ff773491"
+            },
+            {
+              "view": "3d",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\FULL_H\\t260\\3d.png",
+              "relative_path": "s3r24/FULL_H/t260/3d.png",
+              "bytes": 203519,
+              "sha256": "daa444f95a8a91e5563caa2b5a84f54ec4b7ff9ec62f56dfa131f92b96f531c1"
+            }
+          ]
+        },
+        {
+          "requested_time_s": 320.0,
+          "actual_time_s": 320.0,
+          "images": [
+            {
+              "view": "top_down",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\FULL_H\\t320\\top_down.png",
+              "relative_path": "s3r24/FULL_H/t320/top_down.png",
+              "bytes": 217270,
+              "sha256": "6ee863d96d3ad72a98ea90bba7d464e13b698a3d0dd098acdb4969e000ae9944"
+            },
+            {
+              "view": "side",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\FULL_H\\t320\\side.png",
+              "relative_path": "s3r24/FULL_H/t320/side.png",
+              "bytes": 132624,
+              "sha256": "0a5b9e81717595b76d92199343bce00a3dcfb303e98694ef99dafeeb5595656f"
+            },
+            {
+              "view": "3d",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\FULL_H\\t320\\3d.png",
+              "relative_path": "s3r24/FULL_H/t320/3d.png",
+              "bytes": 203938,
+              "sha256": "6c7809af3ea976283b650460a69e06018a250c0e01271ca3c9f3954227438741"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": "s3r24",
+      "method": "RULE_LOCAL_K8",
+      "replay_root": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\RULE_LOCAL_K8\\evaluation\\s3r24\\RULE_LOCAL_K8\\replay",
+      "time_bounds_s": [
+        0.0,
+        320.0
+      ],
+      "sample_dt_s": 0.2,
+      "input": {
+        "replay_root": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\RULE_LOCAL_K8\\evaluation\\s3r24\\RULE_LOCAL_K8\\replay",
+        "replay_json_sha256": "f1c4afcd504d61164b0af6d41ca0eb1797d2ed1ac194084d1d0ef7b25ce581f5",
+        "input_sha256": "e0f62521dc43b4fc38f9f9d3663a1f545740ae2c0f47ec5acd8c28e8aec3bed1",
+        "files": [
+          {
+            "relative_path": "replay.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\RULE_LOCAL_K8\\evaluation\\s3r24\\RULE_LOCAL_K8\\replay\\replay.json",
+            "bytes": 7219,
+            "sha256": "f1c4afcd504d61164b0af6d41ca0eb1797d2ed1ac194084d1d0ef7b25ce581f5"
+          },
+          {
+            "relative_path": "assertions.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\RULE_LOCAL_K8\\evaluation\\s3r24\\RULE_LOCAL_K8\\replay\\assertions.json",
+            "bytes": 2,
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          {
+            "relative_path": "config.yaml",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\RULE_LOCAL_K8\\evaluation\\s3r24\\RULE_LOCAL_K8\\replay\\config.yaml",
+            "bytes": 14318,
+            "sha256": "a0671841f89ee625cc1ca647ee885801698c837aecc84078f6cd6f4870233fec"
+          },
+          {
+            "relative_path": "decisions.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\RULE_LOCAL_K8\\evaluation\\s3r24\\RULE_LOCAL_K8\\replay\\decisions.jsonl",
+            "bytes": 12827205,
+            "sha256": "190fa53f857db853cf12addc4f11fbc75e37623e2e06154a5b45820080c00a6c"
+          },
+          {
+            "relative_path": "dispatch_timings.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\RULE_LOCAL_K8\\evaluation\\s3r24\\RULE_LOCAL_K8\\replay\\dispatch_timings.jsonl",
+            "bytes": 50896,
+            "sha256": "74871eb1b363b97195a2972c37e104bff27d8929bd3f7d0ac7234ceddb7b3158"
+          },
+          {
+            "relative_path": "events.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\RULE_LOCAL_K8\\evaluation\\s3r24\\RULE_LOCAL_K8\\replay\\events.jsonl",
+            "bytes": 478066,
+            "sha256": "8979ca048a727147da073801fc02c413e4bec5efe19f84744d0e4fe12a892e32"
+          },
+          {
+            "relative_path": "failure_archive.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\RULE_LOCAL_K8\\evaluation\\s3r24\\RULE_LOCAL_K8\\replay\\failure_archive.json",
+            "bytes": 2,
+            "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+          },
+          {
+            "relative_path": "manifest.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\RULE_LOCAL_K8\\evaluation\\s3r24\\RULE_LOCAL_K8\\replay\\manifest.json",
+            "bytes": 29150,
+            "sha256": "8c234fddab5bf8378636cb03ba015e38cf516d96f248d61f4c3be21a8388ea14"
+          },
+          {
+            "relative_path": "metrics.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\RULE_LOCAL_K8\\evaluation\\s3r24\\RULE_LOCAL_K8\\replay\\metrics.json",
+            "bytes": 2468,
+            "sha256": "17715f89e12efec3b353027375b7e333d17ff3f907149a584588b8d884ed780e"
+          },
+          {
+            "relative_path": "rejections.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\RULE_LOCAL_K8\\evaluation\\s3r24\\RULE_LOCAL_K8\\replay\\rejections.jsonl",
+            "bytes": 292088,
+            "sha256": "e0575a91a1187eaba4b37b0d69f8706bc69b83382b0550ff1f352c9772e9ceef"
+          },
+          {
+            "relative_path": "stage2_provenance.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\RULE_LOCAL_K8\\evaluation\\s3r24\\RULE_LOCAL_K8\\replay\\stage2_provenance.json",
+            "bytes": 598382,
+            "sha256": "49bb567f5a00ae28d07310b6e95084d9c7c1a91a953c3fad7ff14de5c31903a2"
+          },
+          {
+            "relative_path": "stage3_trace.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\RULE_LOCAL_K8\\evaluation\\s3r24\\RULE_LOCAL_K8\\replay\\stage3_trace.jsonl",
+            "bytes": 73742,
+            "sha256": "d670a5e0b21d0190c99a4d2b63e08e75ac37b8094489a6b2b8bb3a90d6372d64"
+          },
+          {
+            "relative_path": "states.jsonl",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\RULE_LOCAL_K8\\evaluation\\s3r24\\RULE_LOCAL_K8\\replay\\states.jsonl",
+            "bytes": 31152935,
+            "sha256": "fae73bd9a79f6f5f83fe9368968807c266ad733220f41c9da0e8f32d480173df"
+          },
+          {
+            "relative_path": "tentative_predictions.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\RULE_LOCAL_K8\\evaluation\\s3r24\\RULE_LOCAL_K8\\replay\\tentative_predictions.json",
+            "bytes": 4497,
+            "sha256": "4a695488697b58772299a76104da27088681766530f438d00488eb611f2d5e7c"
+          },
+          {
+            "relative_path": "trajectories.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\RULE_LOCAL_K8\\evaluation\\s3r24\\RULE_LOCAL_K8\\replay\\trajectories.json",
+            "bytes": 58638,
+            "sha256": "b9cbef0755482753be97bbcd20dda9ec63009601a140aefdbb81aa4c0ce64b27"
+          },
+          {
+            "relative_path": "visual_acceptance.json",
+            "absolute_path": "D:\\7_codespace\\training_outputs\\terminal\\rs_selective_quality_a4_20261030_review\\arms\\s3r24\\RULE_LOCAL_K8\\evaluation\\s3r24\\RULE_LOCAL_K8\\replay\\visual_acceptance.json",
+            "bytes": 151,
+            "sha256": "55e9b06a21f8908831e8dccae940cc3efd52f056dd7d37c8ebb805d5535fb125"
+          }
+        ],
+        "replay_index_human_acceptance_observed": "HUMAN_PENDING",
+        "human_acceptance_observed": "HUMAN_PENDING",
+        "visualization_integration_status_observed": "NOT_OBSERVED"
+      },
+      "frames": [
+        {
+          "requested_time_s": 20.0,
+          "actual_time_s": 20.0,
+          "images": [
+            {
+              "view": "top_down",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\RULE_LOCAL_K8\\t20\\top_down.png",
+              "relative_path": "s3r24/RULE_LOCAL_K8/t20/top_down.png",
+              "bytes": 226101,
+              "sha256": "da6cb7cff7e4a48e36844500f4bb1fb8cfe67cb130d16ae810ab4f8c7663df64"
+            },
+            {
+              "view": "side",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\RULE_LOCAL_K8\\t20\\side.png",
+              "relative_path": "s3r24/RULE_LOCAL_K8/t20/side.png",
+              "bytes": 150903,
+              "sha256": "0a26ca850effe84c6a65360dba4d9640857c7d68f4338dbfada74816e50a0904"
+            },
+            {
+              "view": "3d",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\RULE_LOCAL_K8\\t20\\3d.png",
+              "relative_path": "s3r24/RULE_LOCAL_K8/t20/3d.png",
+              "bytes": 217852,
+              "sha256": "9601374459cb8c00b5e111e4aa0cd01ac3d76dbca363901826748ed842cb54f1"
+            }
+          ]
+        },
+        {
+          "requested_time_s": 170.0,
+          "actual_time_s": 170.0,
+          "images": [
+            {
+              "view": "top_down",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\RULE_LOCAL_K8\\t170\\top_down.png",
+              "relative_path": "s3r24/RULE_LOCAL_K8/t170/top_down.png",
+              "bytes": 216257,
+              "sha256": "ceac0bcb09b466d67f4bdbe5b448675a90eaf38d0e424c631cee2ee5f5f8f67d"
+            },
+            {
+              "view": "side",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\RULE_LOCAL_K8\\t170\\side.png",
+              "relative_path": "s3r24/RULE_LOCAL_K8/t170/side.png",
+              "bytes": 144232,
+              "sha256": "aad85e4f1ddcf7bb80bf65b87e925654f4485a2e012f29ae03adbeb9acf9f4df"
+            },
+            {
+              "view": "3d",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\RULE_LOCAL_K8\\t170\\3d.png",
+              "relative_path": "s3r24/RULE_LOCAL_K8/t170/3d.png",
+              "bytes": 205718,
+              "sha256": "28687e20a62863e06f6ee9c5bb3d1060712a4f504e2f70982a9c45f676e805be"
+            }
+          ]
+        },
+        {
+          "requested_time_s": 260.0,
+          "actual_time_s": 260.0,
+          "images": [
+            {
+              "view": "top_down",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\RULE_LOCAL_K8\\t260\\top_down.png",
+              "relative_path": "s3r24/RULE_LOCAL_K8/t260/top_down.png",
+              "bytes": 209603,
+              "sha256": "13b56528932487195b9d0e6661e37b9ab13f44782c285ecad5d156dd2700f891"
+            },
+            {
+              "view": "side",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\RULE_LOCAL_K8\\t260\\side.png",
+              "relative_path": "s3r24/RULE_LOCAL_K8/t260/side.png",
+              "bytes": 136759,
+              "sha256": "4337158ece97e0601aeb18f8d548231afd391855c78631c298bbf4d7fa01d603"
+            },
+            {
+              "view": "3d",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\RULE_LOCAL_K8\\t260\\3d.png",
+              "relative_path": "s3r24/RULE_LOCAL_K8/t260/3d.png",
+              "bytes": 200069,
+              "sha256": "d00768a11655638f1144555c5582998e7ed1324fdae7980df7706696dedaab23"
+            }
+          ]
+        },
+        {
+          "requested_time_s": 320.0,
+          "actual_time_s": 320.0,
+          "images": [
+            {
+              "view": "top_down",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\RULE_LOCAL_K8\\t320\\top_down.png",
+              "relative_path": "s3r24/RULE_LOCAL_K8/t320/top_down.png",
+              "bytes": 212668,
+              "sha256": "6842ce161e94dad256076fbe2128146f61802798906335f186c20666e7d040a8"
+            },
+            {
+              "view": "side",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\RULE_LOCAL_K8\\t320\\side.png",
+              "relative_path": "s3r24/RULE_LOCAL_K8/t320/side.png",
+              "bytes": 135369,
+              "sha256": "ece57513edf935896e1ac1232a8797ff957e8e6079f0c6765e4dd85d354e0a0b"
+            },
+            {
+              "view": "3d",
+              "path": "D:\\7_codespace\\terminal\\artifacts\\rs_select_quality_a4_20261030\\visual_review_formal\\s3r24\\RULE_LOCAL_K8\\t320\\3d.png",
+              "relative_path": "s3r24/RULE_LOCAL_K8/t320/3d.png",
+              "bytes": 200920,
+              "sha256": "09410df308085a94cad6d2ae6777e1a97f7b0d775c50466a7c2f97233b162974"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "frame_count": 16,
+  "image_count": 48
+}
