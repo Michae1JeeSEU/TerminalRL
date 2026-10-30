@@ -26,8 +26,9 @@ OUTPUT_NAME = "rs_service_opportunity_20261030"
 SUPPLY_R2_OUTPUT_NAME = "rs_service_opportunity_supply_r2_20261030"
 LOCAL_RECOVERY_OUTPUT_NAME = "rs_local_recovery_20261031"
 LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME = "rs_local_recovery_restorefix_20261031"
+LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME = "rs_local_recovery_serializationfix_20261031"
 OUTPUT_NAMES = (OUTPUT_NAME, SUPPLY_R2_OUTPUT_NAME, LOCAL_RECOVERY_OUTPUT_NAME,
-                LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME)
+                LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME, LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME)
 PROFILE = "service_opportunity_v1"
 ORIGIN_NAME = "rs_selective_quality_a4_20261030"
 COMMON_HASHES = {
@@ -85,6 +86,38 @@ def policy_for_output(output):
             shared_original_cap_child_wall_s=POLICY["cap_child_wall_s"],
             continuation_reason="COLD_COMMON_TRAFFIC_POLICY_RESTORE_FIX; PRIOR_PREFLIGHTS_REMAIN_CHARGED",
             run_role="AUTHORIZED_LOCAL_RECOVERY_RESTORE_FIX_CONTINUATION")
+    elif policy["campaign"] == LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME:
+        previous_output=output.parent/LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME
+        previous=previous_output/"repair_budget_ledger.json"
+        # Reconstruct the preceding policy from its own immutable predecessor,
+        # retaining the original R3 charge as well as this round's settled work.
+        previous_policy=policy_for_output(previous_output)
+        base.require(previous.is_file(),"restore-fix ledger required for serialization continuation")
+        previous_hash=base.file_hash(previous); ledger=base.load(previous)
+        base.require(base.file_hash(previous)==previous_hash,"previous restore-fix ledger changed while read")
+        base.require(all(ledger.get(key)==value for key,value in previous_policy.items()),
+                     "previous restore-fix campaign/cap/history binding differs")
+        terminal={"completed","failed","BUDGET_LIMITED","credited_preexisting_measurement"}
+        base.require(isinstance(ledger.get("jobs"),dict) and
+                     all(row.get("status") in terminal for row in ledger["jobs"].values()),
+                     "previous restore-fix jobs must all be terminal; no active/unknown jobs")
+        cap=ledger["cap_child_wall_s"]; used=ledger.get("settled_child_wall_s")
+        base.require(type(used) in (int,float) and math.isfinite(used) and 0.<=used<cap,
+                     "previous restore-fix settled budget invalid or exhausted")
+        earlier=previous_policy["previous_campaign_settled_child_wall_s"]
+        chain=[dict(campaign=LOCAL_RECOVERY_OUTPUT_NAME,
+            ledger_readonly=previous_policy["previous_ledger_readonly"],ledger_sha256=previous_policy["previous_ledger_sha256"],
+            cap_child_wall_s=previous_policy["shared_original_cap_child_wall_s"],settled_child_wall_s=earlier),
+            dict(campaign=LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME,
+                ledger_readonly=LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME+"/repair_budget_ledger.json",
+                ledger_sha256=previous_hash,cap_child_wall_s=cap,settled_child_wall_s=used)]
+        policy.update(cap_child_wall_s=cap-used,
+            previous_ledger_readonly=LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME+"/repair_budget_ledger.json",
+            previous_ledger_sha256=previous_hash,previous_campaign_settled_child_wall_s=used,
+            shared_original_cap_child_wall_s=previous_policy["shared_original_cap_child_wall_s"],
+            historical_charged_child_wall_s=math.fsum((earlier,used)),historical_charge_chain=chain,
+            continuation_reason="IMMUTABLE_RECOVERY_PACKET_SERIALIZATION_FIX; ALL_PRIOR_CHILD_WALL_REMAINS_CHARGED",
+            run_role="AUTHORIZED_LOCAL_RECOVERY_SERIALIZATION_FIX_CONTINUATION")
     return policy
 
 
@@ -167,7 +200,7 @@ def main(argv=None):
     required = (DRIVER.relative_to(PROJECT).as_posix(),
                 "scripts/stage3/report_service_opportunity_comparison.py",
                 "tests/test_service_opportunity_campaign.py")
-    if args.output.name == LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME:
+    if args.output.name in (LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME, LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME):
         required += ("scripts/stage3/run_selective_common_initial_a4.py",
                      "tests/test_selective_common_initial_a4.py")
     base.require(all(name in source["files"] for name in required), "reviewed follow-up sources/tests required")
@@ -191,7 +224,7 @@ def main(argv=None):
         base.require(base.file_hash(checkpoint)==COMMON_HASHES[args.root], "common checkpoint changed")
         run_output = args.output/"smoke_only" if args.stage=="smoke" else args.output
         smoke_seconds = 25 if args.output.name in (SUPPLY_R2_OUTPUT_NAME, LOCAL_RECOVERY_OUTPUT_NAME,
-                                                 LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME) else 20
+            LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME, LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME) else 20
         result = comparison.run_arm(run_output,args.root,args.method,checkpoint,
             dict(source_commit=source["commit"],source_hash=source["source_hash"],cpu=args.cpu,
                  campaign=args.output.name,run_role="SMOKE_NOT_FORMAL" if args.stage=="smoke" else "FORMAL_SINGLE_ARM"),

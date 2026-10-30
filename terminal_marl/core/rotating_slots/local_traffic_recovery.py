@@ -233,6 +233,8 @@ def guard_submission(world, packet):
     if result.accepted and (result.details.get("affected_aircraft_ids") or result.details.get("horizon_extension_pairs")):
         from .planning_latency import _commitment_table
         source = world.build_planning_snapshot()
+        source = replace(source, aircraft=freeze(dict(source.aircraft)), active=freeze(dict(source.active)),
+                         soft=freeze(dict(source.soft)), requests=freeze(dict(source.requests)))
         packet["local_traffic_source"] = source
         packet["local_traffic_tables"] = {aid: _commitment_table(source, a, packet["timing"].effective_time)
             for aid, a in source.aircraft.items() if a.status in AIRBORNE or a.status == "LANDED_SERVICE"}

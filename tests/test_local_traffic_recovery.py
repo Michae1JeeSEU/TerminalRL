@@ -68,6 +68,50 @@ def test_real_late_outer_arrival_keeps_original_final_certificate_and_readiness(
     assert world.active["a"].trajectory_hash == callback.plans[0].trajectory_hash
 
 
+@pytest.mark.parametrize("arrivals", ((18.,), (18., 19.)))
+def test_checkpoint_after_unrelated_outer_guard_preserves_ready_final_and_archive(tmp_path, arrivals):
+    from terminal_marl.core.rotating_slots.replay import BufferedStateJSONLSink
+    world, _, callback, clock, admitted = setup(arrivals=arrivals)
+    archive = tmp_path/"archived.states.jsonl"
+    sink = BufferedStateJSONLSink(archive)
+    for frame in world.records: sink(frame)
+    world.state_sink = sink
+    scheduler = latency.LatencyAwareScheduler(callback, clock=clock, lead_seconds=20.,
+        traffic_policy=latency.LOCAL_TRAFFIC_POLICY)
+    world.decision_callback = scheduler
+    world.advance(17.)
+    original_ready = scheduler.records[0]["ready_time"]
+    original_hash = callback.plans[0].trajectory_hash
+    world.advance(19.25)
+    assert admitted == ["new"+str(index) for index in range(len(arrivals))]
+    assert scheduler.pending["stage"] == "PREPARED"
+    record = scheduler.records[0]
+    assert record["ready_time"] == original_ready and record["revalidation_count"] == 0
+    assert record["guard_local_recovery"][-1]["accepted"]
+    token = scheduler.pending["token"]
+    assert world._planning_latency_packets[token]["local_traffic_source"].time+1.e-8 >= arrivals[-1]
+    identity = checkpoint_identity(dict(source_hash="test", base_config_hash=world.config.config_hash,
+        overlay_sha256="test"), digest(world.manifest.to_dict()))
+    checkpoint = tmp_path/"after_unrelated_guard.checkpoint.json"
+    save_checkpoint(checkpoint, world, scheduler, identity)
+    sink.close()
+    archived_bytes = archive.read_bytes()
+    restored_scheduler = latency.LatencyAwareScheduler(StatefulFinals(), clock=Durations(), lead_seconds=20.,
+        traffic_policy=latency.LOCAL_TRAFFIC_POLICY)
+    restored = restore_checkpoint(checkpoint, restored_scheduler, identity,
+        stream_copy=tmp_path/"restored.states.jsonl")
+    try:
+        assert restored_scheduler.records[0]["ready_time"] == original_ready
+        assert restored._planning_latency_packets[token]["plans"][0].trajectory_hash == original_hash
+        restored.advance(20.01, restored_scheduler)
+        assert restored_scheduler.records[0]["status"] == "COMMITTED"
+        assert restored_scheduler.records[0]["ready_time"] == original_ready
+        assert restored.active["a"].trajectory_hash == original_hash
+        assert archive.read_bytes() == archived_bytes
+    finally:
+        restored.state_sink.close()
+
+
 def test_true_partial_resource_conflict_delivers_only_jointly_certified_standby():
     world, scheduler, callback, _, changed = partial_fixture()
     world.advance(30.01)

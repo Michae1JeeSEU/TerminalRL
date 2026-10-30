@@ -15,6 +15,18 @@ def save(path,value):
     path.write_text(json.dumps(value),encoding="utf8")
 
 
+def save_serialization_continuation_chain(parent):
+    original=parent/runner.LOCAL_RECOVERY_OUTPUT_NAME/"repair_budget_ledger.json"
+    save(original,dict(campaign=runner.LOCAL_RECOVERY_OUTPUT_NAME,cap_child_wall_s=7200.,
+        settled_child_wall_s=8.607537163188681,jobs=dict(preflight=dict(status="failed"))))
+    previous_output=parent/runner.LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME
+    previous=previous_output/"repair_budget_ledger.json"
+    saved=dict(runner.policy_for_output(previous_output),settled_child_wall_s=966.7981451372616,
+        jobs=dict(mappingproxy=dict(status="failed",exit_code=1),stopped=dict(status="failed",exit_code=-15)))
+    save(previous,saved)
+    return original,previous,saved
+
+
 def frames(demand=True):
     aircraft=[dict(id="arbitrary_name",status="HOLD_MIDDLE",service_class="fast") ] if demand else []
     return [dict(time=t,aircraft=aircraft,pads=[]) for t in (20.,320.)]
@@ -129,9 +141,11 @@ def test_cli_and_literal_thread_settings(monkeypatch):
     (runner.OUTPUT_NAME,"smoke",20),(runner.SUPPLY_R2_OUTPUT_NAME,"smoke",25),
     (runner.LOCAL_RECOVERY_OUTPUT_NAME,"smoke",25),
     (runner.LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME,"smoke",25),
+    (runner.LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME,"smoke",25),
     (runner.OUTPUT_NAME,"arm",300),(runner.SUPPLY_R2_OUTPUT_NAME,"arm",300),
     (runner.LOCAL_RECOVERY_OUTPUT_NAME,"arm",300),
-    (runner.LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME,"arm",300)])
+    (runner.LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME,"arm",300),
+    (runner.LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME,"arm",300)])
 def test_smoke_is_twenty_seconds_separate_output(monkeypatch,tmp_path,output_name,stage,seconds):
     for key in runner.base.THREADS: monkeypatch.setenv(key,"1")
     source=dict(commit="test",source_hash="hash",files={p: "x" for p in (
@@ -159,6 +173,8 @@ def test_smoke_is_twenty_seconds_separate_output(monkeypatch,tmp_path,output_nam
     if output_name==runner.LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME:
         save(tmp_path/runner.LOCAL_RECOVERY_OUTPUT_NAME/"repair_budget_ledger.json",dict(
             campaign=runner.LOCAL_RECOVERY_OUTPUT_NAME,cap_child_wall_s=7200.,settled_child_wall_s=17.,jobs={}))
+    elif output_name==runner.LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME:
+        save_serialization_continuation_chain(tmp_path)
     result=runner.main(["--stage",stage,"--output",str(output),"--root","s3r23","--method","FULL_H",
         "--cpu","16","--source-freeze",str(freeze),"--_child-job-id","service_"+stage+"_s3r23_FULL_H"])
     assert result["target_relative_s"]==seconds
@@ -238,6 +254,54 @@ def test_restorefix_requires_readable_bound_previous_ledger(tmp_path,monkeypatch
     previous=parent/runner.LOCAL_RECOVERY_OUTPUT_NAME/"repair_budget_ledger.json"
     save(previous,dict(campaign="wrong",cap_child_wall_s=7200.,settled_child_wall_s=0.,jobs={}))
     with pytest.raises(ValueError,match="binding differs"):
+        runner.policy_for_output(output)
+
+
+def test_serializationfix_subtracts_previous_actual_cap_and_preserves_readonly_charge_chain(tmp_path,monkeypatch):
+    monkeypatch.setattr(Path,"home",classmethod(lambda cls:tmp_path))
+    parent=tmp_path/"training_outputs/terminal"
+    original,previous,saved=save_serialization_continuation_chain(parent)
+    before={p:p.read_bytes() for p in (original,previous)}
+    output=parent/runner.LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME
+    policy=runner.policy_for_output(output)
+    assert policy["cap_child_wall_s"]==7191.392462836811-966.7981451372616
+    assert policy["cap_child_wall_s"]==6224.59431769955
+    assert policy["cap_child_wall_s"]!=7200.-966.7981451372616
+    assert policy["previous_ledger_sha256"]==runner.base.file_hash(previous)
+    assert policy["previous_campaign_settled_child_wall_s"]==966.7981451372616
+    assert policy["shared_original_cap_child_wall_s"]==7200.
+    assert policy["historical_charged_child_wall_s"]==pytest.approx(8.607537163188681+966.7981451372616)
+    chain=policy["historical_charge_chain"]
+    assert [r["campaign"] for r in chain]==[runner.LOCAL_RECOVERY_OUTPUT_NAME,runner.LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME]
+    assert [r["ledger_sha256"] for r in chain]==[runner.base.file_hash(original),runner.base.file_hash(previous)]
+    with runner.old.ledger_transaction(output,policy=policy) as ledger:
+        assert ledger["settled_child_wall_s"]==0. and ledger["jobs"]=={}
+        assert ledger["cap_child_wall_s"]+ledger["historical_charged_child_wall_s"]==pytest.approx(7200.)
+        assert ledger["historical_campaign_budget_reset"] is False and ledger["old_ledgers_reset"] is False
+        assert ledger["historical_charge_chain"]==chain
+    assert {p:p.read_bytes() for p in before}==before
+
+
+@pytest.mark.parametrize("status",["running","unknown"])
+def test_serializationfix_rejects_nonterminal_previous_jobs(tmp_path,monkeypatch,status):
+    monkeypatch.setattr(Path,"home",classmethod(lambda cls:tmp_path))
+    parent=tmp_path/"training_outputs/terminal"
+    _,previous,saved=save_serialization_continuation_chain(parent)
+    saved["jobs"]["stopped"]["status"]=status; save(previous,saved)
+    with pytest.raises(ValueError,match="terminal"):
+        runner.policy_for_output(parent/runner.LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME)
+
+
+def test_serializationfix_rejects_previous_cap_reset_or_exhaustion(tmp_path,monkeypatch):
+    monkeypatch.setattr(Path,"home",classmethod(lambda cls:tmp_path))
+    parent=tmp_path/"training_outputs/terminal"
+    _,previous,saved=save_serialization_continuation_chain(parent)
+    output=parent/runner.LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME
+    changed=dict(saved,cap_child_wall_s=7200.); save(previous,changed)
+    with pytest.raises(ValueError,match="binding differs"):
+        runner.policy_for_output(output)
+    changed=dict(saved,settled_child_wall_s=saved["cap_child_wall_s"]); save(previous,changed)
+    with pytest.raises(ValueError,match="exhausted"):
         runner.policy_for_output(output)
 
 
