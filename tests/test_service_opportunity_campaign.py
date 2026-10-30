@@ -128,13 +128,16 @@ def test_cli_and_literal_thread_settings(monkeypatch):
 @pytest.mark.parametrize("output_name,stage,seconds",[
     (runner.OUTPUT_NAME,"smoke",20),(runner.SUPPLY_R2_OUTPUT_NAME,"smoke",25),
     (runner.LOCAL_RECOVERY_OUTPUT_NAME,"smoke",25),
+    (runner.LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME,"smoke",25),
     (runner.OUTPUT_NAME,"arm",300),(runner.SUPPLY_R2_OUTPUT_NAME,"arm",300),
-    (runner.LOCAL_RECOVERY_OUTPUT_NAME,"arm",300)])
+    (runner.LOCAL_RECOVERY_OUTPUT_NAME,"arm",300),
+    (runner.LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME,"arm",300)])
 def test_smoke_is_twenty_seconds_separate_output(monkeypatch,tmp_path,output_name,stage,seconds):
     for key in runner.base.THREADS: monkeypatch.setenv(key,"1")
     source=dict(commit="test",source_hash="hash",files={p: "x" for p in (
         "scripts/stage3/run_service_opportunity_comparison.py","scripts/stage3/report_service_opportunity_comparison.py",
-        "tests/test_service_opportunity_campaign.py")})
+        "tests/test_service_opportunity_campaign.py","scripts/stage3/run_selective_common_initial_a4.py",
+        "tests/test_selective_common_initial_a4.py")})
     freeze=tmp_path/"freeze.json"; save(freeze,source)
     monkeypatch.setattr(runner,"validated_output",lambda path:Path(path))
     monkeypatch.setattr(runner.base,"verify_sources",lambda source:None)
@@ -153,6 +156,9 @@ def test_smoke_is_twenty_seconds_separate_output(monkeypatch,tmp_path,output_nam
         return dict(status="COMPLETE",target_relative_s=kwargs["episode_seconds"])
     monkeypatch.setattr(runner.comparison,"run_arm",arm)
     output=tmp_path/output_name
+    if output_name==runner.LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME:
+        save(tmp_path/runner.LOCAL_RECOVERY_OUTPUT_NAME/"repair_budget_ledger.json",dict(
+            campaign=runner.LOCAL_RECOVERY_OUTPUT_NAME,cap_child_wall_s=7200.,settled_child_wall_s=17.,jobs={}))
     result=runner.main(["--stage",stage,"--output",str(output),"--root","s3r23","--method","FULL_H",
         "--cpu","16","--source-freeze",str(freeze),"--_child-job-id","service_"+stage+"_s3r23_FULL_H"])
     assert result["target_relative_s"]==seconds
@@ -194,6 +200,45 @@ def test_campaign_policies_and_ledgers_are_independent(monkeypatch,tmp_path):
         assert ledger["historical_campaign_budget_reset"] is False
     assert (first/"repair_budget_ledger.json").read_bytes()==old_bytes
     assert runner.POLICY==original
+
+
+def test_restorefix_budget_carries_prior_charge_without_writing_previous_ledger(tmp_path,monkeypatch):
+    monkeypatch.setattr(Path,"home",classmethod(lambda cls:tmp_path))
+    parent=tmp_path/"training_outputs/terminal"
+    previous=parent/runner.LOCAL_RECOVERY_OUTPUT_NAME/"repair_budget_ledger.json"
+    old=dict(campaign=runner.LOCAL_RECOVERY_OUTPUT_NAME,cap_child_wall_s=7200.,settled_child_wall_s=17.5,
+        jobs=dict(prepare=dict(status="completed",child_wall_s=2.5),smoke=dict(status="failed",child_wall_s=15.)))
+    save(previous,old); before=previous.read_bytes()
+    output=parent/runner.LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME
+    policy=runner.policy_for_output(output)
+    assert policy["cap_child_wall_s"]==7182.5
+    assert policy["previous_campaign_settled_child_wall_s"]==17.5
+    assert policy["shared_original_cap_child_wall_s"]==7200.
+    assert policy["previous_ledger_readonly"]==runner.LOCAL_RECOVERY_OUTPUT_NAME+"/repair_budget_ledger.json"
+    assert policy["previous_ledger_sha256"]==runner.base.file_hash(previous)
+    assert "PRIOR_PREFLIGHTS_REMAIN_CHARGED" in policy["continuation_reason"]
+    with runner.old.ledger_transaction(output,policy=policy) as ledger:
+        assert ledger["settled_child_wall_s"]==0. and ledger["jobs"]=={}
+        assert ledger["cap_child_wall_s"]+ledger["previous_campaign_settled_child_wall_s"]==7200.
+        assert ledger["historical_campaign_budget_reset"] is False and ledger["old_ledgers_reset"] is False
+    assert previous.read_bytes()==before
+    old["jobs"]["smoke"]["status"]="running"; save(previous,old)
+    with pytest.raises(ValueError,match="terminal"):
+        runner.policy_for_output(output)
+    old["jobs"]["smoke"]["status"]="failed"; old["settled_child_wall_s"]=7200.; save(previous,old)
+    with pytest.raises(ValueError,match="exhausted"):
+        runner.policy_for_output(output)
+
+
+def test_restorefix_requires_readable_bound_previous_ledger(tmp_path,monkeypatch):
+    monkeypatch.setattr(Path,"home",classmethod(lambda cls:tmp_path))
+    parent=tmp_path/"training_outputs/terminal"; output=parent/runner.LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME
+    with pytest.raises(ValueError,match="ledger required"):
+        runner.policy_for_output(output)
+    previous=parent/runner.LOCAL_RECOVERY_OUTPUT_NAME/"repair_budget_ledger.json"
+    save(previous,dict(campaign="wrong",cap_child_wall_s=7200.,settled_child_wall_s=0.,jobs={}))
+    with pytest.raises(ValueError,match="binding differs"):
+        runner.policy_for_output(output)
 
 
 def test_output_json_csv_grammar_and_missing_metrics(tmp_path,monkeypatch):

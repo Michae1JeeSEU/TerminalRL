@@ -576,6 +576,12 @@ def test_late_inner06_final_publishes_before_ordinary_work_and_keeps_solver_budg
     assert result.certified and result.prefix==(plan,)
     row=next(r for r in budget.service_candidate_rows.values() if r['action_hashes']==[plan.trajectory_hash])
     assert row['critical'] and row['retained_in_catalog'] and row['generated_elapsed_s']<3.
+    assert row['actions']==[dict(trajectory_hash=plan.trajectory_hash,kind=plan.kind,
+        source_ring='inner',source_slot=0,target_ring=None,target_slot=None,pad_id=5,
+        start_time=plan.start_time,end_time=plan.end_time)]
+    generated=next(e for e in budget.service_search_events if e['event']=='GENERATED'
+        and e['candidates'][0]['candidate_hash']==row['candidate_hash'])
+    assert generated['candidates'][0]['actions']==row['actions']
     if actual_cp:
         first_identity=local.telemetry['calls'][0]['catalog_identity']
         second_identity=local.telemetry['calls'][1]['catalog_identity']

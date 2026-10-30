@@ -183,6 +183,8 @@ def restore_common(checkpoint, method, evaluation_profile=None, *, d=None, direc
     world = d.restore_checkpoint(checkpoint, cold, envelope["payload"]["identity"], stream_copy=copy_path)
     saved = cold.saved
     base.require(saved["pending"] is None, "common checkpoint contains pending normal work")
+    base.require(not getattr(world,"_planning_latency_packets",{}),
+                 "common checkpoint contains issued latency packets")
     from terminal_marl.core.rotating_slots.performance.parallel import _clear_worker_accelerators
     cache_reset = _clear_worker_accelerators()
     callback = common_callback(d,method,evaluation_profile=evaluation_profile)
@@ -198,7 +200,10 @@ def restore_common(checkpoint, method, evaluation_profile=None, *, d=None, direc
     # Load the exact scheduling clocks through its own binding validator while
     # replacing algorithm products and historical normal/service record arrays.
     resumed = deepcopy(saved)
-    resumed.update(callback=callback.state_dict(), records=[], online_services=[])
+    # Only this packet-free cold method handoff changes the traffic binding.
+    # Generic active-checkpoint restoration retains its strict policy validator.
+    resumed.update(callback=callback.state_dict(), records=[], online_services=[],
+                   traffic_policy=wrapper.traffic_policy)
     if resumed.get("restart_requested") is not None:
         resumed["restart_requested"]["record_index"] = None
         resumed["restart_requested"]["external_predecessor"] = dict(
@@ -209,6 +214,8 @@ def restore_common(checkpoint, method, evaluation_profile=None, *, d=None, direc
     world.decision_callback, world.admission_callback = wrapper, d.shared_fifo_admission
     metadata = dict(common_summary=summary, t0=world.time, horizon=[world.time,world.time+METHOD_HORIZON_S],
         checkpoint_sha256=base.file_hash(checkpoint), evaluation_profile=evaluation_profile,
+        initializer_traffic_policy=saved.get("traffic_policy","legacy"),
+        method_traffic_policy=wrapper.traffic_policy,
         cache_reset=cache_reset, normal_records="NEW_EMPTY", initializer_records="PROVENANCE_ONLY",
         initializer_tasks=deepcopy(saved["records"]), initializer_services=deepcopy(saved["online_services"]),
         initializer_callback_records=deepcopy(saved["callback"]["records"]),

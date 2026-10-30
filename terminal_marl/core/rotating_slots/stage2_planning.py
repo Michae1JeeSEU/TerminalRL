@@ -165,8 +165,7 @@ class PlanningBudget:
         columns=tuple(columns)
         row=dict(event=event,wall_elapsed_s=self.elapsed,
             catalog_identity=_catalog_identity(catalog) if catalog is not None else None,
-            candidates=[dict(aircraft_id=c.aircraft_id,candidate_hash=_candidate_hash(c),
-                action_hashes=[p.trajectory_hash for p in c.plans]) for c in columns],**details)
+            candidates=[_column_evidence(c) for c in columns],**details)
         self.service_search_events.append(row)
         if event=='CATALOG_GENERATED': self._service_latest_catalog_identity=row['catalog_identity']
         if not hasattr(self,'service_candidate_rows'): self.service_candidate_rows={}
@@ -174,8 +173,7 @@ class PlanningBudget:
             key=_candidate_hash(column)
             if event=='GENERATED':
                 self.service_candidate_rows.setdefault(key,dict(
-                    aircraft_id=column.aircraft_id,candidate_hash=key,
-                    action_hashes=[p.trajectory_hash for p in column.plans],
+                    **_column_evidence(column),
                     retained_in_catalog=False,single_rejection_reason=None,
                     generated_elapsed_s=row['wall_elapsed_s'],catalog_identities=[],actual_solve_catalog_identities=[],
                     actual_solve_events=[],selected_events=[],joint_checked_events=[],certified_events=[],**details))
@@ -505,6 +503,15 @@ def _signature_hash(signature):
 
 def _candidate_hash(column):
     return _signature_hash(column.signature)
+
+
+def _column_evidence(column):
+    """Copy scalar action facts without trajectory coefficient payloads."""
+    fields=('trajectory_hash','kind','source_ring','source_slot','target_ring','target_slot',
+        'pad_id','start_time','end_time')
+    return dict(aircraft_id=column.aircraft_id,candidate_hash=_candidate_hash(column),
+        action_hashes=[p.trajectory_hash for p in column.plans],
+        actions=[{name:getattr(p,name,None) for name in fields} for p in column.plans])
 
 
 def _catalog_identity(catalog):
@@ -1220,6 +1227,7 @@ class EvaluationContext:
                         observation=dict(aircraft_ids=sorted((a.aircraft_id,b.aircraft_id)),reason=r.reason or r.status,
                             candidate_hashes=[_candidate_hash(c) for c in (a,b)],
                             action_hashes=[[p.trajectory_hash for p in c.plans] for c in (a,b)],
+                            candidates=[_column_evidence(c) for c in (a,b)],
                             catalog_identity=_catalog_identity(self.budget._catalog) if self.budget and self.budget._catalog is not None else None,
                             wall_elapsed_s=self.budget.elapsed if self.budget else None,
                             snapshot_id=self.snapshot.version,context_scope=getattr(self.scope,"identity",None),
@@ -2907,8 +2915,7 @@ class RollingHorizonCPSATScheduler:
                     selected=tuple(c for key,c in lookup.items() if solver.Value(variables[key]))
                     if service_profile:
                         budget.service_search_event('SELECTED',selected,catalog=candidates,refinement_round=refinement,phase=phase)
-                        rec['selected_columns']=[dict(aircraft_id=c.aircraft_id,candidate_hash=_candidate_hash(c),
-                            action_hashes=[p.trajectory_hash for p in c.plans]) for c in selected]
+                        rec['selected_columns']=[_column_evidence(c) for c in selected]
                     if getattr(context,"diagnostics",None) is not None:
                         rec.update(context.diagnostics.selection(candidates,selected))
                     rec["objective"]=solver.ObjectiveValue()
@@ -2939,8 +2946,7 @@ class RollingHorizonCPSATScheduler:
                             refinement_round=refinement,phase=phase,batch_status=r.status,
                             prefix_status=getattr(evaluation,'status','NOT_CHECKED'),
                             certificate_reused=bool(same_certified),
-                            conflicts=[[dict(aircraft_id=c.aircraft_id,candidate_hash=_candidate_hash(c),
-                                action_hashes=[p.trajectory_hash for p in c.plans]) for c in conflict] for conflict in conflicts])
+                            conflicts=[[_column_evidence(c) for c in conflict] for conflict in conflicts])
                     if not r.accepted or evaluation is None or not evaluation.accepted:
                         if not r.accepted and r.status not in ("CONFLICT","REJECTED","UNSAFE","INVALID"):
                             stop_reason="VALIDATION_UNKNOWN"; all_optimal=False; break

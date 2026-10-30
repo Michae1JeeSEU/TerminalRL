@@ -8,7 +8,7 @@ import pytest
 
 from scripts.stage3 import run_selective_common_initial_a4 as runner
 from terminal_marl.core.rotating_slots import stage2_campaign as campaign
-from terminal_marl.core.rotating_slots.planning_latency import LatencyAwareScheduler
+from terminal_marl.core.rotating_slots.planning_latency import LatencyAwareScheduler, LOCAL_TRAFFIC_POLICY
 from terminal_marl.core.rotating_slots.stage2_planning import NormalSchedulerCallback
 from terminal_marl.core.rotating_slots.trajectory import generate_final
 from terminal_marl.core.rotating_slots.world import RotatingSlotWorld, STAGE2_POLICY_ID
@@ -123,6 +123,61 @@ def common_checkpoint(tmp_path):
 def serialized_world(world):
     fields=set(vars(world))-campaign.RUNTIME_FIELDS-campaign.RUNTIME_EXTRA-campaign.DERIVED_RESCUE_FIELDS
     return campaign.Stage2Codec().encode({key:vars(world)[key] for key in sorted(fields)})
+
+
+def rewrite_common_state(path,*,pending=None,packets=None):
+    """Build historical/invalid fixtures without advancing or publishing physics."""
+    envelope=runner.base.load(path); payload=envelope["payload"]; codec=campaign.Stage2Codec()
+    saved=codec.decode(payload["scheduler"])
+    saved.pop("traffic_policy",None)
+    saved["pending"]=pending
+    payload["scheduler"]=codec.encode(saved)
+    if packets is not None:
+        world=codec.decode(payload["world"]); world["_planning_latency_packets"]=packets
+        payload["world"]=codec.encode(world)
+    envelope["sha256"]=campaign.digest(payload)
+    campaign.atomic_json(path,envelope)
+    return saved
+
+
+def test_legacy_packet_free_common_handoff_binds_local_treatment_without_clock_or_physics_change(tmp_path):
+    path,original,initializer,_,_=common_checkpoint(tmp_path)
+    saved=rewrite_common_state(path)
+    before=path.read_bytes()
+    world,callback,wrapper,metadata=runner.restore_common(path,"FULL_H",evaluation_profile="service_opportunity_v1",d=dependencies())
+    assert path.read_bytes()==before and serialized_world(world)==serialized_world(original)
+    assert wrapper.traffic_policy==LOCAL_TRAFFIC_POLICY
+    assert metadata["initializer_traffic_policy"]=="legacy" and metadata["method_traffic_policy"]==LOCAL_TRAFFIC_POLICY
+    assert callback.selective_history.state_dict()==initializer.callback.selective_history.state_dict()
+    resumed=wrapper.state_dict()
+    for key in ("idle_service","handoff_service","service_until","dirty","last_normal_start_time","last_restart_time"):
+        assert resumed[key]==saved[key]
+    assert world.time==3. and wrapper.pending is None and not getattr(world,"_planning_latency_packets",{})
+    assert wrapper.records==wrapper.online_services==callback.records==[]
+
+
+@pytest.mark.parametrize("pending,packets,message",[
+    (dict(stage="RESULT"),None,"pending normal work"),
+    (None,{"issued_packet":{}},"issued latency packets")])
+def test_common_policy_handoff_rejects_pending_work_or_any_issued_packet(tmp_path,pending,packets,message):
+    path,_,_,_,_=common_checkpoint(tmp_path)
+    rewrite_common_state(path,pending=pending,packets=packets)
+    before=path.read_bytes()
+    with pytest.raises(ValueError,match=message):
+        runner.restore_common(path,"FULL_H",evaluation_profile="service_opportunity_v1",d=dependencies())
+    assert path.read_bytes()==before
+
+
+@pytest.mark.parametrize("pending",[None,dict(stage="RESULT")])
+def test_generic_latency_restore_keeps_strict_legacy_to_local_policy_binding(tmp_path,pending):
+    path,_,_,_,_=common_checkpoint(tmp_path)
+    saved=rewrite_common_state(path,pending=pending)
+    callback=runner.common_callback(dependencies(),"RULE_LOCAL_K8",evaluation_profile="service_opportunity_v1")
+    wrapper=LatencyAwareScheduler(callback,lead_seconds=20.,preparation_margin=1.,
+        search_handoff_reserve_seconds=4.,restart_policy=runner.RESTART)
+    with pytest.raises(ValueError,match="traffic policy binding mismatch"):
+        wrapper.load_state_dict(saved)
+    assert wrapper.pending is None and wrapper.records==[]
 
 
 def test_two_clones_exact_physics_history_and_independent_cold_caches(tmp_path):
