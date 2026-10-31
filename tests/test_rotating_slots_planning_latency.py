@@ -67,6 +67,21 @@ def assert_same_state(a, b):
         assert getattr(a,key)==pytest.approx(getattr(b,key),abs=1e-6)
 
 
+def test_rejected_projection_does_not_bind_previous_callback_selection(monkeypatch):
+    from terminal_marl.core.rotating_slots import planning_latency as latency
+    w=world();w.seed_hold('a','inner',0,.9)
+    callback=CertifiedFinals()
+    callback.last_result=SimpleNamespace(objective=(0,0,0,0,0,0),selected=(),prefix=(),certified=True)
+    def reject_projection(*args,**kwargs):
+        raise ProjectionRejected('CONTROLLED_PROJECTION_REJECTION')
+    monkeypatch.setattr(latency,'project_visible_snapshot',reject_projection)
+    wrapper=LatencyAwareScheduler(callback,clock=Durations(0.))
+    wrapper(w._scheduler_port)
+    assert not callback.calls
+    assert wrapper.pending['reason']=='CONTROLLED_PROJECTION_REJECTION'
+    assert 'selection_binding' not in wrapper.records[-1]
+
+
 def test_ten_second_work_keeps_old_hold_until_atomic_future_start(tmp_path):
     w = world()
     initial = w.seed_hold("a","inner",0,.9)

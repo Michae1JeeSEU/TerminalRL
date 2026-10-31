@@ -57,6 +57,7 @@ def test_absolute_future_middle_first_action_waits_starts_and_completes():
     assert r['state']=='RESERVED' and r['start_time']==90.3
     assert w.soft['a'] is p and not w.active
     assert result.details['waiting_for_reservation_start']
+    assert result.details['delivery_units'][0]['state']=='RESERVED'
     assert r['hold_trajectory_hash'] and r['certificate_interval']==(70.289792,p.end_time)
     projected=project_visible_snapshot(w.build_planning_snapshot(),90.447)
     assert projected.active['a']==p and 'a' not in projected.soft
@@ -165,7 +166,9 @@ def test_mixed_immediate_final_and_future_middle_publish_independently():
     w,timing,p=fixture();inject_hold(w,'final','inner',9,.9)
     f=generate_final('final','inner',9,3,timing.effective_time,config=w.config).plan
     assert f is not None
-    prepared(w,timing,(f,p))
+    _,result=prepared(w,timing,(f,p))
+    assert {unit['aircraft_id']:unit['state'] for unit in result.details['delivery_units']}=={
+        'final':'EXECUTING','a':'RESERVED'}
     assert w.active['final']==f and w.soft['a']==p
     assert record_for_plan(w,f)['state']=='EXECUTING'
     assert record_for_plan(w,p)['state']=='RESERVED'

@@ -80,7 +80,7 @@ def register_published(world, packet, token):
     for unit in units:
         records[unit["reservation_id"]]["certificate_snapshot"]=source
         records[unit["reservation_id"]]["traffic_signature"]=traffic_signature(world)
-    return units
+    return tuple(dict(unit,state=records[unit['reservation_id']]['state']) for unit in units)
 
 
 def record_for_plan(world, plan, *, include_terminal=False):

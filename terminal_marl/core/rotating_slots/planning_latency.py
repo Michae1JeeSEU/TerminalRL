@@ -812,7 +812,7 @@ class LatencyAwareScheduler:
             prepare_work_s=None,online_service_s=service,
             status="COMPUTING",submitted=0,commit_status="DEFERRED")
         final_result=getattr(self.callback,"last_result",None)
-        if final_result is not None:
+        if future is not None and proposal is not None and final_result is not None:
             record["selection_binding"]=dict(objective=list(final_result.objective),
                 selected_signatures=[c.signature for c in final_result.selected],
                 first_action_hashes=[c.plans[0].trajectory_hash for c in final_result.selected if c.plans],
