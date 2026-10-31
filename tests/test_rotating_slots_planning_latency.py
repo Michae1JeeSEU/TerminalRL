@@ -245,8 +245,8 @@ def test_explicit_effective_prefix_and_legacy_window_are_distinct():
     def column(t):
         return SimpleNamespace(kind="MOVE",plans=(SimpleNamespace(start_time=t,aircraft_id="a"),))
     assert len(EvaluationContext(legacy).prefix((column(4.),)))==1
-    assert len(EvaluationContext(future).prefix((column(30.),column(31.))))==1
-    assert not EvaluationContext(future).prefix((column(31.),))
+    assert len(EvaluationContext(future).prefix((column(30.),column(31.))))==2
+    assert len(EvaluationContext(future).prefix((column(31.),)))==1
 
 
 def test_priority_service_charges_once_and_delays_readiness_without_retiming_effective():
@@ -267,7 +267,7 @@ def test_priority_service_charges_once_and_delays_readiness_without_retiming_eff
     wrapper.online_service(20.,1.,.5,"emergency")
     assert wrapper.pending["due"]==29.5
     assert wrapper.next_event_time==29.5
-    port=SimpleNamespace(time=29.,discard_latency_submission=lambda token:None,
+    port=SimpleNamespace(time=29.,discard_latency_submission=lambda token,reason=None:None,
         planning_latency_event=lambda *args,**kwargs:None)
     wrapper.planning_event(port)
     assert wrapper.pending is not None

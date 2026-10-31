@@ -44,7 +44,7 @@ class Port:
         self.calls.append(("ready",handoff_delay))
         return ValidationResult(True,"GUARDED",details=dict(ready_at=self.time+handoff_delay))
 
-    def discard_latency_submission(self, token):
+    def discard_latency_submission(self, token, reason=None):
         self.calls.append(("discard",token))
 
     def planning_latency_event(self, kind, **details):

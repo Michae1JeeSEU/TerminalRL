@@ -479,8 +479,18 @@ def build_planning_snapshot(port):
 
 def _executable_start(snapshot, start):
     timing = getattr(snapshot,"planning_timing",None)
-    return (abs(start-timing.effective_time)<=1.e-8 if timing is not None
+    return (timing.effective_time-1.e-8<=start<=snapshot.time+HORIZON+1.e-8 if timing is not None
             else start<=snapshot.time+5.+1.e-8)
+
+
+def _delivery_obstacle(snapshot, plan):
+    if getattr(snapshot,'planning_timing',None) is None: return None
+    if plan.aircraft_id in snapshot.active: return 'EXISTING_EFFECTIVE_COMMITMENT'
+    if not _executable_start(snapshot,plan.start_time): return 'FIRST_ACTION_OUTSIDE_DELIVERY_WINDOW'
+    a=snapshot.aircraft.get(plan.aircraft_id)
+    if a is None or (plan.source_ring,plan.source_slot,plan.source_version)!=(a.ring,a.slot,a.version):
+        return 'FIRST_ACTION_SOURCE_NOT_EFFECTIVE_HOLD'
+    return None
 
 
 def _sum_key(columns):
@@ -538,6 +548,10 @@ def _service_empty_reason(result,catalog,context,budget):
     raw=str(result.details.get('solver_stop_reason') or '')
     if not result.certified or any(word in raw for word in ('UNKNOWN','TIME','DEADLINE','NO_SOLVER_TIME')):
         return "CERTIFICATION_TIMEOUT"
+    if any(c.aircraft_id in getattr(context.snapshot,'soft',{}) and c.kind in ("KEEP","WAIT") for c in result.selected):
+        return "WAITING_FOR_RESERVATION_START"
+    if getattr(context,'rejection_reasons',{}).get("DELIVERY_INTERFACE_OBSTACLE"):
+        return "DELIVERY_INTERFACE_OBSTACLE"
     latest=getattr(budget,'_service_latest_catalog_identity',None)
     if latest is not None and latest!=_catalog_identity(catalog): return 'CERTIFICATION_TIMEOUT'
     evidence=getattr(budget,'_service_wait_evidence',None)
@@ -592,7 +606,13 @@ def _node(snapshot, aircraft):
     history=snapshot.energy_ledger.get("executed",{}).get(a.id,())
     err=math.fsum(row["error_j"] for row in history)
     perr=math.fsum(row["peak_error_s"] for row in history)
-    fixed=tuple(p for p in (snapshot.active.get(a.id),snapshot.soft.get(a.id)) if p is not None)
+    # A not-yet-started normal appointment is editable only through a newly
+    # certified delivery transaction. Its absolute epoch remains the KEEP
+    # baseline; it is not a completed endpoint for replacement generation.
+    editable_soft=(getattr(snapshot,"planning_timing",None) is not None
+        and a.id not in snapshot.active and a.id in snapshot.soft
+        and snapshot.soft[a.id].kind in ("TRANSFER","FINAL_NORMAL"))
+    fixed=tuple(p for p in (snapshot.active.get(a.id),None if editable_soft else snapshot.soft.get(a.id)) if p is not None)
     if fixed:
         if fixed[-1].target_ring is None: return None
         portions=[]; cursor=snapshot.time; ring,slot=a.ring,a.slot
@@ -1021,7 +1041,11 @@ class EvaluationContext:
         return value
 
     def all_plans(self, aircraft_id, plans):
-        fixed = tuple(p for p in (self.snapshot.active.get(aircraft_id), self.snapshot.soft.get(aircraft_id)) if p is not None)
+        old=self.snapshot.soft.get(aircraft_id)
+        replacing=bool(plans and old is not None and aircraft_id not in self.snapshot.active
+            and plans[0].source_version==old.source_version
+            and (plans[0].source_ring,plans[0].source_slot)==(old.source_ring,old.source_slot))
+        fixed = tuple(p for p in (self.snapshot.active.get(aircraft_id), None if replacing else old) if p is not None)
         return tuple(sorted({p.trajectory_hash:p for p in (*fixed, *plans)}.values(), key=lambda p:p.start_time))
 
     def resources(self, a, plans):
@@ -1152,6 +1176,11 @@ class EvaluationContext:
         return result
 
     def _check_single(self, column):
+        if column.kind=='MOVE' and column.plans:
+            obstacle=_delivery_obstacle(self.snapshot,column.plans[0])
+            if obstacle is not None:
+                return self._observe(ValidationResult(False,'REJECTED','DELIVERY_INTERFACE_OBSTACLE',
+                    dict(obstacle=obstacle,trajectory_hash=column.plans[0].trajectory_hash)),(column,))
         # Only the first action that prefix() would actually submit is guarded;
         # a future normal-final suffix cannot suppress an inward transfer.
         if (column.kind=="MOVE" and column.plans and column.aircraft_id not in self.snapshot.soft
@@ -1246,12 +1275,23 @@ class EvaluationContext:
             if self.scope is not None and c.aircraft_id not in self.decisions: raise ValueError("prefix outside scope")
             if c.kind in ("KEEP","WAIT") or not c.plans: continue
             p = c.plans[0]
-            if _executable_start(self.snapshot,p.start_time) and p.aircraft_id not in self.snapshot.soft:
+            # An unchanged world-owned appointment is already delivered. A
+            # genuinely different first action must certify its replacement
+            # transaction, including the old appointment's release users.
+            if (_executable_start(self.snapshot,p.start_time)
+                    and self.snapshot.soft.get(p.aircraft_id) != p):
                 out.append(p)
         return tuple(out)
 
     def check_commit_prefix(self, columns):
         if not self._time_ok(): return self._observe(self._time_rejection(),columns)
+        if getattr(self.snapshot,"planning_timing",None) is not None:
+            blocked=[c for c in columns if c.kind=="MOVE" and c.plans
+                and _delivery_obstacle(self.snapshot,c.plans[0]) is not None]
+            if blocked:
+                return self._observe(ValidationResult(False,"REJECTED","DELIVERY_INTERFACE_OBSTACLE",
+                    dict(aircraft_ids=[c.aircraft_id for c in blocked],
+                         interface="one_first_action_from_effective_hold")),blocked)
         prefix = self.prefix(columns)
         reusable = self.reuse_prefix_results and (self.prefix_evaluator is None or self.prefix_evaluator_identity is not None)
         key = (self.snapshot_key, self.prefix_evaluator_identity, tuple((p.trajectory_hash,repr(p)) for p in prefix))
@@ -1478,6 +1518,14 @@ class CandidateProvider:
             hold = make_stable_plan(a.id,ring,slot,cursor,snapshot.time+HORIZON,config=snapshot.config)
             portions.append((hold,cursor,snapshot.time+HORIZON))
         qh = context.energy_portions(portions)
+        if not plans and allplans and allplans[-1].target_ring is not None:
+            # KEEP must retain the original appointment's terminal demand in
+            # exactly the same six-objective frame used for replacements.
+            fixed=allplans[-1]
+            fixed_q=_energy_details(tuple((p,s,min(e,fixed.end_time)) for p,s,e in portions if s<fixed.end_time),snapshot.config)
+            current=PlanningNode(fixed.target_ring,fixed.target_slot,fixed.end_time,
+                a.soc-fixed_q[1],a.peak_seconds+fixed_q[2],a.version+len(allplans),
+                fixed_q[3],fixed_q[4])
         soc_h = a.soc-qh[1]; peak_h = a.peak_seconds+qh[2]
         f = int(soc_h <= 0 or peak_h > 120.)
         l = int(landed and allplans[-1].end_time <= snapshot.time+HORIZON)
@@ -2193,15 +2241,18 @@ class CandidateProvider:
                         for a in inners if budget.available(a.id)}
                 inners=sorted((a for a in inners if a.id in inner_ranks),key=lambda a:inner_ranks[a.id])[:2]
                 supplies=sorted((a for a in order if nodes[a.id].ring!='inner'),
-                    key=lambda a:(self._describe_column(snapshot,columns[a.id][0],context).ready,slacks[a.id],a.id))[:2]
+                    key=lambda a:(nodes[a.id].ring!='middle',self._describe_column(snapshot,columns[a.id][0],context).ready,slacks[a.id],a.id))[:2]
                 priority=[group[index] for index in range(max(len(inners),len(supplies)))
                     for group in (inners,supplies) if index<len(group)]
                 budget._service_priority_ids={a.id for a in priority}
                 budget._service_generation_phase='SERVICE_PRIORITY_SEED'
                 pending=[]
                 for a in priority:
-                    kind=('delayed' if nodes[a.id].ring!='inner' and len(self._search_offsets(snapshot,a,nodes[a.id]))>1 else 'progress')
-                    pending.append((a,next(gen for name,gen in stages[a.id] if name==kind)))
+                    kinds=['progress']
+                    if nodes[a.id].ring!='inner' and len(self._search_offsets(snapshot,a,nodes[a.id]))>1:
+                        kinds.append('delayed')
+                    for kind in kinds:
+                        pending.append((a,next(gen for name,gen in stages[a.id] if name==kind)))
                 with budget.stage_limit(budget.service_generation_allowance(seed_slice),"SERVICE_INITIAL_SLICE"):
                     while pending and budget.available():
                         for a,progress in tuple(pending):
@@ -3532,6 +3583,17 @@ class NormalSchedulerCallback:
             record['service_candidate_lifecycle']=list(getattr(budget,'service_candidate_rows',{}).values())
             record['selected_catalog_identity']=_catalog_identity(catalog)
             record['objective_terms']=dict(zip(('F','-L','R','G_service','E','tau'),result.objective))
+        # Final selection is distinct from intermediate CP/hint selections.
+        # Delivery certifies only the first action and its waiting continuation.
+        record['final_selected_first_actions']=[dict(_column_evidence(c),
+            first_action=(_column_evidence(c)['actions'][0] if c.plans else None),
+            selected_kind=c.kind) for c in result.selected]
+        record['delivery_certification_scope']='effective_hold_then_absolute_first_action'
+        record['retained_existing_reservation_hashes']=[p.trajectory_hash for p in snapshot.soft.values()]
+        timing=getattr(snapshot,'planning_timing',None)
+        if timing is not None:
+            from .future_commitment import delivery_units
+            record['delivery_units']=delivery_units(result.prefix,timing,snapshot)
         if completion is not None: record["suffix_completion"]=completion
         elif self.evaluation_profile==STITCHED_EVALUATION_PROFILE and self.online_policy is None:
             record["suffix_completion"]=dict(policy_id="bounded_suffix_completion_v1",
@@ -3652,6 +3714,11 @@ class NormalSchedulerCallback:
             actual_delivery_status=delivery["status"],actual_delivery_reason=delivery["reason"],
             actual_delivery_time=delivery["finished_time"],
             actual_submitted_trajectory_hashes=[p.trajectory_hash for p in plans] if delivery["submitted"] else [])
+        record['reservation_ids']=delivery.get('reservation_ids',[])
+        record['delivery_selection_binding']=delivery.get('delivery_selection_binding')
+        record['actual_delivery_selection_binding']=delivery.get('actual_delivery_selection_binding')
+        record['delivery_units']=delivery.get('delivery_units',record.get('delivery_units',()))
+        record['waiting_for_reservation_start']=delivery.get('waiting_for_reservation_start',False)
         if delivery["submitted"]:
             committed = {p.trajectory_hash for p in plans}
             self.provider.previous = {aid:tuple(p for p in rows if p.trajectory_hash not in committed)

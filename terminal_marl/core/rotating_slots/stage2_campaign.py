@@ -37,7 +37,7 @@ failure_archive failure_resources_released dispatch_timings _pending_dispatch _r
 _monitor_timing_pending""".split())
 STAGE2_FIELDS = STAGE2_FIELDS | frozenset(("rescue_rule_profile",))
 DERIVED_RESCUE_FIELDS = frozenset(("_rescue_search_cache", "_rescue_monitor_v6"))
-LATENCY_FIELDS = frozenset(("_planning_latency_packets",))
+LATENCY_FIELDS = frozenset(("_planning_latency_packets", "_future_reservations"))
 SCENARIO_PROFILES = ("legacy_busy_v5", "stress36_rate180_v1", "diagnostic18_rate120_v1", "medium24_rate150_v1")
 RESCUE_RULE_PROFILES = ("legacy_v5", "rescue_opportunity_v6", "rescue_need_v7")
 RUNTIME_EXTRA = frozenset(("admission_callback",))

@@ -286,15 +286,16 @@ def _fallback_energy(snapshot, withdrawn, *, deadline):
     return ValidationResult(True, "VALID"), rows
 
 
-def revalidate_submission(world, token, *, max_work_s=None):
+def revalidate_submission(world, token, *, max_work_s=None, provider=None):
     from .planning_latency import prepare_submission, LOCAL_TRAFFIC_POLICY
+    from .future_commitment import discard_pending
     started = time.perf_counter()
     deadline = math.inf if max_work_s is None else started+max_work_s
     registry = world._planning_latency_packets
     packet = registry[token]
     previous = packet.get("revalidation") or {}
     for superseded in (previous.get("replacement_token"), packet.pop("repair_candidate_token", None)):
-        if superseded is not None: registry.pop(superseded, None)
+        if superseded is not None: discard_pending(world,superseded,'REVALIDATION_SUPERSEDED',superseded=True)
     packet["revalidation"] = None
     if world.time > packet["timing"].ready_deadline:
         return ValidationResult(False, "REJECTED", "READY_DEADLINE_MISSED")
@@ -325,17 +326,29 @@ def revalidate_submission(world, token, *, max_work_s=None):
         details["standby_certification_failure"] = dict(prepared.details)
         return ValidationResult(False, prepared.status, prepared.reason, details)
     if time.perf_counter() >= deadline:
-        registry.pop(standby_token, None)
+        discard_pending(world,standby_token,'REVALIDATION_WORK_DEADLINE')
         return ValidationResult(False, "UNKNOWN", "REVALIDATION_WORK_DEADLINE", details)
     standby = registry[standby_token]
+    binding=packet.get('selection_binding')
+    if affected and binding is not None and len(binding.get('objective') or ())==6:
+        scores,score_evidence=_current_scores(world,packet,provider,[retained],deadline)
+        if scores is None:
+            discard_pending(world,standby_token,score_evidence.get('reason','CURRENT_OBJECTIVE_RESCORE_REQUIRED'))
+            return ValidationResult(False,'UNKNOWN',score_evidence.get('reason','CURRENT_OBJECTIVE_RESCORE_REQUIRED'),details)
+        standby['selection_binding']=dict(objective=list(scores[0]),prefix_hashes=[p.trajectory_hash for p in retained],
+            first_action_hashes=[p.trajectory_hash for p in retained],certified=True,
+            recovery_rescore=score_evidence,source_selection_binding=binding)
+        details['scoring']=score_evidence
+    elif not affected:
+        standby['selection_binding']=binding
     fallback, fallback_rows = _fallback_energy(standby["projected"], withdrawn_ids, deadline=deadline)
     details["fallback_energy"] = fallback_rows
     details["minimum_work_s"] = time.perf_counter()-started
     if not fallback.accepted:
-        registry.pop(standby_token, None)
+        discard_pending(world,standby_token,fallback.reason)
         return ValidationResult(False, fallback.status, fallback.reason, details)
     if time.perf_counter() >= deadline:
-        registry.pop(standby_token, None)
+        discard_pending(world,standby_token,'REVALIDATION_WORK_DEADLINE')
         return ValidationResult(False, "UNKNOWN", "REVALIDATION_WORK_DEADLINE", details)
     standby["fallback_energy"] = fallback_rows
     standby["fallback_aircraft_ids"] = tuple(sorted(withdrawn_ids))
@@ -418,6 +431,7 @@ def _current_scores(world, packet, provider, alternatives, deadline):
 def repair_submission(world, token, provider, *, max_work_s=None):
     """Bounded original-action reintroduction after standby readiness exists."""
     from .planning_latency import prepare_submission, LOCAL_TRAFFIC_POLICY, ProjectionRejected
+    from .future_commitment import discard_pending
     started = time.perf_counter()
     deadline = math.inf if max_work_s is None else started+max_work_s
     registry, packet = world._planning_latency_packets, world._planning_latency_packets[token]
@@ -444,7 +458,7 @@ def repair_submission(world, token, provider, *, max_work_s=None):
             prepared["fallback_energy"] = rows
             prepared["original_plans"] = original
             if not fallback.accepted:
-                registry.pop(candidate, None)
+                discard_pending(world,candidate,fallback.reason)
                 result = ValidationResult(False, fallback.status, fallback.reason,
                     dict(fallback_energy=rows))
         evidence.append(dict(hashes=[p.trajectory_hash for p in proposed], accepted=result.accepted,
@@ -458,8 +472,13 @@ def repair_submission(world, token, provider, *, max_work_s=None):
     elapsed = time.perf_counter()-started
     chosen = 0 if scores is None or elapsed > (math.inf if max_work_s is None else max_work_s) else min(range(len(scores)), key=lambda i: (scores[i], i))
     selected_token = valid[chosen][0]
+    if scores is not None:
+        registry[selected_token]['selection_binding']=dict(objective=list(scores[chosen]),
+            prefix_hashes=[p.trajectory_hash for p in valid[chosen][1]],
+            first_action_hashes=[p.trajectory_hash for p in valid[chosen][1]],certified=True,
+            recovery_rescore=score_evidence)
     for candidate, _ in valid[1:]:
-        if candidate != selected_token: registry.pop(candidate, None)
+        if candidate != selected_token: discard_pending(world,candidate,'REPAIR_CANDIDATE_NOT_SELECTED',superseded=True)
     details = dict(delivery="standby" if chosen == 0 else "repaired", repair_attempts=evidence,
         scoring=score_evidence, elapsed_s=elapsed, minimum_work_s=elapsed,
         timed_out=time.perf_counter() >= deadline, standby_ready_at=packet["ready_at"],
@@ -478,6 +497,7 @@ def repair_submission(world, token, provider, *, max_work_s=None):
 def complete_repair(world, token, *, handoff_delay=0.):
     """Promote only a freshly guarded repair with its own timely receipt."""
     from .planning_latency import mark_submission_ready
+    from .future_commitment import discard_pending
     registry = world._planning_latency_packets
     packet = registry[token]
     candidate_token = packet.pop("repair_candidate_token", None)
@@ -490,7 +510,7 @@ def complete_repair(world, token, *, handoff_delay=0.):
         return ValidationResult(False, "REJECTED", "UNISSUED_LATENCY_PACKET")
     result = mark_submission_ready(world, candidate_token, handoff_delay=handoff_delay)
     if not result.accepted:
-        registry.pop(candidate_token, None)
+        discard_pending(world,candidate_token,result.reason)
         # The repair never invalidates the already registered standby receipt.
         standby_guard = guard_submission(world, packet)
         if not standby_guard.accepted: return standby_guard

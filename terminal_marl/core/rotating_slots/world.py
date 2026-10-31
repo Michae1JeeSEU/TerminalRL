@@ -137,6 +137,7 @@ def _planning_context(snapshot):
     """Finite revealed-state validation context; never an execution branch."""
     context = object.__new__(RotatingSlotWorld)
     context.config, context.time = snapshot.config, snapshot.time
+    context._future_delivery_certifying = getattr(snapshot,'planning_timing',None) is not None
     context.experiment_policy_id = (snapshot.emergency_monitor or {}).get("experiment_policy_id")
     context.rescue_rule_profile = (snapshot.emergency_monitor or {}).get("rescue_rule_profile", LEGACY_PROFILE)
     context.aircraft = dict(snapshot.aircraft)
@@ -343,9 +344,10 @@ class SchedulerPort:
     def report_normal_evidence(self, rows, snapshot_version):
         return self.__world.report_normal_evidence(rows, snapshot_version)
 
-    def prepare_latency_submission(self, plans, timing, *, traffic_policy="legacy"):
+    def prepare_latency_submission(self, plans, timing, *, traffic_policy="legacy", selection_binding=None):
         from .planning_latency import prepare_submission
-        return prepare_submission(self.__world, plans, timing, traffic_policy=traffic_policy)
+        return prepare_submission(self.__world, plans, timing, traffic_policy=traffic_policy,
+                                  selection_binding=selection_binding)
 
     def latency_submission_plans(self, token):
         packet = self.__world.__dict__.get("_planning_latency_packets", {}).get(token)
@@ -367,9 +369,9 @@ class SchedulerPort:
         from .planning_latency import guard_submission
         return guard_submission(self.__world, token)
 
-    def revalidate_latency_submission(self, token, max_work_s=None):
+    def revalidate_latency_submission(self, token, max_work_s=None, provider=None):
         from .planning_latency import revalidate_submission
-        return revalidate_submission(self.__world, token, max_work_s=max_work_s)
+        return revalidate_submission(self.__world, token, max_work_s=max_work_s,provider=provider)
 
     def complete_latency_revalidation(self, token, attempt, promote=False):
         from .planning_latency import complete_revalidation
@@ -383,11 +385,11 @@ class SchedulerPort:
         from .planning_latency import publish_submission
         return publish_submission(self.__world, token)
 
-    def discard_latency_submission(self, token):
-        registry = self.__world.__dict__.get("_planning_latency_packets", {})
+    def discard_latency_submission(self, token, reason='PENDING_DELIVERY_DISCARDED'):
+        from .future_commitment import discard_pending
         pending = [token]
         while pending:
-            packet = registry.pop(pending.pop(), None)
+            packet = discard_pending(self.__world,pending.pop(),reason)
             if packet is None: continue
             candidate = packet.get("revalidation") or {}
             pending.extend(t for t in (candidate.get("replacement_token"), packet.get("repair_candidate_token")) if t)
@@ -1380,7 +1382,7 @@ class RotatingSlotWorld:
         # disposition. Unprotected soft plans remain editable and preemptible.
         binding = set(redirects.values())
         for p in plans:
-            if p.start_time <= self.time+1e-9 and p.target_ring is not None:
+            if p.target_ring is not None and (p.start_time<=self.time+1.e-9 or getattr(self,'_future_delivery_certifying',False)):
                 binding.update(self._release_supports(p.target_ring, p.target_slot,
                                                       p.aircraft_id, slots, soft))
         witness = self._future_dependency_witness(binding, soft, slots)
@@ -1388,13 +1390,18 @@ class RotatingSlotWorld:
             return self._reject("FUTURE_EMERGENCY_DISPOSITION", **witness)
         return (soft, slots, pads, times, redirects, dict(self._energy_state()["fine_plans"]))
 
-    def _commit_submission(self, plans, prepared):
+    def _commit_submission(self, plans, prepared, *, cancellation_reason="atomic_replacement_or_preemption"):
         soft, slots, pads, times, redirects, fine_plans = prepared
         self._energy_state()["fine_plans"].update(fine_plans)
         ids = [p.aircraft_id for p in plans]
         removed = [old for key,old in self.soft.items() if key not in soft or soft[key].trajectory_hash != old.trajectory_hash]
         self.soft, self.slots, self.pads, self._source_clear = soft, slots, pads, times
         for old in removed:
+            from .future_commitment import record_for_plan, transition
+            reservation = record_for_plan(self,old)
+            if reservation is not None:
+                transition(self,reservation,"CANCELLED",cancellation_reason)
+            self.dependencies.pop(old.trajectory_hash,None)
             self._event("soft_plan_cancelled",old.aircraft_id,trajectory_hash=old.trajectory_hash,
                         reason="atomic_replacement_or_preemption")
             if (self._rescue_need_v7() and old.kind == "FINAL_EMERGENCY"
@@ -1439,6 +1446,17 @@ class RotatingSlotWorld:
             # A nested cancellation/submit may have changed this finite copy.
             if self.soft.get(aircraft_id) != p:
                 continue
+            from .future_commitment import record_for_plan, guard_start, cancel_invalid, transition
+            reservation = record_for_plan(self,p,include_terminal=True)
+            if reservation is None and any(e['type']=='reservation_published' and
+                    e.get('details',{}).get('trajectory_hash')==p.trajectory_hash for e in self.events):
+                cancel_invalid(self,p,'UNISSUED_RESERVATION_IDENTITY')
+                continue
+            if reservation is not None:
+                guard = guard_start(self,p,reservation)
+                if not guard.accepted:
+                    cancel_invalid(self,p,guard.reason)
+                    continue
             a = self.aircraft[aircraft_id]
             priority_wait = self._emergency_priority_wait(p)
             if priority_wait is not None:
@@ -1472,6 +1490,9 @@ class RotatingSlotWorld:
                     continue
             # Energy was forecast at submission; revalidate the exact source/version.
             if a.id in self.active or a.version != p.source_version:
+                if reservation is not None:
+                    cancel_invalid(self,p,"STALE_STATE")
+                    continue
                 self._event("commit_invalidated", a.id, reason="STALE_STATE")
                 del self.soft[a.id]
                 continue
@@ -1535,6 +1556,8 @@ class RotatingSlotWorld:
                                          normal_final_touchdown_soc=touchdown_soc)
             self._event("maneuver_started", a.id, trajectory_hash=p.trajectory_hash,
                         dependencies=sorted(deps), maneuver_kind=p.kind, **start_details)
+            if reservation is not None:
+                transition(self,reservation,"EXECUTING")
 
     def _fail(self, aircraft_id, reason):
         if self._stage2_enabled():
@@ -1766,6 +1789,10 @@ class RotatingSlotWorld:
             a = self.aircraft[key]
             del self.active[key]
             self.dependencies.pop(p.trajectory_hash, None)
+            from .future_commitment import record_for_plan, transition
+            reservation = record_for_plan(self,p)
+            if reservation is not None:
+                transition(self,reservation,"COMPLETED")
             if p.pad_id is not None:
                 service_end = p.end_time+service_duration(self.config, a.service_class)
                 self.aircraft[key] = replace(a, status="LANDED_SERVICE", ring=None, slot=None,
@@ -2432,6 +2459,8 @@ class RotatingSlotWorld:
             next_times.extend(t for t in soft_starts if t > self.time)
             next_times.extend(a.service_end for a in self.aircraft.values() if a.status == "LANDED_SERVICE" and a.service_end > self.time+1e-8)
             next_times.extend(x[0] for x in self._source_clear.values() if x[0] > self.time+1e-8)
+            from .future_commitment import maintain_reservations
+            maintain_reservations(self,latency)
             next_time = min(next_times)
             if self._stage2_enabled():
                 next_time, _ = self._energy_failure_events(next_time)

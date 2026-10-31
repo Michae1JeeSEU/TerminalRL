@@ -162,7 +162,7 @@ def project_visible_snapshot(snapshot, t_effective, *, timing=None, fine=False):
                 hold = make_stable_plan(aid,p.target_ring,p.target_slot,p.end_time,p.end_time+1000.,
                                         source_version=a.version,config=snapshot.config)
                 trajectories[hold.trajectory_hash] = hold.to_dict()
-    live = {p.trajectory_hash for p in active.values()}
+    live = {p.trajectory_hash for p in (*active.values(), *soft.values())}
     dependencies = {h: v for h,v in snapshot.dependencies.items() if h in live}
     fields = (EFFECTIVE_STATE_VERSION,t_effective,aircraft,active,soft,snapshot.slots,
               snapshot.pads,dependencies,snapshot.source_clear,context._energy_state(),timing)
@@ -224,8 +224,8 @@ def _dependency_table(source, effective):
         context.active,context.soft=active,soft
         completed={p.trajectory_hash for p in approved if p.end_time<=t}
         graph={}
-        for p in active.values():
-            if p.aircraft_id in source.active and source.active[p.aircraft_id]==p:
+        for p in (*active.values(), *soft.values()):
+            if source.active.get(p.aircraft_id)==p or source.soft.get(p.aircraft_id)==p:
                 if p.trajectory_hash not in source.dependencies: continue
                 supports=source.dependencies[p.trajectory_hash]
             else:
@@ -301,7 +301,7 @@ def _external_delta(world, packet, baseline=None):
             if affected else ValidationResult(True,"GUARDED"))
 
 
-def prepare_submission(world, plans, timing, *, traffic_policy="legacy", pair_certificates=None):
+def prepare_submission(world, plans, timing, *, traffic_policy="legacy", pair_certificates=None, selection_binding=None):
     """Issue a world-owned packet after full certification and transaction prep.
 
     The public publish API accepts only an issued token, never caller-supplied
@@ -312,7 +312,7 @@ def prepare_submission(world, plans, timing, *, traffic_policy="legacy", pair_ce
         raise ValueError("unknown traffic policy")
     plans = tuple(plans)
     if (not isinstance(timing,PlanningTiming) or world.time > timing.ready_deadline
-            or any(abs(p.start_time-timing.effective_time)>EPS for p in plans)
+            or any(p.start_time<timing.effective_time-EPS for p in plans)
             or any(p.kind not in ("TRANSFER","FINAL_NORMAL") for p in plans)):
         return ValidationResult(False,"REJECTED","INVALID_LATENCY_PREFIX"), None
     source = world.build_planning_snapshot()
@@ -325,7 +325,7 @@ def prepare_submission(world, plans, timing, *, traffic_policy="legacy", pair_ce
     context = _planning_context(projected)
     if not plans:
         return ValidationResult(False,"REJECTED","NO_EXECUTABLE_PREFIX"), None
-    if any(p.aircraft_id in projected.active or p.aircraft_id in projected.soft for p in plans):
+    if any(p.aircraft_id in projected.active for p in plans):
         return ValidationResult(False,"REJECTED","EXISTING_EFFECTIVE_COMMITMENT"), None
     pair_counts = dict(pairs_checked=0, reused_pairs=0)
     prepared = context._prepare_submission(plans, pair_certificates=pair_certificates, pair_counts=pair_counts)
@@ -342,12 +342,20 @@ def prepare_submission(world, plans, timing, *, traffic_policy="legacy", pair_ce
     for p in plans:
         q = context._energy(p,p.start_time,p.end_time,fine=True)
         a = projected.aircraft[p.aircraft_id]
+        portions = []
+        if p.start_time > timing.effective_time:
+            hold = make_stable_plan(a.id,a.ring,a.slot,timing.effective_time,p.start_time,
+                                    source_version=a.version,config=world.config)
+            portions.append(context._energy(hold,timing.effective_time,p.start_time,fine=True))
+        holding = context._sum_energy(portions)
         normal_exception = (p.kind=="FINAL_NORMAL" and a.ring=="inner" and
             not a.emergency.declared and not a.emergency.pending and not context._rescue_v6())
         if (a.emergency.declared or ((a.emergency.eligible or a.emergency.pending) and not normal_exception)):
             return ValidationResult(False,"REJECTED","EMERGENCY_DISPOSITION_REQUIRED"), None
-        if (not q.valid or a.soc < q.soc_used+q.error_j/_capacity(world.config)+(.25 if p.kind=="FINAL_NORMAL" else 0.)
-                or a.peak_seconds+q.peak_seconds+q.peak_error_s > 120.):
+        if (not holding.valid or not q.valid
+                or a.soc <= holding.soc_used+holding.error_j/_capacity(world.config)+q.soc_used+q.error_j/_capacity(world.config)
+                or a.soc < holding.soc_used+holding.error_j/_capacity(world.config)+q.soc_used+q.error_j/_capacity(world.config)+(.25 if p.kind=="FINAL_NORMAL" else 0.)
+                or a.peak_seconds+holding.peak_seconds+holding.peak_error_s+q.peak_seconds+q.peak_error_s > 120.):
             return ValidationResult(False,"REJECTED","PREPARED_ENERGY_BOUND"), None
         fine_plans[p.trajectory_hash] = True
         deps = (context._release_supports(p.target_ring,p.target_slot,p.aircraft_id,slots,soft)
@@ -382,6 +390,12 @@ def prepare_submission(world, plans, timing, *, traffic_policy="legacy", pair_ce
         from .local_traffic_recovery import initialize_packet
         initialize_packet(registry[token])
     registry[token]["not_ready_before"] = world.time+time.perf_counter()-started
+    from .future_commitment import delivery_units
+    registry[token]["delivery_units"] = delivery_units(plans,timing,projected)
+    registry[token]["selection_binding"] = selection_binding
+    for unit in registry[token]["delivery_units"]:
+        world._event("reservation_prepared",unit["aircraft_id"],**{k:v for k,v in unit.items() if k!="aircraft_id"},
+                     selection_binding=selection_binding)
     return ValidationResult(True,"PREPARED","",dict(token=token)), token
 
 
@@ -447,7 +461,7 @@ def guard_submission(world, token):
     return _external_delta(world,packet) if direct.accepted else direct
 
 
-def revalidate_submission(world, token, *, max_work_s=None):
+def revalidate_submission(world, token, *, max_work_s=None, provider=None):
     """Measured affected-pair certification; retain original own plans/energy/delta."""
     started=time.perf_counter()
     if max_work_s is not None and (not math.isfinite(max_work_s) or max_work_s<0):
@@ -457,7 +471,7 @@ def revalidate_submission(world, token, *, max_work_s=None):
     if packet is None: return ValidationResult(False,"REJECTED","UNISSUED_LATENCY_PACKET")
     if packet.get("traffic_policy") == LOCAL_TRAFFIC_POLICY:
         from .local_traffic_recovery import revalidate_submission as local_revalidate
-        return local_revalidate(world, token, max_work_s=max_work_s)
+        return local_revalidate(world, token, max_work_s=max_work_s,provider=provider)
     packet["ready_at"]=None
     packet["revalidation"]=None
     direct=_direct_guard(world,packet)
@@ -576,8 +590,11 @@ def publish_submission(world, token):
     if world.time < packet["ready_at"]:
         return ValidationResult(False,"REJECTED","PREPARATION_NOT_COMPLETE")
     guarded = guard_submission(world,token)
+    if not guarded.accepted:
+        from .future_commitment import discard_pending
+        discard_pending(world,token,guarded.reason)
+        return guarded
     registry.pop(token,None)
-    if not guarded.accepted: return guarded
     plans = packet["plans"]
     ids = {p.aircraft_id for p in plans}
     # Preserve all unrelated current transactions and past occupancy intervals.
@@ -593,6 +610,15 @@ def publish_submission(world, token):
         a = world.aircraft[p.aircraft_id]
         q, deps = packet["starts"][a.id]
         world.trajectories[p.trajectory_hash] = p.to_dict()
+        old = world.soft.pop(a.id,None)
+        if old is not None and old.trajectory_hash!=p.trajectory_hash:
+            world.dependencies.pop(old.trajectory_hash,None)
+        world.dependencies[p.trajectory_hash] = deps
+        if p.start_time > world.time+EPS:
+            world.soft[a.id] = p
+            world._event("soft_plan_reserved",a.id,trajectory_hash=p.trajectory_hash,
+                start_time=p.start_time,end_time=p.end_time,planning_timing=asdict(packet["timing"]))
+            continue
         world.active[a.id] = p
         world.slots.mark_committed(p.trajectory_hash)
         world.pads.mark_committed(p.trajectory_hash)
@@ -613,8 +639,14 @@ def publish_submission(world, token):
                    if p.kind=="FINAL_NORMAL" else {})
         world._event("maneuver_started",a.id,trajectory_hash=p.trajectory_hash,
                      dependencies=list(deps),maneuver_kind=p.kind,**details)
+    from .future_commitment import register_published
+    units = register_published(world,packet,token)
     world._record(force=True)
-    return ValidationResult(True,"ACCEPTED","",dict(submitted=len(plans)))
+    return ValidationResult(True,"ACCEPTED","",dict(submitted=len(plans),
+        reservation_ids=[u["reservation_id"] for u in units],delivery_units=units,
+        delivery_selection_binding=packet.get('selection_binding'),
+        actual_delivery_selection_binding=packet.get('selection_binding'),
+        waiting_for_reservation_start=any(p.start_time>world.time+EPS for p in plans)))
 
 
 class _FuturePort:
@@ -695,6 +727,9 @@ class LatencyAwareScheduler:
     def planning_profile(self): return getattr(self.callback,"planning_profile","progress_tail_v7")
 
     @property
+    def delivery_policy(self): return "absolute_first_action_reservation_v1"
+
+    @property
     def next_event_time(self):
         if self.pending is None: return math.inf
         return self.pending["due"]
@@ -769,12 +804,20 @@ class LatencyAwareScheduler:
         self._service_until = port.time
         self._idle_service = (None,0.)
         record = dict(interface=EFFECTIVE_STATE_VERSION,emergency_timing_mode=EMERGENCY_TIMING_MODE,
+            delivery_policy="absolute_first_action_reservation_v1",
             traffic_policy=self.traffic_policy,
             dependency_protocol=DEPENDENCY_PROTOCOL_VERSION,revalidation_work_s=0.,revalidation_work_cpu_s=0.,
             revalidation_count=0,revalidations=[],dependency_guard_work_s=0.,dependency_guard_work_cpu_s=0.,
             **asdict(timing),normal_work_s=duration,normal_work_cpu_s=time.process_time()-started_cpu,
             prepare_work_s=None,online_service_s=service,
             status="COMPUTING",submitted=0,commit_status="DEFERRED")
+        final_result=getattr(self.callback,"last_result",None)
+        if final_result is not None:
+            record["selection_binding"]=dict(objective=list(final_result.objective),
+                selected_signatures=[c.signature for c in final_result.selected],
+                first_action_hashes=[c.plans[0].trajectory_hash for c in final_result.selected if c.plans],
+                prefix_hashes=[p.trajectory_hash for p in final_result.prefix],
+                certified=final_result.certified)
         if getattr(self.callback,"selective_method",None) is not None:
             record["proposed_trajectory_hashes"]=[p.trajectory_hash for p in proposal or ()]
         if self.search_handoff_reserve_seconds:
@@ -834,11 +877,15 @@ class LatencyAwareScheduler:
         if self.traffic_policy == LOCAL_TRAFFIC_POLICY and p["token"]:
             events = list(port.latency_submission_recovery_log(p["token"]))
             if events: record["local_recovery_events"] = events
-        if p["token"]: port.discard_latency_submission(p["token"])
+        if p["token"]: port.discard_latency_submission(p["token"],reason or status)
         record.update(status=status,reason=reason,finished_time=port.time,
             online_service_s=p["online_service_s"],commit_status=getattr(result,"status","REJECTED"),
             submitted=(len(p["proposal"]) if result is not None and result.accepted else 0),
             dirty=self.dirty)
+        if result is not None and result.accepted:
+            record.update({key:result.details[key] for key in
+                ('reservation_ids','delivery_units','waiting_for_reservation_start','delivery_selection_binding',
+                 'actual_delivery_selection_binding') if key in result.details})
         port.planning_latency_event("normal_task_finished",**record)
         acknowledge = getattr(self.callback,"record_latency_ack",None)
         self._observe_selective(port)
@@ -882,7 +929,9 @@ class LatencyAwareScheduler:
         previous_ready=record.get("ready_time")
         record["ready_time"]=None
         started,started_cpu=self.clock(),time.process_time()
-        evaluation=port.revalidate_latency_submission(p["token"],max_work_s=budget["available_work_s"])
+        provider=getattr(self.callback,'provider',None)
+        evaluation=port.revalidate_latency_submission(p["token"],max_work_s=budget["available_work_s"],
+            **({'provider':provider} if provider is not None else {}))
         duration=self.clock()-started; cpu=time.process_time()-started_cpu
         if duration<0 or not math.isfinite(duration): raise ValueError("invalid revalidation duration")
         duration=max(duration,evaluation.details.get("minimum_work_s",0.))
@@ -942,8 +991,9 @@ class LatencyAwareScheduler:
                 self._finish(port,"NO_EXECUTABLE_PREFIX" if p["reason"]=="NO_EXECUTABLE_PREFIX" else "REJECTED",p["reason"])
                 return
             started, started_cpu = self.clock(), time.process_time()
-            evaluation, token = (port.prepare_latency_submission(p["proposal"],timing,traffic_policy=self.traffic_policy)
-                if self.traffic_policy != "legacy" else port.prepare_latency_submission(p["proposal"],timing))
+            options=({'traffic_policy':self.traffic_policy} if self.traffic_policy!='legacy' else {})
+            if record.get('selection_binding') is not None: options['selection_binding']=record['selection_binding']
+            evaluation, token = port.prepare_latency_submission(p["proposal"],timing,**options)
             duration = self.clock()-started
             if duration < 0 or not math.isfinite(duration): raise ValueError("invalid preparation duration")
             preparation_start = port.time+self._handoff_service
@@ -1112,6 +1162,7 @@ class LatencyAwareScheduler:
 
     def state_dict(self):
         return dict(interface=EFFECTIVE_STATE_VERSION,emergency_timing_mode=EMERGENCY_TIMING_MODE,
+            delivery_policy=self.delivery_policy,
             dependency_protocol=DEPENDENCY_PROTOCOL_VERSION,
             lead_seconds=self.lead_seconds,preparation_margin=self.preparation_margin,
             search_handoff_reserve_seconds=self.search_handoff_reserve_seconds,
@@ -1123,6 +1174,8 @@ class LatencyAwareScheduler:
             last_restart_time=self._last_restart_time)
 
     def load_state_dict(self, state):
+        if state.get('delivery_policy',self.delivery_policy)!=self.delivery_policy:
+            raise ValueError('planning latency delivery policy binding mismatch')
         if (state["interface"]!=EFFECTIVE_STATE_VERSION
                 or state.get("dependency_protocol")!=DEPENDENCY_PROTOCOL_VERSION
                 or state["emergency_timing_mode"]!=EMERGENCY_TIMING_MODE
