@@ -46,7 +46,7 @@ The caller bounds the separate audit process. `report` reads saved arm results a
 
 Local verification: `venv/Scripts/python.exe -m pytest tests/test_future_commitment_drain.py -q --basetemp=future_drain_units_20261101a` completed with 13 passed in 2.95 seconds. An earlier `.tmp` basetemp attempt returned WinError 5 before fixture setup; the listed top-level workspace basetemp was writable. The runner's `--help` command completed successfully. No server smoke, physical rollout, or saved-replay safety audit is included in these local test results.
 
-## 服务器执行状态（更新至 2026-11-01 01:53:26，Asia/Shanghai）
+## 服务器执行状态（更新至 2026-11-01 02:03:34，Asia/Shanghai）
 
 代码与测试冻结提交为 `fa1c2647a917b035b443b7b5a52e7278d5b17a92`，已推送。服务器单测结果为 **13 passed、0 skipped，0.61 s**。四个仅恢复 smoke 均 PASS：world、scheduler 和绝对时间完全匹配，物理推进及 solver 调用均为 0，原始来源文件哈希未变。
 
@@ -72,6 +72,21 @@ Local verification: `venv/Scripts/python.exe -m pytest tests/test_future_commitm
 | HF | 385 | 37 | 50 | 14 | 930.87 |
 | HK | 375 | 38 | 50 | 14 | 1238.77 |
 
-下一次固定进度查询时间为北京时间 01:58:15；整个 drain 耗时仍未知。
+上述第一次查询之后的固定查询时间为北京时间 01:58:15，此时间现为历史记录；整个 drain 耗时仍未知。
 
 最初一次后台启动因 Python 换行错误，在任何正式任务开始前失败；修正启动命令一次后才产生上述任务。该次失败日志保留，不计为实验重试。
+
+### 最新观测与接续交接
+
+第三次进度查询观测时间为北京时间 2026-11-01 02:03:34。四个任务均活跃，未观测到错误，均尚未到达 t600；以下为当时累计观测值。
+
+| Arm | 仿真时间 | 正常着陆 | 应急着陆 | failed | airborne | admitted | released | 外部 pending |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| MF | 570 | 14 | 3 | 0 | 30 | 47 | 23 | 未在本次交接单列 |
+| MK | 595 | 17 | 1 | 0 | 29 | 47 | 23 | 未在本次交接单列 |
+| HF | 440 | 13 | 0 | 0 | 40 | 53 | 17 | 未在本次交接单列 |
+| HK | 415 | 12 | 0 | 0 | 40 | 52 | 17 | 1 |
+
+主对话已通过 `automation_update` 创建当前线程 heartbeat，ID 为 `600`，状态 ACTIVE，间隔 17 min，并通过工具查看确认。下一次唤醒约为北京时间 02:22；这是复查时间，不是完成时间估计。等待期间不保留持续睡眠的监控 worker。
+
+唤醒后检查约 02:18 触发的软墙钟暂停及其稳定边界、checkpoint 和 replay 导出。只有正常 `PAUSED_CHECKPOINT` 才能使用完整状态 `--resume`，保留 pending、未来预约和既有世界状态，继续原任务直到全部已接纳航空器达到约定终态；遇到 ERROR 或无效执行返回主对话处理。核验全部终态与产物后，再继续已授权的 replay audits、汇总报告及 Git 提交推送。整个任务的完成时间仍未知，本交接不声明四个任务均 COMPLETE。
