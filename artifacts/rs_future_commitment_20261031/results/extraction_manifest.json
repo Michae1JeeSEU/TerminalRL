@@ -1,0 +1,37 @@
+{
+  "files": [
+    {
+      "bytes": 206562,
+      "name": "compact_metrics.json",
+      "sha256": "ce215d2b4d8e4c35ea31d62f72c7634200a9cb5f8707244850d1efecbf451e7e"
+    },
+    {
+      "bytes": 148369,
+      "name": "compact_metrics.csv",
+      "sha256": "ed9aa2a8c4cf1a1d8e318bfd1e155377054b1a33972b687faf6adb00c62e3b2e"
+    },
+    {
+      "bytes": 3006742,
+      "name": "future_reservation_details.json",
+      "sha256": "8d03603bd6406e3d7f516f4815c728e00f59b0bfd47dc4d2ff2e1ff3e029af89"
+    }
+  ],
+  "provenance": {
+    "extraction_utc": "2026-10-31T05:59:44.633759+00:00",
+    "extractor_path": "D:\\7_codespace\\terminal\\artifacts\\rs_future_commitment_20261031\\extract_compact_results.py",
+    "extractor_sha256": "f5219ff908d784f07dd036a9f3f8268e5d5ff380b8ab1b17f39c05061df234ee",
+    "percentile": "nearest-rank ceil(.95*n)",
+    "source_ledger": {
+      "bytes": 16297,
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\rs_future_commitment_20261031\\repair_budget_ledger.json",
+      "sha256": "a1fca4ff39da3966a0fff94ad3510e586bfe3be58d19acd5cf709f566bb6ce55"
+    },
+    "source_schema": "service_opportunity_comparison_v1",
+    "source_summary": {
+      "bytes": 11917191,
+      "path": "D:\\7_codespace\\training_outputs\\terminal\\rs_future_commitment_20261031\\final_report\\summary.json",
+      "sha256": "021130dbe2719aed371ebe12d51baadff54ef06042d498afa0841529946c1c80"
+    }
+  },
+  "schema": "rs_future_commitment_extraction_manifest_v1"
+}

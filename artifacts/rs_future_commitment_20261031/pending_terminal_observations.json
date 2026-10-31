@@ -1,0 +1,60 @@
+{
+  "schema": "rs_future_commitment_pending_terminal_observations_v1",
+  "observation_kind": "read_only_terminal_checkpoint_decode",
+  "observation_provider": "delegated read-only server verification by server_preflight_luna, reviewed by primary; Stage2Codec decode with no advance or callback",
+  "observation_time_utc": null,
+  "observations": [
+    {
+      "root": "s3r24",
+      "method": "FULL_H",
+      "source_path": "/home/user/training_outputs/terminal/rs_future_commitment_20261031/arms/s3r24/FULL_H/evaluation/s3r24/FULL_H/checkpoint_terminal.json",
+      "envelope_digest_verified": true,
+      "world_time": 320.0,
+      "task_record_count": 12,
+      "callback_index": 11,
+      "snapshot_time": 244.33216631249525,
+      "effective_time": 264.33216631249525,
+      "task_status": "COMPUTING",
+      "record_online_service_s": 0.03386833332479,
+      "scheduler_pending_stage": "RESULT",
+      "scheduler_pending_due": 341.88552771066315,
+      "scheduler_pending_online_service_s": 85.67242338415235,
+      "scheduler_pending_reason": null,
+      "scheduler_service_until": 244.33216631249525,
+      "online_services_source_field": "Stage2Codec.decode(checkpoint.payload.scheduler).online_services, filtered after snapshot_time",
+      "online_services_after_snapshot": [
+        {"kind": "emergency", "calls": 35, "wall_s": 79.6977773607, "cpu_s": 79.6834874490},
+        {"kind": "admission", "calls": 35, "wall_s": 5.7494996954, "cpu_s": null},
+        {"kind": "selective_history", "calls": 36, "wall_s": 0.1529592981, "cpu_s": null},
+        {"kind": "reservation_traffic_revalidation", "calls": 0, "wall_s": 0.0, "cpu_s": null}
+      ]
+    },
+    {
+      "root": "s3r24",
+      "method": "RULE_LOCAL_K8",
+      "source_path": "/home/user/training_outputs/terminal/rs_future_commitment_20261031/arms/s3r24/RULE_LOCAL_K8/evaluation/s3r24/RULE_LOCAL_K8/checkpoint_terminal.json",
+      "envelope_digest_verified": true,
+      "world_time": 320.0,
+      "task_record_count": 15,
+      "callback_index": 14,
+      "snapshot_time": 287.00118978507817,
+      "effective_time": 307.00118978507817,
+      "task_status": "COMPUTING",
+      "record_online_service_s": 0.03856360702775419,
+      "scheduler_pending_stage": "RESULT",
+      "scheduler_pending_due": 322.7140580266714,
+      "scheduler_pending_online_service_s": 21.81253897259012,
+      "scheduler_pending_reason": null,
+      "scheduler_service_until": 287.00118978507817,
+      "online_services_source_field": "Stage2Codec.decode(checkpoint.payload.scheduler).online_services, filtered after snapshot_time",
+      "online_services_after_snapshot": [
+        {"kind": "emergency", "calls": 17, "wall_s": 16.7424020902, "cpu_s": 16.7405817110},
+        {"kind": "admission", "calls": 17, "wall_s": 4.5146872543, "cpu_s": null},
+        {"kind": "reservation_traffic_revalidation", "calls": 26, "wall_s": 0.4429198708, "cpu_s": null},
+        {"kind": "selective_history", "calls": 18, "wall_s": 0.0656246410, "cpu_s": null}
+      ]
+    }
+  ],
+  "semantics": "observed pending result due exceeds t320; preserve null reasons; no claim that a published appointment disappeared; online-service CPU kind emergency is not an actual emergency event",
+  "primary_interpretation": "these late pending intervals are dominated by original emergency-processing/check and admission service, not new reservation revalidation; do not label the 85-second accumulated online service as reservation certification cost"
+}
