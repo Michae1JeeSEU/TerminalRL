@@ -38,10 +38,40 @@ python scripts/stage3/run_future_commitment_drain.py report \
   --output "$HOME/training_outputs/terminal/rs_future_commitment_drain_20261101"
 ```
 
-The caller bounds the separate audit process. `report` reads saved arm results and audits into `analysis_summary.json`; missing or paused arms remain explicit. No server experiment was launched during implementation.
+The caller bounds the separate audit process. `report` reads saved arm results and audits into `analysis_summary.json`; missing or paused arms remain explicit. Server execution status is recorded below separately from the local implementation checks.
 
 ## Local checks
 
 `tests/test_future_commitment_drain.py` uses small real checkpoint fixtures for streamed and in-memory histories, pending latency and future absolute reservations, cutoff release/admission behavior, post-cutoff resume, normal/emergency/battery/peak classification, initial-ground exclusion, finite JSON output, segmented replay completion, smoke isolation, and invalid-run rejection. Its synthetic advance fixture verifies runner bookkeeping without invoking the expensive normal optimizer. Actual four-arm restore smoke and physical continuation are separate server executions.
 
 Local verification: `venv/Scripts/python.exe -m pytest tests/test_future_commitment_drain.py -q --basetemp=future_drain_units_20261101a` completed with 13 passed in 2.95 seconds. An earlier `.tmp` basetemp attempt returned WinError 5 before fixture setup; the listed top-level workspace basetemp was writable. The runner's `--help` command completed successfully. No server smoke, physical rollout, or saved-replay safety audit is included in these local test results.
+
+## 服务器执行状态（更新至 2026-11-01 01:53:26，Asia/Shanghai）
+
+代码与测试冻结提交为 `fa1c2647a917b035b443b7b5a52e7278d5b17a92`，已推送。服务器单测结果为 **13 passed、0 skipped，0.61 s**。四个仅恢复 smoke 均 PASS：world、scheduler 和绝对时间完全匹配，物理推进及 solver 调用均为 0，原始来源文件哈希未变。
+
+正式任务于 UTC 2026-10-31 17:48:13–15（北京时间 2026-11-01 01:48:13–15）启动。以下为历史启动记录：只读初始计数来自各自原始 t320 checkpoint；新增 release 数指原始 manifest 在 `(320,600]` 中的请求数。
+
+| Arm | CPU | supervisor PID / timeout PID | t320 airborne | `(320,600]` releases | 启动验证进度 |
+|---|---:|---|---:|---:|---|
+| s3r23 / FULL_H（MF） | 16 | 461435 / 461437 | 28 | 5 | t340，TRAFFIC |
+| s3r23 / RULE_LOCAL_K8（MK） | 17 | 461434 / 461439 | 28 | 5 | t335，TRAFFIC |
+| s3r24 / FULL_H（HF） | 18 | 461436 / 461440 | 36 | 18 | t325，TRAFFIC |
+| s3r24 / RULE_LOCAL_K8（HK） | 19 | 461490 / 461491 | 37 | 18 | t325，TRAFFIC |
+
+启动验证观测时间为 UTC 17:49:56（北京时间 01:49:56）；四个正式任务的 restore 检查均 PASS。产物根目录为 `/home/user/training_outputs/terminal/rs_future_commitment_drain_20261101`，启动日志为根目录下的 `logs/formal_*`；各 arm 的 evaluation 目录保存 `latest.json`、`progress.json` 和 `segment_0001`。
+
+每段软墙钟上限为 1800 s，外部进程上限为 3600 s。正常 `PAUSED_CHECKPOINT` 必须通过完整状态 `--resume` 接续，不能重新初始化。尚未执行正式 resume 或 replay audit，也没有正式任务完成结论。依据上一轮 R4 运行，至 t600 的初始总墙钟估计 `T0` 约为 1200 s；整个 drain 的耗时尚未知。
+
+第一次进度查询观测于 UTC 17:53:26（北京时间 01:53:26）。四个任务均活跃，CPU 使用率为 99.8–99.9%，未观测到错误；以下计数为当时累计值，剩余时间仅估计到 t600 的 TRAFFIC 阶段终点，不代表整个 drain 完成时间。
+
+| Arm | 仿真时间 | airborne | admitted | released | 至 t600 预计剩余墙钟（s） |
+|---|---:|---:|---:|---:|---:|
+| MF | 480 | 30 | 45 | 21 | 229.77 |
+| MK | 490 | 29 | 46 | 22 | 200.13 |
+| HF | 385 | 37 | 50 | 14 | 930.87 |
+| HK | 375 | 38 | 50 | 14 | 1238.77 |
+
+下一次固定进度查询时间为北京时间 01:58:15；整个 drain 耗时仍未知。
+
+最初一次后台启动因 Python 换行错误，在任何正式任务开始前失败；修正启动命令一次后才产生上述任务。该次失败日志保留，不计为实验重试。
