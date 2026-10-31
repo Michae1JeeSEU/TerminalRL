@@ -207,3 +207,39 @@ def test_server_report_whitelist_and_original_arm_protection(tmp_path,monkeypatc
     assert export.write_report(output/"fresh_report",value,output).is_dir()
     with pytest.raises(ValueError): export.write_report(output/"terminal_export/overwrite",value,output)
     with pytest.raises(ValueError): export.write_report(tmp_path/"other",value,output)
+
+
+def test_r4_combination_uses_normal_four_arms_and_only_existing_per_arm_exports(tmp_path,monkeypatch):
+    output=tmp_path/export.runner.FUTURE_COMMITMENT_OUTPUT_NAME; baseline=tmp_path/"r3_summary.json"
+    calls=[]
+    def collect(old,new,*,old_summary=None):
+        calls.append((old,Path(new),old_summary))
+        assert old is None and old_summary==baseline
+        value=100 if Path(new).name=="terminal_export" else 10
+        arms=[dict(root=r,method=m,status="COMPLETE",common_checkpoint_sha256=r,evaluation_profile=export.runner.PROFILE,value=value)
+            for r in export.report.ROOTS for m in export.report.METHODS]
+        ordinary=dict(arms=arms,task_timeline=[],callback_timings=[])
+        old=dict(input_root=str(tmp_path/export.runner.LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME),
+            ordinary=deepcopy(ordinary),metrics=[dict(a,evidence_type="preexisting_artifact") for a in arms])
+        return dict(campaigns=dict(old=old,new=dict(input_root=str(new),ordinary=ordinary,metrics=deepcopy(arms))))
+    monkeypatch.setattr(export.report,"collect",collect)
+    normal=export.combined_report(None,output,old_summary=baseline)
+    assert len(calls)==1 and {a["value"] for a in normal["campaigns"]["new"]["metrics"]}=={10}
+    assert all(a["export_lineage"] is None for a in normal["campaigns"]["new"]["metrics"])
+    directory=export.comparison.evaluation_directory(output/"terminal_export","s3r23","FULL_H")
+    save(directory/"result.json",dict(completed_state_export_only=True))
+    save(output/"terminal_export/arms/s3r23/FULL_H/export_receipt.json",dict(completed_state_export_only=True))
+    combined=export.combined_report(None,output,old_summary=baseline)
+    rows={(a["root"],a["method"]):a for a in combined["campaigns"]["new"]["metrics"]}
+    assert rows["s3r23","FULL_H"]["value"]==100
+    assert [a["value"] for key,a in rows.items() if key!=("s3r23","FULL_H")]==[10,10,10]
+    assert combined["campaigns"]["new"]["ordinary"]["status"]=="COMPLETE"
+    assert all(a["evidence_type"]=="preexisting_artifact" for a in combined["campaigns"]["old"]["metrics"])
+
+
+def test_r4_server_report_is_whitelisted(tmp_path,monkeypatch):
+    monkeypatch.setattr(Path,"home",classmethod(lambda cls:tmp_path)); monkeypatch.setattr(export,"PROJECT",tmp_path/"server_project")
+    output=tmp_path/"training_outputs/terminal"/export.runner.FUTURE_COMMITMENT_OUTPUT_NAME
+    value=dict(campaigns=dict(old=dict(input_root=str(tmp_path/"r3"),metrics=[]),new=dict(input_root=str(output),metrics=[])))
+    assert export.write_report(output/"fresh_report",value,output).is_dir()
+    with pytest.raises(ValueError): export.write_report(output/"arms/overwrite",value,output)

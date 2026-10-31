@@ -27,8 +27,10 @@ SUPPLY_R2_OUTPUT_NAME = "rs_service_opportunity_supply_r2_20261030"
 LOCAL_RECOVERY_OUTPUT_NAME = "rs_local_recovery_20261031"
 LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME = "rs_local_recovery_restorefix_20261031"
 LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME = "rs_local_recovery_serializationfix_20261031"
+FUTURE_COMMITMENT_OUTPUT_NAME = "rs_future_commitment_20261031"
 OUTPUT_NAMES = (OUTPUT_NAME, SUPPLY_R2_OUTPUT_NAME, LOCAL_RECOVERY_OUTPUT_NAME,
-                LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME, LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME)
+                LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME, LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME,
+                FUTURE_COMMITMENT_OUTPUT_NAME)
 PROFILE = "service_opportunity_v1"
 ORIGIN_NAME = "rs_selective_quality_a4_20261030"
 COMMON_HASHES = {
@@ -64,6 +66,9 @@ def policy_for_output(output):
     elif policy["campaign"] == LOCAL_RECOVERY_OUTPUT_NAME:
         policy.update(previous_ledger_readonly=SUPPLY_R2_OUTPUT_NAME+"/repair_budget_ledger.json",
                       run_role="AUTHORIZED_LOCAL_RECOVERY_FOLLOWUP")
+    elif policy["campaign"] == FUTURE_COMMITMENT_OUTPUT_NAME:
+        policy.update(previous_ledger_readonly=LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME+"/repair_budget_ledger.json",
+                      run_role="AUTHORIZED_FUTURE_FIRST_ACTION_COMMITMENT_COMPARISON")
     elif policy["campaign"] == LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME:
         previous=output.parent/LOCAL_RECOVERY_OUTPUT_NAME/"repair_budget_ledger.json"
         base.require(previous.is_file(),"original local-recovery ledger required for remaining budget")
@@ -129,6 +134,11 @@ def launch_threads():
     return observed
 
 
+def stage_cap(stage,output):
+    """R4's longer arm watchdog tolerates output I/O; algorithm clocks are fixed."""
+    return 1500. if stage=="arm" and Path(output).name==FUTURE_COMMITMENT_OUTPUT_NAME else CAPS[stage]
+
+
 def copy_common(output, root, *, origin=None, expected_hash=None):
     """Read the historical archive only; never regenerate or rewrite its state."""
     output = Path(output)
@@ -187,7 +197,7 @@ def main(argv=None):
     job_id = "service_"+args.stage+"_"+args.root+("" if args.stage=="prepare" else "_"+args.method)
     if not args._child_job_id:
         command = [sys.executable, str(DRIVER), *values, "--_child-job-id", job_id]
-        receipt = old.run_bounded_job(args.output, job_id, command, cap_s=CAPS[args.stage], policy=policy)
+        receipt = old.run_bounded_job(args.output, job_id, command, cap_s=stage_cap(args.stage,args.output), policy=policy)
         base.print_result(dict(job_id=job_id, **receipt))
         return receipt
     base.require(args._child_job_id == job_id, "child identity differs")
@@ -200,7 +210,8 @@ def main(argv=None):
     required = (DRIVER.relative_to(PROJECT).as_posix(),
                 "scripts/stage3/report_service_opportunity_comparison.py",
                 "tests/test_service_opportunity_campaign.py")
-    if args.output.name in (LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME, LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME):
+    if args.output.name in (LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME, LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME,
+                           FUTURE_COMMITMENT_OUTPUT_NAME):
         required += ("scripts/stage3/run_selective_common_initial_a4.py",
                      "tests/test_selective_common_initial_a4.py")
     base.require(all(name in source["files"] for name in required), "reviewed follow-up sources/tests required")
@@ -224,7 +235,8 @@ def main(argv=None):
         base.require(base.file_hash(checkpoint)==COMMON_HASHES[args.root], "common checkpoint changed")
         run_output = args.output/"smoke_only" if args.stage=="smoke" else args.output
         smoke_seconds = 25 if args.output.name in (SUPPLY_R2_OUTPUT_NAME, LOCAL_RECOVERY_OUTPUT_NAME,
-            LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME, LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME) else 20
+            LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME, LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME,
+            FUTURE_COMMITMENT_OUTPUT_NAME) else 20
         result = comparison.run_arm(run_output,args.root,args.method,checkpoint,
             dict(source_commit=source["commit"],source_hash=source["source_hash"],cpu=args.cpu,
                  campaign=args.output.name,run_role="SMOKE_NOT_FORMAL" if args.stage=="smoke" else "FORMAL_SINGLE_ARM"),

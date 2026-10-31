@@ -1,5 +1,7 @@
 """Small output/measurement preflight; no solver, server, or formal rollout."""
 from contextlib import contextmanager
+import csv
+from copy import deepcopy
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -142,10 +144,12 @@ def test_cli_and_literal_thread_settings(monkeypatch):
     (runner.LOCAL_RECOVERY_OUTPUT_NAME,"smoke",25),
     (runner.LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME,"smoke",25),
     (runner.LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME,"smoke",25),
+    (runner.FUTURE_COMMITMENT_OUTPUT_NAME,"smoke",25),
     (runner.OUTPUT_NAME,"arm",300),(runner.SUPPLY_R2_OUTPUT_NAME,"arm",300),
     (runner.LOCAL_RECOVERY_OUTPUT_NAME,"arm",300),
     (runner.LOCAL_RECOVERY_RESTOREFIX_OUTPUT_NAME,"arm",300),
-    (runner.LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME,"arm",300)])
+    (runner.LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME,"arm",300),
+    (runner.FUTURE_COMMITMENT_OUTPUT_NAME,"arm",300)])
 def test_smoke_is_twenty_seconds_separate_output(monkeypatch,tmp_path,output_name,stage,seconds):
     for key in runner.base.THREADS: monkeypatch.setenv(key,"1")
     source=dict(commit="test",source_hash="hash",files={p: "x" for p in (
@@ -190,6 +194,24 @@ def test_only_authorized_output_names_and_fixed_parent(monkeypatch,tmp_path):
         assert runner.validated_output(parent/name)==(parent/name).resolve()
     with pytest.raises(ValueError): runner.validated_output(parent/"unapproved_campaign")
     with pytest.raises(ValueError): runner.validated_output(tmp_path/runner.SUPPLY_R2_OUTPUT_NAME)
+
+
+def test_r4_independent_budget_and_io_only_watchdog(monkeypatch,tmp_path):
+    monkeypatch.setattr(Path,"home",classmethod(lambda cls:tmp_path))
+    output=tmp_path/"training_outputs/terminal"/runner.FUTURE_COMMITMENT_OUTPUT_NAME
+    policy=runner.policy_for_output(output)
+    assert policy["cap_child_wall_s"]==7200. and policy["prior_audits_child_wall_s"]==0.
+    assert "historical_charge_chain" not in policy
+    assert policy["previous_ledger_readonly"]==runner.LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME+"/repair_budget_ledger.json"
+    assert runner.stage_cap("arm",output)==1500.
+    assert runner.stage_cap("arm",output.parent/runner.LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME)==1200.
+    assert [runner.stage_cap(s,output) for s in ("prepare","smoke","audit")]==[120.,120.,300.]
+    for key in runner.base.THREADS: monkeypatch.setenv(key,"1")
+    captured={}
+    def bounded(*args,**kwargs): captured.update(kwargs); return dict(status="completed")
+    monkeypatch.setattr(runner.old,"run_bounded_job",bounded)
+    runner.main(["--stage","arm","--output",str(output),"--root","s3r23","--method","FULL_H","--cpu","16","--source-freeze","future_freeze.json"])
+    assert captured["cap_s"]==1500. and captured["policy"]["cap_child_wall_s"]==7200.
 
 
 def test_campaign_policies_and_ledgers_are_independent(monkeypatch,tmp_path):
@@ -428,3 +450,175 @@ def test_real_report_fixture_reads_replay_and_keeps_missing_old_instrumentation_
     old=report.extract_metrics(tmp_path,"s3r23","FULL_H",ordinary)
     assert old["candidate_lifecycle"] is None and old["local_recovery"] is None
     assert {p:p.read_bytes() for p in before}==before
+
+
+def future_action(hash_,aid,source,target,start,end,kind="TRANSFER"):
+    return dict(trajectory_hash=hash_,aircraft_id=aid,kind=kind,source_ring=source,target_ring=target,start_time=start,end_time=end)
+
+
+def future_callback(actions,*,snapshot=20.,effective=40.,reason=None):
+    rows=[]; selected=[]
+    for index,chain in enumerate(actions):
+        first=chain[0]; key="candidate_"+first["trajectory_hash"]
+        rows.append(dict(candidate_hash=key,aircraft_id=first["aircraft_id"],action_hashes=[a["trajectory_hash"] for a in chain],actions=chain,
+            actual_solve_events=[dict(model_index=index)],selected_events=[dict(elapsed_s=1.)],certified_events=[dict(elapsed_s=2.)]))
+        selected.append(dict(aircraft_id=first["aircraft_id"],candidate_hash=key,actions=chain,first_action=first,selected_kind="MOVE"))
+    return dict(planning_timing=dict(snapshot_time=snapshot,effective_time=effective),service_candidate_lifecycle=rows,
+        final_selected_first_actions=selected,delivery_certification_scope="effective_hold_then_absolute_first_action",
+        actual_delivery_status="REJECTED" if reason else "COMMITTED",actual_delivery_reason=reason)
+
+
+def reservation_event(type_,time,id_,action,*,effective=40.,**details):
+    return dict(type="reservation_"+type_,time=time,aircraft_id=action["aircraft_id"],details=dict(
+        reservation_id=id_,trajectory_hash=action["trajectory_hash"],effective_time=effective,
+        start_time=action["start_time"],end_time=action["end_time"],**details))
+
+
+def test_mixed_immediate_final_future_middle_inner_and_suffix_have_individual_event_chains():
+    final=future_action("final","f","inner",None,40.,70.,"FINAL_NORMAL")
+    move=future_action("move","m","middle","inner",80.,120.)
+    suffix=future_action("forecast_only","m","inner",None,160.,190.,"FINAL_NORMAL")
+    callbacks=[future_callback([[final],[move,suffix]])]
+    events=[]
+    for id_,action in (("rf",final),("rm",move)):
+        events.extend([reservation_event("prepared",30.,id_,action),reservation_event("published",39.,id_,action),
+            reservation_event("started",action["start_time"],id_,action),reservation_event("completed",action["end_time"],id_,action)])
+    got=report.future_reservation_metrics(callbacks,events,{})
+    assert got["all_first_actions"]["counts"]["published"]==2
+    assert got["middle_inner"]["counts"]==dict(generated=1,actual_cp=1,selected_final=1,delivery_certified=1,published=1,started=1,completed=1,cancelled=0,completed_or_cancelled=1,pending_cancelled=0,superseded_pending=0)
+    assert len(got["predicted_suffix_rows"])==1 and got["predicted_suffix_rows"][0]["trajectory_hash"]=="forecast_only"
+    assert {r["aircraft_id"] for r in got["first_action_rows"]}=={"m","f"}
+    assert next(r for r in got["reservation_rows"] if r["reservation_id"]=="rm")["published_times"]==[39.]
+    assert got["replacement_count"]==got["absolute_start_postponement_count"]==0
+
+
+def test_final_selected_unpublished_reports_occurrence_loss_without_attributing_callback_wait_to_action():
+    move=future_action("move","m","middle","inner",80.,120.)
+    callback=future_callback([[move]],reason="READY_DEADLINE_MISSED"); callback["empty_reason"]="REASONABLE_WAIT"
+    callback["service_candidate_lifecycle"][0]["selected_events"]=[]
+    got=report.future_reservation_metrics([callback],[],{})
+    assert got["middle_inner"]["selected_any_intermediate_count"]==0
+    assert got["middle_inner"]["counts"]["selected_final"]==1
+    assert got["middle_inner"]["selected_final_not_published_count"]==1
+    occurrence=got["final_selected_occurrence_rows"][0]
+    assert occurrence["state"]=="not_published_by_window_end"
+    assert occurrence["callback_delivery_observation"]["reason"]=="READY_DEADLINE_MISSED"
+    assert got["first_action_rows"][0]["reasons"]==[]
+    loss=next(r for r in got["middle_inner"]["transitions"] if r["from_stage"]=="selected_final")
+    assert loss["exported_reason_counts"]=={} and loss["associated_callback_reason_counts"]["REASONABLE_WAIT"]==1
+
+
+def test_published_outside_window_is_pending_not_missed():
+    action=future_action("later","m","middle","inner",400.,440.)
+    cb=future_callback([[action]],snapshot=300.,effective=320.)
+    events=[reservation_event("prepared",314.,"r",action,effective=320.),reservation_event("published",319.,"r",action,effective=320.)]
+    got=report.future_reservation_metrics([cb],events,{})
+    assert got["pending_beyond_window_count"]==1
+    assert got["due_without_observed_start_count"]==got["missed_start_count"]==0
+    assert got["middle_inner"]["counts"]["started"]==0
+
+
+def test_replacement_cancel_dedup_and_explicit_postponement():
+    old=future_action("old","m","middle","inner",100.,140.)
+    new=future_action("new","m","middle","inner",140.,180.)
+    callbacks=[future_callback([[old]]),future_callback([[new]],snapshot=60.,effective=80.)]
+    cancellation=reservation_event("cancelled",79.,"r_old",old,reason="atomic_replacement",replacement_reservation_id="r_new")
+    events=[reservation_event("prepared",30.,"r_old",old),reservation_event("published",39.,"r_old",old),cancellation,cancellation,
+        reservation_event("prepared",70.,"r_new",new,effective=80.),
+        reservation_event("published",79.,"r_new",new,effective=80.,replaced_reservation_ids=["r_old"]),
+        reservation_event("started",140.,"r_new",new,effective=80.),reservation_event("completed",180.,"r_new",new,effective=80.)]
+    got=report.future_reservation_metrics(callbacks,events,{})
+    assert got["replacement_count"]==got["absolute_start_postponement_count"]==got["cancelled_reservation_count"]==1
+    assert got["due_without_observed_start_count"]==got["missed_start_count"]==0
+    assert got["first_action_rows"][1]["reservation_reason_observations"] or got["first_action_rows"][0]["reservation_reason_observations"]
+
+
+def test_repeated_selected_hash_keeps_occurrences_and_live_existing_reservation():
+    action=future_action("same","m","middle","inner",100.,140.)
+    callbacks=[future_callback([[action]]),future_callback([[action]],snapshot=60.,effective=80.),future_callback([[action]],snapshot=80.,effective=100.)]
+    events=[reservation_event("prepared",30.,"r",action),reservation_event("published",39.,"r",action),
+        reservation_event("cancelled",70.,"r",action,reason="RESERVATION_SOURCE_CHANGED")]
+    got=report.future_reservation_metrics(callbacks,events,{})
+    assert got["middle_inner"]["counts"]["generated"]==got["middle_inner"]["counts"]["published"]==1
+    assert got["final_selected_occurrence_state_counts"]==dict(published_for_occurrence=1,already_reserved=1,not_published_by_window_end=1)
+    assert got["final_selected_occurrence_rows"][-1]["callback_index"]==2
+    assert got["missed_start_count"]==0
+
+
+def test_late_start_guard_cancel_has_specific_reason_and_counts_miss_once():
+    action=future_action("late","m","middle","inner",100.,140.)
+    guard=reservation_event("start_guard",101.,"r",action,accepted=False,reason="RESERVATION_START_TIME_MISMATCH")
+    cancel=reservation_event("cancelled",101.,"r",action,reason="RESERVATION_START_TIME_MISMATCH")
+    events=[reservation_event("prepared",30.,"r",action),reservation_event("published",39.,"r",action),guard,cancel,cancel]
+    got=report.future_reservation_metrics([future_callback([[action]])],events,{})
+    assert got["missed_start_count"]==got["cancelled_reservation_count"]==1
+    assert got["due_without_observed_start_count"]==0
+    reasons=got["first_action_rows"][0]["reservation_reason_observations"]
+    assert {r["event_type"] for r in reasons}=={"reservation_start_guard","reservation_cancelled"}
+    assert all(r["scope"]=="reservation" for r in reasons)
+
+
+def test_unclassified_metadata_visible_and_r3_future_fields_unknown():
+    cb=dict(service_candidate_lifecycle=[dict(candidate_hash="c",aircraft_id="m",action_hashes=["unknown"],actual_solve_events=[])],final_selected_first_actions=[])
+    got=report.future_reservation_metrics([cb],[],{})
+    assert got["unclassified_first_action_count"]==1
+    assert got["middle_inner"]["denominator_excludes_unclassified_count"]==1
+    assert got["replacement_count"] is None
+    assert report.future_reservation_metrics([dict(service_candidate_lifecycle=[])],[],{}) is None
+
+
+def test_pending_discard_superseded_and_later_successful_publish_are_not_published_cancellations():
+    pending=future_action("pending","p","middle","inner",80.,120.)
+    superseded=future_action("superseded","s","middle","inner",400.,440.)
+    live=future_action("live","l","middle","inner",100.,140.)
+    first=future_callback([[pending]],reason="READY_DEADLINE_MISSED")
+    trial=future_callback([[superseded]],snapshot=30.,effective=50.); trial["final_selected_first_actions"]=[]
+    delivered=future_callback([[live]],snapshot=40.,effective=60.)
+    binding=dict(objective=[0,-1,0,0,1,1],first_action_hashes=["live"],prefix_hashes=["live"],certified=True)
+    delivered["delivery_selection_binding"]=deepcopy(binding); delivered["actual_delivery_selection_binding"]=deepcopy(binding)
+    repeated=future_callback([[live]],snapshot=70.,effective=90.)
+    discard=reservation_event("cancelled",38.,"rp",pending,previous_state="PENDING_DELIVERY",published=False,reason="READY_DEADLINE_MISSED")
+    events=[reservation_event("prepared",30.,"rp",pending),discard,discard,
+        reservation_event("prepared",35.,"rs",superseded,effective=50.),
+        reservation_event("pending_superseded",36.,"rs",superseded,effective=50.,state="SUPERSEDED_PENDING",previous_state="PENDING_DELIVERY",published=False,reason="UNSELECTED_REPAIR"),
+        reservation_event("prepared",45.,"rl",live,effective=60.),
+        reservation_event("cancelled",46.,"rl",live,effective=60.,previous_state="PENDING_DELIVERY",published=False,reason="DISCARDED_CANDIDATE"),
+        reservation_event("prepared",55.,"rl",live,effective=60.),reservation_event("published",59.,"rl",live,effective=60.),
+        reservation_event("started",100.,"rl",live,effective=60.),reservation_event("completed",140.,"rl",live,effective=60.)]
+    got=report.future_reservation_metrics([first,trial,delivered,repeated],events,{})
+    assert got["cancelled_reservation_count"]==got["middle_inner"]["counts"]["cancelled"]==0
+    assert got["pending_cancelled_reservation_count"]==2 and got["superseded_pending_reservation_count"]==1
+    assert got["pending_beyond_window_count"]==got["due_without_observed_start_count"]==got["missed_start_count"]==0
+    assert got["middle_inner"]["counts"]["published"]==got["middle_inner"]["counts"]["started"]==got["middle_inner"]["counts"]["completed"]==1
+    live_occurrence=next(o for o in got["final_selected_occurrence_rows"] if o["callback_index"]==2)
+    assert live_occurrence["delivery_selection_binding"]==live_occurrence["actual_delivery_selection_binding"]==binding
+    assert next(o for o in got["final_selected_occurrence_rows"] if o["callback_index"]==3)["state"]=="already_reserved"
+
+
+def test_future_metric_json_csv_agree(tmp_path,monkeypatch):
+    monkeypatch.setattr(report,"PROJECT",tmp_path)
+    action=future_action("m","a","middle","inner",80.,120.)
+    metrics=report.future_reservation_metrics([future_callback([[action]])],[],{})
+    value=dict(campaigns=dict(new=dict(input_root=str(tmp_path/"inputs"),metrics=[dict(root="s3r23",method="FULL_H",future_reservation_metrics=metrics)])))
+    target=report.write_outputs(tmp_path/"artifacts/future",value)
+    row=next(csv.DictReader((target/"comparison.csv").open(encoding="utf8")))
+    saved=json.loads((target/"summary.json").read_text())["campaigns"]["new"]["metrics"][0]["future_reservation_metrics"]
+    assert json.loads(row["future_reservation_metrics"])==saved==metrics
+
+
+def test_saved_r3_baseline_selects_new_four_arms_and_marks_preexisting(tmp_path,monkeypatch):
+    arms=[dict(root=r,method=m,status="COMPLETE",common_checkpoint_sha256=r) for r in report.ROOTS for m in report.METHODS]
+    def campaign(name,value): return dict(input_root=str(tmp_path/name),ordinary=dict(arms=deepcopy(arms)),metrics=[dict(root=a["root"],method=a["method"],treatment_normal_touchdown_count=value) for a in arms])
+    old=campaign(runner.SUPPLY_R2_OUTPUT_NAME,7); new=campaign(runner.LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME,3)
+    summary=tmp_path/"summary.json"; save(summary,dict(window=[20.,320.],campaigns=dict(old=old,new=new)))
+    before=summary.read_bytes()
+    monkeypatch.setattr(report,"existing_summary",lambda:SimpleNamespace(collect=lambda path:(dict(arms=deepcopy(arms)),[],[])))
+    got=report.collect(None,tmp_path/runner.FUTURE_COMMITMENT_OUTPUT_NAME,old_summary=summary)
+    assert {r["treatment_normal_touchdown_count"] for r in got["campaigns"]["old"]["metrics"]}=={3}
+    assert all(r["evidence_type"]=="preexisting_artifact" and r["future_reservation_metrics"] is None for r in got["campaigns"]["old"]["metrics"])
+    assert summary.read_bytes()==before
+    duplicate=deepcopy(new); duplicate["metrics"][1]=deepcopy(duplicate["metrics"][0])
+    save(summary,dict(window=[20.,320.],campaigns=dict(new=duplicate)))
+    with pytest.raises(ValueError,match="four unique"): report.saved_baseline(summary)
+    save(summary,dict(window=[20.,320.],campaigns=dict(new=old)))
+    with pytest.raises(ValueError,match="not R2"): report.saved_baseline(summary)

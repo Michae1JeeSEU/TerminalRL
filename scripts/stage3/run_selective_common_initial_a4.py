@@ -204,6 +204,8 @@ def restore_common(checkpoint, method, evaluation_profile=None, *, d=None, direc
     # Generic active-checkpoint restoration retains its strict policy validator.
     resumed.update(callback=callback.state_dict(), records=[], online_services=[],
                    traffic_policy=wrapper.traffic_policy)
+    if hasattr(wrapper,"delivery_policy"):
+        resumed["delivery_policy"]=wrapper.delivery_policy
     if resumed.get("restart_requested") is not None:
         resumed["restart_requested"]["record_index"] = None
         resumed["restart_requested"]["external_predecessor"] = dict(
@@ -216,6 +218,9 @@ def restore_common(checkpoint, method, evaluation_profile=None, *, d=None, direc
         checkpoint_sha256=base.file_hash(checkpoint), evaluation_profile=evaluation_profile,
         initializer_traffic_policy=saved.get("traffic_policy","legacy"),
         method_traffic_policy=wrapper.traffic_policy,
+        initializer_delivery_policy=saved.get("delivery_policy"),
+        initializer_delivery_policy_field_present="delivery_policy" in saved,
+        method_delivery_policy=getattr(wrapper,"delivery_policy",None),
         cache_reset=cache_reset, normal_records="NEW_EMPTY", initializer_records="PROVENANCE_ONLY",
         initializer_tasks=deepcopy(saved["records"]), initializer_services=deepcopy(saved["online_services"]),
         initializer_callback_records=deepcopy(saved["callback"]["records"]),

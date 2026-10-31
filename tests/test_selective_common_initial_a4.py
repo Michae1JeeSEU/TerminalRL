@@ -130,6 +130,7 @@ def rewrite_common_state(path,*,pending=None,packets=None):
     envelope=runner.base.load(path); payload=envelope["payload"]; codec=campaign.Stage2Codec()
     saved=codec.decode(payload["scheduler"])
     saved.pop("traffic_policy",None)
+    saved.pop("delivery_policy",None)
     saved["pending"]=pending
     payload["scheduler"]=codec.encode(saved)
     if packets is not None:
@@ -148,6 +149,10 @@ def test_legacy_packet_free_common_handoff_binds_local_treatment_without_clock_o
     assert path.read_bytes()==before and serialized_world(world)==serialized_world(original)
     assert wrapper.traffic_policy==LOCAL_TRAFFIC_POLICY
     assert metadata["initializer_traffic_policy"]=="legacy" and metadata["method_traffic_policy"]==LOCAL_TRAFFIC_POLICY
+    assert metadata["initializer_delivery_policy"] is None and metadata["initializer_delivery_policy_field_present"] is False
+    if hasattr(wrapper,"delivery_policy"):
+        assert metadata["method_delivery_policy"]==wrapper.delivery_policy=="absolute_first_action_reservation_v1"
+        assert wrapper.state_dict()["delivery_policy"]==wrapper.delivery_policy
     assert callback.selective_history.state_dict()==initializer.callback.selective_history.state_dict()
     resumed=wrapper.state_dict()
     for key in ("idle_service","handoff_service","service_until","dirty","last_normal_start_time","last_restart_time"):

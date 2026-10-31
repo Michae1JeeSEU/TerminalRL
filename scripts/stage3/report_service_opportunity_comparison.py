@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from copy import deepcopy
 import csv
 from hashlib import sha256
 import importlib.util
@@ -372,6 +373,193 @@ def local_recovery_metrics(tasks):
         semantics="action/pair/edge totals are occurrences per local delta check; extra conflict/repair log copies deduplicated within task; failed repair status alone does not establish a pair-conflict trace; delivery counts require COMMITTED and submitted>0; whole-batch rejection observes an earlier affected-action delta, with NO_CERTIFIED_STANDBY separately counted")
 
 
+def future_reservation_metrics(callbacks,events,trajectories,*,lo=20.,hi=320.):
+    """Join first-action trajectory identities to world-issued reservation IDs.
+
+    A prepared event is a delivery certificate, whereas candidate certified
+    events are search facts. Event times own publication/start/completion time.
+    """
+    names={"reservation_prepared","reservation_published","reservation_started","reservation_completed",
+           "reservation_cancelled","reservation_pending_superseded","reservation_start_guard","reservation_traffic_guard"}
+    reservation_events=[e for e in events if e.get("type") in names]
+    final_export=any("final_selected_first_actions" in cb for cb in callbacks)
+    complete_protocol=any(cb.get("delivery_certification_scope")=="effective_hold_then_absolute_first_action" for cb in callbacks)
+    if not reservation_events and not final_export: return None
+    metadata=dict(trajectories); first={}; suffix={}; candidates={}; final_hashes=set(); malformed=[]
+    generation_export=any("service_candidate_lifecycle" in cb for cb in callbacks)
+    for index,cb in enumerate(callbacks):
+        for row in cb.get("service_candidate_lifecycle",()):
+            actions=row.get("actions") or []
+            for action in actions:
+                if action.get("trajectory_hash"): metadata[action["trajectory_hash"]]=dict(action,aircraft_id=row.get("aircraft_id",action.get("aircraft_id")))
+            hashes=row.get("action_hashes") or [a.get("trajectory_hash") for a in actions]
+            if not hashes: continue
+            candidates.setdefault(hashes[0],[]).append((index,row))
+            for hash_ in hashes[1:]: suffix.setdefault(hash_,set()).add(row.get("candidate_hash"))
+        for row in cb.get("final_selected_first_actions",()):
+            actions=row.get("actions") or []
+            for action in actions:
+                if action.get("trajectory_hash"): metadata[action["trajectory_hash"]]=dict(action,aircraft_id=row.get("aircraft_id",action.get("aircraft_id")))
+            action=row.get("first_action")
+            if action is not None and action.get("trajectory_hash"):
+                metadata[action["trajectory_hash"]]=dict(action,aircraft_id=row.get("aircraft_id",action.get("aircraft_id"))); final_hashes.add(action["trajectory_hash"])
+            for action in actions[1:]:
+                suffix.setdefault(action["trajectory_hash"],set()).add(row.get("candidate_hash"))
+    reservations={}; replacements={}
+    for e in reservation_events:
+        details=e.get("details") or {}; rid=details.get("reservation_id")
+        if rid and details.get("replacement_reservation_id"):
+            new_id=details["replacement_reservation_id"]
+            replacements[(rid,new_id)]=dict(old_reservation_id=rid,new_reservation_id=new_id,event_time=e.get("time"))
+        if rid:
+            for old_id in details.get("replaced_reservation_ids",()):
+                replacements[(old_id,rid)]=dict(old_reservation_id=old_id,new_reservation_id=rid,event_time=e.get("time"))
+        if not rid:
+            malformed.append(dict(type=e["type"],time=e.get("time"),reason="reservation_id_missing"))
+            continue
+        item=reservations.setdefault(rid,dict(reservation_id=rid,trajectory_hash=None,aircraft_id=None,
+            effective_time=None,start_time=None,end_time=None,events=[]))
+        for key in ("trajectory_hash","effective_time","start_time","end_time"):
+            if details.get(key) is not None: item[key]=details[key]
+        if e.get("aircraft_id") is not None: item["aircraft_id"]=e["aircraft_id"]
+        item["events"].append({**details,"type":e["type"],"time":e.get("time")})
+    for rid,item in reservations.items():
+        hash_=item["trajectory_hash"]; action=metadata.get(hash_,{})
+        item["aircraft_id"]=item["aircraft_id"] or action.get("aircraft_id")
+        for field,event in (("delivery_certified","reservation_prepared"),("published","reservation_published"),
+            ("started","reservation_started"),("completed","reservation_completed")):
+            matching=[e for e in item["events"] if e["type"]==event and finite(e.get("time"))]
+            item[field]=bool(matching); item[field+"_times"]=sorted({e["time"] for e in matching})
+        cancellations=[e for e in item["events"] if e["type"]=="reservation_cancelled" and finite(e.get("time"))]
+        pending_cancel=[e for e in cancellations if e.get("published") is False or e.get("previous_state")=="PENDING_DELIVERY"]
+        published_cancel=[e for e in cancellations if e not in pending_cancel and
+            (e.get("published") is True or any(t<=e["time"] for t in item["published_times"]))]
+        item["cancelled"]=bool(published_cancel)
+        item["cancelled_times"]=sorted({e["time"] for e in published_cancel})
+        item["pending_cancelled"]=bool(pending_cancel)
+        item["pending_cancelled_times"]=sorted({e["time"] for e in pending_cancel})
+        item["superseded_pending"]=any(e["type"]=="reservation_pending_superseded" for e in item["events"])
+        start=item["start_time"]
+        pending_discarded=not item["published"] and (item["pending_cancelled"] or item["superseded_pending"])
+        item["pending_beyond_window"]=finite(start) and start>hi and not item["cancelled"] and not item["started"] and not pending_discarded
+        item["due_without_observed_start"]=(item["published"] and finite(start) and start<hi and
+            not item["started"] and not item["completed"] and not item["cancelled"])
+        item["missed_start_observed"]=item["published"] and any(e.get("reason")=="RESERVATION_START_TIME_MISMATCH" and
+            finite(e.get("time")) and finite(start) and e["time"]>start for e in item["events"])
+        item["cancellation_reasons"]=sorted({e["reason"] for e in item["events"] if e["type"]=="reservation_cancelled" and e.get("reason")})
+    all_hashes=set(candidates)|final_hashes|{r["trajectory_hash"] for r in reservations.values() if r["trajectory_hash"]}
+    for hash_ in sorted(all_hashes):
+        source=candidates.get(hash_,[]); action=metadata.get(hash_,{})
+        related=[r for r in reservations.values() if r["trajectory_hash"]==hash_]
+        aid=action.get("aircraft_id") or next((r.get("aircraft_id") for _,r in source if r.get("aircraft_id")),None)
+        aid=aid or next((r["aircraft_id"] for r in related if r["aircraft_id"]),None)
+        item=dict(trajectory_hash=hash_,aircraft_id=aid,action=action or None,
+            candidate_hashes=sorted({r["candidate_hash"] for _,r in source if r.get("candidate_hash")}),
+            generated=bool(source) if generation_export else None,
+            actual_cp=any(r.get("actual_solve_events") for _,r in source) if generation_export else None,
+            selected_any_intermediate=any(r.get("selected_events") for _,r in source) if generation_export else None,
+            selected_final=(hash_ in final_hashes) if final_export else None,
+            search_certified=any(r.get("certified_events") for _,r in source) if generation_export else None,
+            effective_times=sorted({(callbacks[i].get("planning_timing") or {})["effective_time"] for i,_ in source
+                if finite((callbacks[i].get("planning_timing") or {}).get("effective_time"))}),
+            absolute_start=action.get("start_time"),absolute_end=action.get("end_time"),
+            reservation_ids=sorted(r["reservation_id"] for r in related),
+            candidate_reason_observations=[dict(scope="candidate",callback_index=i,candidate_hash=r.get("candidate_hash"),
+                reason=r["single_rejection_reason"]) for i,r in source if r.get("single_rejection_reason")],
+            callback_reason_observations=[dict(scope="callback_or_joint_group",callback_index=i,field=k,reason=callbacks[i][k])
+                for i,_ in source for k in ("empty_reason","stop_reason","solver_stop_reason","actual_delivery_reason") if callbacks[i].get(k)],
+            reservation_reason_observations=[dict(scope="reservation",reservation_id=r["reservation_id"],
+                event_type=e["type"],time=e.get("time"),reason=e["reason"]) for r in related for e in r["events"] if e.get("reason")],
+            reasons=sorted({e["reason"] for r in related for e in r["events"] if e.get("reason")}))
+        for field in ("delivery_certified","published","started","completed","cancelled","pending_cancelled","superseded_pending"):
+            item[field]=any(r[field] for r in related)
+        item["first_action_middle_inner"]=(action.get("source_ring")=="middle" and action.get("target_ring")=="inner") if action else None
+        item["also_observed_as_predicted_suffix"]=hash_ in suffix
+        item["completed_or_cancelled"]=item["completed"] or item["cancelled"]
+        first[hash_]=item
+    stages=("generated","actual_cp","selected_final","delivery_certified","published","started","completed","cancelled")
+    def funnel(rows):
+        counts={field:(sum(r[field] is True for r in rows) if all(r[field] is not None for r in rows) else None) for field in stages}
+        if not generation_export:
+            counts["generated"]=counts["actual_cp"]=None
+        if not final_export: counts["selected_final"]=None
+        counts["completed_or_cancelled"]=sum(r["completed_or_cancelled"] for r in rows)
+        counts["pending_cancelled"]=sum(r["pending_cancelled"] for r in rows)
+        counts["superseded_pending"]=sum(r["superseded_pending"] for r in rows)
+        losses=[]
+        pairs=list(zip(stages[:5],stages[1:6]))+[("started","completed_or_cancelled")]
+        for left,right in pairs:
+            missing=[r for r in rows if r[left] is True and r[right] is False]
+            losses.append(dict(from_stage=left,to_stage=right,not_observed_count=(len(missing) if counts[left] is not None and counts[right] is not None else None),
+                trajectory_hashes=[r["trajectory_hash"] for r in missing],
+                exported_reason_counts=dict(Counter(reason for r in missing for reason in r["reasons"])),
+                associated_candidate_reason_counts=dict(Counter(o["reason"] for r in missing for o in r["candidate_reason_observations"])),
+                associated_callback_reason_counts=dict(Counter(o["reason"] for r in missing for o in r["callback_reason_observations"])),
+                pending_not_due_reservation_count=sum(unit["pending_beyond_window"] for r in missing for rid in r["reservation_ids"] for unit in (reservations[rid],)),
+                reason_unknown_count=sum(not r["reasons"] for r in missing)))
+        return dict(counts=counts,selected_any_intermediate_count=sum(r["selected_any_intermediate"] is True for r in rows),
+            selected_final_not_published_count=(sum(r["selected_final"] is True and not r["published"] for r in rows) if final_export else None),transitions=losses)
+    occurrences=[]
+    for index,cb in enumerate(callbacks):
+        timing=cb.get("planning_timing") or {}; snapshot=timing.get("snapshot_time"); effective=timing.get("effective_time")
+        for selected in cb.get("final_selected_first_actions",()):
+            action=selected.get("first_action")
+            if not action or not action.get("trajectory_hash"): continue
+            hash_=action["trajectory_hash"]; units=[r for r in reservations.values() if r["trajectory_hash"]==hash_]
+            already=[]; newly_published=[]; bound=[]
+            for unit in units:
+                prior=[t for t in unit["published_times"] if finite(snapshot) and t<=snapshot+1.e-8]
+                if prior and not any(max(prior)<=t<=snapshot+1.e-8 for t in unit["completed_times"]+unit["cancelled_times"]):
+                    already.append(unit["reservation_id"])
+                matches=finite(effective) and finite(unit["effective_time"]) and abs(effective-unit["effective_time"])<1.e-7
+                if matches:
+                    bound.append(unit["reservation_id"])
+                    if finite(snapshot) and any(snapshot-1.e-8<=t<=hi for t in unit["published_times"]): newly_published.append(unit["reservation_id"])
+            known=finite(snapshot) and finite(effective)
+            state=("already_reserved" if already else "published_for_occurrence" if newly_published else
+                "unknown_binding" if not known else "pending_effective_outside_window" if effective>hi else "not_published_by_window_end")
+            occurrences.append(dict(callback_index=index,aircraft_id=selected.get("aircraft_id"),candidate_hash=selected.get("candidate_hash"),
+                trajectory_hash=hash_,snapshot_time=snapshot,effective_time=effective,absolute_start=action.get("start_time"),
+                absolute_end=action.get("end_time"),first_action=action,state=state,
+                first_action_middle_inner=action.get("source_ring")=="middle" and action.get("target_ring")=="inner",
+                already_reserved_ids=sorted(already),published_for_occurrence_ids=sorted(newly_published),bound_reservation_ids=sorted(bound),
+                callback_delivery_observation=dict(scope="callback_or_joint_group",status=cb.get("actual_delivery_status"),
+                    reason=cb.get("actual_delivery_reason"),time=cb.get("actual_delivery_time")),
+                delivery_selection_binding=deepcopy(cb.get("delivery_selection_binding")),
+                actual_delivery_selection_binding=deepcopy(cb.get("actual_delivery_selection_binding")),
+                reservation_reason_observations=[dict(reservation_id=rid,event_type=e["type"],reason=e["reason"],time=e.get("time"))
+                    for rid in bound for e in reservations[rid]["events"] if e.get("reason")]))
+    middle=[r for r in first.values() if r["first_action_middle_inner"] is True]
+    middle_funnel=funnel(middle)
+    middle_funnel["denominator_excludes_unclassified_count"]=sum(r["first_action_middle_inner"] is None for r in first.values())
+    postponed=[]
+    for (old_id,new_id),row in replacements.items():
+        one,two=reservations.get(old_id),reservations.get(new_id)
+        if one and two and finite(one["start_time"]) and finite(two["start_time"]) and two["start_time"]>one["start_time"]:
+            postponed.append(dict(old_reservation_id=old_id,new_reservation_id=new_id,
+                old_start=one["start_time"],new_start=two["start_time"]))
+    return dict(schema="future_reservation_metrics_v1",window=[lo,hi],all_first_actions=funnel(list(first.values())),
+        middle_inner=middle_funnel,first_action_rows=list(first.values()),reservation_rows=list(reservations.values()),
+        final_selected_occurrence_rows=occurrences,
+        final_selected_occurrence_state_counts=dict(Counter(o["state"] for o in occurrences)),
+        final_selected_middle_inner_occurrence_state_counts=dict(Counter(o["state"] for o in occurrences if o["first_action_middle_inner"])),
+        predicted_suffix_rows=[dict(trajectory_hash=h,candidate_hashes=sorted(x for x in keys if x),
+            also_first_action=h in first,action=metadata.get(h)) for h,keys in sorted(suffix.items())],
+        unclassified_first_action_count=sum(r["first_action_middle_inner"] is None for r in first.values()),
+        reservation_count=len(reservations),cancelled_reservation_count=sum(r["cancelled"] for r in reservations.values()),
+        pending_cancelled_reservation_count=sum(r["pending_cancelled"] for r in reservations.values()),
+        superseded_pending_reservation_count=sum(r["superseded_pending"] for r in reservations.values()),
+        missed_start_count=sum(r["missed_start_observed"] for r in reservations.values()),
+        due_without_observed_start_count=sum(r["due_without_observed_start"] for r in reservations.values()),
+        pending_beyond_window_count=sum(r["pending_beyond_window"] for r in reservations.values()),
+        replacement_count=len(replacements) if replacements or complete_protocol else None,
+        absolute_start_postponement_count=len(postponed) if replacements or complete_protocol else None,
+        replacement_rows=list(replacements.values()) if replacements or complete_protocol else None,
+        postponement_rows=postponed if replacements or complete_protocol else None,
+        malformed_event_rows=malformed,
+        semantics="trajectory hashes count first actions; reservation IDs count issued units; primary cancellations require published evidence; pending cancellations and superseded unselected candidates are separate; callback/action occurrences retain repeated selections, already-reserved state and exact delivery selection bindings; callback/group reasons are associated observations, not per-trajectory attribution; intermediate selection and predicted suffix are separate; not_observed is not causal loss; future/cancelled reservations are not missed starts; absent replacement protocol is unknown")
+
+
 def extract_metrics(input_root,root,method,ordinary):
     directory=Path(input_root)/"arms"/root/method/"evaluation"/root/method
     paths={name:directory/relative for name,relative in dict(events="replay/events.jsonl",frames="replay/states.jsonl",
@@ -390,7 +578,7 @@ def extract_metrics(input_root,root,method,ordinary):
     if missing: return dict(result,physical_idle=None,middle_inner_supply=None,witnessed_idle=None,
         supply_gap=None,inner_stock_empty=None,replay_input_hash_checks=None,event_log_complete=None,
         first_certificate_times=None,forecast_service_terms=None,empty_reason_counts=None,
-        candidate_lifecycle=None,local_recovery=None)
+        candidate_lifecycle=None,local_recovery=None,future_reservation_metrics=None)
     import yaml
     config=yaml.safe_load(paths["config"].read_text(encoding="utf8"))
     services={k:v["duration_s"] for k,v in config["pads"]["service_classes"].items()}
@@ -411,6 +599,7 @@ def extract_metrics(input_root,root,method,ordinary):
     result.update(physical_idle=physical,middle_inner_supply=supplies,
         candidate_lifecycle=candidate_lifecycle_metrics(callbacks,supplies),
         local_recovery=local_recovery_metrics(load(task_path) if task_path.is_file() else None),
+        future_reservation_metrics=future_reservation_metrics(callbacks,events,trajectories),
         replay_input_hash_checks=replay_checks,event_log_complete=event_log_complete,
         supply_gap=supply_gap(supplies["completed"],demand),
         inner_stock_empty=inner_stock_empty(frames),
@@ -431,9 +620,36 @@ def extract_metrics(input_root,root,method,ordinary):
     return result
 
 
-def collect(old_root,new_root):
+def saved_baseline(path):
+    """Read R3's already combined new campaign, including its export lineage."""
+    path=Path(path); saved=load(path)
+    if saved.get("window")!=[20.,320.] or "new" not in saved.get("campaigns",{}):
+        raise ValueError("saved baseline must be a t20-320 comparison with a new campaign")
+    baseline=deepcopy(saved["campaigns"]["new"])
+    if Path(baseline.get("input_root","")).name!="rs_local_recovery_serializationfix_20261031":
+        raise ValueError("saved baseline must select the R3 serialization-fix new campaign, not R2")
+    expected={(r,m) for r in ROOTS for m in METHODS}
+    for rows in ((baseline.get("ordinary") or {}).get("arms",()),baseline.get("metrics",())):
+        if len(rows)!=4 or {(r.get("root"),r.get("method")) for r in rows}!=expected:
+            raise ValueError("saved baseline requires exactly four unique R3 new arms")
+    if any(a.get("status")!="COMPLETE" for a in baseline["ordinary"]["arms"]):
+        raise ValueError("saved baseline arms must be complete")
+    provenance=dict(evidence_type="preexisting_artifact",source_summary=str(path.resolve()),
+        source_summary_sha256=sha256(path.read_bytes()).hexdigest(),original_campaign_label="new")
+    baseline["baseline_provenance"]=provenance
+    for row in baseline["metrics"]:
+        row.setdefault("future_reservation_metrics",None)
+        row["evidence_type"]="preexisting_artifact"
+    for row in baseline["ordinary"]["arms"]: row["evidence_type"]="preexisting_artifact"
+    return baseline
+
+
+def collect(old_root,new_root,*,old_summary=None):
     summarizer=existing_summary(); campaigns={}
     for label,path in (("old",old_root),("new",new_root)):
+        if label=="old" and old_summary is not None:
+            campaigns[label]=saved_baseline(old_summary); continue
+        if path is None: raise ValueError("old-root or explicit old-summary required")
         ordinary,timeline,timings=summarizer.collect(path)
         metrics=[extract_metrics(path,a["root"],a["method"],a) for a in ordinary["arms"]]
         campaigns[label]=dict(input_root=str(Path(path).resolve()),ordinary=ordinary,metrics=metrics)
@@ -466,9 +682,10 @@ def write_outputs(output,report):
 
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--old-root",type=Path,required=True); parser.add_argument("--new-root",type=Path,required=True)
+    parser.add_argument("--old-root",type=Path); parser.add_argument("--old-summary",type=Path)
+    parser.add_argument("--new-root",type=Path,required=True)
     parser.add_argument("--output-dir",type=Path,required=True)
-    args=parser.parse_args(argv); report=collect(args.old_root,args.new_root)
+    args=parser.parse_args(argv); report=collect(args.old_root,args.new_root,old_summary=args.old_summary)
     output=write_outputs(args.output_dir,report)
     print(json.dumps(dict(output=str(output),schema=report["schema"])))
     return report

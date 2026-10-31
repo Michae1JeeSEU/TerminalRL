@@ -45,7 +45,8 @@ def exclusive_copy(source,target,*,shared=False):
 
 def original_inputs(output,root,method,source,ledger):
     """Validate terminal state and its original immutable execution bindings."""
-    base.require(root=="s3r24" and method in runner.base.METHODS,"only the two authorized high-load arms may be exported")
+    allowed_roots=base.ROOTS if Path(output).name==runner.FUTURE_COMMITMENT_OUTPUT_NAME else ("s3r24",)
+    base.require(root in allowed_roots and method in runner.base.METHODS,"only authorized completed arms may be exported")
     home=Path(output)/"arms"/root/method
     checkpoint=comparison.evaluation_directory(output,root,method)/"checkpoint_0300.json"
     binding_path=home/"resolved_run_binding.json"
@@ -160,25 +161,32 @@ def audit_export(output,root,method,source,ledger):
     return comparison.audit_arm(export_root,root,method,checkout=PROJECT)
 
 
-def combined_report(old_root,output):
-    original=report.collect(old_root,output); exported=report.collect(old_root,Path(output)/"terminal_export")
+def combined_report(old_root,output,*,old_summary=None):
+    def collect(path):
+        return report.collect(old_root,path,old_summary=old_summary) if old_summary is not None else report.collect(old_root,path)
+    original=collect(output)
+    r4=Path(output).name==runner.FUTURE_COMMITMENT_OUTPUT_NAME
+    selected={(r,m) for r in report.ROOTS for m in report.METHODS
+        if comparison.evaluation_directory(Path(output)/"terminal_export",r,m).joinpath("result.json").is_file()} if r4 else {("s3r24",m) for m in report.METHODS}
+    exported=collect(Path(output)/"terminal_export") if selected else None
     combined=deepcopy(original)
     for key in ("metrics",):
-        combined["campaigns"]["new"][key]=[deepcopy(a) for source in (original,exported)
-            for a in source["campaigns"]["new"][key] if a["root"]==("s3r23" if source is original else "s3r24")]
+        combined["campaigns"]["new"][key]=[deepcopy(a) for source in (original,exported) if source is not None
+            for a in source["campaigns"]["new"][key] if ((a["root"],a["method"]) in selected)==(source is exported)]
     ordinary=combined["campaigns"]["new"]["ordinary"]
     for key in ("arms","task_timeline","callback_timings"):
-        ordinary[key]=[deepcopy(a) for source in (original,exported)
-            for a in source["campaigns"]["new"]["ordinary"][key] if a["root"]==("s3r23" if source is original else "s3r24")]
+        ordinary[key]=[deepcopy(a) for source in (original,exported) if source is not None
+            for a in source["campaigns"]["new"]["ordinary"][key] if ((a["root"],a["method"]) in selected)==(source is exported)]
     expected={(r,m) for r in report.ROOTS for m in report.METHODS}
     for rows in (ordinary["arms"],combined["campaigns"]["new"]["metrics"],
                  combined["campaigns"]["old"]["ordinary"]["arms"],combined["campaigns"]["old"]["metrics"]):
         base.require(len(rows)==4 and {(a["root"],a["method"]) for a in rows}==expected,"combined report requires four unique authorized arms")
     for metric in combined["campaigns"]["new"]["metrics"]:
-        root=Path(output)/"terminal_export" if metric["root"]=="s3r24" else Path(output)
+        uses_export=(metric["root"],metric["method"]) in selected
+        root=Path(output)/"terminal_export" if uses_export else Path(output)
         receipt=root/"arms"/metric["root"]/metric["method"]/"export_receipt.json"
         lineage=base.load(receipt) if receipt.is_file() else None
-        if metric["root"]=="s3r24":
+        if uses_export:
             base.require(lineage is not None and lineage.get("completed_state_export_only") is True,
                          "high-load completed-state export lineage required")
         metric.update(arm_input_root=str(root.resolve()),export_lineage=lineage)
@@ -187,10 +195,11 @@ def combined_report(old_root,output):
         audit_path=comparison.evaluation_directory(root,metric["root"],metric["method"])/"audit_result.json"
         audit=base.load(audit_path) if audit_path.is_file() else None
         arm["saved_audit_result"]=audit; metric["saved_audit_result"]=audit
-    for arm in combined["campaigns"]["old"]["ordinary"]["arms"]:
-        arm.update(arm_input_root=str(Path(old_root).resolve()),export_lineage=None)
-    for metric in combined["campaigns"]["old"]["metrics"]:
-        metric.update(arm_input_root=str(Path(old_root).resolve()),export_lineage=None)
+    if old_summary is None:
+        for arm in combined["campaigns"]["old"]["ordinary"]["arms"]:
+            arm.update(arm_input_root=str(Path(old_root).resolve()),export_lineage=None)
+        for metric in combined["campaigns"]["old"]["metrics"]:
+            metric.update(arm_input_root=str(Path(old_root).resolve()),export_lineage=None)
     checks={root:len({a.get("common_checkpoint_sha256") for a in ordinary["arms"] if a["root"]==root})==1 and
         all(a.get("common_checkpoint_sha256") is not None for a in ordinary["arms"] if a["root"]==root) for root in report.ROOTS}
     ordinary["same_common_sha_by_root"]=checks
@@ -201,14 +210,16 @@ def combined_report(old_root,output):
         for c in combined["campaigns"].values() for a in c["ordinary"]["arms"] if a["root"]==root})==1 and
         all(a.get("common_checkpoint_sha256") is not None for c in combined["campaigns"].values()
             for a in c["ordinary"]["arms"] if a["root"]==root) for root in report.ROOTS}
-    combined["terminal_export_semantics"]="medium arms original; high arms completed-state exports; original BUDGET_LIMITED jobs unchanged"
+    combined["terminal_export_semantics"]="per-arm input roots select existing completed-state exports only; original BUDGET_LIMITED jobs unchanged"
     return combined
 
 
 def write_report(output_dir,value,campaign_output):
     target=Path(output_dir).resolve(); campaign_output=Path(campaign_output).resolve()
-    local=(PROJECT/"artifacts").resolve(); server=(Path.home()/"training_outputs/terminal"/runner.LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME).resolve()
-    base.require(target.is_relative_to(local) or (campaign_output==server and target.is_relative_to(server)),"report output requires local artifacts or this server campaign directory")
+    local=(PROJECT/"artifacts").resolve()
+    servers={(Path.home()/"training_outputs/terminal"/name).resolve() for name in
+        (runner.LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME,runner.FUTURE_COMMITMENT_OUTPUT_NAME)}
+    base.require(target.is_relative_to(local) or (campaign_output in servers and target.is_relative_to(campaign_output)),"report output requires local artifacts or this server campaign directory")
     base.require(target!=campaign_output and not target.is_relative_to(campaign_output/"arms") and
         not target.is_relative_to(campaign_output/"terminal_export") and not target.is_relative_to(campaign_output/"common_initial"),"report must be separate from arm/common inputs")
     for label,campaign in value["campaigns"].items():
@@ -227,17 +238,20 @@ def write_report(output_dir,value,campaign_output):
 
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__); parser.add_argument("stage",choices=("export","audit","report"))
-    parser.add_argument("--output",type=Path,required=True); parser.add_argument("--root",choices=("s3r24",))
+    parser.add_argument("--output",type=Path,required=True); parser.add_argument("--root",choices=tuple(base.ROOTS))
     parser.add_argument("--method",choices=base.METHODS); parser.add_argument("--cpu",type=int)
     parser.add_argument("--source-freeze",type=Path); parser.add_argument("--exporter-commit")
-    parser.add_argument("--old-root",type=Path); parser.add_argument("--output-dir",type=Path)
+    parser.add_argument("--old-root",type=Path); parser.add_argument("--old-summary",type=Path); parser.add_argument("--output-dir",type=Path)
     parser.add_argument("--_child-job-id",help=argparse.SUPPRESS)
     values=sys.argv[1:] if argv is None else argv; args=parser.parse_args(values)
-    base.require(args.output.name==runner.LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME,"fixed serialization-fix campaign required")
+    base.require(args.output.name in (runner.LOCAL_RECOVERY_SERIALIZATIONFIX_OUTPUT_NAME,runner.FUTURE_COMMITMENT_OUTPUT_NAME),"fixed serialization-fix or future-commitment campaign required")
     if args.stage=="report":
-        base.require(args.old_root is not None and args.output_dir is not None,"old-root and output-dir required")
-        base.require(args.old_root.name==runner.SUPPLY_R2_OUTPUT_NAME,"fixed read-only R2 comparison required")
-        value=combined_report(args.old_root,args.output); write_report(args.output_dir,value,args.output); return value
+        base.require(args.output_dir is not None,"output-dir required")
+        if args.output.name==runner.FUTURE_COMMITMENT_OUTPUT_NAME:
+            base.require(args.old_summary is not None,"R4 requires the preexisting R3 combined old-summary")
+        else:
+            base.require(args.old_root is not None and args.old_root.name==runner.SUPPLY_R2_OUTPUT_NAME,"fixed read-only R2 comparison required")
+        value=combined_report(args.old_root,args.output,old_summary=args.old_summary); write_report(args.output_dir,value,args.output); return value
     args.output=runner.validated_output(args.output)
     base.require(args.root is not None and args.method is not None and args.source_freeze is not None and
         args.cpu==runner.CPUS[args.root,args.method],"fixed high-load arm, CPU and original source freeze required")
