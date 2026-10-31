@@ -46,7 +46,7 @@ The caller bounds the separate audit process. `report` reads saved arm results a
 
 Local verification: `venv/Scripts/python.exe -m pytest tests/test_future_commitment_drain.py -q --basetemp=future_drain_units_20261101a` completed with 13 passed in 2.95 seconds. An earlier `.tmp` basetemp attempt returned WinError 5 before fixture setup; the listed top-level workspace basetemp was writable. The runner's `--help` command completed successfully. No server smoke, physical rollout, or saved-replay safety audit is included in these local test results.
 
-## 服务器执行状态（更新至 2026-11-01 02:03:34，Asia/Shanghai）
+## 服务器执行状态（更新至 2026-11-01 04:52，Asia/Shanghai）
 
 代码与测试冻结提交为 `fa1c2647a917b035b443b7b5a52e7278d5b17a92`，已推送。服务器单测结果为 **13 passed、0 skipped，0.61 s**。四个仅恢复 smoke 均 PASS：world、scheduler 和绝对时间完全匹配，物理推进及 solver 调用均为 0，原始来源文件哈希未变。
 
@@ -61,7 +61,7 @@ Local verification: `venv/Scripts/python.exe -m pytest tests/test_future_commitm
 
 启动验证观测时间为 UTC 17:49:56（北京时间 01:49:56）；四个正式任务的 restore 检查均 PASS。产物根目录为 `/home/user/training_outputs/terminal/rs_future_commitment_drain_20261101`，启动日志为根目录下的 `logs/formal_*`；各 arm 的 evaluation 目录保存 `latest.json`、`progress.json` 和 `segment_0001`。
 
-每段软墙钟上限为 1800 s，外部进程上限为 3600 s。正常 `PAUSED_CHECKPOINT` 必须通过完整状态 `--resume` 接续，不能重新初始化。尚未执行正式 resume 或 replay audit，也没有正式任务完成结论。依据上一轮 R4 运行，至 t600 的初始总墙钟估计 `T0` 约为 1200 s；整个 drain 的耗时尚未知。
+每段软墙钟上限为 1800 s，外部进程上限为 3600 s。正常 `PAUSED_CHECKPOINT` 必须通过完整状态 `--resume` 接续，不能重新初始化。以下初始阶段历史记录形成时尚未执行正式 resume 或 replay audit，也没有正式任务完成结论。依据上一轮 R4 运行，至 t600 的初始总墙钟估计 `T0` 约为 1200 s；整个 drain 的耗时当时未知。
 
 第一次进度查询观测于 UTC 17:53:26（北京时间 01:53:26）。四个任务均活跃，CPU 使用率为 99.8–99.9%，未观测到错误；以下计数为当时累计值，剩余时间仅估计到 t600 的 TRAFFIC 阶段终点，不代表整个 drain 完成时间。
 
@@ -76,7 +76,7 @@ Local verification: `venv/Scripts/python.exe -m pytest tests/test_future_commitm
 
 最初一次后台启动因 Python 换行错误，在任何正式任务开始前失败；修正启动命令一次后才产生上述任务。该次失败日志保留，不计为实验重试。
 
-### 最新观测与接续交接
+### 历史观测与接续交接（02:03）
 
 第三次进度查询观测时间为北京时间 2026-11-01 02:03:34。四个任务均活跃，未观测到错误，均尚未到达 t600；以下为当时累计观测值。
 
@@ -87,6 +87,26 @@ Local verification: `venv/Scripts/python.exe -m pytest tests/test_future_commitm
 | HF | 440 | 13 | 0 | 0 | 40 | 53 | 17 | 未在本次交接单列 |
 | HK | 415 | 12 | 0 | 0 | 40 | 52 | 17 | 1 |
 
-主对话已通过 `automation_update` 创建当前线程 heartbeat，ID 为 `600`，状态 ACTIVE，间隔 17 min，并通过工具查看确认。下一次唤醒约为北京时间 02:22；这是复查时间，不是完成时间估计。等待期间不保留持续睡眠的监控 worker。
+当时主对话通过 `automation_update` 创建当前线程 heartbeat，ID 为 `600`，状态 ACTIVE，间隔 17 min，并通过工具查看确认。当时的下一次唤醒约为北京时间 02:22；这是历史复查时间，不是完成时间估计，当前间隔见下文。等待期间不保留持续睡眠的监控 worker。
 
-唤醒后检查约 02:18 触发的软墙钟暂停及其稳定边界、checkpoint 和 replay 导出。只有正常 `PAUSED_CHECKPOINT` 才能使用完整状态 `--resume`，保留 pending、未来预约和既有世界状态，继续原任务直到全部已接纳航空器达到约定终态；遇到 ERROR 或无效执行返回主对话处理。核验全部终态与产物后，再继续已授权的 replay audits、汇总报告及 Git 提交推送。整个任务的完成时间仍未知，本交接不声明四个任务均 COMPLETE。
+当时的接续约定是唤醒后检查约 02:18 触发的软墙钟暂停及其稳定边界、checkpoint 和 replay 导出。只有正常 `PAUSED_CHECKPOINT` 才能使用完整状态 `--resume`，保留 pending、未来预约和既有世界状态，继续原任务直到全部已接纳航空器达到约定终态；遇到 ERROR 或无效执行返回主对话处理。核验全部终态与产物后，再继续已授权的 replay audits、汇总报告及 Git 提交推送。该历史交接不声明四个任务均 COMPLETE。
+
+### 中负荷阶段结果与当前待办（04:52）
+
+截至 UTC 2026-10-31 20:52（北京时间 2026-11-01 04:52），主对话已复核中负荷 MF、MK 两臂为 COMPLETE。下表来自本地同步镜像中两臂各自的 `result.json`；观察时刻为五秒边界，最后 cohort 终态时刻为实际着陆或能量失败时刻。
+
+| Arm | 观察时刻 | 最后 cohort 终态 | 已接纳且全终态 | 正常着陆总数 | 应急着陆总数 | 电池耗尽 | 峰值预算耗尽 | 剩余 airborne |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| MF | 1265 | 1263.5 | 47 | 14 | 29 | 4 | 0 | 0 |
+| MK | 1300 | 1295.5 | 47 | 17 | 25 | 5 | 0 | 0 |
+
+两臂 t320 前均已有 14 架正常着陆。t320→600，MF 新增正常 0、应急 3；MK 新增正常 3、应急 1，其中两架正常着陆来自 t320 已继承的 FINAL，仅另 1 架属于此后新增正常着陆。t600 后两臂新增正常着陆均为 0：MF 应急着陆 26、电池耗尽 4，MK 应急着陆 24、电池耗尽 5。中负荷延长运行未显示正常着陆恢复；全终态包含能量失败，不能写成全部成功着陆。
+
+| Arm | t320→600 能耗增量（J） | t600→drain 观察终点能耗增量（J） | 总累计能耗（J，含 t320 前） |
+|---|---:|---:|---:|
+| MF | 583481908.1970664 | 779013331.6945808 | 1965737470.2427454 |
+| MK | 564050050.4026834 | 788919430.5565059 | 1961271367.6959286 |
+
+两臂 t600 后 release 与 admission 均为 0，无外排、未知终态或 invalid，最终外部 pending 均为 0。安全 replay audit 尚未执行，当前结果不构成整体安全 PASS。
+
+高负荷尚未完成：HF 已在 t610 正常 PAUSED，segment 5 完整恢复检查 PASS，且已实际推进至 t615；HK 在 t580 正常 PAUSED，segment 5 已获授权，启动验证进行中。此处不填写高负荷最终结果。当前 heartbeat 仍 ACTIVE，间隔已更新为 30 min；继续按正常暂停的完整状态恢复协议推进，余下两臂终态核验、安全 audits、汇总报告与最终 Git 交付由主对话接续。整个任务完成时间仍未知。
